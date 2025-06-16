@@ -21,7 +21,7 @@ export function Header() {
             Categorias
           </Link>
           <Link href="/faca-festa" className="text-gray-600 hover:text-[#FF0080] transition-colors">
-            Faça Festa
+            New Fest
           </Link>
           <Link href="/contatos" className="text-gray-600 hover:text-[#FF0080] transition-colors">
             Contatos
