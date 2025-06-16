@@ -2,14 +2,12 @@
 
 import { motion } from "framer-motion";
 import { Button } from "./ui";
-import Image from "next/image";
 import { Header } from "./Header";
 
 export function Hero() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      <div className="container max-w-7xl mx-auto px-6 py-12">
+    <div className="min-h-screen bg-gray-50 pt-20">
+      <Header />      <div className="container max-w-7xl mx-auto px-6 py-12">
         {" "}
         <div className="grid lg:grid-cols-5 gap-12 items-center min-h-[80vh]">
           <motion.div
@@ -42,21 +40,20 @@ export function Hero() {
                 New Fest
               </Button>
             </motion.div>
-          </motion.div>{" "}
-          <motion.div
+          </motion.div>{" "}          <motion.div
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
             className="flex justify-center items-center lg:col-span-3"
-          >
-            <div className="relative w-full">
-              <Image
-                src="/hero-img.png"
-                alt="Pessoas felizes em uma festa - Be Fest conectando você à felicidade"
-                width={1200}
-                height={1200}
-                className="w-full h-auto object-contain"
-                priority
+          >            <div className="relative w-full">
+              <video
+                src="/hero-video.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-auto object-cover"
+                style={{ maxHeight: '80vh' }}
               />
             </div>
           </motion.div>

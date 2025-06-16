@@ -5,14 +5,60 @@ import Link from 'next/link';
 import { MdCelebration, MdStar, MdRocket } from 'react-icons/md';
 
 export function CTA() {
-  return (
-    <section className="py-16 md:py-24 bg-gradient-to-br from-[#520029] via-[#FF0080] to-[#CD0067] relative overflow-hidden">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-10 left-10 w-20 h-20 bg-white rounded-full"></div>
-        <div className="absolute top-32 right-20 w-16 h-16 bg-white rounded-full"></div>
-        <div className="absolute bottom-20 left-32 w-12 h-12 bg-white rounded-full"></div>
-        <div className="absolute bottom-32 right-10 w-24 h-24 bg-white rounded-full"></div>
+  return (    <section className="py-16 md:py-24 bg-gradient-to-br from-[#520029] via-[#FF0080] to-[#CD0067] relative overflow-hidden">      {/* Animated Background Pattern */}
+      <div className="absolute inset-0 opacity-20">
+        <motion.div 
+          className="absolute top-10 left-10 w-20 h-20 bg-white rounded-full blur-lg"
+          animate={{ 
+            y: [0, -20, 0],
+            x: [0, 10, 0],
+            scale: [1, 1.1, 1]
+          }}
+          transition={{ 
+            duration: 6,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        ></motion.div>        <motion.div 
+          className="absolute top-32 right-20 w-16 h-16 bg-white rounded-full blur-lg"
+          animate={{ 
+            y: [0, 15, 0],
+            x: [0, -15, 0],
+            scale: [1, 0.9, 1]
+          }}
+          transition={{ 
+            duration: 4,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 1
+          }}
+        ></motion.div>        <motion.div 
+          className="absolute bottom-20 left-32 w-12 h-12 bg-white rounded-full blur-lg"
+          animate={{ 
+            y: [0, -10, 0],
+            x: [0, 20, 0],
+            scale: [1, 1.2, 1]
+          }}
+          transition={{ 
+            duration: 5,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 2
+          }}
+        ></motion.div>        <motion.div 
+          className="absolute bottom-32 right-10 w-24 h-24 bg-white rounded-full blur-lg"
+          animate={{ 
+            y: [0, 25, 0],
+            x: [0, -10, 0],
+            scale: [1, 0.8, 1]
+          }}
+          transition={{ 
+            duration: 7,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 0.5
+          }}
+        ></motion.div>
       </div>
 
       <div className="container mx-auto px-4 md:px-6 relative z-10">

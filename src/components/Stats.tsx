@@ -60,8 +60,60 @@ function CountUp({ end, duration = 2000, suffix = '' }: { end: number; duration?
 
 export function Stats() {
   return (
-    <section className="py-16 md:py-24 bg-gradient-to-br from-[#FF0080] to-[#CD0067]">
-      <div className="container mx-auto px-4 md:px-6">
+    <section className="py-16 md:py-24 bg-gradient-to-br from-[#FF0080] to-[#CD0067] relative overflow-hidden">      {/* Animated Background Elements */}
+      <div className="absolute inset-0">        <motion.div 
+          className="absolute top-10 left-10 w-16 h-16 bg-white/20 rounded-full blur-md"
+          animate={{ 
+            y: [0, -20, 0],
+            scale: [1, 1.3, 1],
+            opacity: [0.3, 0.6, 0.3]
+          }}
+          transition={{ 
+            duration: 4,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        ></motion.div>        <motion.div 
+          className="absolute top-20 right-20 w-12 h-12 bg-white/20 rounded-full blur-md"
+          animate={{ 
+            x: [0, 15, 0],
+            y: [0, -10, 0],
+            rotate: [0, 180, 360]
+          }}
+          transition={{ 
+            duration: 6,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 1
+          }}
+        ></motion.div>        <motion.div 
+          className="absolute bottom-32 left-1/4 w-20 h-20 bg-white/20 rounded-full blur-lg"
+          animate={{ 
+            scale: [1, 0.8, 1.2, 1],
+            opacity: [0.2, 0.5, 0.2]
+          }}
+          transition={{ 
+            duration: 5,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 2
+          }}
+        ></motion.div>        <motion.div 
+          className="absolute bottom-10 right-32 w-14 h-14 bg-white/20 rounded-full blur-md"
+          animate={{ 
+            y: [0, 25, 0],
+            x: [0, -20, 0]
+          }}
+          transition={{ 
+            duration: 7,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 0.5
+          }}
+        ></motion.div>
+      </div>
+      
+      <div className="container mx-auto px-4 md:px-6 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}

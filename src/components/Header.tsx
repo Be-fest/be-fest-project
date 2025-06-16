@@ -4,17 +4,42 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Link as ScrollLink } from 'react-scroll';
 import { Logo } from '@/components/ui';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Sempre mostrar o header no topo da página
+      if (currentScrollY < 10) {
+        setIsVisible(true);
+      } else {
+        // Mostrar quando scrollar para cima, esconder quando scrollar para baixo
+        setIsVisible(lastScrollY > currentScrollY);
+      }
+      
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
 
   return (
     <motion.header 
-      className="w-full bg-white shadow-sm py-4 px-6 sticky top-0 z-50"
+      className="w-full bg-white shadow-sm py-4 px-6 fixed top-0 z-50"
       initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
+      animate={{ 
+        opacity: 1, 
+        y: isVisible ? 0 : -100 
+      }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <Link href="/" className="flex items-center">
