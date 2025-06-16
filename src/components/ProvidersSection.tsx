@@ -92,7 +92,7 @@ const providers = [
 
 export function ProvidersSection() {
   return (
-    <section className="py-20 px-6 bg-gray-50">
+    <section className="py-20 px-6" style={{ backgroundColor: '#FFF9F9' }}>
       <div className="max-w-7xl mx-auto">
         <motion.div 
           className="text-center mb-16"

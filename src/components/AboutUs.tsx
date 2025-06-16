@@ -89,8 +89,8 @@ export function AboutUs() {
                 key={value.title}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}                className="flex gap-4 p-6 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors duration-300"
+                viewport={{ once: true }}                transition={{ duration: 0.6, delay: index * 0.1 }}
+                className="flex gap-4 p-6 bg-white rounded-2xl hover:bg-gray-100 transition-colors duration-300 shadow-sm border border-gray-100"
               >
                 <div className="w-12 h-12 bg-gradient-to-br from-[#FF0080] to-[#CD0067] rounded-xl flex items-center justify-center flex-shrink-0">
                   <value.icon className="text-xl text-white" />

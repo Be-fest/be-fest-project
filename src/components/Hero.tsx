@@ -6,7 +6,7 @@ import { Header } from "./Header";
 
 export function Hero() {
   return (
-    <div className="min-h-screen bg-gray-50 pt-20">
+    <div className="min-h-screen bg-[#FFF9F9] pt-20">
       <Header />      <div className="container max-w-7xl mx-auto px-6 py-12">
         {" "}
         <div className="grid lg:grid-cols-5 gap-12 items-center min-h-[80vh]">

@@ -36,11 +36,10 @@ export function CategoriesSection() {
         <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-10 gap-6">
           {categories.map((category, index) => (
             <motion.div
-              key={category.id}
-              className={`flex flex-col items-center p-4 rounded-2xl cursor-pointer transition-all hover:scale-105 ${
+              key={category.id}              className={`flex flex-col items-center p-4 rounded-2xl cursor-pointer transition-all hover:scale-105 ${
                 category.isSpecial 
                   ? 'bg-gradient-to-br from-[#00D2D3] to-[#00A8A9] text-white shadow-lg' 
-                  : 'bg-gray-50 hover:bg-gray-100'
+                  : 'bg-white hover:bg-gray-100'
               }`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

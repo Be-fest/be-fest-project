@@ -1,6 +1,6 @@
 export default function DashboardPage() {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#FFF9F9' }}>
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
         <h1 className="text-3xl font-bold text-purple-600 mb-4">
           Bem-vindo ao Be Fest!

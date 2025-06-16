@@ -53,7 +53,7 @@ export function FAQ() {
   const toggleQuestion = (id: number) => {
     setOpenQuestion(openQuestion === id ? null : id);
   };  return (
-    <section className="py-16 md:py-24 bg-gray-50">
+    <section className="py-16 md:py-24" style={{ backgroundColor: '#FFF9F9' }}>
       <div className="container mx-auto px-4 md:px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
