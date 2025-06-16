@@ -193,7 +193,7 @@ export function Categories() {
                 transition={{ duration: 0.4, delay: index * 0.05 }}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="flex flex-col items-center gap-2 md:gap-3 font-medium cursor-pointer group min-w-[80px] md:min-w-[100px] flex-shrink-0"
+                className="flex flex-col items-center gap-2 md:gap-3 font-medium cursor-pointer group min-w-[80px] md:min-w-[100px] flex-shrink-0 select-none"
               >
                 <div
                   className="rounded-xl md:rounded-2xl h-16 w-20 md:h-20 md:w-24 lg:h-24 lg:w-32 flex items-center justify-center shadow-sm group-hover:shadow-md transition-all duration-300"

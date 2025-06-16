@@ -10,9 +10,8 @@ export function Hero() {
     <div className="min-h-screen bg-gray-50">
       <Header />
 
-      {/* Hero Content */}
       <div className="container max-w-7xl mx-auto px-6 py-12">
-        <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[80vh]">
+        <div className="grid lg:grid-cols-2 gap-12 items-start mt-32 min-h-[80vh]">
           <motion.div
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
