@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
+import { MdExpandMore } from 'react-icons/md';
 
 const faqs = [
   {
@@ -88,28 +89,12 @@ export function FAQ() {
                 >
                   <h3 className="font-semibold text-[#520029] pr-4">
                     {faq.question}
-                  </h3>
-                  <motion.div
+                  </h3>                  <motion.div
                     animate={{ rotate: openQuestion === faq.id ? 180 : 0 }}
                     transition={{ duration: 0.2 }}
                     className="flex-shrink-0"
                   >
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="text-[#FF0080]"
-                    >
-                      <path
-                        d="M6 9L12 15L18 9"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
+                    <MdExpandMore className="text-2xl text-[#FF0080]" />
                   </motion.div>
                 </button>
                 

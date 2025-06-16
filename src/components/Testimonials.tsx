@@ -1,7 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import Image from 'next/image';
+import { MdStar } from 'react-icons/md';
+import { FaUserTie, FaUser, FaBriefcase } from 'react-icons/fa';
 
 const testimonials = [
   {
@@ -9,21 +10,21 @@ const testimonials = [
     role: 'Organizadora de eventos',
     content: 'A Be Fest transformou a forma como organizo festas! Encontrei fornecedores incríveis na minha região e economizei muito tempo. Super recomendo!',
     rating: 5,
-    avatar: '👩🏻‍💼'
+    avatar: FaUserTie
   },
   {
     name: 'João Santos',
     role: 'Pai de família',
     content: 'Organizei o aniversário da minha filha em poucos cliques. A variedade de opções e a qualidade dos prestadores me surpreenderam muito.',
     rating: 5,
-    avatar: '👨🏻‍💼'
+    avatar: FaUser
   },
   {
     name: 'Ana Costa',
     role: 'Empresária',
     content: 'Para eventos corporativos, a Be Fest é perfeita. Encontro tudo que preciso rapidamente e com total segurança. Excelente plataforma!',
     rating: 5,
-    avatar: '👩🏻‍💼'
+    avatar: FaBriefcase
   }
 ];
 
@@ -55,23 +56,20 @@ export function Testimonials() {
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
               className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-shadow duration-300"
-            >
-              {/* Rating Stars */}
+            >              {/* Rating Stars */}
               <div className="flex gap-1 mb-4">
                 {[...Array(testimonial.rating)].map((_, i) => (
-                  <span key={i} className="text-yellow-400 text-lg">⭐</span>
+                  <MdStar key={i} className="text-yellow-400 text-lg" />
                 ))}
               </div>
 
               {/* Testimonial Content */}
               <p className="text-[#6E5963] leading-relaxed mb-6 italic">
                 "{testimonial.content}"
-              </p>
-
-              {/* Author Info */}
+              </p>              {/* Author Info */}
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-[#FF0080] to-[#CD0067] rounded-full flex items-center justify-center text-xl">
-                  {testimonial.avatar}
+                <div className="w-12 h-12 bg-gradient-to-br from-[#FF0080] to-[#CD0067] rounded-full flex items-center justify-center">
+                  <testimonial.avatar className="text-white text-lg" />
                 </div>
                 <div>
                   <h4 className="font-bold text-[#520029]">{testimonial.name}</h4>

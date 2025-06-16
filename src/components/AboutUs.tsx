@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { MdLightbulbOutline, MdHandshake, MdFavorite } from 'react-icons/md';
 
 const stats = [
   { number: '10K+', label: 'Festas realizadas' },
@@ -10,18 +11,17 @@ const stats = [
 ];
 
 const values = [
-  {
-    icon: '🎯',
+  {    icon: MdLightbulbOutline,
     title: 'Simplicidade',
     description: 'Tornamos o processo de organizar festas simples e intuitivo para todos.'
   },
   {
-    icon: '🤝',
+    icon: MdHandshake,
     title: 'Confiança',
     description: 'Conectamos você apenas com fornecedores verificados e de qualidade.'
   },
   {
-    icon: '💖',
+    icon: MdFavorite,
     title: 'Alegria',
     description: 'Nossa missão é levar mais momentos de felicidade para sua vida.'
   }
@@ -89,11 +89,10 @@ export function AboutUs() {
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="flex gap-4 p-6 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors duration-300"
+                transition={{ duration: 0.6, delay: index * 0.1 }}                className="flex gap-4 p-6 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors duration-300"
               >
-                <div className="w-12 h-12 bg-gradient-to-br from-[#FF0080] to-[#CD0067] rounded-xl flex items-center justify-center text-xl flex-shrink-0">
-                  {value.icon}
+                <div className="w-12 h-12 bg-gradient-to-br from-[#FF0080] to-[#CD0067] rounded-xl flex items-center justify-center flex-shrink-0">
+                  <value.icon className="text-xl text-white" />
                 </div>
                 <div>
                   <h4 className="text-xl font-bold text-[#520029] mb-2">

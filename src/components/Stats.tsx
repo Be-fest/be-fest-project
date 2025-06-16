@@ -2,31 +2,32 @@
 
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
+import { MdCelebration, MdGroups, MdSentimentSatisfiedAlt, MdStar } from 'react-icons/md';
 
 const stats = [
   {
     number: 10000,
     suffix: '+',
     label: 'Eventos Realizados',
-    icon: '🎉'
+    icon: MdCelebration
   },
   {
     number: 2500,
     suffix: '+',
     label: 'Fornecedores Cadastrados',
-    icon: '👥'
+    icon: MdGroups
   },
   {
     number: 50000,
     suffix: '+',
     label: 'Clientes Satisfeitos',
-    icon: '😊'
+    icon: MdSentimentSatisfiedAlt
   },
   {
     number: 95,
     suffix: '%',
     label: 'Taxa de Satisfação',
-    icon: '⭐'
+    icon: MdStar
   }
 ];
 
@@ -82,10 +83,9 @@ export function Stats() {
               initial={{ opacity: 0, scale: 0.5 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              className="text-center bg-white/10 backdrop-blur-sm rounded-xl p-6 hover:bg-white/20 transition-all duration-300"
+              transition={{ duration: 0.6, delay: index * 0.1 }}              className="text-center bg-white/10 backdrop-blur-sm rounded-xl p-6 hover:bg-white/20 transition-all duration-300"
             >
-              <div className="text-4xl mb-4">{stat.icon}</div>
+              <stat.icon className="text-4xl mb-4 mx-auto text-white" />
               <div className="text-3xl md:text-4xl font-bold text-white mb-2">
                 <CountUp end={stat.number} suffix={stat.suffix} />
               </div>

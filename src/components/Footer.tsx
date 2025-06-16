@@ -3,6 +3,8 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Link as ScrollLink } from 'react-scroll';
+import { FaFacebookF, FaInstagram, FaTwitter } from 'react-icons/fa';
+import { MdEmail, MdPhone, MdLocationOn } from 'react-icons/md';
 
 export function Footer() {
   return (
@@ -18,25 +20,24 @@ export function Footer() {
             <p className="text-gray-600 leading-relaxed">
               Conectando você à felicidade através da organização perfeita de eventos. 
               Encontre os melhores prestadores de serviços para sua festa.
-            </p>
-            <div className="flex space-x-4">
+            </p>            <div className="flex space-x-4">
               <motion.div 
                 whileHover={{ scale: 1.1 }}
                 className="w-10 h-10 bg-[#FF0080] rounded-full flex items-center justify-center cursor-pointer"
               >
-                <span className="text-white font-bold">f</span>
+                <FaFacebookF className="text-white text-sm" />
               </motion.div>
               <motion.div 
                 whileHover={{ scale: 1.1 }}
                 className="w-10 h-10 bg-[#FF0080] rounded-full flex items-center justify-center cursor-pointer"
               >
-                <span className="text-white font-bold">i</span>
+                <FaInstagram className="text-white text-sm" />
               </motion.div>
               <motion.div 
                 whileHover={{ scale: 1.1 }}
                 className="w-10 h-10 bg-[#FF0080] rounded-full flex items-center justify-center cursor-pointer"
               >
-                <span className="text-white font-bold">@</span>
+                <FaTwitter className="text-white text-sm" />
               </motion.div>
             </div>
           </div>          <div className="space-y-6">
@@ -65,23 +66,22 @@ export function Footer() {
               <li><Link href="/categoria/musica" className="hover:text-[#FF0080] transition-colors">Música</Link></li>
             </ul>
           </div>          <div className="space-y-6">
-            <h4 className="text-xl font-semibold text-[#520029]">Entre em Contato</h4>
-            <div className="space-y-4 text-gray-600">
+            <h4 className="text-xl font-semibold text-[#520029]">Entre em Contato</h4>            <div className="space-y-4 text-gray-600">
               <div className="flex items-center space-x-3">
                 <div className="w-5 h-5 bg-[#FF0080] rounded-full flex items-center justify-center">
-                  <span className="text-white text-xs">@</span>
+                  <MdEmail className="text-white text-xs" />
                 </div>
                 <span>contato@befest.com.br</span>
               </div>
               <div className="flex items-center space-x-3">
                 <div className="w-5 h-5 bg-[#FF0080] rounded-full flex items-center justify-center">
-                  <span className="text-white text-xs">📞</span>
+                  <MdPhone className="text-white text-xs" />
                 </div>
                 <span>(11) 9999-9999</span>
               </div>
               <div className="flex items-center space-x-3">
                 <div className="w-5 h-5 bg-[#FF0080] rounded-full flex items-center justify-center">
-                  <span className="text-white text-xs">📍</span>
+                  <MdLocationOn className="text-white text-xs" />
                 </div>
                 <span>São Paulo, SP</span>
               </div>

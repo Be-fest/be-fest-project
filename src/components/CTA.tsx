@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { MdCelebration, MdStar, MdRocket } from 'react-icons/md';
 
 export function CTA() {
   return (
@@ -61,9 +62,8 @@ export function CTA() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-            >
-              <div className="text-4xl mb-2">🎉</div>
+              transition={{ duration: 0.6, delay: 0.1 }}            >
+              <MdCelebration className="text-4xl mb-2 mx-auto text-white" />
               <div className="text-2xl font-bold mb-1">10K+</div>
               <div className="text-pink-100">Eventos realizados</div>
             </motion.div>
@@ -74,7 +74,7 @@ export function CTA() {
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.2 }}
             >
-              <div className="text-4xl mb-2">⭐</div>
+              <MdStar className="text-4xl mb-2 mx-auto text-white" />
               <div className="text-2xl font-bold mb-1">4.9/5</div>
               <div className="text-pink-100">Avaliação média</div>
             </motion.div>
@@ -85,7 +85,7 @@ export function CTA() {
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.3 }}
             >
-              <div className="text-4xl mb-2">🚀</div>
+              <MdRocket className="text-4xl mb-2 mx-auto text-white" />
               <div className="text-2xl font-bold mb-1">24h</div>
               <div className="text-pink-100">Resposta média</div>
             </motion.div>
