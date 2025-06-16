@@ -52,17 +52,17 @@ export function Categories() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
+  const [hasScrollableContent, setHasScrollableContent] = useState(false);
 
   useEffect(() => {
-    const checkIsMobile = () => {
-      setIsMobile(window.innerWidth < 1024);
+    const checkScrollableContent = () => {
+      setHasScrollableContent(window.innerWidth < 1500);
     };
     
-    checkIsMobile();
-    window.addEventListener('resize', checkIsMobile);
+    checkScrollableContent();
+    window.addEventListener('resize', checkScrollableContent);
     
-    return () => window.removeEventListener('resize', checkIsMobile);
+    return () => window.removeEventListener('resize', checkScrollableContent);
   }, []);
 
   const checkScrollButtons = () => {
@@ -110,9 +110,9 @@ export function Categories() {
     return () => clearTimeout(timer);
   }, []);return (
     <section className="py-4 md:py-8 bg-white">
-      <div className="container mx-auto px-4 md:px-6">
+      <div className="container mx-auto px-4 md:px-6">        
         <div className="relative">
-          {isMobile && (
+          {hasScrollableContent && (
             <>
               {canScrollLeft && (
                 <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-white to-transparent z-[5] pointer-events-none" />
@@ -121,8 +121,10 @@ export function Categories() {
                 <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-white to-transparent z-[5] pointer-events-none" />
               )}
             </>
-          )}          
-          {isMobile && canScrollLeft && (
+          )}
+
+          {/* Seta Esquerda - Abaixo de 1500px */}
+          {hasScrollableContent && canScrollLeft && (
             <motion.button
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
@@ -143,10 +145,9 @@ export function Categories() {
                   d="M15 19l-7-7 7-7"
                 />
               </svg>
-            </motion.button>
-          )}
+            </motion.button>          )}
 
-          {isMobile && canScrollRight && (
+          {hasScrollableContent && canScrollRight && (
             <motion.button
               initial={{ opacity: 0, x: 10 }}
               animate={{ opacity: 1, x: 0 }}
@@ -173,9 +174,8 @@ export function Categories() {
             ref={scrollRef}
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className={`flex justify-start 2xl:justify-center items-center gap-3 md:gap-6 overflow-x-auto md:overflow-x-visible pb-4 scrollbar-hide ${
-              isMobile ? 'px-10' : ''
+            transition={{ duration: 0.6 }}              className={`flex justify-start 2xl:justify-center items-center gap-3 md:gap-6 overflow-x-auto pb-4 scrollbar-hide ${
+              hasScrollableContent ? 'px-10' : 'justify-center'
             }`}
             style={{ 
               scrollbarWidth: "none", 
