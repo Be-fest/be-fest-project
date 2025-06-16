@@ -2,7 +2,8 @@
 
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
-import { MdCelebration, MdGroups, MdSentimentSatisfiedAlt, MdStar } from 'react-icons/md';
+import { MdCelebration, MdGroups, MdStar } from 'react-icons/md';
+import { RiEmotionHappyFill } from "react-icons/ri";
 
 const stats = [
   {
@@ -21,7 +22,7 @@ const stats = [
     number: 50000,
     suffix: '+',
     label: 'Clientes Satisfeitos',
-    icon: MdSentimentSatisfiedAlt
+    icon: RiEmotionHappyFill
   },
   {
     number: 95,

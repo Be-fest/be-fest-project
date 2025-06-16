@@ -1,7 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { MdLightbulbOutline, MdHandshake, MdFavorite } from 'react-icons/md';
+import { MdHandshake, MdFavorite } from 'react-icons/md';
+import { IoMdBulb } from "react-icons/io";
 
 const stats = [
   { number: '10K+', label: 'Festas realizadas' },
@@ -11,7 +12,7 @@ const stats = [
 ];
 
 const values = [
-  {    icon: MdLightbulbOutline,
+  {    icon: IoMdBulb,
     title: 'Simplicidade',
     description: 'Tornamos o processo de organizar festas simples e intuitivo para todos.'
   },
