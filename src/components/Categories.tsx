@@ -56,7 +56,7 @@ export function Categories() {
 
   useEffect(() => {
     const checkIsMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      setIsMobile(window.innerWidth < 1024);
     };
     
     checkIsMobile();
@@ -128,7 +128,7 @@ export function Categories() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -10 }}
               onClick={handleScrollLeft}
-              className="absolute left-1 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center border border-gray-200 hover:shadow-xl transition-all duration-200"
+              className="absolute left-1 top-1/2 cursor-pointer -translate-y-1/2 z-10 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center border border-gray-200 hover:shadow-xl transition-all duration-200"
             >
               <svg
                 className="w-4 h-4 text-gray-700"
@@ -152,7 +152,7 @@ export function Categories() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 10 }}
               onClick={handleScrollRight}
-              className="absolute right-1 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center border border-gray-200 hover:shadow-xl transition-all duration-200"
+              className="absolute right-1 cursor-pointer top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center border border-gray-200 hover:shadow-xl transition-all duration-200"
             >
               <svg
                 className="w-4 h-4 text-gray-700"
@@ -174,7 +174,7 @@ export function Categories() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className={`flex justify-start md:justify-center items-center gap-3 md:gap-6 overflow-x-auto md:overflow-x-visible pb-4 scrollbar-hide ${
+            className={`flex justify-start 2xl:justify-center items-center gap-3 md:gap-6 overflow-x-auto md:overflow-x-visible pb-4 scrollbar-hide ${
               isMobile ? 'px-10' : ''
             }`}
             style={{ 
@@ -217,7 +217,6 @@ export function Categories() {
           </motion.div>
         </div>
 
-        {/* WhatsApp Float Button */}
         <motion.div
           initial={{ opacity: 0, scale: 0 }}
           animate={{ opacity: 1, scale: 1 }}
