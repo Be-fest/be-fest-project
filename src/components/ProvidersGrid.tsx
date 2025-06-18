@@ -29,7 +29,7 @@ export function ProvidersGrid() {
               whileTap={{ scale: 0.98 }}
               onClick={() => handleProviderClick(provider.id)}
               className="bg-white rounded-xl shadow-md border border-gray-100/50 overflow-visible cursor-pointer hover:shadow-lg transition-all duration-300 group relative"
-            >              {/* Header com imagem de fundo */}
+            >              
               <div className="relative h-32 overflow-hidden">
                 <img
                   src={provider.image}
@@ -37,13 +37,12 @@ export function ProvidersGrid() {
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 />                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
                 
-                {/* Rating badge - menor */}
                 <div className="absolute top-2 right-2 bg-white/95 backdrop-blur-sm rounded-lg px-2 py-1 flex items-center gap-1 shadow-sm">
                   <MdStar className="text-yellow-400 text-sm" />
                   <span className="font-bold text-sm text-gray-800">{provider.rating}</span>
-                </div>                {/* Logo/Avatar do prestador - maior e visível */}
+                </div>                
                 <div className="absolute -bottom-6 left-4">
-                  <div className="w-16 h-16 bg-white rounded-xl shadow-xl flex items-center justify-center border-3 border-white group-hover:scale-105 transition-transform duration-300 z-10">
+                  <div className="w-2 h-2 bg-white rounded-xl shadow-xl flex items-center justify-center border-3 border-white group-hover:scale-105 transition-transform duration-300 z-10">
                     <img
                       src={provider.image}
                       alt={`${provider.name} logo`}
