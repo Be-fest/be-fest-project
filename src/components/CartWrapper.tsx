@@ -10,7 +10,7 @@ export function CartWrapper() {
       isOpen={isCartOpen} 
       onClose={closeCart}
       showPartyConfig={showPartyConfig}
-      pendingService={pendingService}
+      pendingService={pendingService || undefined}
     />
   );
 }
