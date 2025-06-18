@@ -5,7 +5,7 @@ import { Header } from '@/components/Header';
 import { ProviderServices } from '@/components/ProviderServices';
 import { ProviderBudget } from '@/components/ProviderBudget';
 import { motion } from 'framer-motion';
-import { MdStar, MdLocationOn, MdPhone, MdEmail } from 'react-icons/md';
+import { MdStar, MdLocationOn } from 'react-icons/md';
 
 // Mock data - em uma aplicação real viria da API
 const providerData = {
@@ -17,7 +17,7 @@ const providerData = {
   reviews: 156,
   image: '/images/outros/provider1.png',
   logo: '/images/outros/provider1.png',
-  address: 'São Paulo, SP',
+  address: 'Vila Madalena, São Paulo - SP',
   phone: '(11) 99999-9999',
   email: 'contato@barretosbuffet.com.br',
   description: 'Especialistas em buffet completo para festas e eventos. Comida de qualidade, serviço impecável e preços justos.',
@@ -151,21 +151,11 @@ export default function ProviderPage({ params }: { params: { id: string } }) {
                   <span className="font-semibold text-[#520029]">{providerData.rating}</span>
                   <span className="text-[#6E5963]">({providerData.reviews} avaliações)</span>
                 </div>
-              </div>
-
-              {/* Contact Info */}
+              </div>              {/* Contact Info */}
               <div className="flex flex-wrap gap-4 text-sm text-[#6E5963] mb-4">
                 <div className="flex items-center gap-1">
                   <MdLocationOn className="text-[#FF0080]" />
                   <span>{providerData.address}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <MdPhone className="text-[#FF0080]" />
-                  <span>{providerData.phone}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <MdEmail className="text-[#FF0080]" />
-                  <span>{providerData.email}</span>
                 </div>
               </div>
 
