@@ -5,8 +5,11 @@ import Link from 'next/link';
 import { Link as ScrollLink } from 'react-scroll';
 import { Logo } from '@/components/ui';
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { MdPerson, MdLogout } from 'react-icons/md';
 
 export function Header() {
+  const { user, profile, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -67,22 +70,40 @@ export function Header() {
           >
             Contatos
           </ScrollLink>
-        </nav>
-
-        {/* Desktop Auth Buttons */}
+        </nav>        {/* Desktop Auth Section */}
         <div className="hidden md:flex items-center space-x-4">
-          <Link 
-            href="/auth/login"
-            className="text-gray-600 hover:text-[#FF0080] transition-colors"
-          >
-            Entrar
-          </Link>
-          <Link 
-            href="/auth/register"
-            className="bg-[#FF0080] text-white px-4 py-2 rounded-lg hover:bg-[#E6006F] transition-colors"
-          >
-            Cadastrar
-          </Link>
+          {user && profile ? (
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <MdPerson className="text-[#FF0080]" />
+                <span className="text-gray-700">
+                  {profile.organization_name || profile.full_name || 'Usuário'}
+                </span>
+              </div>
+              <button
+                onClick={logout}
+                className="flex items-center space-x-1 text-gray-600 hover:text-[#FF0080] transition-colors"
+              >
+                <MdLogout />
+                <span>Sair</span>
+              </button>
+            </div>
+          ) : (
+            <>
+              <Link 
+                href="/auth/login"
+                className="text-gray-600 hover:text-[#FF0080] transition-colors"
+              >
+                Entrar
+              </Link>
+              <Link 
+                href="/auth/register"
+                className="bg-[#FF0080] text-white px-4 py-2 rounded-lg hover:bg-[#E6006F] transition-colors"
+              >
+                Cadastrar
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu Button */}

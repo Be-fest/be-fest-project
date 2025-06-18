@@ -3,9 +3,9 @@
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { AuthLayout } from '@/components/AuthLayout'
-import { LoginForm } from '@/components/auth/LoginForm'
+import { ProviderRegisterForm } from '@/components/auth/ProviderRegisterForm'
 
-export default function LoginPage() {
+export default function ProviderRegisterPage() {
   return (
     <AuthLayout>
       <div className="text-center mb-8">
@@ -15,7 +15,7 @@ export default function LoginPage() {
           transition={{ duration: 0.5 }}
           className="text-3xl font-bold text-[#520029] mb-2"
         >
-          Bem-vindo de volta!
+          Cadastro de Prestador
         </motion.h1>
         <motion.p
           initial={{ opacity: 0 }}
@@ -23,11 +23,11 @@ export default function LoginPage() {
           transition={{ duration: 0.5, delay: 0.1 }}
           className="text-[#6E5963]"
         >
-          Faça login para acessar sua conta
+          Registre sua empresa e comece a oferecer seus serviços
         </motion.p>
       </div>
 
-      <LoginForm />
+      <ProviderRegisterForm />
 
       <motion.div
         initial={{ opacity: 0 }}
@@ -36,37 +36,19 @@ export default function LoginPage() {
         className="text-center mt-6 space-y-4"
       >
         <p className="text-[#6E5963]">
-          Não tem uma conta?{' '}
-          <Link href="/auth/register" className="text-[#FF0080] hover:text-[#E6006F] font-semibold transition-colors">
-            Cadastre-se aqui
+          Já tem uma conta?{' '}
+          <Link href="/auth/login" className="text-[#FF0080] hover:text-[#E6006F] font-semibold transition-colors">
+            Faça login
           </Link>
         </p>
         
         <p className="text-[#6E5963] text-sm">
-          É um prestador de serviços?{' '}
-          <Link href="/auth/register/provider" className="text-[#FF0080] hover:text-[#E6006F] font-semibold transition-colors">
-            Cadastre sua empresa
+          É um cliente?{' '}
+          <Link href="/auth/register" className="text-[#FF0080] hover:text-[#E6006F] font-semibold transition-colors">
+            Crie conta de cliente
           </Link>
         </p>
       </motion.div>
     </AuthLayout>
   )
-}
-
-  return (
-    <AuthLayout>
-      <motion.div
-        key={userType}
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
-      >
-        <LoginForm 
-          onSubmit={handleLogin} 
-          userType={userType}
-          onUserTypeChange={setUserType}
-        />
-      </motion.div>
-    </AuthLayout>
-  );
 }
