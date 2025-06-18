@@ -64,9 +64,14 @@ export function Header() {
           <span className={`w-6 h-0.5 bg-gray-600 transition-all duration-300 ${isMenuOpen ? 'opacity-0' : ''}`}></span>
           <span className={`w-6 h-0.5 bg-gray-600 transition-all duration-300 ${isMenuOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
         </button>
-      </div>      {/* Mobile Menu */}
-      <div 
+      </div>
+
+      {/* Mobile Menu */}
+      <motion.div 
         className={`md:hidden bg-white border-t border-gray-200 ${isMenuOpen ? 'block' : 'hidden'}`}
+        initial={{ opacity: 0, height: 0 }}
+        animate={{ opacity: isMenuOpen ? 1 : 0, height: isMenuOpen ? 'auto' : 0 }}
+        transition={{ duration: 0.3 }}
       >
         <nav className="px-6 py-4 space-y-4">
           <ScrollLink 
@@ -109,8 +114,8 @@ export function Header() {
             >
               Cadastrar
             </Link>
-          </div>        </nav>
-      </div>
-    </header>
+          </div>
+        </nav>
+      </motion.div>    </header>
   );
 }

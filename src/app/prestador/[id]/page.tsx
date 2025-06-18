@@ -1,5 +1,6 @@
 'use client';
 
+import { use } from 'react';
 import { Header } from '@/components/Header';
 import { ProviderServices } from '@/components/ProviderServices';
 import { motion } from 'framer-motion';
@@ -7,14 +8,17 @@ import { MdStar, MdLocationOn } from 'react-icons/md';
 import { getProviderById } from '@/data/mockProviders';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default function ProviderPage({ params }: PageProps) {
+  // Unwrap params usando React.use()
+  const { id } = use(params);
+  
   // Buscar dados do prestador pelos dados mock
-  const providerData = getProviderById(params.id);
+  const providerData = getProviderById(id);
   
   if (!providerData) {
     return (
