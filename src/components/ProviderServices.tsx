@@ -3,6 +3,8 @@
 import { motion } from 'framer-motion';
 import { MdAdd } from 'react-icons/md';
 import { ShareButton } from './ShareButton';
+import { useCart } from '@/contexts/CartContext';
+import { useOffCanvas } from '@/contexts/OffCanvasContext';
 
 interface ServiceItem {
   id: number;
@@ -23,6 +25,27 @@ interface ProviderServicesProps {
 }
 
 export function ProviderServices({ services }: ProviderServicesProps) {
+  const { addToCart, partyData } = useCart();
+  const { openPartyConfig } = useOffCanvas();
+
+  const handleAddToCart = (item: ServiceItem, categoryName: string) => {
+    const serviceData = {
+      serviceId: item.id.toString(),
+      serviceName: item.name,
+      providerName: categoryName,
+      providerId: '1', // Você pode passar isso como prop se necessário
+      price: item.price,
+      image: item.image
+    };
+
+    if (!partyData) {
+      // Se não há dados da festa, abre o config com o serviço pendente
+      openPartyConfig(serviceData);
+    } else {
+      // Se já tem dados da festa, adiciona diretamente
+      addToCart(serviceData);
+    }
+  };
   return (
     <div className="space-y-8">
       {services.map((category, categoryIndex) => (
@@ -68,10 +91,10 @@ export function ProviderServices({ services }: ProviderServicesProps) {
                   <div className="flex items-center justify-between">
                     <span className="text-xl font-bold text-[#FF0080]">
                       R$ {item.price.toFixed(2)}
-                    </span>
-                    <motion.button
+                    </span>                    <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
+                      onClick={() => handleAddToCart(item, category.category)}
                       className="bg-[#FF0080] text-white p-2 rounded-full hover:bg-[#E6006F] transition-colors duration-300 group-hover:shadow-lg"
                     >
                       <MdAdd className="text-xl" />
@@ -95,11 +118,11 @@ export function ProviderServices({ services }: ProviderServicesProps) {
           Interessado nos nossos serviços?
         </h3>        <p className="text-pink-100 mb-6 max-w-2xl mx-auto">
           Compartilhe este prestador e ajude outros a encontrarem serviços incríveis para seus eventos!
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        </p>        <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            onClick={() => openPartyConfig()}
             className="bg-white text-[#FF0080] px-8 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors duration-300"
           >
             New Fest

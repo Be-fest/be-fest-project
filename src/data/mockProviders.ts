@@ -1,15 +1,22 @@
 export interface Provider {
   id: string;
   name: string;
-  category: string;
-  subcategory: string;
-  rating: number;
-  reviews: number;
-  image: string;
-  logo: string;
-  address: string;
   description: string;
+  category: string;
+  rating: number;
+  reviewCount: number;
+  location: {
+    city: string;
+    neighborhood: string;
+    state: string;
+  };
+  image: string;
   services: ServiceCategory[];
+  contact: {
+    phone: string;
+    email: string;
+    whatsapp: string;
+  };
 }
 
 export interface ServiceCategory {
@@ -28,382 +35,227 @@ export interface ServiceItem {
 
 export const mockProviders: Provider[] = [
   {
-    id: '1',
+    id: "1",
     name: "Barreto's Buffet",
-    category: 'Comida e Bebida',
-    subcategory: 'Serviços de Buffet',
+    description: "Especialistas em buffet completo para festas e eventos. Comida de qualidade, serviço impecável e preços justos.",
+    category: "Comida e Bebida",
     rating: 4.8,
-    reviews: 156,
-    image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800&h=600&fit=crop',
-    logo: "/images/outros/Design sem nome (37) 1.png",
-    address: 'Vila Madalena, São Paulo - SP',
-    description: 'Especialistas em buffet completo para festas e eventos. Comida de qualidade, serviço impecável e preços justos.',
+    reviewCount: 156,
+    location: {
+      city: "São Paulo",
+      neighborhood: "Vila Madalena",
+      state: "SP"
+    },
+    image: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=500&h=300&fit=crop",
+    contact: {
+      phone: "(11) 99999-9999",
+      email: "contato@barretosbuffet.com.br",
+      whatsapp: "5511999999999"
+    },
     services: [
       {
         id: 1,
-        category: 'Linha Churras',
+        category: "Serviços Principais",
         items: [
           {
             id: 1,
-            name: 'Churras Master',
-            description: 'Mín de 30 convidados',
-            price: 140.00,
-            image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&h=300&fit=crop'
+            name: "Churras Master",
+            description: "Churrasco completo com carnes nobres e acompanhamentos",
+            price: 45.00,
+            image: "https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?w=300&h=200&fit=crop"
           },
           {
             id: 2,
-            name: 'Churras Gold',
-            description: 'Mín de 30 convidados',
+            name: "Churras Gold",
+            description: "Churrasco premium com cortes especiais",
             price: 100.00,
-            image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&h=300&fit=crop'
+            image: "https://images.unsplash.com/photo-1558030006-450675393462?w=300&h=200&fit=crop"
           },
           {
             id: 3,
-            name: 'Churras Silver',
-            description: 'Mín de 30 convidados',
-            price: 80.00,
-            image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&h=300&fit=crop'
+            name: "Buffet Completo",
+            description: "Buffet com pratos quentes, frios, saladas e sobremesas",
+            price: 35.00,
+            image: "https://images.unsplash.com/photo-1551218808-94e220e084d2?w=300&h=200&fit=crop"
           }
         ]
       },
       {
         id: 2,
-        category: 'Linha Gourmet',
+        category: "Bebidas",
         items: [
           {
             id: 4,
-            name: 'Almoço/Jantar',
-            description: 'Mín de 50 convidados',
-            price: 85.00,
-            image: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=300&fit=crop'
+            name: "Open Bar Básico",
+            description: "Refrigerantes, sucos e água à vontade",
+            price: 15.00,
+            image: "https://images.unsplash.com/photo-1544145945-f90425340c7e?w=300&h=200&fit=crop"
           },
           {
             id: 5,
-            name: 'Buffet Infantil',
-            description: 'Mín de 50 convidados',
-            price: 55.00,
-            image: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=300&fit=crop'
+            name: "Open Bar Premium",
+            description: "Inclui bebidas alcoólicas e coquetéis",
+            price: 40.00,
+            image: "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=300&h=200&fit=crop"
           }
         ]
       }
     ]
   },
   {
-    id: '2',
+    id: "2",
     name: "Festa & Cia Decorações",
-    category: 'Decoração',
-    subcategory: 'Decoração Completa',
+    description: "Transformamos seus sonhos em realidade com decorações únicas e personalizadas para todos os tipos de eventos.",
+    category: "Decoração",
     rating: 4.9,
-    reviews: 203,
-    image: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=800&h=600&fit=crop',
-    logo: "/images/outros/Design sem nome (38) 1.png",
-    address: 'Jardins, São Paulo - SP',
-    description: 'Transformamos seus sonhos em realidade com decorações únicas e personalizadas para todos os tipos de eventos.',
+    reviewCount: 203,
+    location: {
+      city: "São Paulo",
+      neighborhood: "Jardins",
+      state: "SP"
+    },
+    image: "https://images.unsplash.com/photo-1464207687429-7505649dae38?w=500&h=300&fit=crop",
+    contact: {
+      phone: "(11) 88888-8888",
+      email: "contato@festacia.com.br",
+      whatsapp: "5511888888888"
+    },
     services: [
       {
         id: 1,
-        category: 'Decoração Temática',
+        category: "Decoração Principal",
         items: [
           {
             id: 1,
-            name: 'Festa Infantil',
-            description: 'Decoração completa temática',
+            name: "Decoração Infantil",
+            description: "Decoração temática completa para festas infantis",
             price: 800.00,
-            image: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=400&h=300&fit=crop'
+            image: "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=300&h=200&fit=crop"
           },
           {
             id: 2,
-            name: 'Casamento',
-            description: 'Decoração romântica completa',
+            name: "Decoração Casamento",
+            description: "Decoração elegante para cerimônia e recepção",
             price: 2500.00,
-            image: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=400&h=300&fit=crop'
-          }
-        ]
-      }
-    ]
-  },
-  {
-    id: '3',
-    name: "SoundMax DJ",
-    category: 'Som e Música',
-    subcategory: 'DJ e Sonorização',
-    rating: 4.7,
-    reviews: 89,
-    image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=600&fit=crop',
-    logo: "/images/outros/Design sem nome (39) 1.png",
-    address: 'Moema, São Paulo - SP',
-    description: 'Som profissional e animação para sua festa. Equipamentos de última geração e DJs experientes.',
-    services: [
-      {
-        id: 1,
-        category: 'Sonorização',
-        items: [
-          {
-            id: 1,
-            name: 'DJ + Som Básico',
-            description: 'Até 100 pessoas',
-            price: 600.00,
-            image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=300&fit=crop'
+            image: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=300&h=200&fit=crop"
           },
           {
-            id: 2,
-            name: 'DJ + Som Completo',
-            description: 'Até 300 pessoas',
+            id: 3,
+            name: "Decoração Corporativa",
+            description: "Decoração profissional para eventos empresariais",
             price: 1200.00,
-            image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=300&fit=crop'
+            image: "https://images.unsplash.com/photo-1511578314322-379afb476865?w=300&h=200&fit=crop"
           }
         ]
       }
     ]
   },
   {
-    id: '4',
-    name: "Doceria Adocei",
-    category: 'Comida e Bebida',
-    subcategory: 'Doces e Confeitaria',
-    rating: 4.9,
-    reviews: 245,
-    image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800&h=600&fit=crop',
-    logo: "/images/outros/Design sem nome (40) 1.png",
-    address: 'Pinheiros, São Paulo - SP',
-    description: 'Doces artesanais e bolos personalizados para tornar sua festa ainda mais especial.',
+    id: "3",
+    name: "SoundMax DJ",
+    description: "Som profissional e animação para sua festa. Equipamentos de última geração e DJs experientes.",
+    category: "Som e Música",
+    rating: 4.7,
+    reviewCount: 89,
+    location: {
+      city: "São Paulo",
+      neighborhood: "Moema",
+      state: "SP"
+    },
+    image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=500&h=300&fit=crop",
+    contact: {
+      phone: "(11) 77777-7777",
+      email: "contato@soundmaxdj.com.br",
+      whatsapp: "5511777777777"
+    },
     services: [
       {
         id: 1,
-        category: 'Doces e Bolos',
+        category: "Serviços de Som",
         items: [
           {
             id: 1,
-            name: 'Bolo Personalizado',
-            description: 'Até 30 pessoas',
-            price: 180.00,
-            image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=300&fit=crop'
+            name: "DJ + Som Básico",
+            description: "DJ profissional com equipamento de som básico",
+            price: 400.00,
+            image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=200&fit=crop"
           },
           {
             id: 2,
-            name: 'Mesa de Doces',
-            description: 'Doces finos sortidos',
-            price: 12.00,
-            image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=300&fit=crop'
+            name: "DJ + Som Premium",
+            description: "DJ + equipamentos profissionais + iluminação",
+            price: 800.00,
+            image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=300&h=200&fit=crop"
+          },
+          {
+            id: 3,
+            name: "Banda Ao Vivo",
+            description: "Banda completa para eventos especiais",
+            price: 1500.00,
+            image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=200&fit=crop"
           }
         ]
       }
     ]
   },
   {
-    id: '5',
-    name: "Churrascaria Boi Gordo",
-    category: 'Comida e Bebida',
-    subcategory: 'Churrasco',
+    id: "4",
+    name: "Flores & Arranjos Bella",
+    description: "Arranjos florais exclusivos e personalizados para tornar seu evento ainda mais especial e memorável.",
+    category: "Flores e Arranjos",
     rating: 4.6,
-    reviews: 178,
-    image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=800&h=600&fit=crop',
-    logo: "/images/outros/Design sem nome (41) 1.png",
-    address: 'Butantã, São Paulo - SP',
-    description: 'Churrasco tradicional com carnes selecionadas e tempero especial da casa.',
+    reviewCount: 134,
+    location: {
+      city: "São Paulo",
+      neighborhood: "Pinheiros",
+      state: "SP"
+    },
+    image: "https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=500&h=300&fit=crop",
+    contact: {
+      phone: "(11) 66666-6666",
+      email: "contato@floresbella.com.br",
+      whatsapp: "5511666666666"
+    },
     services: [
       {
         id: 1,
-        category: 'Churrasco',
+        category: "Arranjos Florais",
         items: [
           {
             id: 1,
-            name: 'Churrasco Completo',
-            description: 'Mín de 20 pessoas',
-            price: 65.00,
-            image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&h=300&fit=crop'
-          }
-        ]
-      }
-    ]
-  },
-  {
-    id: '6',
-    name: "Cervejaria Artesanal",
-    category: 'Bebida',
-    subcategory: 'Cerveja Artesanal',
-    rating: 4.8,
-    reviews: 92,
-    image: 'https://images.unsplash.com/photo-1608270586620-248524c67de9?w=800&h=600&fit=crop',
-    logo: "/images/outros/Design sem nome (42) 1.png",
-    address: 'Vila Madalena, São Paulo - SP',
-    description: 'Cervejas artesanais de alta qualidade para eventos especiais.',
-    services: [
-      {
-        id: 1,
-        category: 'Bebidas',
-        items: [
+            name: "Buquê de Noiva",
+            description: "Buquê personalizado para noivas",
+            price: 200.00,
+            image: "https://images.unsplash.com/photo-1462804512123-465343c607ee?w=300&h=200&fit=crop"
+          },
           {
-            id: 1,
-            name: 'Chopp Artesanal',
-            description: 'Barril 50L',
-            price: 250.00,
-            image: 'https://images.unsplash.com/photo-1608270586620-248524c67de9?w=400&h=300&fit=crop'
-          }
-        ]
-      }
-    ]
-  },
-  {
-    id: '7',
-    name: "Jose's Pizzaria",
-    category: 'Comida e Bebida',
-    subcategory: 'Pizza',
-    rating: 4.5,
-    reviews: 134,
-    image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=800&h=600&fit=crop',
-    logo: "/images/outros/Design sem nome (43) 1.png",
-    address: 'Liberdade, São Paulo - SP',
-    description: 'Pizzas artesanais com ingredientes frescos e massa tradicional.',
-    services: [
-      {
-        id: 1,
-        category: 'Pizzas',
-        items: [
+            id: 2,
+            name: "Arranjos de Mesa",
+            description: "Arranjos florais para decoração de mesas",
+            price: 80.00,
+            image: "https://images.unsplash.com/photo-1470137430626-983382b6b811?w=300&h=200&fit=crop"
+          },
           {
-            id: 1,
-            name: 'Pizza Grande',
-            description: '8 fatias',
-            price: 45.00,
-            image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop'
-          }
-        ]
-      }
-    ]
-  },
-  {
-    id: '8',
-    name: "Pizzaria do Fábio",
-    category: 'Comida e Bebida',
-    subcategory: 'Pizza',
-    rating: 4.4,
-    reviews: 89,
-    image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&h=600&fit=crop',
-    logo: "/images/outros/Design sem nome (44) 1.png",
-    address: 'Consolação, São Paulo - SP',
-    description: 'Pizzas caseiras com receitas tradicionais de família.',
-    services: [
-      {
-        id: 1,
-        category: 'Pizzas',
-        items: [
-          {
-            id: 1,
-            name: 'Pizza Média',
-            description: '6 fatias',
-            price: 35.00,
-            image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&h=300&fit=crop'
-          }
-        ]
-      }
-    ]
-  },
-  {
-    id: '9',
-    name: "Cozinha Vegana",
-    category: 'Comida e Bebida',
-    subcategory: 'Comida Vegana',
-    rating: 4.7,
-    reviews: 67,
-    image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&h=600&fit=crop',
-    logo: "/images/outros/Design sem nome (45) 1.png",
-    address: 'Vila Olímpia, São Paulo - SP',
-    description: 'Opções veganas saudáveis e saborosas para todos os gostos.',
-    services: [
-      {
-        id: 1,
-        category: 'Pratos Veganos',
-        items: [
-          {
-            id: 1,
-            name: 'Prato Vegano',
-            description: 'Porção individual',
-            price: 25.00,
-            image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&h=300&fit=crop'
-          }
-        ]
-      }
-    ]
-  },
-  {
-    id: '10',
-    name: "Sorvetes Artesanais",
-    category: 'Comida e Bebida',
-    subcategory: 'Sorvetes',
-    rating: 4.8,
-    reviews: 156,
-    image: 'https://images.unsplash.com/photo-1497034825429-c343d7c6a68f?w=800&h=600&fit=crop',
-    logo: "/images/outros/Design sem nome (46) 1.png",
-    address: 'Brooklin, São Paulo - SP',
-    description: 'Sorvetes artesanais com sabores únicos e ingredientes naturais.',
-    services: [
-      {
-        id: 1,
-        category: 'Sorvetes',
-        items: [
-          {
-            id: 1,
-            name: 'Sorvete Artesanal',
-            description: '1 litro',
-            price: 35.00,
-            image: 'https://images.unsplash.com/photo-1497034825429-c343d7c6a68f?w=400&h=300&fit=crop'
-          }
-        ]
-      }
-    ]
-  },
-  {
-    id: '11',
-    name: "Hamburguer Spot",
-    category: 'Comida e Bebida',
-    subcategory: 'Hambúrguer',
-    rating: 4.6,
-    reviews: 203,
-    image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&h=600&fit=crop',
-    logo: "/images/outros/Design sem nome (47) 1.png",
-    address: 'Itaim Bibi, São Paulo - SP',
-    description: 'Hambúrgueres gourmet com ingredientes premium.',
-    services: [
-      {
-        id: 1,
-        category: 'Hambúrgueres',
-        items: [
-          {
-            id: 1,
-            name: 'Hambúrguer Gourmet',
-            description: 'Com batata fritas',
-            price: 28.00,
-            image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=300&fit=crop'
-          }
-        ]
-      }
-    ]
-  },
-  {
-    id: '12',
-    name: "Bar do Leandro",
-    category: 'Bebida',
-    subcategory: 'Bar e Drinks',
-    rating: 4.5,
-    reviews: 145,
-    image: 'https://images.unsplash.com/photo-1470337458703-46ad1756a187?w=800&h=600&fit=crop',
-    logo: "/images/outros/Design sem nome (37) 1.png",
-    address: 'Bela Vista, São Paulo - SP',
-    description: 'Drinks autorais e ambiente descontraído para sua festa.',
-    services: [
-      {
-        id: 1,
-        category: 'Drinks',
-        items: [
-          {
-            id: 1,
-            name: 'Drink Especial',
-            description: 'Preparo na hora',
-            price: 18.00,
-            image: 'https://images.unsplash.com/photo-1470337458703-46ad1756a187?w=400&h=300&fit=crop'
+            id: 3,
+            name: "Decoração Floral Completa",
+            description: "Decoração floral para todo o ambiente",
+            price: 1000.00,
+            image: "https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=300&h=200&fit=crop"
           }
         ]
       }
     ]
   }
 ];
+
+export const getProviderById = (id: string): Provider | undefined => {
+  return mockProviders.find(provider => provider.id === id);
+};
+
+export const getProvidersByCategory = (category: string): Provider[] => {
+  return mockProviders.filter(provider => provider.category === category);
+};
+
+export const getAllProviders = (): Provider[] => {
+  return mockProviders;
+};

@@ -1,121 +1,100 @@
 'use client';
 
-import { useState, use } from 'react';
 import { Header } from '@/components/Header';
 import { ProviderServices } from '@/components/ProviderServices';
-import { ProviderBudget } from '@/components/ProviderBudget';
 import { motion } from 'framer-motion';
-import { getMockProviderById, getMockProviderServices, getMockProviderRating } from '@/data/mockData';
 import { MdStar, MdLocationOn } from 'react-icons/md';
+import { getProviderById } from '@/data/mockProviders';
 
-export default function ProviderPage({ params }: { params: Promise<{ id: string }> }) {
-  const [activeTab, setActiveTab] = useState<'services' | 'budget'>('services');
+interface PageProps {
+  params: {
+    id: string;
+  };
+}
+
+export default function ProviderPage({ params }: PageProps) {
+  // Buscar dados do prestador pelos dados mock
+  const providerData = getProviderById(params.id);
   
-  // Unwrap params using React.use()
-  const { id } = use(params);
-  
-  // Buscar dados do mock
-  const provider = getMockProviderById(id);
-  const services = getMockProviderServices(id);  const { rating, reviews } = getMockProviderRating(id);
-  
-  if (!provider) {
-    return <div>Prestador não encontrado</div>;
+  if (!providerData) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="pt-20 flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-800 mb-4">Prestador não encontrado</h1>
+            <p className="text-gray-600">O prestador que você está procurando não existe.</p>
+          </div>
+        </div>
+      </div>
+    );
   }
-  
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#FFF9F9' }}>
       <Header />
       
-      {/* Provider Header */}
-      <div className="bg-white shadow-sm pt-20">
-        <div className="container mx-auto px-4 md:px-6 py-8">
-          <div className="flex flex-col md:flex-row gap-6 items-start">
-            {/* Provider Logo */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5 }}
-              className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden bg-white shadow-lg flex-shrink-0"
-            >              <img 
-                src={provider.logo_url || '/images/outros/provider1.png'} 
-                alt={provider.organization_name || provider.full_name || 'Prestador'}
-                className="w-full h-full object-cover"
+      {/* Hero Section */}
+      <div className="pt-20 pb-8">
+        <div className="max-w-7xl mx-auto px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="bg-white rounded-2xl shadow-lg overflow-hidden"
+          >
+            {/* Provider Header */}
+            <div className="relative h-64 bg-gradient-to-r from-[#520029] to-[#FF0080]">
+              <div className="absolute inset-0 bg-black bg-opacity-20"></div>
+              <img
+                src={providerData.image}
+                alt={providerData.name}
+                className="w-full h-full object-cover mix-blend-overlay"
               />
-            </motion.div>
-
-            {/* Provider Info */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="flex-1"
-            >
-              <h1 className="text-3xl md:text-4xl font-bold text-[#520029] mb-2">
-                {provider.organization_name || provider.full_name}
-              </h1>
-              <p className="text-lg text-[#6E5963] mb-4">
-                Comida e Bebida | Serviços de Buffet
-              </p>
-              
-              {/* Rating */}
-              <div className="flex items-center gap-2 mb-4">
-                <div className="flex items-center gap-1">
-                  <MdStar className="text-yellow-400 text-xl" />
-                  <span className="font-semibold text-[#520029]">{rating}</span>
-                  <span className="text-[#6E5963]">({reviews} avaliações)</span>
+              <div className="absolute bottom-6 left-6 flex items-end gap-6">
+                <div className="w-24 h-24 rounded-xl bg-white p-2 shadow-lg">
+                  <img
+                    src={providerData.image}
+                    alt={`${providerData.name} logo`}
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                </div>
+                <div className="text-white pb-2">
+                  <h1 className="text-3xl font-bold mb-2">{providerData.name}</h1>
+                  <p className="text-pink-100 mb-2">{providerData.category}</p>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1">
+                      <MdStar className="text-yellow-400 text-xl" />
+                      <span className="font-semibold">{providerData.rating}</span>
+                      <span className="text-pink-100">({providerData.reviewCount} avaliações)</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <MdLocationOn className="text-pink-200 text-lg" />
+                      <span className="text-pink-100">
+                        {providerData.location.neighborhood}, {providerData.location.city}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
-
-              {/* Contact Info */}
-              <div className="flex flex-wrap gap-4 text-sm text-[#6E5963] mb-4">
-                <div className="flex items-center gap-1">
-                  <MdLocationOn className="text-[#FF0080]" />
-                  <span>{provider.area_of_operation}</span>
-                </div>
-              </div>
-
-              <p className="text-[#6E5963] leading-relaxed">
-                Especialistas em buffet completo para festas e eventos. Comida de qualidade, serviço impecável e preços justos.
+            </div>            {/* Provider Info */}
+            <div className="p-6">
+              <p className="text-[#6E5963] text-lg leading-relaxed mb-6">
+                {providerData.description}
               </p>
-            </motion.div>
-          </div>
-        </div>
-      </div>
 
-      {/* Navigation Tabs */}
-      <div className="bg-white border-b border-gray-200 sticky top-20 z-40">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="flex">
-            <button
-              onClick={() => setActiveTab('services')}
-              className={`px-6 py-4 font-semibold border-b-2 transition-colors ${
-                activeTab === 'services'
-                  ? 'border-[#FF0080] text-[#FF0080]'
-                  : 'border-transparent text-[#6E5963] hover:text-[#520029]'
-              }`}
-            >
-              Serviços Principais
-            </button>
-            <button
-              onClick={() => setActiveTab('budget')}
-              className={`px-6 py-4 font-semibold border-b-2 transition-colors ${
-                activeTab === 'budget'
-                  ? 'border-[#FF0080] text-[#FF0080]'
-                  : 'border-transparent text-[#6E5963] hover:text-[#520029]'
-              }`}
-            >
-              Orçamento
-            </button>
-          </div>
+              {/* Services Title */}
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-[#520029] border-b-2 border-[#FF0080] inline-block pb-2">
+                  Serviços Principais
+                </h2>
+              </div>
+            </div>
+          </motion.div>
         </div>
-      </div>
-
-      {/* Tab Content */}
-      <div className="container mx-auto px-4 md:px-6 py-8">        {activeTab === 'services' && (
-          <ProviderServices services={services} />
-        )}        {activeTab === 'budget' && (
-          <ProviderBudget providerId={id} />
-        )}
+      </div>      {/* Content Section */}
+      <div className="max-w-7xl mx-auto px-6 pb-12">
+        <ProviderServices services={providerData.services} />
       </div>
     </div>
   );
