@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { MdAdd } from 'react-icons/md';
+import { ShareButton } from './ShareButton';
 
 interface ServiceItem {
   id: number;
@@ -92,10 +93,10 @@ export function ProviderServices({ services }: ProviderServicesProps) {
       >
         <h3 className="text-2xl font-bold mb-4">
           Interessado nos nossos serviços?
-        </h3>
-        <p className="text-pink-100 mb-6 max-w-2xl mx-auto">
-          Entre em contato conosco para mais informações e personalize seu evento dos sonhos!
-        </p>        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        </h3>        <p className="text-pink-100 mb-6 max-w-2xl mx-auto">
+          Compartilhe este prestador e ajude outros a encontrarem serviços incríveis para seus eventos!
+        </p>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -103,13 +104,10 @@ export function ProviderServices({ services }: ProviderServicesProps) {
           >
             New Fest
           </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-[#FF0080] transition-all duration-300"
-          >
-            Entrar em Contato
-          </motion.button>
+          <ShareButton 
+            title="Prestador New Fest"
+            description="Interessado nos nossos serviços? Compartilhe e personalize seu evento dos sonhos!"
+          />
         </div>
       </motion.div>
     </div>

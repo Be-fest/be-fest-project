@@ -1,28 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, use } from 'react';
 import { Header } from '@/components/Header';
 import { ProviderServices } from '@/components/ProviderServices';
 import { ProviderBudget } from '@/components/ProviderBudget';
 import { motion } from 'framer-motion';
 import { getMockProviderById, getMockProviderServices, getMockProviderRating } from '@/data/mockData';
 import { MdStar, MdLocationOn } from 'react-icons/md';
-import { mockProviders } from '@/data/mockProviders';
 
-export default function ProviderPage({ params }: { params: { id: string } }) {
+export default function ProviderPage({ params }: { params: Promise<{ id: string }> }) {
   const [activeTab, setActiveTab] = useState<'services' | 'budget'>('services');
   
+  // Unwrap params using React.use()
+  const { id } = use(params);
+  
   // Buscar dados do mock
-  const provider = getMockProviderById(params.id);
-  const services = getMockProviderServices(params.id);
-  const { rating, reviews } = getMockProviderRating(params.id);
+  const provider = getMockProviderById(id);
+  const services = getMockProviderServices(id);  const { rating, reviews } = getMockProviderRating(id);
   
   if (!provider) {
     return <div>Prestador não encontrado</div>;
   }
   
-  // Buscar o prestador pelos dados mock
-  const providerData = mockProviders.find(provider => provider.id === params.id) || mockProviders[0];
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#FFF9F9' }}>
       <Header />
@@ -114,8 +113,8 @@ export default function ProviderPage({ params }: { params: { id: string } }) {
       {/* Tab Content */}
       <div className="container mx-auto px-4 md:px-6 py-8">        {activeTab === 'services' && (
           <ProviderServices services={services} />
-        )}{activeTab === 'budget' && (
-          <ProviderBudget providerId={params.id} />
+        )}        {activeTab === 'budget' && (
+          <ProviderBudget providerId={id} />
         )}
       </div>
     </div>
