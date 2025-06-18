@@ -3,24 +3,10 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { MdCalendarToday, MdGroup, MdCheckCircle, MdCalculate, MdInfo } from 'react-icons/md';
-
-interface ServiceItem {
-  id: number;
-  name: string;
-  description: string;
-  price: number;
-  image: string;
-  details?: string; // Para futuros detalhes do banco de dados
-}
-
-interface ServiceCategory {
-  id: number;
-  category: string;
-  items: ServiceItem[];
-}
+import { getMockProviderById, getMockProviderServices } from '@/data/mockData';
 
 interface ProviderBudgetProps {
-  services: ServiceCategory[];
+  providerId: string;
 }
 
 interface BudgetItem {
@@ -37,7 +23,14 @@ interface FormData {
   selectedServices: BudgetItem[];
 }
 
-export function ProviderBudget({ services }: ProviderBudgetProps) {  const [formData, setFormData] = useState<FormData>({
+export function ProviderBudget({ providerId }: ProviderBudgetProps) {
+  // Buscar os dados do prestador
+  const provider = getMockProviderById(providerId);
+  const services = getMockProviderServices(providerId);
+  
+  if (!provider) {
+    return <div>Prestador não encontrado</div>;
+  }const [formData, setFormData] = useState<FormData>({
     eventDate: '',
     fullGuests: 0,
     halfGuests: 0,
