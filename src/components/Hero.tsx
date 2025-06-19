@@ -16,12 +16,12 @@ export function Hero() {
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="space-y-6 flex justify-start items-start flex-col lg:col-span-2"
           >
-            <h1 className="text-4xl lg:text-5xl font-medium text-[#520029] leading-tight">
+            <h1 className="text-4xl lg:text-5xl font-medium text-[#520029] leading-tight font-poppins">
               Sua festa num clique!
               <span className="text-[#520029] block">Be fest, conectando </span>
               <span className="text-[#520029] block">você à felicidade.</span>
             </h1>
-            <p className="text-lg text-[#6E5963] leading-relaxed">
+            <p className="text-lg text-[#6E5963] leading-relaxed font-poppins">
               Encontre serviços de comida e bebida na sua região e monte sua
               festa de forma rápida, prática e segura.
             </p>
@@ -35,7 +35,7 @@ export function Hero() {
                   background:
                     "linear-gradient(180deg, #FF0080 0%, #CD0067 100%)",
                 }}
-                className="text-white px-12 py-4 text-lg font-sans rounded-lg hover:opacity-90 transition-all duration-300"
+                className="text-white px-12 py-4 text-lg font-poppins rounded-lg hover:opacity-90 transition-all duration-300"
               >
                 New Fest
               </Button>

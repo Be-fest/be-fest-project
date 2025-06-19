@@ -22,34 +22,37 @@ export function Header() {
             to="categorias" 
             smooth={true} 
             duration={500} 
-            className="text-gray-600 hover:text-[#FF0080] transition-colors cursor-pointer"
+            className="text-gray-600 hover:text-[#FF0080] transition-colors cursor-pointer font-poppins"
           >
             Categorias
           </ScrollLink>
-          <Link href="/faca-festa" className="text-gray-600 hover:text-[#FF0080] transition-colors">
+          <Link href="/faca-festa" className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins">
             New Fest
           </Link>
           <ScrollLink 
             to="contatos" 
             smooth={true} 
             duration={500} 
-            className="text-gray-600 hover:text-[#FF0080] transition-colors cursor-pointer"
+            className="text-gray-600 hover:text-[#FF0080] transition-colors cursor-pointer font-poppins"
           >
             Contatos
           </ScrollLink>
+          <Link href="/prestadores" className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins">
+            Seja um Prestador
+          </Link>
         </nav>
 
         {/* Desktop Auth Buttons */}
         <div className="hidden md:flex items-center space-x-4">
           <Link 
             href="/auth/login"
-            className="text-gray-600 hover:text-[#FF0080] transition-colors"
+            className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
           >
             Entrar
           </Link>
           <Link 
             href="/auth/register"
-            className="bg-[#FF0080] text-white px-4 py-2 rounded-lg hover:bg-[#E6006F] transition-colors"
+            className="bg-[#FF0080] text-white px-4 py-2 rounded-lg hover:bg-[#E6006F] transition-colors font-poppins"
           >
             Cadastrar
           </Link>
@@ -99,6 +102,13 @@ export function Header() {
           >
             Contatos
           </ScrollLink>
+          <Link 
+            href="/prestadores" 
+            className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            Seja um Prestador
+          </Link>
           <div className="pt-4 border-t border-gray-200 space-y-2">
             <Link 
               href="/auth/login"

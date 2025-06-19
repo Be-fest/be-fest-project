@@ -16,8 +16,8 @@ export function Footer() {
     >
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">          <div className="space-y-6">
-            <h3 className="text-3xl font-bold text-[#FF0080]">Be Fest</h3>
-            <p className="text-gray-600 leading-relaxed">
+            <h3 className="text-3xl font-bold text-[#FF0080] font-poppins">Be Fest</h3>
+            <p className="text-gray-600 leading-relaxed font-poppins">
               Conectando você à felicidade através da organização perfeita de eventos. 
               Encontre os melhores prestadores de serviços para sua festa.
             </p>            <div className="flex space-x-4">
@@ -41,8 +41,8 @@ export function Footer() {
               </motion.div>
             </div>
           </div>          <div className="space-y-6">
-            <h4 className="text-xl font-semibold text-[#520029]">Navegação</h4>
-            <ul className="space-y-3 text-gray-600">
+            <h4 className="text-xl font-semibold text-[#520029] font-poppins">Navegação</h4>
+            <ul className="space-y-3 text-gray-600 font-poppins">
               <li>
                 <ScrollLink 
                   to="categorias" 
@@ -58,15 +58,16 @@ export function Footer() {
               <li><Link href="/ajuda" className="hover:text-[#FF0080] transition-colors">Ajuda</Link></li>
             </ul>
           </div>          <div className="space-y-6">
-            <h4 className="text-xl font-semibold text-[#520029]">Categorias</h4>
-            <ul className="space-y-3 text-gray-600">
+            <h4 className="text-xl font-semibold text-[#520029] font-poppins">Categorias</h4>
+            <ul className="space-y-3 text-gray-600 font-poppins">
               <li><Link href="/categoria/comida-bebida" className="hover:text-[#FF0080] transition-colors">Comida e Bebida</Link></li>
               <li><Link href="/categoria/entretenimento" className="hover:text-[#FF0080] transition-colors">Entretenimento</Link></li>
               <li><Link href="/categoria/decoracao" className="hover:text-[#FF0080] transition-colors">Decoração</Link></li>
               <li><Link href="/categoria/musica" className="hover:text-[#FF0080] transition-colors">Música</Link></li>
             </ul>
           </div>          <div className="space-y-6">
-            <h4 className="text-xl font-semibold text-[#520029]">Entre em Contato</h4>            <div className="space-y-4 text-gray-600">
+            <h4 className="text-xl font-semibold text-[#520029] font-poppins">Entre em Contato</h4>
+            <div className="space-y-4 text-gray-600 font-poppins">
               <div className="flex items-center space-x-3">
                 <div className="w-5 h-5 bg-[#FF0080] rounded-full flex items-center justify-center">
                   <MdEmail className="text-white text-xs" />
@@ -89,14 +90,14 @@ export function Footer() {
             <div className="pt-4">
               <Link 
                 href="/auth/register"
-                className="inline-block bg-[#FF0080] text-white px-6 py-3 rounded-lg hover:bg-[#E6006F] transition-colors font-semibold"
+                className="inline-block bg-[#FF0080] text-white px-6 py-3 rounded-lg hover:bg-[#E6006F] transition-colors font-semibold font-poppins"
               >
                 Seja um Parceiro
               </Link>
             </div>
           </div>
         </div>        <div className="border-t border-gray-300 pt-8 text-center text-gray-600">
-          <p>&copy; 2025 Be Fest. Todos os direitos reservados. Sua festa num clique!</p>
+          <p className="font-poppins">&copy; 2025 Be Fest. Todos os direitos reservados. Sua festa num clique!</p>
         </div>
       </div>
     </motion.footer>

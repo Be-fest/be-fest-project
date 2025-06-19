@@ -1,19 +1,21 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Poppins, Roboto } from "next/font/google";
 import { CartProvider } from "@/contexts/CartContext";
 import { OffCanvasProvider } from "@/contexts/OffCanvasContext";
 import { FloatingCart } from "@/components/FloatingCart";
 import { CartWrapper } from "@/components/CartWrapper";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const poppins = Poppins({
+  variable: "--font-poppins",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const roboto = Roboto({
+  variable: "--font-roboto",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "700", "900"],
 });
 
 export const metadata: Metadata = {
@@ -29,9 +31,10 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${poppins.variable} ${roboto.variable} antialiased font-poppins`}
         cz-shortcut-listen="true"
-      >        <CartProvider>
+      >
+        <CartProvider>
           <OffCanvasProvider>
             {children}
             <FloatingCart />
