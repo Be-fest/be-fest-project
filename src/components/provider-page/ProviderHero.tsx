@@ -105,7 +105,7 @@ export function ProviderHero() {
             className="relative flex justify-center"
           >
             <img
-              src="/images/hero-prestador.png"
+              src="/hero-prestadorimg.png"
               alt="Prestadores Be Fest"
               className="w-full h-auto max-w-lg"
             />
