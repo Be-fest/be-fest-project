@@ -13,10 +13,16 @@ export default function ProvidersPage() {
     <main className="min-h-screen">
       <Header />
       <ProviderHero />
-      <ProviderBenefits />
-      <ProviderHowItWorks />
+      <div id="beneficios">
+        <ProviderBenefits />
+      </div>
+      <div id="como-funciona">
+        <ProviderHowItWorks />
+      </div>
       <ProviderTestimonials />
-      <ProviderPricing />
+      <div id="precos">
+        <ProviderPricing />
+      </div>
       <ProviderFAQ />
       <ProviderCTA />
       <Footer />
