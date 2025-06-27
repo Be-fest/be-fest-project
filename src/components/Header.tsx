@@ -7,7 +7,7 @@ import { Logo } from '@/components/ui';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useOffCanvas } from '@/contexts/OffCanvasContext';
-import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { createClient as createSupabaseClient } from '@/lib/supabase/client';
 import LogoutButton from './LogoutButton';
 import { useEffect } from 'react';
 
@@ -30,7 +30,7 @@ function HomeHeader() {
   const { isCartOpen } = useOffCanvas();
   const [user, setUser] = useState<any>(null);
   const [userType, setUserType] = useState<'client' | 'service_provider' | null>(null);
-  const supabase = createSupabaseBrowserClient();
+  const supabase = createSupabaseClient();
 
   useEffect(() => {
     const getUser = async () => {
@@ -249,7 +249,7 @@ function ProviderHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [userType, setUserType] = useState<'client' | 'service_provider' | null>(null);
-  const supabase = createSupabaseBrowserClient();
+  const supabase = createSupabaseClient();
 
   useEffect(() => {
     const getUser = async () => {

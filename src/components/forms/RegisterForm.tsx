@@ -7,13 +7,13 @@ import { formatCPF, formatPhoneNumber } from '@/utils/formatters';
 import Link from 'next/link';
 import { MdVisibility, MdVisibilityOff } from 'react-icons/md';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { useServices } from '@/hooks/useServices';
+import { Select } from '@/components/ui/Select';
 
-export function RegisterForm({ onSubmit, userType, onUserTypeChange, error }: RegisterFormProps) {
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [formError, setFormError] = useState('');
-
+export const RegisterForm = ({ onSubmit, userType, onUserTypeChange, error: propError }: RegisterFormProps) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const { values, handleChange } = useForm<RegisterFormData>({
     initialValues: {
       fullName: '',
@@ -21,37 +21,27 @@ export function RegisterForm({ onSubmit, userType, onUserTypeChange, error }: Re
       password: '',
       confirmPassword: '',
       cpf: '',
-      phone: '',
+      phone: ''
     }
   });
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setFormError('');
-
-    // Validações
-    if (!values.fullName || !values.email || !values.password || !values.confirmPassword || !values.cpf || !values.phone) {
-      setFormError('Por favor, preencha todos os campos');
-      return;
-    }
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
 
     if (values.password !== values.confirmPassword) {
-      setFormError('As senhas não coincidem');
-      return;
-    }
-
-    if (values.password.length < 6) {
-      setFormError('A senha deve ter pelo menos 6 caracteres');
+      setError('Passwords do not match');
+      setIsLoading(false);
       return;
     }
 
     try {
-      setLoading(true);
       await onSubmit(values);
     } catch (error) {
-      console.error('Form submission error:', error);
+      setError('Error creating account');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -78,8 +68,12 @@ export function RegisterForm({ onSubmit, userType, onUserTypeChange, error }: Re
         <div className="flex justify-start gap-4 text-xl">
           <motion.button
             type="button"
+            className={`transition-colors cursor-pointer ${
+              userType === "client"
+                ? "font-semibold text-[#F71875]"
+                : "text-[#520029] hover:opacity-70"
+            }`}
             onClick={() => onUserTypeChange('client')}
-            className="font-semibold text-[#F71875]"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -88,8 +82,12 @@ export function RegisterForm({ onSubmit, userType, onUserTypeChange, error }: Re
           <span className="text-gray-400">|</span>
           <motion.button
             type="button"
+            className={`transition-colors cursor-pointer ${
+              userType === "service_provider"
+                ? "font-semibold text-[#A502CA]"
+                : "text-[#520029] hover:opacity-70"
+            }`}
             onClick={() => onUserTypeChange('service_provider')}
-            className="text-[#520029] hover:opacity-70"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -108,66 +106,53 @@ export function RegisterForm({ onSubmit, userType, onUserTypeChange, error }: Re
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
       >
+        {(error || propError) && (
+          <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">
+            {error || propError}
+          </div>
+        )}
         <Input
           type="text"
           name="fullName"
-          placeholder="Nome completo"
+          placeholder="Full Name"
           value={values.fullName}
           onChange={handleChange}
-          focusColor="#F71875"
+          required
+          disabled={isLoading}
         />
 
         <Input
           type="email"
           name="email"
-          placeholder="E-mail"
+          placeholder="Email"
           value={values.email}
           onChange={handleChange}
-          focusColor="#F71875"
+          required
+          disabled={isLoading}
         />
 
-        <div className="relative">
+        <div>
           <Input
-            type={showPassword ? "text" : "password"}
+            type="password"
             name="password"
-            placeholder="Senha"
+            placeholder="Password"
             value={values.password}
             onChange={handleChange}
-            focusColor="#F71875"
+            required
+            disabled={isLoading}
           />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
-          >
-            {showPassword ? (
-              <MdVisibilityOff className="text-xl" />
-            ) : (
-              <MdVisibility className="text-xl" />
-            )}
-          </button>
         </div>
 
-        <div className="relative">
+        <div>
           <Input
-            type={showConfirmPassword ? "text" : "password"}
+            type="password"
             name="confirmPassword"
-            placeholder="Confirmar senha"
+            placeholder="Confirm Password"
             value={values.confirmPassword}
             onChange={handleChange}
-            focusColor="#F71875"
+            required
+            disabled={isLoading}
           />
-          <button
-            type="button"
-            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
-          >
-            {showConfirmPassword ? (
-              <MdVisibilityOff className="text-xl" />
-            ) : (
-              <MdVisibility className="text-xl" />
-            )}
-          </button>
         </div>
 
         <Input
@@ -177,6 +162,8 @@ export function RegisterForm({ onSubmit, userType, onUserTypeChange, error }: Re
           value={formatCPF(values.cpf)}
           onChange={handleChange}
           focusColor="#F71875"
+          required
+          disabled={isLoading}
         />
 
         <Input
@@ -186,21 +173,17 @@ export function RegisterForm({ onSubmit, userType, onUserTypeChange, error }: Re
           value={formatPhoneNumber(values.phone)}
           onChange={handleChange}
           focusColor="#F71875"
+          required
+          disabled={isLoading}
         />
 
         <Button
           type="submit"
-          isLoading={loading}
-          customColor="#F71875"
+          className="w-full"
+          disabled={isLoading}
         >
-          Criar Conta
+          {isLoading ? 'Creating account...' : 'Create account'}
         </Button>
-
-        {(error || formError) && (
-          <p className="text-center text-sm text-red-500">
-            {error || formError}
-          </p>
-        )}
       </motion.form>
 
       <motion.div
@@ -219,4 +202,4 @@ export function RegisterForm({ onSubmit, userType, onUserTypeChange, error }: Re
       </motion.div>
     </div>
   );
-}
+};

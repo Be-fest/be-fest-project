@@ -8,7 +8,7 @@ import { RegisterFormData, ServiceProviderFormData } from '@/types/auth';
 import { useRouter } from 'next/navigation';
 import { MdArrowBack } from 'react-icons/md';
 import Link from 'next/link';
-import { createSupabaseBrowserClient, checkEmailExists, checkDocumentExists } from '@/lib/supabase/client';
+import { createClient as createSupabaseClient, checkEmailExists, checkDocumentExists } from '@/lib/supabase/client';
 import { removeMask } from '@/utils/formatters';
 
 export default function RegisterPage() {
@@ -19,68 +19,73 @@ export default function RegisterPage() {
   const handleRegister = async (data: RegisterFormData) => {
     try {
       setError('');
-      console.log('Starting client registration process...');
-      const supabase = createSupabaseBrowserClient();
+      console.log('Starting registration process...');
+      const supabase = createSupabaseClient();
 
-      // Verificar email duplicado
+      // Check for duplicate email
       console.log('Checking email:', data.email);
       const emailExists = await checkEmailExists(data.email);
       if (emailExists) {
-        setError('Este email já está em uso');
+        setError('This email is already in use');
         return;
       }
 
-      // Verificar CPF duplicado
+      // Check for duplicate CPF
       const cpf = removeMask(data.cpf);
       console.log('Checking CPF:', cpf);
       const documentExists = await checkDocumentExists(cpf);
       if (documentExists) {
-        setError('Este CPF já está cadastrado');
+        setError('This CPF is already registered');
         return;
       }
 
-      // Criar usuário no Auth
+      // Create auth user
       console.log('Creating auth user...');
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
+        options: {
+          data: {
+            full_name: data.fullName,
+            role: 'client'
+          }
+        }
       });
 
       if (authError) {
         console.error('Auth error:', authError);
-        throw new Error(`Erro ao criar usuário: ${authError.message}`);
+        throw new Error(`Error creating user: ${authError.message}`);
       }
 
       if (!authData.user) {
-        throw new Error('Erro ao criar usuário: usuário não retornado');
+        throw new Error('Error creating user: user not returned');
       }
 
-      // Criar perfil na tabela users
+      // Create profile
       console.log('Creating user profile...');
       const { error: profileError } = await supabase
-        .from('users')
+        .from('profiles')
         .insert({
           id: authData.user.id,
-          role: 'client',
           full_name: data.fullName,
-          email: data.email,
+          phone: removeMask(data.phone),
           cpf: cpf,
-          whatsapp_number: removeMask(data.phone),
+          role: 'client'
         });
 
       if (profileError) {
         console.error('Profile error:', profileError);
-        throw new Error(`Erro ao criar perfil: ${profileError.message}`);
+        throw new Error(`Error creating profile: ${profileError.message}`);
       }
 
       console.log('Registration completed successfully');
-      router.push('/auth/login');
+      router.push('/dashboard');
     } catch (error) {
       console.error('Registration failed:', error);
       if (error instanceof Error) {
         setError(error.message);
       } else {
-        setError('Ocorreu um erro ao criar sua conta. Por favor, tente novamente.');
+        setError('An error occurred while creating your account. Please try again.');
       }
     }
   };
@@ -89,68 +94,85 @@ export default function RegisterPage() {
     try {
       setError('');
       console.log('Starting service provider registration process...');
-      const supabase = createSupabaseBrowserClient();
+      const supabase = createSupabaseClient();
 
-      // Verificar email duplicado
+      // Check for duplicate email
       console.log('Checking email:', data.email);
       const emailExists = await checkEmailExists(data.email);
       if (emailExists) {
-        setError('Este email já está em uso');
+        setError('This email is already in use');
         return;
       }
 
-      // Verificar CNPJ duplicado
+      // Check for duplicate CNPJ
       const cnpj = removeMask(data.cnpj);
       console.log('Checking CNPJ:', cnpj);
       const documentExists = await checkDocumentExists(cnpj);
       if (documentExists) {
-        setError('Este CNPJ já está cadastrado');
+        setError('This CNPJ is already registered');
         return;
       }
 
-      // Criar usuário no Auth
+      // Create auth user
       console.log('Creating auth user...');
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
+        options: {
+          data: {
+            full_name: data.companyName,
+            role: 'provider'
+          }
+        }
       });
 
       if (authError) {
         console.error('Auth error:', authError);
-        throw new Error(`Erro ao criar usuário: ${authError.message}`);
+        throw new Error(`Error creating user: ${authError.message}`);
       }
 
       if (!authData.user) {
-        throw new Error('Erro ao criar usuário: usuário não retornado');
+        throw new Error('Error creating user: user not returned');
       }
 
-      // Criar perfil na tabela users
-      console.log('Creating user profile...');
+      // Create profile and provider profile
+      console.log('Creating provider profile...');
       const { error: profileError } = await supabase
-        .from('users')
+        .from('profiles')
         .insert({
           id: authData.user.id,
-          role: 'provider',
-          organization_name: data.companyName,
-          email: data.email,
-          cnpj: cnpj,
-          whatsapp_number: removeMask(data.phone),
-          area_of_operation: data.areaOfOperation,
+          full_name: data.companyName,
+          phone: removeMask(data.phone),
+          role: 'provider'
         });
 
       if (profileError) {
         console.error('Profile error:', profileError);
-        throw new Error(`Erro ao criar perfil: ${profileError.message}`);
+        throw new Error(`Error creating profile: ${profileError.message}`);
+      }
+
+      const { error: providerProfileError } = await supabase
+        .from('provider_profiles')
+        .insert({
+          id: authData.user.id,
+          business_name: data.companyName,
+          category: data.areaOfOperation,
+          cnpj: cnpj
+        });
+
+      if (providerProfileError) {
+        console.error('Provider profile error:', providerProfileError);
+        throw new Error(`Error creating provider profile: ${providerProfileError.message}`);
       }
 
       console.log('Registration completed successfully');
-      router.push('/auth/login');
+      router.push('/dashboard');
     } catch (error) {
       console.error('Service provider registration failed:', error);
       if (error instanceof Error) {
         setError(error.message);
       } else {
-        setError('Ocorreu um erro ao criar sua conta. Por favor, tente novamente.');
+        setError('An error occurred while creating your account. Please try again.');
       }
     }
   };

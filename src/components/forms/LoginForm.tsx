@@ -4,58 +4,42 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input, Button, Logo } from "@/components/ui";
 import Link from "next/link";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { MdVisibility, MdVisibilityOff } from "react-icons/md";
+import { useServices } from '@/hooks/useServices'
 
 export function LoginForm() {
-  const [userType, setUserType] = useState<"client" | "service_provider">(
-    "client"
-  );
+  const [userType, setUserType] = useState<"client" | "service_provider">("client");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo");
-  const supabase = createSupabaseBrowserClient();
+  const { auth } = useServices();
 
   const handleUserTypeChange = (type: "client" | "service_provider") => {
     setUserType(type);
   };
 
-  const handleLogin = async (event: React.FormEvent) => {
-    event.preventDefault();
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     setLoading(true);
     setError("");
 
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        setError(error.message);
-      } else if (data.user) {
-        // Buscar o tipo do usuário
-        const { data: userData } = await supabase
-          .from("users")
-          .select("role")
-          .eq("id", data.user.id)
-          .single();
-
-        if (userData?.role === "provider") {
-          router.push("/dashboard/prestador");
-        } else {
-          router.push(redirectTo || "/");
-        }
+      const { user } = await auth.signIn(email, password);
+      if (user) {
+        router.push('/dashboard');
+        router.refresh();
       }
     } catch (error) {
-      setError("Ocorreu um erro ao fazer login.");
+      setError('Invalid email or password');
     } finally {
       setLoading(false);
     }
@@ -158,27 +142,38 @@ export function LoginForm() {
       </div>
 
       <motion.form
-        onSubmit={handleLogin}
+        onSubmit={handleSubmit}
         className="space-y-4 text-[#8D8D8D]"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
       >
+        {error && (
+          <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">
+            {error}
+          </div>
+        )}
         <Input
           type="email"
-          placeholder="E-mail"
+          name="email"
+          placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           focusColor={userType === "service_provider" ? "#A502CA" : "#F71875"}
+          required
+          disabled={loading}
         />
 
         <div className="relative">
           <Input
             type={showPassword ? "text" : "password"}
-            placeholder="Senha"
+            name="password"
+            placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             focusColor={userType === "service_provider" ? "#A502CA" : "#F71875"}
+            required
+            disabled={loading}
           />
           <button
             type="button"
@@ -195,13 +190,11 @@ export function LoginForm() {
 
         <Button
           type="submit"
-          isLoading={loading}
-          customColor={userType === "service_provider" ? "#A502CA" : "#F71875"}
+          className="w-full"
+          disabled={loading}
         >
-          Entrar
+          {loading ? 'Signing in...' : 'Sign in'}
         </Button>
-
-        {error && <p className="text-center text-sm text-red-500">{error}</p>}
       </motion.form>
 
       <motion.div

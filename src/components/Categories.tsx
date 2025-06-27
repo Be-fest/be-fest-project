@@ -37,14 +37,8 @@ const categories = [
     slug: "hamburgueria"
   },
   {
-    name: "Sorveteria",
-    image: "/images/categories-images/Sorveteria.png",
-    color: "#B0E0E6",
-    slug: "sorveteria"
-  },
-  { 
-    name: "Bar", 
-    image: "/images/categories-images/Bar.png", 
+    name: "Bar",
+    image: "/images/categories-images/Bar.png",
     color: "#98FB98",
     slug: "bar"
   },
@@ -59,7 +53,7 @@ const categories = [
     image: "/images/categories-images/cervejaria.png",
     color: "#F0E68C",
     slug: "cervejaria"
-  },
+  }
 ];
 
 interface CategoriesProps {

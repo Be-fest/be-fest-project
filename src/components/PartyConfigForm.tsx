@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { MdCalendarToday, MdLocationOn, MdGroup, MdAccessTime } from 'react-icons/md';
+import { useCart } from '@/contexts/CartContext';
 
 interface PartyConfigFormProps {
   onComplete: () => void;
@@ -46,6 +47,8 @@ const partySchema = z.object({
 type PartyFormData = z.infer<typeof partySchema>;
 
 export function PartyConfigForm({ onComplete, initialData, pendingService }: PartyConfigFormProps) {
+  const { setPartyData, addToCart } = useCart();
+  
   const {
     register,
     handleSubmit,
@@ -65,8 +68,24 @@ export function PartyConfigForm({ onComplete, initialData, pendingService }: Par
   });
 
   const onSubmit = (data: PartyFormData) => {
-    // Here you would typically make an API call to save the party data
-    console.log('Form data:', data);
+    // Save the party data
+    setPartyData(data);
+
+    // If there's a pending service, add it to the cart
+    if (pendingService) {
+      addToCart({
+        name: pendingService.serviceName,
+        serviceName: pendingService.serviceName,
+        price: pendingService.price,
+        quantity: 1,
+        providerId: pendingService.providerId,
+        providerName: pendingService.providerName,
+        category: 'service', // Default category for services
+        image: pendingService.image
+      });
+    }
+
+    // Call the completion callback
     onComplete();
   };
 
@@ -159,7 +178,11 @@ export function PartyConfigForm({ onComplete, initialData, pendingService }: Par
             <input
               type="number"
               min="0"
-              {...register('fullGuests', { valueAsNumber: true })}
+              defaultValue="0"
+              {...register('fullGuests', { 
+                valueAsNumber: true,
+                setValueAs: (value) => value === "" ? 0 : parseInt(value, 10)
+              })}
               className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none text-center"
             />
           </div>
@@ -171,7 +194,11 @@ export function PartyConfigForm({ onComplete, initialData, pendingService }: Par
             <input
               type="number"
               min="0"
-              {...register('halfGuests', { valueAsNumber: true })}
+              defaultValue="0"
+              {...register('halfGuests', { 
+                valueAsNumber: true,
+                setValueAs: (value) => value === "" ? 0 : parseInt(value, 10)
+              })}
               className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none text-center"
             />
           </div>
@@ -183,7 +210,11 @@ export function PartyConfigForm({ onComplete, initialData, pendingService }: Par
             <input
               type="number"
               min="0"
-              {...register('freeGuests', { valueAsNumber: true })}
+              defaultValue="0"
+              {...register('freeGuests', { 
+                valueAsNumber: true,
+                setValueAs: (value) => value === "" ? 0 : parseInt(value, 10)
+              })}
               className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none text-center"
             />
           </div>

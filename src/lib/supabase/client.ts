@@ -1,14 +1,16 @@
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { Database } from '@/types/supabase';
+import { Database } from '@/types/database';
 
-export const createSupabaseBrowserClient = () => {
+export const createClient = () => {
     return createClientComponentClient<Database>();
 }
+
+export const supabase = createClient();
 
 export const checkEmailExists = async (email: string) => {
   try {
     console.log('Checking email:', email);
-    const supabase = createSupabaseBrowserClient();
+    const supabase = createClient();
     const { data, error } = await supabase
       .from('users')
       .select('id')
@@ -31,7 +33,7 @@ export const checkEmailExists = async (email: string) => {
 export const checkDocumentExists = async (document: string) => {
   try {
     console.log('Checking document:', document);
-    const supabase = createSupabaseBrowserClient();
+    const supabase = createClient();
     
     // Verificar CPF
     console.log('Checking CPF...');

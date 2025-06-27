@@ -2,7 +2,7 @@
 
 // Enums baseados no schema
 export type UserRole = 'client' | 'provider';
-export type ServiceCategory = 'Comida e Bebida' | 'Decoração' | 'Entretenimento' | 'Fotografia' | 'Música' | 'Transporte';
+export type ServiceCategory = 'Comida e Bebida';
 export type BookingStatus = 'pending_provider_approval' | 'confirmed' | 'cancelled' | 'completed';
 export type PricingMethod = 'fixed_price' | 'percentage' | 'multiplier';
 export type SurchargeType = 'fixed_amount' | 'percentage';
@@ -124,31 +124,7 @@ export const mockCategories: Category[] = [
     name: 'Comida e Bebida',
     created_at: now,
     updated_at: now,
-  },
-  {
-    id: 'cat-2',
-    name: 'Decoração',
-    created_at: now,
-    updated_at: now,
-  },
-  {
-    id: 'cat-3',
-    name: 'Entretenimento',
-    created_at: now,
-    updated_at: now,
-  },
-  {
-    id: 'cat-4',
-    name: 'Fotografia',
-    created_at: now,
-    updated_at: now,
-  },
-  {
-    id: 'cat-5',
-    name: 'Música',
-    created_at: now,
-    updated_at: now,
-  },
+  }
 ];
 
 // Usuários (Prestadores)

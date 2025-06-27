@@ -104,47 +104,40 @@ export const mockProviders: Provider[] = [
   },
   {
     id: "2",
-    name: "Festa & Cia Decorações",
-    description: "Transformamos seus sonhos em realidade com decorações únicas e personalizadas para todos os tipos de eventos.",
-    category: "Decoração",
-    rating: 4.9,
-    reviewCount: 203,
+    name: "Pizzaria do Fábio",
+    description: "A melhor pizzaria da região, com sabores tradicionais e especiais.",
+    category: "Comida e Bebida",
+    rating: 4.7,
+    reviewCount: 234,
     location: {
       city: "São Paulo",
-      neighborhood: "Jardins",
+      neighborhood: "Pinheiros",
       state: "SP"
     },
-    image: "https://images.unsplash.com/photo-1464207687429-7505649dae38?w=500&h=300&fit=crop",
+    image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&h=300&fit=crop",
     contact: {
       phone: "(11) 88888-8888",
-      email: "contato@festacia.com.br",
+      email: "contato@pizzariadofabio.com.br",
       whatsapp: "5511888888888"
     },
     services: [
       {
         id: 1,
-        category: "Decoração Principal",
+        category: "Pizzas",
         items: [
           {
             id: 1,
-            name: "Decoração Infantil",
-            description: "Decoração temática completa para festas infantis",
-            price: 800.00,
-            image: "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=300&h=200&fit=crop"
+            name: "Pizza Festa Básica",
+            description: "10 pizzas grandes com até 2 sabores cada",
+            price: 300.00,
+            image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300&h=200&fit=crop"
           },
           {
             id: 2,
-            name: "Decoração Casamento",
-            description: "Decoração elegante para cerimônia e recepção",
-            price: 2500.00,
-            image: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=300&h=200&fit=crop"
-          },
-          {
-            id: 3,
-            name: "Decoração Corporativa",
-            description: "Decoração profissional para eventos empresariais",
-            price: 1200.00,
-            image: "https://images.unsplash.com/photo-1511578314322-379afb476865?w=300&h=200&fit=crop"
+            name: "Pizza Festa Premium",
+            description: "15 pizzas grandes com até 3 sabores cada + refrigerantes",
+            price: 500.00,
+            image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300&h=200&fit=crop"
           }
         ]
       }
@@ -152,95 +145,40 @@ export const mockProviders: Provider[] = [
   },
   {
     id: "3",
-    name: "SoundMax DJ",
-    description: "Som profissional e animação para sua festa. Equipamentos de última geração e DJs experientes.",
-    category: "Som e Música",
-    rating: 4.7,
-    reviewCount: 89,
+    name: "Bar do Leandro",
+    description: "Especialista em drinks e coquetéis para festas e eventos.",
+    category: "Comida e Bebida",
+    rating: 4.9,
+    reviewCount: 178,
     location: {
       city: "São Paulo",
-      neighborhood: "Moema",
+      neighborhood: "Vila Olímpia",
       state: "SP"
     },
-    image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=500&h=300&fit=crop",
+    image: "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=500&h=300&fit=crop",
     contact: {
       phone: "(11) 77777-7777",
-      email: "contato@soundmaxdj.com.br",
+      email: "contato@bardoleandro.com.br",
       whatsapp: "5511777777777"
     },
     services: [
       {
         id: 1,
-        category: "Serviços de Som",
+        category: "Drinks",
         items: [
           {
             id: 1,
-            name: "DJ + Som Básico",
-            description: "DJ profissional com equipamento de som básico",
-            price: 400.00,
-            image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=200&fit=crop"
+            name: "Open Bar Clássico",
+            description: "Drinks clássicos, cerveja, refrigerantes e água",
+            price: 50.00,
+            image: "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=300&h=200&fit=crop"
           },
           {
             id: 2,
-            name: "DJ + Som Premium",
-            description: "DJ + equipamentos profissionais + iluminação",
-            price: 800.00,
-            image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=300&h=200&fit=crop"
-          },
-          {
-            id: 3,
-            name: "Banda Ao Vivo",
-            description: "Banda completa para eventos especiais",
-            price: 1500.00,
-            image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=200&fit=crop"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    id: "4",
-    name: "Flores & Arranjos Bella",
-    description: "Arranjos florais exclusivos e personalizados para tornar seu evento ainda mais especial e memorável.",
-    category: "Flores e Arranjos",
-    rating: 4.6,
-    reviewCount: 134,
-    location: {
-      city: "São Paulo",
-      neighborhood: "Pinheiros",
-      state: "SP"
-    },
-    image: "https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=500&h=300&fit=crop",
-    contact: {
-      phone: "(11) 66666-6666",
-      email: "contato@floresbella.com.br",
-      whatsapp: "5511666666666"
-    },
-    services: [
-      {
-        id: 1,
-        category: "Arranjos Florais",
-        items: [
-          {
-            id: 1,
-            name: "Buquê de Noiva",
-            description: "Buquê personalizado para noivas",
-            price: 200.00,
-            image: "https://images.unsplash.com/photo-1462804512123-465343c607ee?w=300&h=200&fit=crop"
-          },
-          {
-            id: 2,
-            name: "Arranjos de Mesa",
-            description: "Arranjos florais para decoração de mesas",
+            name: "Open Bar Premium",
+            description: "Drinks premium, coquetéis especiais e espumante",
             price: 80.00,
-            image: "https://images.unsplash.com/photo-1470137430626-983382b6b811?w=300&h=200&fit=crop"
-          },
-          {
-            id: 3,
-            name: "Decoração Floral Completa",
-            description: "Decoração floral para todo o ambiente",
-            price: 1000.00,
-            image: "https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=300&h=200&fit=crop"
+            image: "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=300&h=200&fit=crop"
           }
         ]
       }
