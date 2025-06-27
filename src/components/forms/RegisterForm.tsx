@@ -5,6 +5,7 @@ import { Input, Button, Logo } from '@/components/ui';
 import { useForm } from '@/hooks/useForm';
 import { formatCPF, formatPhoneNumber, removeMask } from '@/utils/formatters';
 import Link from 'next/link';
+import { MdVisibility, MdVisibilityOff } from 'react-icons/md';
 
 interface RegisterFormProps {
   onSubmit: (data: RegisterFormData) => Promise<void>;
@@ -14,6 +15,8 @@ interface RegisterFormProps {
 
 export function RegisterForm({ onSubmit, userType: initialUserType = 'client', onUserTypeChange }: RegisterFormProps) {
   const [userType, setUserType] = useState<'client' | 'service_provider'>(initialUserType);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleUserTypeChange = (type: 'client' | 'service_provider') => {
     setUserType(type);
@@ -159,7 +162,7 @@ export function RegisterForm({ onSubmit, userType: initialUserType = 'client', o
           value={values.fullName}
           onChange={(e) => handleChange('fullName', e.target.value)}
           error={errors.fullName}
-          focusColor={userType === 'service_provider' ? '#A502CA' : '#FF0080'}
+          focusColor={userType === 'service_provider' ? '#A502CA' : '#F71875'}
         />
         
         <Input
@@ -171,7 +174,7 @@ export function RegisterForm({ onSubmit, userType: initialUserType = 'client', o
             handleChange('cpf', formatted);
           }}
           error={errors.cpf}
-          focusColor={userType === 'service_provider' ? '#A502CA' : '#FF0080'}
+          focusColor={userType === 'service_provider' ? '#A502CA' : '#F71875'}
           maxLength={14}
         />
         
@@ -184,7 +187,7 @@ export function RegisterForm({ onSubmit, userType: initialUserType = 'client', o
             handleChange('whatsapp', formatted);
           }}
           error={errors.whatsapp}
-          focusColor={userType === 'service_provider' ? '#A502CA' : '#FF0080'}
+          focusColor={userType === 'service_provider' ? '#A502CA' : '#F71875'}
           maxLength={15}
         />
         
@@ -194,31 +197,57 @@ export function RegisterForm({ onSubmit, userType: initialUserType = 'client', o
           value={values.email}
           onChange={(e) => handleChange('email', e.target.value)}
           error={errors.email}
-          focusColor={userType === 'service_provider' ? '#A502CA' : '#FF0080'}
+          focusColor={userType === 'service_provider' ? '#A502CA' : '#F71875'}
         />
         
-        <Input
-          type="password"
-          placeholder="Senha"
-          value={values.password}
-          onChange={(e) => handleChange('password', e.target.value)}
-          error={errors.password}
-          focusColor={userType === 'service_provider' ? '#A502CA' : '#FF0080'}
-        />
+        <div className="relative">
+          <Input
+            type={showPassword ? "text" : "password"}
+            placeholder="Senha"
+            value={values.password}
+            onChange={(e) => handleChange('password', e.target.value)}
+            error={errors.password}
+            focusColor={userType === 'service_provider' ? '#A502CA' : '#F71875'}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            {showPassword ? (
+              <MdVisibilityOff className="text-xl" />
+            ) : (
+              <MdVisibility className="text-xl" />
+            )}
+          </button>
+        </div>
         
-        <Input
-          type="password"
-          placeholder="Confirmar Senha"
-          value={values.confirmPassword}
-          onChange={(e) => handleChange('confirmPassword', e.target.value)}
-          error={errors.confirmPassword}
-          focusColor={userType === 'service_provider' ? '#A502CA' : '#FF0080'}
-        />
+        <div className="relative">
+          <Input
+            type={showConfirmPassword ? "text" : "password"}
+            placeholder="Confirmar Senha"
+            value={values.confirmPassword}
+            onChange={(e) => handleChange('confirmPassword', e.target.value)}
+            error={errors.confirmPassword}
+            focusColor={userType === 'service_provider' ? '#A502CA' : '#F71875'}
+          />
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            {showConfirmPassword ? (
+              <MdVisibilityOff className="text-xl" />
+            ) : (
+              <MdVisibility className="text-xl" />
+            )}
+          </button>
+        </div>
         
         <Button 
           type="submit" 
           isLoading={isSubmitting}
-          customColor={userType === 'service_provider' ? '#A502CA' : '#FF0080'}
+          customColor={userType === 'service_provider' ? '#A502CA' : '#F71875'}
         >
           Criar Conta
         </Button>
@@ -231,7 +260,11 @@ export function RegisterForm({ onSubmit, userType: initialUserType = 'client', o
         transition={{ duration: 0.4, delay: 0.2 }}
       >
         <span className="text-[#520029]">Já tem uma conta? </span>
-        <Link href="/auth/login" style={{ color: userType === 'service_provider' ? '#A502CA' : '#FF0080' }} className="hover:underline">
+        <Link 
+          href="/auth/login" 
+          style={{ color: userType === 'service_provider' ? '#A502CA' : '#F71875' }} 
+          className="hover:underline"
+        >
           Fazer login
         </Link>
       </motion.div>

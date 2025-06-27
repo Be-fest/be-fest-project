@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { MdCalendarToday, MdLocationOn, MdGroup, MdHome } from 'react-icons/md';
-import { useCart, PartyData } from '../contexts/CartContext';
+import React from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { MdCalendarToday, MdLocationOn, MdGroup, MdAccessTime } from 'react-icons/md';
 
 interface PartyConfigFormProps {
   onComplete: () => void;
+  initialData?: PartyFormData;
   pendingService?: {
     serviceId: string;
     serviceName: string;
@@ -17,289 +19,202 @@ interface PartyConfigFormProps {
   };
 }
 
-export function PartyConfigForm({ onComplete, pendingService }: PartyConfigFormProps) {
-  const { setPartyData, addToCart } = useCart();
-  
-  const [formData, setFormData] = useState({
-    eventName: '',
-    eventDate: '',
-    startTime: '',
-    location: '',
-    fullAddress: '',
-    fullGuests: 0,
-    halfGuests: 0,
-    freeGuests: 0
+const partySchema = z.object({
+  eventName: z.string().min(3, 'Nome do evento deve ter pelo menos 3 caracteres'),
+  eventDate: z.string().min(1, 'Data é obrigatória'),
+  startTime: z.string().min(1, 'Horário é obrigatório'),
+  location: z.string().min(5, 'Endereço deve ter pelo menos 5 caracteres'),
+  fullGuests: z.number().min(0, 'Número de convidados não pode ser negativo'),
+  halfGuests: z.number().min(0, 'Número de convidados não pode ser negativo'),
+  freeGuests: z.number().min(0, 'Número de convidados não pode ser negativo'),
+}).refine(data => {
+  const totalGuests = data.fullGuests + data.halfGuests + data.freeGuests;
+  return totalGuests > 0;
+}, {
+  message: 'Deve haver pelo menos 1 convidado',
+  path: ['fullGuests'],
+}).refine(data => {
+  const eventDate = new Date(data.eventDate);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return eventDate >= today;
+}, {
+  message: 'Data deve ser futura',
+  path: ['eventDate'],
+});
+
+type PartyFormData = z.infer<typeof partySchema>;
+
+export function PartyConfigForm({ onComplete, initialData, pendingService }: PartyConfigFormProps) {
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm<PartyFormData>({
+    resolver: zodResolver(partySchema),
+    defaultValues: initialData || {
+      eventName: '',
+      eventDate: '',
+      startTime: '',
+      location: '',
+      fullGuests: 0,
+      halfGuests: 0,
+      freeGuests: 0,
+    },
   });
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  const handleInputChange = (field: string, value: string | number) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.eventName.trim()) {
-      newErrors.eventName = 'Nome do evento é obrigatório';
-    }
-    if (!formData.eventDate) {
-      newErrors.eventDate = 'Data do evento é obrigatória';
-    }
-    if (!formData.startTime) {
-      newErrors.startTime = 'Horário é obrigatório';
-    }
-    if (!formData.location.trim()) {
-      newErrors.location = 'Local do evento é obrigatório';
-    }
-    if (!formData.fullAddress.trim()) {
-      newErrors.fullAddress = 'Endereço completo é obrigatório';
-    }
-    if (formData.fullGuests + formData.halfGuests + formData.freeGuests === 0) {
-      newErrors.guests = 'Informe pelo menos 1 convidado';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = () => {
-    if (!validateForm()) return;
-
-    const partyData: PartyData = {
-      eventName: formData.eventName,
-      eventDate: formData.eventDate,
-      startTime: formData.startTime,
-      location: `${formData.location} - ${formData.fullAddress}`,
-      fullGuests: formData.fullGuests,
-      halfGuests: formData.halfGuests,
-      freeGuests: formData.freeGuests
-    };
-
-    setPartyData(partyData);
-
-    // Se há um serviço pendente, adicionar ao carrinho
-    if (pendingService) {
-      addToCart(pendingService);
-    }
-
+  const onSubmit = (data: PartyFormData) => {
+    // Here you would typically make an API call to save the party data
+    console.log('Form data:', data);
     onComplete();
   };
 
-  return (
-    <div className="p-4 space-y-4">
-      <div className="text-center mb-6">
-        <h3 className="text-xl font-bold text-[#520029] mb-2">
-          Configure sua festa dos sonhos
-        </h3>
-        <p className="text-sm text-gray-600">
-          Preencha os dados para começar a montar seu orçamento personalizado
-        </p>
-      </div>
+  const fullGuests = watch('fullGuests');
+  const halfGuests = watch('halfGuests');
+  const freeGuests = watch('freeGuests');
+  const totalGuests = fullGuests + halfGuests + freeGuests;
 
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
       {/* Nome do Evento */}
       <div>
-        <label className="block text-sm font-medium text-[#520029] mb-2">
-          Nome do Evento *
+        <label className="block text-sm font-semibold text-[#520029] mb-2">
+          Nome do Evento
         </label>
         <input
           type="text"
-          value={formData.eventName}
-          onChange={(e) => handleInputChange('eventName', e.target.value)}
+          {...register('eventName')}
+          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none"
           placeholder="Ex: Aniversário da Maria"
-          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF0080] ${
-            errors.eventName ? 'border-red-500' : 'border-gray-300'
-          }`}
         />
         {errors.eventName && (
-          <p className="text-red-500 text-xs mt-1">{errors.eventName}</p>
+          <p className="text-red-500 text-sm mt-1">{errors.eventName.message}</p>
         )}
       </div>
 
       {/* Data e Horário */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-[#520029] mb-2">
+          <label className="block text-sm font-semibold text-[#520029] mb-2">
             <MdCalendarToday className="inline mr-1" />
-            Data do Evento *
+            Data do Evento
           </label>
           <input
             type="date"
-            value={formData.eventDate}
-            onChange={(e) => handleInputChange('eventDate', e.target.value)}
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF0080] ${
-              errors.eventDate ? 'border-red-500' : 'border-gray-300'
-            }`}
+            {...register('eventDate')}
+            min={new Date().toISOString().split('T')[0]}
+            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none"
           />
           {errors.eventDate && (
-            <p className="text-red-500 text-xs mt-1">{errors.eventDate}</p>
+            <p className="text-red-500 text-sm mt-1">{errors.eventDate.message}</p>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#520029] mb-2">
-            Horário de Início *
+          <label className="block text-sm font-semibold text-[#520029] mb-2">
+            <MdAccessTime className="inline mr-1" />
+            Horário de Início
           </label>
           <input
             type="time"
-            value={formData.startTime}
-            onChange={(e) => handleInputChange('startTime', e.target.value)}
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF0080] ${
-              errors.startTime ? 'border-red-500' : 'border-gray-300'
-            }`}
+            {...register('startTime')}
+            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none"
           />
           {errors.startTime && (
-            <p className="text-red-500 text-xs mt-1">{errors.startTime}</p>
+            <p className="text-red-500 text-sm mt-1">{errors.startTime.message}</p>
           )}
         </div>
       </div>
 
-      {/* Local do Evento */}
+      {/* Local */}
       <div>
-        <label className="block text-sm font-medium text-[#520029] mb-2">
+        <label className="block text-sm font-semibold text-[#520029] mb-2">
           <MdLocationOn className="inline mr-1" />
-          Local do Evento *
+          Local do Evento
         </label>
         <input
           type="text"
-          value={formData.location}
-          onChange={(e) => handleInputChange('location', e.target.value)}
-          placeholder="Ex: Salão de festas, Casa, Buffet..."
-          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF0080] ${
-            errors.location ? 'border-red-500' : 'border-gray-300'
-          }`}
+          {...register('location')}
+          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none"
+          placeholder="Ex: Rua das Flores, 123 - Jardins, São Paulo"
         />
         {errors.location && (
-          <p className="text-red-500 text-xs mt-1">{errors.location}</p>
+          <p className="text-red-500 text-sm mt-1">{errors.location.message}</p>
         )}
       </div>
 
-      {/* Endereço Completo */}
+      {/* Convidados */}
       <div>
-        <label className="block text-sm font-medium text-[#520029] mb-2">
-          <MdHome className="inline mr-1" />
-          Endereço Completo *
-        </label>
-        <input
-          type="text"
-          value={formData.fullAddress}
-          onChange={(e) => handleInputChange('fullAddress', e.target.value)}
-          placeholder="Rua, número, bairro, cidade"
-          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF0080] ${
-            errors.fullAddress ? 'border-red-500' : 'border-gray-300'
-          }`}
-        />
-        {errors.fullAddress && (
-          <p className="text-red-500 text-xs mt-1">{errors.fullAddress}</p>
-        )}
-      </div>
-
-      {/* Número de Convidados */}
-      <div>
-        <label className="block text-sm font-medium text-[#520029] mb-3">
+        <label className="block text-sm font-semibold text-[#520029] mb-4">
           <MdGroup className="inline mr-1" />
-          Número de Convidados *
+          Número de Convidados
         </label>
         
-        <div className="space-y-3">
-          <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-            <div>
-              <p className="font-medium text-sm">Inteira (12+ anos)</p>
-              <p className="text-xs text-gray-600">Valor integral</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => handleInputChange('fullGuests', Math.max(0, formData.fullGuests - 1))}
-                className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center"
-              >
-                -
-              </button>
-              <span className="w-12 text-center font-medium">{formData.fullGuests}</span>
-              <button
-                type="button"
-                onClick={() => handleInputChange('fullGuests', formData.fullGuests + 1)}
-                className="w-8 h-8 rounded-full bg-[#FF0080] hover:bg-[#E6006F] text-white flex items-center justify-center"
-              >
-                +
-              </button>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="text-center">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Inteira (12+ anos)
+            </label>
+            <input
+              type="number"
+              min="0"
+              {...register('fullGuests', { valueAsNumber: true })}
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none text-center"
+            />
           </div>
 
-          <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-            <div>
-              <p className="font-medium text-sm">Meia (5-11 anos)</p>
-              <p className="text-xs text-gray-600">50% do valor</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => handleInputChange('halfGuests', Math.max(0, formData.halfGuests - 1))}
-                className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center"
-              >
-                -
-              </button>
-              <span className="w-12 text-center font-medium">{formData.halfGuests}</span>
-              <button
-                type="button"
-                onClick={() => handleInputChange('halfGuests', formData.halfGuests + 1)}
-                className="w-8 h-8 rounded-full bg-[#FF0080] hover:bg-[#E6006F] text-white flex items-center justify-center"
-              >
-                +
-              </button>
-            </div>
+          <div className="text-center">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Meia (5-11 anos)
+            </label>
+            <input
+              type="number"
+              min="0"
+              {...register('halfGuests', { valueAsNumber: true })}
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none text-center"
+            />
           </div>
 
-          <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-            <div>
-              <p className="font-medium text-sm">Free (0-4 anos)</p>
-              <p className="text-xs text-gray-600">Entrada gratuita</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => handleInputChange('freeGuests', Math.max(0, formData.freeGuests - 1))}
-                className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center"
-              >
-                -
-              </button>
-              <span className="w-12 text-center font-medium">{formData.freeGuests}</span>
-              <button
-                type="button"
-                onClick={() => handleInputChange('freeGuests', formData.freeGuests + 1)}
-                className="w-8 h-8 rounded-full bg-[#FF0080] hover:bg-[#E6006F] text-white flex items-center justify-center"
-              >
-                +
-              </button>
-            </div>
+          <div className="text-center">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Free (0-4 anos)
+            </label>
+            <input
+              type="number"
+              min="0"
+              {...register('freeGuests', { valueAsNumber: true })}
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none text-center"
+            />
           </div>
         </div>
 
-        {errors.guests && (
-          <p className="text-red-500 text-xs mt-2">{errors.guests}</p>
+        {errors.fullGuests && (
+          <p className="text-red-500 text-sm mt-2">{errors.fullGuests.message}</p>
         )}
 
-        <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-          <p className="text-sm text-blue-700 font-medium">
-            Total: {formData.fullGuests + formData.halfGuests + formData.freeGuests} convidados
-          </p>
-        </div>
+        {totalGuests > 0 && (
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+            <p className="text-sm text-gray-600">
+              <strong>Total de convidados: {totalGuests}</strong>
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {fullGuests} inteira + {halfGuests} meia + {freeGuests} free
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* Botão Salvar */}
-      <div className="pt-4">
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={handleSubmit}
-          className="w-full bg-[#FF0080] hover:bg-[#E6006F] text-white font-bold py-4 rounded-lg transition-colors"
+      {/* Buttons */}
+      <div className="flex gap-4 pt-6 border-t border-gray-200">
+        <button
+          type="submit"
+          className="flex-1 px-6 py-3 bg-gradient-to-r from-[#A502CA] to-[#8B0A9E] text-white rounded-lg hover:from-[#8B0A9E] hover:to-[#520029] transition-all font-semibold"
         >
-          {pendingService ? 'Salvar Festa e Adicionar Serviço' : 'Salvar Festa'}
-        </motion.button>
+          Salvar Festa
+        </button>
       </div>
-    </div>
+    </form>
   );
 }
+

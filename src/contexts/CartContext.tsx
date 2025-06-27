@@ -1,19 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 // Tipos para o carrinho e festa
-export interface CartItem {
-  id: string;
-  serviceId: string;
-  serviceName: string;
-  providerName: string;
-  providerId: string;
-  price: number;
-  quantity: number;
-  image: string;
-}
-
 export interface PartyData {
   eventName: string;
   eventDate: string;
@@ -24,23 +13,34 @@ export interface PartyData {
   freeGuests: number; // Menores de 5 anos
 }
 
+export interface CartItem {
+  id: string;
+  name: string;
+  serviceName: string;
+  price: number;
+  quantity: number;
+  providerId: string;
+  providerName: string;
+  category: string;
+  image: string;
+}
+
 interface CartContextType {
   cartItems: CartItem[];
   partyData: PartyData | null;
-  isPartyConfigured: boolean;
-  addToCart: (item: Omit<CartItem, 'id' | 'quantity'>) => void;
+  addToCart: (item: Omit<CartItem, 'id'>) => void;
   removeFromCart: (itemId: string) => void;
   updateQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
   setPartyData: (data: PartyData) => void;
   clearPartyData: () => void;
   getTotalPrice: () => number;
-  getTotalItems: () => number;
+  getItemCount: () => number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-export function CartProvider({ children }: { children: React.ReactNode }) {
+export function CartProvider({ children }: { children: ReactNode }) {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [partyData, setPartyDataState] = useState<PartyData | null>(null);
 
@@ -78,40 +78,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [partyData]);
 
-  const addToCart = (newItem: Omit<CartItem, 'id' | 'quantity'>) => {
-    setCartItems(prevItems => {
-      const existingItem = prevItems.find(item => item.serviceId === newItem.serviceId);
-      
-      if (existingItem) {
-        // Se o item já existe, aumenta a quantidade
-        return prevItems.map(item =>
-          item.serviceId === newItem.serviceId
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      } else {
-        // Se é um novo item, adiciona com quantidade 1
-        return [...prevItems, {
-          ...newItem,
-          id: `${newItem.serviceId}-${Date.now()}`,
-          quantity: 1
-        }];
-      }
+  const addToCart = (item: Omit<CartItem, 'id'>) => {
+    setCartItems(prev => {
+      const newItem = { ...item, id: crypto.randomUUID() };
+      return [...prev, newItem];
     });
   };
 
   const removeFromCart = (itemId: string) => {
-    setCartItems(prevItems => prevItems.filter(item => item.id !== itemId));
+    setCartItems(prev => prev.filter(item => item.id !== itemId));
   };
 
   const updateQuantity = (itemId: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeFromCart(itemId);
-      return;
-    }
-
-    setCartItems(prevItems =>
-      prevItems.map(item =>
+    setCartItems(prev =>
+      prev.map(item =>
         item.id === itemId ? { ...item, quantity } : item
       )
     );
@@ -132,36 +112,28 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const getTotalPrice = () => {
-    const subtotal = cartItems.reduce((total, item) => {
-      const fullGuestPrice = item.price * (partyData?.fullGuests || 0);
-      const halfGuestPrice = (item.price * 0.5) * (partyData?.halfGuests || 0);
-      // Menores de 5 anos não pagam
-      return total + ((fullGuestPrice + halfGuestPrice) * item.quantity);
-    }, 0);
-    
-    return subtotal;
+    return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
-  const getTotalItems = () => {
+  const getItemCount = () => {
     return cartItems.reduce((total, item) => total + item.quantity, 0);
   };
 
-  const isPartyConfigured = partyData !== null;
-
   return (
-    <CartContext.Provider value={{
-      cartItems,
-      partyData,
-      isPartyConfigured,
-      addToCart,
-      removeFromCart,
-      updateQuantity,
-      clearCart,
-      setPartyData,
-      clearPartyData,
-      getTotalPrice,
-      getTotalItems
-    }}>
+    <CartContext.Provider
+      value={{
+        cartItems,
+        partyData,
+        addToCart,
+        removeFromCart,
+        updateQuantity,
+        clearCart,
+        setPartyData,
+        clearPartyData,
+        getTotalPrice,
+        getItemCount,
+      }}
+    >
       {children}
     </CartContext.Provider>
   );
@@ -170,7 +142,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 export function useCart() {
   const context = useContext(CartContext);
   if (context === undefined) {
-    throw new Error('useCart deve ser usado dentro de um CartProvider');
+    throw new Error('useCart must be used within a CartProvider');
   }
   return context;
 }

@@ -5,6 +5,7 @@ import { Input, Button, Select, Logo } from '@/components/ui';
 import { useForm } from '@/hooks/useForm';
 import { formatCNPJ, formatPhoneNumber, removeMask } from '@/utils/formatters';
 import Link from 'next/link';
+import { MdVisibility, MdVisibilityOff } from 'react-icons/md';
 
 interface ServiceProviderFormProps {
   onSubmit: (data: ServiceProviderFormData) => Promise<void>;
@@ -14,6 +15,7 @@ interface ServiceProviderFormProps {
 
 export function ServiceProviderForm({ onSubmit, userType: initialUserType = 'service_provider', onUserTypeChange }: ServiceProviderFormProps) {
   const [userType, setUserType] = useState<'client' | 'service_provider'>(initialUserType);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleUserTypeChange = (type: 'client' | 'service_provider') => {
     setUserType(type);
@@ -208,14 +210,29 @@ export function ServiceProviderForm({ onSubmit, userType: initialUserType = 'ser
           focusColor="#A502CA"
         />
         
-        <Input
-          type="password"
-          placeholder="Senha"
-          value={values.password}
-          onChange={(e) => handleChange('password', e.target.value)}
-          error={errors.password}
-          focusColor="#A502CA"
-        />        <Button type="submit" isLoading={isSubmitting} customColor="#A502CA">
+        <div className="relative">
+          <Input
+            type={showPassword ? "text" : "password"}
+            placeholder="Senha"
+            value={values.password}
+            onChange={(e) => handleChange('password', e.target.value)}
+            error={errors.password}
+            focusColor="#A502CA"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            {showPassword ? (
+              <MdVisibilityOff className="text-xl" />
+            ) : (
+              <MdVisibility className="text-xl" />
+            )}
+          </button>
+        </div>
+
+        <Button type="submit" isLoading={isSubmitting} customColor="#A502CA">
           Criar Conta
         </Button>
       </motion.form>

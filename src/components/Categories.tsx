@@ -3,52 +3,73 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { useRef, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 const categories = [
   {
     name: "Buffet",
     image: "/images/categories-images/Buffet.png",
     color: "#FFB6C1",
+    slug: "buffet"
   },
   {
     name: "Pizzaria",
     image: "/images/categories-images/Pizzaria.png",
     color: "#FFE4B5",
+    slug: "pizzaria"
   },
   {
     name: "Churrascaria",
     image: "/images/categories-images/Churrascaria.png",
     color: "#F0E68C",
+    slug: "churrascaria"
   },
   {
     name: "Doces",
     image: "/images/categories-images/Doceria.png",
     color: "#DDA0DD",
+    slug: "doces"
   },
   {
     name: "Hamburgueria",
     image: "/images/categories-images/Hamburgueria.png",
     color: "#F0E68C",
+    slug: "hamburgueria"
   },
   {
     name: "Sorveteria",
     image: "/images/categories-images/Sorveteria.png",
     color: "#B0E0E6",
+    slug: "sorveteria"
   },
-  { name: "Bar", image: "/images/categories-images/Bar.png", color: "#98FB98" },
+  { 
+    name: "Bar", 
+    image: "/images/categories-images/Bar.png", 
+    color: "#98FB98",
+    slug: "bar"
+  },
   {
     name: "Adega",
     image: "/images/categories-images/Adega.png",
     color: "#DDA0DD",
+    slug: "adega"
   },
   {
     name: "Cervejaria",
     image: "/images/categories-images/cervejaria.png",
     color: "#F0E68C",
+    slug: "cervejaria"
   },
 ];
 
-export function Categories() {
+interface CategoriesProps {
+  onCategorySelect?: (category: string) => void;
+  showScrollButtons?: boolean;
+  className?: string;
+}
+
+export function Categories({ onCategorySelect, showScrollButtons = true, className = "" }: CategoriesProps) {
+  const router = useRouter();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
@@ -87,6 +108,12 @@ export function Categories() {
     }
   };
 
+  const handleCategoryClick = (category: string) => {
+    if (onCategorySelect) {
+      onCategorySelect(category);
+    }
+  };
+
   useEffect(() => {
     const current = scrollRef.current;
     if (current) {
@@ -108,11 +135,13 @@ export function Categories() {
     }, 500);
     
     return () => clearTimeout(timer);
-  }, []);return (
-    <section className="py-4 md:py-8 bg-white">
+  }, []);
+
+  return (
+    <section className={`py-4 md:py-8 bg-white ${className}`}>
       <div className="container mx-auto px-4 md:px-6">        
         <div className="relative">
-          {hasScrollableContent && (
+          {showScrollButtons && hasScrollableContent && (
             <>
               {canScrollLeft && (
                 <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-white to-transparent z-[5] pointer-events-none" />
@@ -123,8 +152,7 @@ export function Categories() {
             </>
           )}
 
-          {/* Seta Esquerda - Abaixo de 1500px */}
-          {hasScrollableContent && canScrollLeft && (
+          {showScrollButtons && hasScrollableContent && canScrollLeft && (
             <motion.button
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
@@ -145,9 +173,10 @@ export function Categories() {
                   d="M15 19l-7-7 7-7"
                 />
               </svg>
-            </motion.button>          )}
+            </motion.button>
+          )}
 
-          {hasScrollableContent && canScrollRight && (
+          {showScrollButtons && hasScrollableContent && canScrollRight && (
             <motion.button
               initial={{ opacity: 0, x: 10 }}
               animate={{ opacity: 1, x: 0 }}
@@ -170,12 +199,14 @@ export function Categories() {
               </svg>
             </motion.button>
           )}         
+
           <motion.div
             ref={scrollRef}
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}              className={`flex justify-start 2xl:justify-center items-center gap-3 md:gap-6 overflow-x-auto pb-4 scrollbar-hide ${
-              hasScrollableContent ? 'px-10' : 'justify-center'
+            transition={{ duration: 0.6 }}
+            className={`flex justify-start 2xl:justify-center items-center gap-3 md:gap-6 overflow-x-auto pb-4 scrollbar-hide ${
+              hasScrollableContent && showScrollButtons ? 'px-10' : 'justify-center'
             }`}
             style={{ 
               scrollbarWidth: "none", 
@@ -193,6 +224,7 @@ export function Categories() {
                 transition={{ duration: 0.4, delay: index * 0.05 }}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
+                onClick={() => handleCategoryClick(category.slug)}
                 className="flex flex-col items-center gap-2 md:gap-3 font-medium cursor-pointer group min-w-[80px] md:min-w-[100px] flex-shrink-0 select-none"
               >
                 <div

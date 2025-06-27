@@ -73,7 +73,7 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-xl z-50 flex flex-col"
             >              {/* Header */}
-              <div className="bg-[#FF0080] text-white px-4 py-4 flex items-center justify-between">
+              <div className="bg-[#F71875] text-white px-4 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <MdShoppingCart className="text-2xl" />
                   <div>
@@ -98,7 +98,7 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
               {partyData && !isConfiguring && (
                 <div className="px-4 py-3 bg-gray-50 border-b">
                   <div className="flex items-start gap-2">
-                    <MdLocationOn className="text-[#FF0080] mt-1 flex-shrink-0" />
+                    <MdLocationOn className="text-[#F71875] mt-1 flex-shrink-0" />
                     <div className="text-sm">
                       <p className="font-medium text-gray-800">{partyData.eventName}</p>
                       <p className="text-gray-600">{partyData.location}</p>
@@ -133,7 +133,7 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
                     {!partyData && (
                       <button
                         onClick={() => setIsConfiguring(true)}
-                        className="bg-[#FF0080] hover:bg-[#E6006F] text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                        className="bg-[#F71875] hover:bg-[#E6006F] text-white px-6 py-2 rounded-lg font-medium transition-colors"
                       >
                         Configurar Nova Festa
                       </button>
@@ -170,14 +170,14 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
                                 </span>
                                 <button
                                   onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                  className="w-8 h-8 rounded-full bg-[#FF0080] hover:bg-[#E6006F] text-white flex items-center justify-center transition-colors"
+                                  className="w-8 h-8 rounded-full bg-[#F71875] hover:bg-[#E6006F] text-white flex items-center justify-center transition-colors"
                                 >
                                   <MdAdd className="text-sm" />
                                 </button>
                               </div>
                               
                               <div className="text-right">
-                                <p className="font-bold text-[#FF0080]">
+                                <p className="font-bold text-[#F71875]">
                                   {formatPrice(calculateItemTotal(item))}
                                 </p>
                                 <button
@@ -213,11 +213,11 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
                     <hr />
                     <div className="flex justify-between font-bold text-lg">
                       <span>Total</span>
-                      <span className="text-[#FF0080]">{formatPrice(getTotalPrice())}</span>
+                      <span className="text-[#F71875]">{formatPrice(getTotalPrice())}</span>
                     </div>
                   </div>
                   
-                  <button className="w-full bg-[#FF0080] hover:bg-[#E6006F] text-white font-bold py-4 rounded-lg transition-colors">
+                  <button className="w-full bg-[#F71875] hover:bg-[#E6006F] text-white font-bold py-4 rounded-lg transition-colors">
                     Escolher forma de pagamento
                   </button>
                 </div>

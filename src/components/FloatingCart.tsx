@@ -1,47 +1,41 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { MdShoppingCart } from 'react-icons/md';
 import { useCart } from '@/contexts/CartContext';
 import { useOffCanvas } from '@/contexts/OffCanvasContext';
+import { usePathname } from 'next/navigation';
 
 export function FloatingCart() {
-  const { getTotalPrice, getTotalItems } = useCart();
-  const { openCart } = useOffCanvas();
-  
-  const totalItems = getTotalItems();
-  const totalPrice = getTotalPrice();
+  const { getItemCount } = useCart();
+  const { openOffCanvas } = useOffCanvas();
+  const pathname = usePathname();
+  const itemCount = getItemCount();
 
-  // Não mostrar o carrinho se estiver vazio
-  if (totalItems === 0) {
-    return null;
-  }
+  // Mostrar apenas na home e na página de serviços
+  const shouldShow = pathname === '/' || pathname.startsWith('/servicos');
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
+  if (!shouldShow || itemCount === 0) return null;
 
   return (
-    <motion.div
-      initial={{ y: 100, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      className="fixed bottom-4 right-4 z-40"
-    >
+    <AnimatePresence>
       <motion.button
-        onClick={openCart}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        className="bg-[#FF0080] text-white rounded-full shadow-lg px-6 py-4 flex items-center gap-3 min-w-[160px] justify-between hover:bg-[#E6006F] transition-colors"
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0, opacity: 0 }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={openOffCanvas}
+        className="fixed bottom-6 right-6 bg-[#F71875] text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-[#E6006F] transition-colors z-30"
       >
-        <div className="flex items-center gap-2">
-          <MdShoppingCart className="text-xl" />
-          <span className="font-semibold">{totalItems}</span>
+        <div className="relative">
+          <MdShoppingCart className="text-2xl" />
+          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+            {itemCount}
+          </span>
         </div>
-        <span className="font-bold">{formatCurrency(totalPrice)}</span>
       </motion.button>
-    </motion.div>
+    </AnimatePresence>
   );
 }

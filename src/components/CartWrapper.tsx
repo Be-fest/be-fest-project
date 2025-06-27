@@ -1,16 +1,16 @@
 "use client";
 
+import React from 'react';
 import { useOffCanvas } from "@/contexts/OffCanvasContext";
 import { OffCanvasCart } from "./OffCanvasCart";
 
 export function CartWrapper() {
-  const { isCartOpen, closeCart, showPartyConfig, pendingService } = useOffCanvas();
+  const { isOpen, closeOffCanvas } = useOffCanvas();
+
   return (
-    <OffCanvasCart 
-      isOpen={isCartOpen} 
-      onClose={closeCart}
-      showPartyConfig={showPartyConfig}
-      pendingService={pendingService || undefined}
+    <OffCanvasCart
+      isOpen={isOpen}
+      onClose={closeOffCanvas}
     />
   );
 }

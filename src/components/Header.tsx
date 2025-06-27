@@ -7,6 +7,9 @@ import { Logo } from '@/components/ui';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useOffCanvas } from '@/contexts/OffCanvasContext';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import LogoutButton from './LogoutButton';
+import { useEffect } from 'react';
 
 export function Header() {
   const pathname = usePathname();
@@ -25,6 +28,31 @@ export function Header() {
 function HomeHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { isCartOpen } = useOffCanvas();
+  const [user, setUser] = useState<any>(null);
+  const [userType, setUserType] = useState<'client' | 'service_provider' | null>(null);
+  const supabase = createSupabaseBrowserClient();
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUser(user);
+        // Buscar o tipo do usuário da tabela users
+        const { data: userData } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+        
+        if (userData) {
+          setUserType(userData.role === 'provider' ? 'service_provider' : 'client');
+        }
+      }
+    };
+
+    getUser();
+  }, []);
+
   return (
     <>
       {isCartOpen && (
@@ -51,42 +79,69 @@ function HomeHeader() {
             >
               Categorias
             </ScrollLink>
-            <Link 
-              href="/faca-festa" 
-              className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
-            >
-              New Fest
-            </Link>
-            <ScrollLink 
-              to="contatos" 
-              smooth={true} 
-              duration={500} 
-              className="text-gray-600 hover:text-[#FF0080] transition-colors cursor-pointer font-poppins"
-            >
-              Contatos
-            </ScrollLink>
-            <Link 
-              href="/prestadores" 
-              className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
-            >
-              Seja um Prestador
-            </Link>
+            {user ? (
+              <>
+                <Link 
+                  href="/minhas-festas" 
+                  className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
+                >
+                  Minhas Festas
+                </Link>
+                {userType === 'service_provider' && (
+                  <Link 
+                    href="/dashboard/prestador" 
+                    className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
+                  >
+                    Dashboard
+                  </Link>
+                )}
+              </>
+            ) : (
+              <>
+                <Link 
+                  href="/faca-festa" 
+                  className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
+                >
+                  New Fest
+                </Link>
+                <ScrollLink 
+                  to="contatos" 
+                  smooth={true} 
+                  duration={500} 
+                  className="text-gray-600 hover:text-[#FF0080] transition-colors cursor-pointer font-poppins"
+                >
+                  Contatos
+                </ScrollLink>
+                <Link 
+                  href="/prestadores" 
+                  className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
+                >
+                  Seja um Prestador
+                </Link>
+              </>
+            )}
           </nav>
 
           {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <Link 
-              href="/auth/login"
-              className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
-            >
-              Entrar
-            </Link>
-            <Link 
-              href="/auth/register"
-              className="bg-[#FF0080] hover:bg-[#E6006F] text-white px-4 py-2 rounded-lg transition-colors font-poppins"
-            >
-              Cadastrar
-            </Link>
+            {user ? (
+              <LogoutButton />
+            ) : (
+              <>
+                <Link 
+                  href="/auth/login"
+                  className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
+                >
+                  Entrar
+                </Link>
+                <Link 
+                  href="/auth/register"
+                  className="bg-[#FF0080] hover:bg-[#E6006F] text-white px-4 py-2 rounded-lg transition-colors font-poppins"
+                >
+                  Cadastrar
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -117,45 +172,71 @@ function HomeHeader() {
             >
               Categorias
             </ScrollLink>
-            <Link 
-              href="/faca-festa" 
-              className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              New Fest
-            </Link>
-            <ScrollLink 
-              to="contatos" 
-              smooth={true} 
-              duration={500} 
-              className="block text-gray-600 hover:text-[#FF0080] transition-colors cursor-pointer py-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Contatos
-            </ScrollLink>
-            <Link 
-              href="/prestadores" 
-              className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Seja um Prestador
-            </Link>
-            <div className="pt-4 border-t border-gray-200 space-y-2">
-              <Link 
-                href="/auth/login"
-                className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Entrar
-              </Link>
-              <Link 
-                href="/auth/register"
-                className="block bg-[#FF0080] hover:bg-[#E6006F] text-white px-4 py-2 rounded-lg transition-colors text-center"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Cadastrar
-              </Link>
-            </div>
+            {user ? (
+              <>
+                <Link 
+                  href="/minhas-festas" 
+                  className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Minhas Festas
+                </Link>
+                {userType === 'service_provider' && (
+                  <Link 
+                    href="/dashboard/prestador" 
+                    className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Dashboard
+                  </Link>
+                )}
+                <div className="pt-4 border-t border-gray-200">
+                  <LogoutButton />
+                </div>
+              </>
+            ) : (
+              <>
+                <Link 
+                  href="/faca-festa" 
+                  className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  New Fest
+                </Link>
+                <ScrollLink 
+                  to="contatos" 
+                  smooth={true} 
+                  duration={500} 
+                  className="block text-gray-600 hover:text-[#FF0080] transition-colors cursor-pointer py-2"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Contatos
+                </ScrollLink>
+                <Link 
+                  href="/prestadores" 
+                  className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Seja um Prestador
+                </Link>
+                <div className="pt-4 border-t border-gray-200 space-y-2">
+                  <Link 
+                    href="/auth/login"
+                    className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Entrar
+                  </Link>
+                  <Link 
+                    href="/auth/register"
+                    className="block bg-[#FF0080] hover:bg-[#E6006F] text-white px-4 py-2 rounded-lg transition-colors text-center"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Cadastrar
+                  </Link>
+                </div>
+              </>
+            )}
           </nav>
         </motion.div>
       </header>
@@ -166,6 +247,30 @@ function HomeHeader() {
 // Header para a página de prestadores
 function ProviderHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [userType, setUserType] = useState<'client' | 'service_provider' | null>(null);
+  const supabase = createSupabaseBrowserClient();
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUser(user);
+        // Buscar o tipo do usuário da tabela users
+        const { data: userData } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+        
+        if (userData) {
+          setUserType(userData.role === 'provider' ? 'service_provider' : 'client');
+        }
+      }
+    };
+
+    getUser();
+  }, []);
 
   return (
     <header className="w-full bg-white shadow-sm py-4 px-6 fixed top-0 z-50">
@@ -180,58 +285,77 @@ function ProviderHeader() {
         
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-8">
-          <Link 
-            href="/"
-            className="text-gray-600 hover:text-[#A502CA] transition-colors font-poppins"
-          >
-            Para Clientes
-          </Link>
-          <ScrollLink 
-            to="beneficios"
-            smooth={true} 
-            duration={500}
-            className="text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer font-poppins"
-          >
-            Benefícios
-          </ScrollLink>
-          <ScrollLink 
-            to="como-funciona"
-            smooth={true} 
-            duration={500}
-            className="text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer font-poppins"
-          >
-            Como Funciona
-          </ScrollLink>
-          <ScrollLink 
-            to="precos"
-            smooth={true} 
-            duration={500}
-            className="text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer font-poppins"
-          >
-            Preços
-          </ScrollLink>
-          <Link 
-            href="/dashboard/prestador"
-            className="text-gray-600 hover:text-[#A502CA] transition-colors font-poppins"
-          >
-            Dashboard
-          </Link>
+          {user && userType === 'service_provider' ? (
+            <>
+              <Link 
+                href="/dashboard/prestador"
+                className="text-gray-600 hover:text-[#A502CA] transition-colors font-poppins"
+              >
+                Dashboard
+              </Link>
+              <Link 
+                href="/"
+                className="text-gray-600 hover:text-[#A502CA] transition-colors font-poppins"
+              >
+                Para Clientes
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link 
+                href="/"
+                className="text-gray-600 hover:text-[#A502CA] transition-colors font-poppins"
+              >
+                Para Clientes
+              </Link>
+              <ScrollLink 
+                to="beneficios"
+                smooth={true} 
+                duration={500}
+                className="text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer font-poppins"
+              >
+                Benefícios
+              </ScrollLink>
+              <ScrollLink 
+                to="como-funciona"
+                smooth={true} 
+                duration={500}
+                className="text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer font-poppins"
+              >
+                Como Funciona
+              </ScrollLink>
+              <ScrollLink 
+                to="precos"
+                smooth={true} 
+                duration={500}
+                className="text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer font-poppins"
+              >
+                Preços
+              </ScrollLink>
+            </>
+          )}
         </nav>
 
         {/* Desktop Auth Buttons */}
         <div className="hidden md:flex items-center space-x-4">
-          <Link 
-            href="/auth/login"
-            className="text-gray-600 hover:text-[#A502CA] transition-colors font-poppins"
-          >
-            Entrar
-          </Link>
-          <Link 
-            href="/auth/register"
-            className="bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-4 py-2 rounded-lg transition-colors font-poppins"
-          >
-            Cadastrar-se
-          </Link>
+          {user && userType === 'service_provider' ? (
+            <LogoutButton />
+          ) : (
+            <>
+              <Link 
+                href="/auth/login"
+                className="text-gray-600 hover:text-[#A502CA] transition-colors font-poppins"
+              >
+                Entrar
+              </Link>
+              <Link 
+                href="/auth/register"
+                className="bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-4 py-2 rounded-lg transition-colors font-poppins"
+              >
+                Cadastrar
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -253,63 +377,80 @@ function ProviderHeader() {
         transition={{ duration: 0.3 }}
       >
         <nav className="px-6 py-4 space-y-4">
-          <Link 
-            href="/"
-            className="block text-gray-600 hover:text-[#A502CA] transition-colors py-2"
-            onClick={() => setIsMenuOpen(false)}
-          >
-            Para Clientes
-          </Link>
-          <ScrollLink 
-            to="beneficios"
-            smooth={true} 
-            duration={500}
-            className="block text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer py-2"
-            onClick={() => setIsMenuOpen(false)}
-          >
-            Benefícios
-          </ScrollLink>
-          <ScrollLink 
-            to="como-funciona"
-            smooth={true} 
-            duration={500}
-            className="block text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer py-2"
-            onClick={() => setIsMenuOpen(false)}
-          >
-            Como Funciona
-          </ScrollLink>
-          <ScrollLink 
-            to="precos"
-            smooth={true} 
-            duration={500}
-            className="block text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer py-2"
-            onClick={() => setIsMenuOpen(false)}
-          >
-            Preços
-          </ScrollLink>
-          <Link 
-            href="/dashboard/prestador"
-            className="block text-gray-600 hover:text-[#A502CA] transition-colors py-2"
-            onClick={() => setIsMenuOpen(false)}
-          >
-            Dashboard
-          </Link>
-          <div className="pt-4 border-t border-gray-200 space-y-2">
-            <Link 
-              href="/auth/login"
-              className="block text-gray-600 hover:text-[#A502CA] transition-colors py-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Entrar
-            </Link>
-            <Link 
-              href="/auth/register"
-              className="block bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-4 py-2 rounded-lg transition-colors text-center"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Cadastrar-se
-            </Link>
-          </div>
+          {user && userType === 'service_provider' ? (
+            <>
+              <Link 
+                href="/dashboard/prestador"
+                className="block text-gray-600 hover:text-[#A502CA] transition-colors py-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Dashboard
+              </Link>
+              <Link 
+                href="/"
+                className="block text-gray-600 hover:text-[#A502CA] transition-colors py-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Para Clientes
+              </Link>
+              <div className="pt-4 border-t border-gray-200">
+                <LogoutButton />
+              </div>
+            </>
+          ) : (
+            <>
+              <Link 
+                href="/"
+                className="block text-gray-600 hover:text-[#A502CA] transition-colors py-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Para Clientes
+              </Link>
+              <ScrollLink 
+                to="beneficios"
+                smooth={true} 
+                duration={500}
+                className="block text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer py-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Benefícios
+              </ScrollLink>
+              <ScrollLink 
+                to="como-funciona"
+                smooth={true} 
+                duration={500}
+                className="block text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer py-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Como Funciona
+              </ScrollLink>
+              <ScrollLink 
+                to="precos"
+                smooth={true} 
+                duration={500}
+                className="block text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer py-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Preços
+              </ScrollLink>
+              <div className="pt-4 border-t border-gray-200 space-y-2">
+                <Link 
+                  href="/auth/login"
+                  className="block text-gray-600 hover:text-[#A502CA] transition-colors py-2"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Entrar
+                </Link>
+                <Link 
+                  href="/auth/register"
+                  className="block bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-4 py-2 rounded-lg transition-colors text-center"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Cadastrar
+                </Link>
+              </div>
+            </>
+          )}
         </nav>
       </motion.div>
     </header>

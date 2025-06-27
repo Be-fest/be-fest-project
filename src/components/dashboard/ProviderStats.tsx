@@ -3,7 +3,11 @@
 import { motion } from 'framer-motion';
 import { MdTrendingUp, MdEvent, MdStar, MdAttachMoney } from 'react-icons/md';
 
-export function ProviderStats() {
+interface ProviderStatsProps {
+  onQuickAction?: (action: string) => void;
+}
+
+export function ProviderStats({ onQuickAction }: ProviderStatsProps) {
   const stats = [
     {
       title: 'Eventos este mês',
@@ -149,16 +153,28 @@ export function ProviderStats() {
         >
           <h2 className="text-lg font-semibold text-[#520029] mb-4">Ações Rápidas</h2>
           <div className="space-y-3">
-            <button className="w-full bg-[#A502CA] hover:bg-[#8B0A9E] text-white py-3 px-4 rounded-lg font-medium transition-colors text-left">
+            <button
+              className="w-full bg-[#A502CA] hover:bg-[#8B0A9E] text-white py-3 px-4 rounded-lg font-medium transition-colors text-left"
+              onClick={() => onQuickAction && onQuickAction('addService')}
+            >
               Adicionar Novo Serviço
             </button>
-            <button className="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 py-3 px-4 rounded-lg font-medium transition-colors text-left">
+            <button
+              className="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 py-3 px-4 rounded-lg font-medium transition-colors text-left"
+              onClick={() => onQuickAction && onQuickAction('viewOrders')}
+            >
               Ver Solicitações Pendentes
             </button>
-            <button className="w-full bg-green-50 hover:bg-green-100 text-green-600 py-3 px-4 rounded-lg font-medium transition-colors text-left">
+            <button
+              className="w-full bg-green-50 hover:bg-green-100 text-green-600 py-3 px-4 rounded-lg font-medium transition-colors text-left"
+              onClick={() => onQuickAction && onQuickAction('updateProfile')}
+            >
               Atualizar Perfil
             </button>
-            <button className="w-full bg-yellow-50 hover:bg-yellow-100 text-yellow-600 py-3 px-4 rounded-lg font-medium transition-colors text-left">
+            <button
+              className="w-full bg-yellow-50 hover:bg-yellow-100 text-yellow-600 py-3 px-4 rounded-lg font-medium transition-colors text-left"
+              onClick={() => onQuickAction && onQuickAction('viewReports')}
+            >
               Ver Relatórios
             </button>
           </div>

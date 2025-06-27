@@ -1,78 +1,118 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { LoginFormData } from '@/types/auth';
-import { Input, Button, Logo } from '@/components/ui';
-import { useForm } from '@/hooks/useForm';
-import Link from 'next/link';
+"use client";
 
-interface LoginFormProps {
-  onSubmit: (data: LoginFormData) => Promise<void>;
-  userType?: 'client' | 'service_provider';
-  onUserTypeChange?: (type: 'client' | 'service_provider') => void;
-}
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Input, Button, Logo } from "@/components/ui";
+import Link from "next/link";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
+import { MdVisibility, MdVisibilityOff } from "react-icons/md";
 
-export function LoginForm({ onSubmit, userType: initialUserType = 'client', onUserTypeChange }: LoginFormProps) {
-  const [userType, setUserType] = useState<'client' | 'service_provider'>(initialUserType);
+export function LoginForm() {
+  const [userType, setUserType] = useState<"client" | "service_provider">(
+    "client"
+  );
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirectTo");
+  const supabase = createSupabaseBrowserClient();
 
-  const handleUserTypeChange = (type: 'client' | 'service_provider') => {
+  const handleUserTypeChange = (type: "client" | "service_provider") => {
     setUserType(type);
-    onUserTypeChange?.(type);
-  };
-  const validateLogin = (values: LoginFormData) => {
-    const errors: Partial<Record<keyof LoginFormData, string>> = {};
-    
-    if (!values.email) {
-      errors.email = 'E-mail é obrigatório';
-    } else if (!/\S+@\S+\.\S+/.test(values.email)) {
-      errors.email = 'E-mail inválido';
-    }
-    
-    if (!values.password) {
-      errors.password = 'Senha é obrigatória';
-    } else if (values.password.length < 6) {
-      errors.password = 'Senha deve ter pelo menos 6 caracteres';
-    }
-    
-    return errors;
   };
 
-  const { values, errors, isSubmitting, handleChange, handleSubmit } = useForm({
-    initialValues: { email: '', password: '' },
-    validate: validateLogin,
-    onSubmit
-  });
-  return (    <div className="w-full max-w-md space-y-6">
+  const handleLogin = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        setError(error.message);
+      } else if (data.user) {
+        // Buscar o tipo do usuário
+        const { data: userData } = await supabase
+          .from("users")
+          .select("role")
+          .eq("id", data.user.id)
+          .single();
+
+        if (userData?.role === "provider") {
+          router.push("/dashboard/prestador");
+        } else {
+          router.push(redirectTo || "/");
+        }
+      }
+    } catch (error) {
+      setError("Ocorreu um erro ao fazer login.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="w-full max-w-md space-y-6">
       <div className="text-center mb-6">
-        <Logo width={60} height={60} className="justify-center" />
+        {userType === "client" && (
+          <Image
+            src="/be-fest-client-logo.png"
+            alt="Be Fest Logo"
+            width={60}
+            height={60}
+            className="object-contain"
+          />
+        )}
+        {userType === "service_provider" && (
+          <Image
+            src="/be-fest-provider-logo.png"
+            alt="Be Fest Logo"
+            width={60}
+            height={60}
+            className="object-contain"
+          />
+        )}
       </div>
-      
+
       <div className="text-left space-y-2">
-        <motion.h1 
+        <motion.h1
           className="text-4xl font-bold"
-          style={{ color: userType === 'service_provider' ? '#A502CA' : '#FF0080' }}
-          animate={{ 
-            color: userType === 'service_provider' ? '#A502CA' : '#FF0080',
-            scale: [1, 1.02, 1]
+          style={{
+            color: userType === "service_provider" ? "#A502CA" : "#F71875",
+          }}
+          animate={{
+            color: userType === "service_provider" ? "#A502CA" : "#F71875",
+            scale: [1, 1.02, 1],
           }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
         >
-          Bem-vindo à Be Fest 
+          Bem-vindo à Be Fest
         </motion.h1>
         <div className="flex justify-start gap-4 text-xl">
           <motion.button
             type="button"
-            onClick={() => handleUserTypeChange('client')}
+            onClick={() => handleUserTypeChange("client")}
             className={`transition-colors cursor-pointer ${
-              userType === 'client' 
-                ? 'font-semibold' 
-                : 'text-[#520029] hover:opacity-70'
+              userType === "client"
+                ? "font-semibold"
+                : "text-[#520029] hover:opacity-70"
             }`}
-            style={{ color: userType === 'client' ? '#FF0080' : undefined }}
+            style={{ color: userType === "client" ? "#F71875" : undefined }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            animate={{ 
-              color: userType === 'client' ? '#FF0080' : '#520029',
-              fontWeight: userType === 'client' ? 600 : 400
+            animate={{
+              color: userType === "client" ? "#F71875" : "#520029",
+              fontWeight: userType === "client" ? 600 : 400,
             }}
             transition={{ duration: 0.2 }}
           >
@@ -81,18 +121,20 @@ export function LoginForm({ onSubmit, userType: initialUserType = 'client', onUs
           <span className="text-gray-400">|</span>
           <motion.button
             type="button"
-            onClick={() => handleUserTypeChange('service_provider')}
+            onClick={() => handleUserTypeChange("service_provider")}
             className={`transition-colors cursor-pointer ${
-              userType === 'service_provider' 
-                ? 'font-semibold' 
-                : 'text-[#520029] hover:opacity-70'
+              userType === "service_provider"
+                ? "font-semibold"
+                : "text-[#520029] hover:opacity-70"
             }`}
-            style={{ color: userType === 'service_provider' ? '#A502CA' : undefined }}
+            style={{
+              color: userType === "service_provider" ? "#A502CA" : undefined,
+            }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            animate={{ 
-              color: userType === 'service_provider' ? '#A502CA' : '#520029',
-              fontWeight: userType === 'service_provider' ? 600 : 400
+            animate={{
+              color: userType === "service_provider" ? "#A502CA" : "#520029",
+              fontWeight: userType === "service_provider" ? 600 : 400,
             }}
             transition={{ duration: 0.2 }}
           >
@@ -100,7 +142,7 @@ export function LoginForm({ onSubmit, userType: initialUserType = 'client', onUs
           </motion.button>
         </div>
         <AnimatePresence mode="wait">
-          <motion.p 
+          <motion.p
             key={userType}
             className="text-gray-500 mt-4 text-xl"
             initial={{ opacity: 0, y: 10 }}
@@ -108,14 +150,15 @@ export function LoginForm({ onSubmit, userType: initialUserType = 'client', onUs
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.3 }}
           >
-            {userType === 'client' 
-              ? 'Faça login e organize a festa perfeita!'
-              : 'Acesse sua conta e gerencie seus eventos!'
-            }
+            {userType === "client"
+              ? "Faça login e organize a festa perfeita!"
+              : "Acesse sua conta e gerencie seus eventos!"}
           </motion.p>
         </AnimatePresence>
-      </div>      <motion.form 
-        onSubmit={handleSubmit} 
+      </div>
+
+      <motion.form
+        onSubmit={handleLogin}
         className="space-y-4 text-[#8D8D8D]"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -124,38 +167,57 @@ export function LoginForm({ onSubmit, userType: initialUserType = 'client', onUs
         <Input
           type="email"
           placeholder="E-mail"
-          value={values.email}
-          onChange={(e) => handleChange('email', e.target.value)}
-          error={errors.email}
-          focusColor={userType === 'service_provider' ? '#A502CA' : '#FF0080'}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          focusColor={userType === "service_provider" ? "#A502CA" : "#F71875"}
         />
-        
-        <Input
-          type="password"
-          placeholder="Senha"
-          value={values.password}
-          onChange={(e) => handleChange('password', e.target.value)}
-          error={errors.password}
-          focusColor={userType === 'service_provider' ? '#A502CA' : '#FF0080'}
-        />
-        
-        <Button 
-          type="submit" 
-          isLoading={isSubmitting}
-          customColor={userType === 'service_provider' ? '#A502CA' : '#FF0080'}
+
+        <div className="relative">
+          <Input
+            type={showPassword ? "text" : "password"}
+            placeholder="Senha"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            focusColor={userType === "service_provider" ? "#A502CA" : "#F71875"}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            {showPassword ? (
+              <MdVisibilityOff className="text-xl" />
+            ) : (
+              <MdVisibility className="text-xl" />
+            )}
+          </button>
+        </div>
+
+        <Button
+          type="submit"
+          isLoading={loading}
+          customColor={userType === "service_provider" ? "#A502CA" : "#F71875"}
         >
-          Fazer login
+          Entrar
         </Button>
+
+        {error && <p className="text-center text-sm text-red-500">{error}</p>}
       </motion.form>
 
-      <motion.div 
+      <motion.div
         className="text-center"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.2 }}
       >
         <span className="text-[#520029]">Não tem uma conta? </span>
-        <Link href="/auth/register" style={{ color: userType === 'service_provider' ? '#A502CA' : '#FF0080' }} className="hover:underline">
+        <Link
+          href="/auth/register"
+          style={{
+            color: userType === "service_provider" ? "#A502CA" : "#F71875",
+          }}
+          className="hover:underline"
+        >
           Criar conta
         </Link>
       </motion.div>

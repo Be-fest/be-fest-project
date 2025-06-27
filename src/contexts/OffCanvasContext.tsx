@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 interface PendingService {
   serviceId: string;
@@ -20,14 +20,19 @@ interface OffCanvasContextType {
   toggleCart: () => void;
   openPartyConfig: (service?: PendingService) => void;
   closeConfig: () => void;
+  isOpen: boolean;
+  openOffCanvas: () => void;
+  closeOffCanvas: () => void;
+  toggleOffCanvas: () => void;
 }
 
 const OffCanvasContext = createContext<OffCanvasContextType | undefined>(undefined);
 
-export function OffCanvasProvider({ children }: { children: React.ReactNode }) {
+export function OffCanvasProvider({ children }: { children: ReactNode }) {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [showPartyConfig, setShowPartyConfig] = useState(false);
   const [pendingService, setPendingService] = useState<PendingService | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
 
   const openCart = () => {
     setIsCartOpen(true);
@@ -54,17 +59,27 @@ export function OffCanvasProvider({ children }: { children: React.ReactNode }) {
     setPendingService(null);
   };
 
+  const openOffCanvas = () => setIsOpen(true);
+  const closeOffCanvas = () => setIsOpen(false);
+  const toggleOffCanvas = () => setIsOpen(prev => !prev);
+
   return (
-    <OffCanvasContext.Provider value={{
-      isCartOpen,
-      showPartyConfig,
-      pendingService,
-      openCart,
-      closeCart,
-      toggleCart,
-      openPartyConfig,
-      closeConfig
-    }}>
+    <OffCanvasContext.Provider
+      value={{
+        isCartOpen,
+        showPartyConfig,
+        pendingService,
+        openCart,
+        closeCart,
+        toggleCart,
+        openPartyConfig,
+        closeConfig,
+        isOpen,
+        openOffCanvas,
+        closeOffCanvas,
+        toggleOffCanvas,
+      }}
+    >
       {children}
     </OffCanvasContext.Provider>
   );
@@ -73,7 +88,7 @@ export function OffCanvasProvider({ children }: { children: React.ReactNode }) {
 export function useOffCanvas() {
   const context = useContext(OffCanvasContext);
   if (context === undefined) {
-    throw new Error('useOffCanvas deve ser usado dentro de um OffCanvasProvider');
+    throw new Error('useOffCanvas must be used within an OffCanvasProvider');
   }
   return context;
 }

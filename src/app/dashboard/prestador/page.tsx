@@ -8,11 +8,37 @@ import { ServiceManagement } from '@/components/dashboard/ServiceManagement';
 import { ProviderStats } from '@/components/dashboard/ProviderStats';
 import { OrderRequests } from '@/components/dashboard/OrderRequests';
 import { ProviderProfile } from '@/components/dashboard/ProviderProfile';
+import { ServiceFormModal } from '@/components/dashboard/ServiceFormModal';
 
 type TabType = 'overview' | 'services' | 'orders' | 'profile';
 
 export default function ProviderDashboard() {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [isServiceModalOpen, setServiceModalOpen] = useState(false);
+
+  const handleOpenServiceModal = () => setServiceModalOpen(true);
+  const handleCloseServiceModal = () => setServiceModalOpen(false);
+  const handleServiceSubmit = (data: any) => {
+    // Aqui você pode adicionar lógica para salvar o serviço
+    setServiceModalOpen(false);
+  };
+
+  const handleQuickAction = (action: string) => {
+    switch (action) {
+      case 'addService':
+        setServiceModalOpen(true);
+        break;
+      case 'viewOrders':
+        setActiveTab('orders');
+        break;
+      case 'updateProfile':
+        setActiveTab('profile');
+        break;
+      case 'viewReports':
+        // Aqui você pode implementar navegação para relatórios
+        break;
+    }
+  };
 
   const tabs = [
     { id: 'overview', label: 'Visão Geral', icon: MdDashboard },
@@ -24,7 +50,7 @@ export default function ProviderDashboard() {
   const renderContent = () => {
     switch (activeTab) {
       case 'overview':
-        return <ProviderStats />;
+        return <ProviderStats onQuickAction={handleQuickAction} />;
       case 'services':
         return <ServiceManagement />;
       case 'orders':
@@ -32,7 +58,7 @@ export default function ProviderDashboard() {
       case 'profile':
         return <ProviderProfile />;
       default:
-        return <ProviderStats />;
+        return <ProviderStats onQuickAction={handleQuickAction} />;
     }
   };
 
@@ -40,11 +66,14 @@ export default function ProviderDashboard() {
     <ProviderLayout>
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
-        <div className="bg-white shadow-sm border-b">
+        <div className="bg-white shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <h1 className="text-2xl font-bold text-[#520029]">Dashboard do Prestador</h1>
-              <button className="bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
+              <button
+                className="bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+                onClick={handleOpenServiceModal}
+              >
                 <MdAdd />
                 Novo Serviço
               </button>
@@ -53,7 +82,7 @@ export default function ProviderDashboard() {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="bg-white border-b">
+        <div className="bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <nav className="flex space-x-8">
               {tabs.map((tab) => {
@@ -88,6 +117,11 @@ export default function ProviderDashboard() {
             {renderContent()}
           </motion.div>
         </div>
+        <ServiceFormModal
+          isOpen={isServiceModalOpen}
+          onClose={handleCloseServiceModal}
+          onSubmit={handleServiceSubmit}
+        />
       </div>
     </ProviderLayout>
   );
