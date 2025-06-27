@@ -131,7 +131,7 @@ export function OrderRequests() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: index * 0.1 }}
-            className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+            className="bg-white rounded-lg shadow-sm p-6"
           >
             <div className="flex justify-between items-start mb-4">
               <div>

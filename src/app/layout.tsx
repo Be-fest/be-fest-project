@@ -4,6 +4,7 @@ import { CartProvider } from "@/contexts/CartContext";
 import { OffCanvasProvider } from "@/contexts/OffCanvasContext";
 import { FloatingCart } from "@/components/FloatingCart";
 import { CartWrapper } from "@/components/CartWrapper";
+import { RoutesModal } from "@/components/ui";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -39,6 +40,7 @@ export default function RootLayout({
             {children}
             <FloatingCart />
             <CartWrapper />
+            <RoutesModal />
           </OffCanvasProvider>
         </CartProvider>
       </body>

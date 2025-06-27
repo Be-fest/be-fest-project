@@ -3,8 +3,11 @@
 import { motion } from "framer-motion";
 import { Button } from "./ui";
 import { Header } from "./Header";
+import { useOffCanvas } from "@/contexts/OffCanvasContext";
 
 export function Hero() {
+  const { openOffCanvas } = useOffCanvas();
+
   return (
     <div className="min-h-screen bg-[#FFF9F9] pt-20">
       <Header />      <div className="container max-w-7xl mx-auto px-6 py-12">
@@ -31,6 +34,7 @@ export function Hero() {
               transition={{ duration: 0.6, delay: 0.3 }}
             >
               <Button
+                onClick={openOffCanvas}
                 style={{
                   background:
                     "linear-gradient(180deg, #FF0080 0%, #CD0067 100%)",

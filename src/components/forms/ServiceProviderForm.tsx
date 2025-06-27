@@ -58,6 +58,19 @@ export function ServiceProviderForm({ onSubmit, userType, onUserTypeChange, erro
 
   return (
     <div className="w-full max-w-md space-y-6">
+      <Link
+        href="/auth/login"
+        className="inline-block mb-6"
+      >
+        <motion.div
+          whileHover={{ x: -5 }}
+          whileTap={{ scale: 0.95 }}
+          className="text-[#A502CA] text-4xl"
+        >
+          ←
+        </motion.div>
+      </Link>
+
       <div className="text-center mb-6">
         <Image
           src="/be-fest-provider-logo.png"

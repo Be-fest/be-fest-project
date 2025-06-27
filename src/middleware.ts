@@ -3,6 +3,10 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
+  // Autenticação temporariamente desabilitada para apresentação
+  return NextResponse.next();
+  
+  /* Código de autenticação comentado
   const res = NextResponse.next();
   const supabase = createMiddlewareClient({ req: request, res });
 
@@ -29,6 +33,7 @@ export async function middleware(request: NextRequest) {
   }
 
   return res;
+  */
 }
 
 export const config = {

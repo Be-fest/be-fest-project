@@ -27,7 +27,7 @@ export function Header() {
 
 function HomeHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { isCartOpen } = useOffCanvas();
+  const { isCartOpen, openOffCanvas } = useOffCanvas();
   const [user, setUser] = useState<any>(null);
   const [userType, setUserType] = useState<'client' | 'service_provider' | null>(null);
   const supabase = createSupabaseClient();
@@ -60,7 +60,7 @@ function HomeHeader() {
       )}
       
       <header 
-        className={`w-full bg-white shadow-sm py-4 px-6 fixed top-0 z-50 transition-all duration-300 ${
+        className={`w-full bg-white shadow-sm py-4 px-6 fixed top-0 z-40 transition-all duration-300 ${
           isCartOpen ? 'opacity-90' : ''
         }`}
       >
@@ -98,12 +98,15 @@ function HomeHeader() {
               </>
             ) : (
               <>
-                <Link 
-                  href="/faca-festa" 
+                <button 
+                  onClick={() => {
+                    openOffCanvas();
+                    setIsMenuOpen(false);
+                  }}
                   className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
                 >
                   New Fest
-                </Link>
+                </button>
                 <ScrollLink 
                   to="contatos" 
                   smooth={true} 
@@ -196,13 +199,15 @@ function HomeHeader() {
               </>
             ) : (
               <>
-                <Link 
-                  href="/faca-festa" 
+                <button 
+                  onClick={() => {
+                    openOffCanvas();
+                    setIsMenuOpen(false);
+                  }}
                   className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
-                  onClick={() => setIsMenuOpen(false)}
                 >
                   New Fest
-                </Link>
+                </button>
                 <ScrollLink 
                   to="contatos" 
                   smooth={true} 

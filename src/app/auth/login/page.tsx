@@ -6,7 +6,6 @@ import { LoginForm } from '@/components/forms';
 import { AuthLayout } from '@/components/AuthLayout';
 import { LoginFormData } from '@/types/auth';
 import { useRouter } from 'next/navigation';
-import { MdArrowBack } from 'react-icons/md';
 import Link from 'next/link';
 
 export default function LoginPage() {
@@ -26,14 +25,6 @@ export default function LoginPage() {
   return (
     <AuthLayout>
       <div className="relative w-full">
-        <div className="absolute top-4 left-4">
-          <Link
-            href="/"
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <MdArrowBack className="text-2xl text-[#F71875]" />
-          </Link>
-        </div>
         <motion.div
           key={userType}
           initial={{ opacity: 0, scale: 0.95 }}

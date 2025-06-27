@@ -26,21 +26,23 @@ interface ProviderServicesProps {
 
 export function ProviderServices({ services }: ProviderServicesProps) {
   const { addToCart, partyData } = useCart();
-  const { openPartyConfig } = useOffCanvas();
+  const { openOffCanvas } = useOffCanvas();
 
   const handleAddToCart = (item: ServiceItem, categoryName: string) => {
     const serviceData = {
-      serviceId: item.id.toString(),
+      name: item.name,
       serviceName: item.name,
-      providerName: categoryName,
-      providerId: '1', // Você pode passar isso como prop se necessário
       price: item.price,
+      quantity: 1,
+      providerId: '1', // Você pode passar isso como prop se necessário
+      providerName: categoryName,
+      category: 'service',
       image: item.image
     };
 
     if (!partyData) {
       // Se não há dados da festa, abre o config com o serviço pendente
-      openPartyConfig(serviceData);
+      openOffCanvas();
     } else {
       // Se já tem dados da festa, adiciona diretamente
       addToCart(serviceData);
@@ -122,7 +124,7 @@ export function ProviderServices({ services }: ProviderServicesProps) {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => openPartyConfig()}
+            onClick={() => openOffCanvas()}
             className="bg-white text-[#FF0080] px-8 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors duration-300"
           >
             New Fest

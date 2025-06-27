@@ -242,17 +242,6 @@ export function Categories({ onCategorySelect, showScrollButtons = true, classNa
             ))}
           </motion.div>
         </div>
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, delay: 1 }}
-          className="fixed bottom-6 right-6 z-50"
-        >
-          <div className="w-14 h-14 bg-green-500 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer hover:scale-110">
-            <span className="text-white text-lg font-bold">💬</span>
-          </div>
-        </motion.div>
       </div>
     </section>
   );

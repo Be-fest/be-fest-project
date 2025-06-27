@@ -26,8 +26,7 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
     partyData, 
     updateQuantity, 
     removeFromCart, 
-    getTotalPrice, 
-    getTotalItems 
+    getTotalPrice
   } = useCart();
 
   const [isConfiguring, setIsConfiguring] = useState(showPartyConfig);
@@ -62,7 +61,7 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={onClose}
-              className="fixed inset-0 bg-black bg-opacity-50 z-40"
+              className="fixed inset-0 bg-black bg-opacity-90 z-[60]"
             />
             
             {/* Off-canvas Panel */}
@@ -71,7 +70,7 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-xl z-50 flex flex-col"
+              className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-xl z-[70] flex flex-col"
             >              {/* Header */}
               <div className="bg-[#F71875] text-white px-4 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">

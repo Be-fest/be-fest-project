@@ -171,12 +171,6 @@ export function ProviderStats({ onQuickAction }: ProviderStatsProps) {
             >
               Atualizar Perfil
             </button>
-            <button
-              className="w-full bg-yellow-50 hover:bg-yellow-100 text-yellow-600 py-3 px-4 rounded-lg font-medium transition-colors text-left"
-              onClick={() => onQuickAction && onQuickAction('viewReports')}
-            >
-              Ver Relatórios
-            </button>
           </div>
         </motion.div>
       </div>

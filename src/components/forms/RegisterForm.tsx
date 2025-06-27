@@ -47,6 +47,25 @@ export const RegisterForm = ({ onSubmit, userType, onUserTypeChange, error: prop
 
   return (
     <div className="w-full max-w-md space-y-6">
+      <Link
+        href="/auth/login"
+        className="inline-block mb-6"
+      >
+        <motion.div
+          whileHover={{ x: -5 }}
+          whileTap={{ scale: 0.95 }}
+          className={`text-4xl ${
+            userType === "service_provider" ? "text-[#A502CA]" : "text-[#F71875]"
+          }`}
+          animate={{
+            color: userType === "service_provider" ? "#A502CA" : "#F71875"
+          }}
+          transition={{ duration: 0.3 }}
+        >
+          ←
+        </motion.div>
+      </Link>
+
       <div className="text-center mb-6">
         <Image
           src="/be-fest-client-logo.png"

@@ -12,6 +12,7 @@ import {
   MdFilterList,
   MdClose,
   MdMoreVert,
+  MdArrowBack,
 } from 'react-icons/md';
 import { motion } from 'framer-motion';
 import { NewPartyModal } from '@/components/NewPartyModal';
@@ -104,6 +105,15 @@ export default function MinhasFestasPage() {
   return (
     <div className="min-h-screen bg-[#FFF6FB] py-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Back Button */}
+        <Link
+          href="/"
+          className="inline-flex items-center text-[#520029] hover:text-[#A502CA] transition-colors mb-6 font-medium"
+        >
+          <MdArrowBack className="mr-2 text-xl" />
+          Voltar para Home
+        </Link>
+
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>

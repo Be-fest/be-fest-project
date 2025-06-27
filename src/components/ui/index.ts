@@ -1,4 +1,6 @@
-export { Input } from './Input';
-export { Button } from './Button';
-export { Select } from './Select';
-export { Logo } from './Logo';
+export * from './Button';
+export * from './Input';
+export * from './Logo';
+export * from './Select';
+export * from './ConfirmationModal';
+export * from './RoutesModal';

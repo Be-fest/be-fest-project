@@ -180,14 +180,6 @@ export default function RegisterPage() {
   return (
     <AuthLayout>
       <div className="relative w-full">
-        <div className="absolute top-4 left-4">
-          <Link
-            href="/auth/login"
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <MdArrowBack className="text-2xl text-[#F71875]" />
-          </Link>
-        </div>
         <AnimatePresence mode="wait">
           {userType === 'client' ? (
             <motion.div
