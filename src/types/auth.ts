@@ -5,20 +5,21 @@ export interface LoginFormData {
 
 export interface RegisterFormData {
   fullName: string;
-  cpf: string;
-  whatsapp: string;
   email: string;
   password: string;
   confirmPassword: string;
+  cpf: string;
+  phone: string;
 }
 
 export interface ServiceProviderFormData {
-  businessName: string;
-  cnpj: string;
-  whatsapp: string;
-  businessType: string;
-  serviceArea: string;
+  companyName: string;
+  email: string;
   password: string;
+  confirmPassword: string;
+  cnpj: string;
+  phone: string;
+  areaOfOperation: string;
 }
 
 export interface AuthContextType {
@@ -35,4 +36,18 @@ export interface User {
   email: string;
   fullName: string;
   type: 'client' | 'service_provider';
+}
+
+export interface RegisterFormProps {
+  onSubmit: (data: RegisterFormData) => Promise<void>;
+  userType: 'client' | 'service_provider';
+  onUserTypeChange: (type: 'client' | 'service_provider') => void;
+  error?: string;
+}
+
+export interface ServiceProviderFormProps {
+  onSubmit: (data: ServiceProviderFormData) => Promise<void>;
+  userType: 'client' | 'service_provider';
+  onUserTypeChange: (type: 'client' | 'service_provider') => void;
+  error?: string;
 }

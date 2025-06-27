@@ -20,7 +20,11 @@ interface ServiceProvider {
   category: string;
   rating: number;
   price: number;
-  location: string;
+  location: {
+    city: string;
+    neighborhood: string;
+    state: string;
+  };
   image: string;
   description: string;
 }
@@ -33,7 +37,11 @@ const serviceProviders: ServiceProvider[] = [
     category: 'buffet',
     rating: 4.8,
     price: 3500,
-    location: 'São Paulo, SP',
+    location: {
+      city: 'São Paulo',
+      neighborhood: 'Centro',
+      state: 'SP'
+    },
     image: '/images/providers/buffet.jpg',
     description: 'Buffet completo para festas, incluindo entrada, prato principal, sobremesas e bebidas.',
   },
@@ -43,7 +51,11 @@ const serviceProviders: ServiceProvider[] = [
     category: 'musica',
     rating: 4.5,
     price: 1200,
-    location: 'São Paulo, SP',
+    location: {
+      city: 'São Paulo',
+      neighborhood: 'Vila Mariana',
+      state: 'SP'
+    },
     image: '/images/providers/dj.jpg',
     description: 'DJ profissional com equipamento completo de som e iluminação.',
   },
@@ -181,7 +193,7 @@ export default function ServicosPage() {
 
                 <p className="text-sm text-gray-500 flex items-center gap-1 mb-4">
                   <MdLocationOn />
-                  {provider.location}
+                  {provider.location.neighborhood}, {provider.location.city}
                 </p>
 
                 <p className="text-gray-700 text-sm mb-6">

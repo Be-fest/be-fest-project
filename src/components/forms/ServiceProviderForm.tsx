@@ -1,160 +1,109 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ServiceProviderFormData } from '@/types/auth';
-import { Input, Button, Select, Logo } from '@/components/ui';
+import { motion } from 'framer-motion';
+import { ServiceProviderFormData, ServiceProviderFormProps } from '@/types/auth';
+import { Input, Button } from '@/components/ui';
 import { useForm } from '@/hooks/useForm';
-import { formatCNPJ, formatPhoneNumber, removeMask } from '@/utils/formatters';
+import { formatCNPJ, formatPhoneNumber } from '@/utils/formatters';
 import Link from 'next/link';
 import { MdVisibility, MdVisibilityOff } from 'react-icons/md';
+import Image from 'next/image';
 
-interface ServiceProviderFormProps {
-  onSubmit: (data: ServiceProviderFormData) => Promise<void>;
-  userType?: 'client' | 'service_provider';
-  onUserTypeChange?: (type: 'client' | 'service_provider') => void;
-}
-
-export function ServiceProviderForm({ onSubmit, userType: initialUserType = 'service_provider', onUserTypeChange }: ServiceProviderFormProps) {
-  const [userType, setUserType] = useState<'client' | 'service_provider'>(initialUserType);
+export function ServiceProviderForm({ onSubmit, userType, onUserTypeChange, error }: ServiceProviderFormProps) {
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState('');
 
-  const handleUserTypeChange = (type: 'client' | 'service_provider') => {
-    setUserType(type);
-    onUserTypeChange?.(type);
-  };  const serviceAreaOptions = [
-    { value: '', label: 'Selecione sua área de atuação' },
-    { value: 'comida-bebida', label: 'Comida e Bebida' },
-    { value: 'entretenimento', label: 'Entretenimento' },
-    { value: 'alugueis', label: 'Alugueis' },
-    { value: 'profissionais', label: 'Profissionais' },
-    { value: 'espaco', label: 'Espaço' },
-    { value: 'organizacao', label: 'Organização' },
-    { value: 'design', label: 'Design' },
-    { value: 'mobilia', label: 'Mobília' },
-    { value: 'equipamento', label: 'Equipamento' }
-  ];
-
-  const validateServiceProvider = (values: ServiceProviderFormData) => {
-    const errors: Partial<Record<keyof ServiceProviderFormData, string>> = {};
-    
-    if (!values.businessName) {
-      errors.businessName = 'Nome do proprietário é obrigatório';
+  const { values, handleChange } = useForm<ServiceProviderFormData>({
+    initialValues: {
+      companyName: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      cnpj: '',
+      phone: '',
+      areaOfOperation: '',
     }
-    
-    if (!values.cnpj) {
-      errors.cnpj = 'CNPJ é obrigatório';
-    } else if (removeMask(values.cnpj).length !== 14) {
-      errors.cnpj = 'CNPJ deve ter 14 dígitos';
-    }
-    
-    if (!values.whatsapp) {
-      errors.whatsapp = 'WhatsApp é obrigatório';
-    } else if (removeMask(values.whatsapp).length < 10) {
-      errors.whatsapp = 'Número de telefone inválido';
-    }
-    
-    if (!values.businessType) {
-      errors.businessType = 'Nome da organização é obrigatório';
-    }
-    
-    if (!values.serviceArea) {
-      errors.serviceArea = 'Área de atuação é obrigatória';
-    }
-    
-    if (!values.password) {
-      errors.password = 'Senha é obrigatória';
-    } else if (values.password.length < 6) {
-      errors.password = 'Senha deve ter pelo menos 6 caracteres';
-    }
-    
-    return errors;
-  };
-
-  const { values, errors, isSubmitting, handleChange, handleSubmit } = useForm({
-    initialValues: { 
-      businessName: '', 
-      cnpj: '', 
-      whatsapp: '', 
-      businessType: '', 
-      serviceArea: '', 
-      password: '' 
-    },
-    validate: validateServiceProvider,
-    onSubmit
   });
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setFormError('');
+
+    // Validações
+    if (!values.companyName || !values.email || !values.password || !values.confirmPassword || !values.cnpj || !values.phone || !values.areaOfOperation) {
+      setFormError('Por favor, preencha todos os campos');
+      return;
+    }
+
+    if (values.password !== values.confirmPassword) {
+      setFormError('As senhas não coincidem');
+      return;
+    }
+
+    if (values.password.length < 6) {
+      setFormError('A senha deve ter pelo menos 6 caracteres');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await onSubmit(values);
+    } catch (error) {
+      console.error('Form submission error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="w-full max-w-md space-y-6">
       <div className="text-center mb-6">
-        <Logo width={60} height={60} className="justify-center" />
+        <Image
+          src="/be-fest-provider-logo.png"
+          alt="Be Fest Logo"
+          width={60}
+          height={60}
+          className="object-contain"
+        />
       </div>
-      
+
       <div className="text-left space-y-2">
-        <motion.h1 
-          className="text-4xl font-bold"
-          style={{ color: userType === 'service_provider' ? '#A502CA' : '#FF0080' }}
-          animate={{ 
-            color: userType === 'service_provider' ? '#A502CA' : '#FF0080',
-            scale: [1, 1.02, 1]
-          }}
+        <motion.h1
+          className="text-4xl font-bold text-[#A502CA]"
+          animate={{ scale: [1, 1.02, 1] }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
         >
-          Bem-vindo à Be Fest 
+          Criar Conta
         </motion.h1>
         <div className="flex justify-start gap-4 text-xl">
           <motion.button
             type="button"
-            onClick={() => handleUserTypeChange('client')}
-            className={`transition-colors cursor-pointer ${
-              userType === 'client' 
-                ? 'font-semibold' 
-                : 'text-[#520029] hover:opacity-70'
-            }`}
-            style={{ color: userType === 'client' ? '#FF0080' : undefined }}
+            onClick={() => onUserTypeChange('client')}
+            className="text-[#520029] hover:opacity-70"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            animate={{ 
-              color: userType === 'client' ? '#FF0080' : '#520029',
-              fontWeight: userType === 'client' ? 600 : 400
-            }}
-            transition={{ duration: 0.2 }}
           >
             Sou Cliente
           </motion.button>
           <span className="text-gray-400">|</span>
           <motion.button
             type="button"
-            onClick={() => handleUserTypeChange('service_provider')}
-            className={`transition-colors cursor-pointer ${
-              userType === 'service_provider' 
-                ? 'font-semibold' 
-                : 'text-[#520029] hover:opacity-70'
-            }`}
-            style={{ color: userType === 'service_provider' ? '#A502CA' : undefined }}
+            onClick={() => onUserTypeChange('service_provider')}
+            className="font-semibold text-[#A502CA]"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            animate={{ 
-              color: userType === 'service_provider' ? '#A502CA' : '#520029',
-              fontWeight: userType === 'service_provider' ? 600 : 400
-            }}
-            transition={{ duration: 0.2 }}
           >
             Sou Prestador
           </motion.button>
         </div>
-        <AnimatePresence mode="wait">
-          <motion.p 
-            key={userType}
-            className="text-gray-500 mt-4 text-lg"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.3 }}
-          >
-            Cadastre seu negócio e comece a receber solicitações para eventos agora mesmo!
-          </motion.p>
-        </AnimatePresence>
-      </div>      <motion.form 
-        onSubmit={handleSubmit} 
+        <p className="text-gray-500 mt-4 text-xl">
+          Cadastre seu negócio e comece a receber solicitações para eventos!
+        </p>
+      </div>
+
+      <motion.form
+        onSubmit={handleSubmit}
         className="space-y-4 text-[#8D8D8D]"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -162,61 +111,29 @@ export function ServiceProviderForm({ onSubmit, userType: initialUserType = 'ser
       >
         <Input
           type="text"
-          placeholder="Nome do proprietário"
-          value={values.businessName}
-          onChange={(e) => handleChange('businessName', e.target.value)}
-          error={errors.businessName}
+          name="companyName"
+          placeholder="Nome da empresa"
+          value={values.companyName}
+          onChange={handleChange}
           focusColor="#A502CA"
         />
-          <Input
-          type="text"
-          placeholder="CNPJ"
-          value={values.cnpj}
-          onChange={(e) => {
-            const formatted = formatCNPJ(e.target.value);
-            handleChange('cnpj', formatted);
-          }}
-          error={errors.cnpj}
-          focusColor="#A502CA"
-          maxLength={18}
-        />
-        
+
         <Input
-          type="text"
-          placeholder="WhatsApp"
-          value={values.whatsapp}
-          onChange={(e) => {
-            const formatted = formatPhoneNumber(e.target.value);
-            handleChange('whatsapp', formatted);
-          }}
-          error={errors.whatsapp}
-          focusColor="#A502CA"
-          maxLength={15}
-        />
-        
-        <Input
-          type="text"
-          placeholder="Nome da organização"
-          value={values.businessType}
-          onChange={(e) => handleChange('businessType', e.target.value)}
-          error={errors.businessType}
+          type="email"
+          name="email"
+          placeholder="E-mail"
+          value={values.email}
+          onChange={handleChange}
           focusColor="#A502CA"
         />
-          <Select
-          value={values.serviceArea}
-          onChange={(e) => handleChange('serviceArea', e.target.value)}
-          options={serviceAreaOptions}
-          error={errors.serviceArea}
-          focusColor="#A502CA"
-        />
-        
+
         <div className="relative">
           <Input
             type={showPassword ? "text" : "password"}
+            name="password"
             placeholder="Senha"
             value={values.password}
-            onChange={(e) => handleChange('password', e.target.value)}
-            error={errors.password}
+            onChange={handleChange}
             focusColor="#A502CA"
           />
           <button
@@ -232,19 +149,81 @@ export function ServiceProviderForm({ onSubmit, userType: initialUserType = 'ser
           </button>
         </div>
 
-        <Button type="submit" isLoading={isSubmitting} customColor="#A502CA">
+        <div className="relative">
+          <Input
+            type={showConfirmPassword ? "text" : "password"}
+            name="confirmPassword"
+            placeholder="Confirmar senha"
+            value={values.confirmPassword}
+            onChange={handleChange}
+            focusColor="#A502CA"
+          />
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            {showConfirmPassword ? (
+              <MdVisibilityOff className="text-xl" />
+            ) : (
+              <MdVisibility className="text-xl" />
+            )}
+          </button>
+        </div>
+
+        <Input
+          type="text"
+          name="cnpj"
+          placeholder="CNPJ"
+          value={formatCNPJ(values.cnpj)}
+          onChange={handleChange}
+          focusColor="#A502CA"
+        />
+
+        <Input
+          type="text"
+          name="phone"
+          placeholder="WhatsApp"
+          value={formatPhoneNumber(values.phone)}
+          onChange={handleChange}
+          focusColor="#A502CA"
+        />
+
+        <Input
+          type="text"
+          name="areaOfOperation"
+          placeholder="Área de atuação"
+          value={values.areaOfOperation}
+          onChange={handleChange}
+          focusColor="#A502CA"
+        />
+
+        <Button
+          type="submit"
+          isLoading={loading}
+          customColor="#A502CA"
+        >
           Criar Conta
         </Button>
+
+        {(error || formError) && (
+          <p className="text-center text-sm text-red-500">
+            {error || formError}
+          </p>
+        )}
       </motion.form>
 
-      <motion.div 
+      <motion.div
         className="text-center"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.2 }}
       >
         <span className="text-[#520029]">Já tem uma conta? </span>
-        <Link href="/auth/login" style={{ color: '#A502CA' }} className="hover:underline">
+        <Link
+          href="/auth/login"
+          className="text-[#A502CA] hover:underline"
+        >
           Fazer login
         </Link>
       </motion.div>

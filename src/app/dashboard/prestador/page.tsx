@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { MdDashboard, MdAdd, MdBusiness, MdBarChart, MdNotifications } from 'react-icons/md';
+import { MdDashboard, MdAdd, MdBusiness, MdBarChart, MdNotifications, MdArrowBack } from 'react-icons/md';
 import { ProviderLayout } from '@/components/dashboard/ProviderLayout';
 import { ServiceManagement } from '@/components/dashboard/ServiceManagement';
 import { ProviderStats } from '@/components/dashboard/ProviderStats';
 import { OrderRequests } from '@/components/dashboard/OrderRequests';
 import { ProviderProfile } from '@/components/dashboard/ProviderProfile';
 import { ServiceFormModal } from '@/components/dashboard/ServiceFormModal';
+import Link from 'next/link';
 
 type TabType = 'overview' | 'services' | 'orders' | 'profile';
 
@@ -69,7 +70,15 @@ export default function ProviderDashboard() {
         <div className="bg-white shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
-              <h1 className="text-2xl font-bold text-[#520029]">Dashboard do Prestador</h1>
+              <div className="flex items-center gap-4">
+                <Link
+                  href="/"
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <MdArrowBack className="text-2xl text-[#A502CA]" />
+                </Link>
+                <h1 className="text-2xl font-bold text-[#520029]">Dashboard do Prestador</h1>
+              </div>
               <button
                 className="bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
                 onClick={handleOpenServiceModal}
@@ -117,6 +126,8 @@ export default function ProviderDashboard() {
             {renderContent()}
           </motion.div>
         </div>
+
+        {/* Service Form Modal */}
         <ServiceFormModal
           isOpen={isServiceModalOpen}
           onClose={handleCloseServiceModal}
