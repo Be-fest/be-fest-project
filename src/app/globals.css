@@ -1,8 +1,78 @@
 @import "tailwindcss";
 
 :root {
+  /* Cores Padrão (Cliente) */
+  --color-primary: #FF9EC5;
+  --color-primary-dark: #e68cb0;
+  --color-primary-light: #ffcde0;
+  --color-text-title: #520029;
+  --color-text-secondary: #8D8D8D;
+  --color-bg-light: #FFF6FB;
   --background: #FFF9F9;
   --foreground: #171717;
+}
+
+.theme-admin {
+  --color-primary: #FF0080;
+  --color-primary-dark: #e60073;
+  --color-primary-light: #ff4da6;
+  --color-text-title: #3d001e;
+  --color-text-secondary: #8D8D8D;
+  --color-bg-light: #FFFBFD;
+}
+
+.theme-provider {
+  --color-primary: #A502CA;
+  --color-primary-dark: #8B0A9E;
+  --color-primary-light: #c457e8;
+  --color-text-title: #520029;
+  --color-text-secondary: #8D8D8D;
+  --color-bg-light: #FFF6FB;
+}
+
+/* Utility classes para usar as variáveis CSS */
+.text-primary {
+  color: var(--color-primary);
+}
+
+.text-primary-dark {
+  color: var(--color-primary-dark);
+}
+
+.text-title {
+  color: var(--color-text-title);
+}
+
+.bg-primary {
+  background-color: var(--color-primary);
+}
+
+.bg-primary-dark {
+  background-color: var(--color-primary-dark);
+}
+
+.bg-primary-light {
+  background-color: var(--color-primary-light);
+}
+
+.bg-light {
+  background-color: var(--color-bg-light);
+}
+
+.border-primary {
+  border-color: var(--color-primary);
+}
+
+.hover\:bg-primary:hover {
+  background-color: var(--color-primary);
+}
+
+.hover\:bg-primary-dark:hover {
+  background-color: var(--color-primary-dark);
+}
+
+.focus\:ring-primary:focus {
+  --tw-ring-color: var(--color-primary);
 }
 
 html {

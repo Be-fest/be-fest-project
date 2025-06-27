@@ -36,6 +36,15 @@ const routes = [
       { name: 'Login', path: '/auth/login' },
       { name: 'Cadastro', path: '/auth/register' },
     ]
+  },
+  {
+    title: 'Área Administrativa',
+    routes: [
+      { name: 'Dashboard Admin', path: '/admin' },
+      { name: 'Pedidos', path: '/admin/pedidos' },
+      { name: 'Clientes', path: '/admin/clientes' },
+      { name: 'Prestadores', path: '/admin/prestadores' },
+    ]
   }
 ];
 
