@@ -22,7 +22,8 @@ import {
   MdCancel as MdCancelIcon,
   MdPending,
   MdWarning,
-  MdDashboard
+  MdDashboard,
+  MdAdd
 } from 'react-icons/md';
 import { Button, Input, ConfirmationModal } from '@/components/ui';
 import { updateCompleteProfileAction, deleteAccountAction } from '@/lib/actions/auth';
@@ -224,19 +225,31 @@ export default function ProfileClient({ user, events, stats }: ProfileClientProp
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl shadow-sm p-6"
+            className="bg-gradient-to-r from-[#FF0080]/5 to-[#A502CA]/5 rounded-2xl shadow-sm p-8 border border-[#FF0080]/10"
           >
             <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-[#520029] mb-2">
-                  Olá, {user.full_name || user.email?.split('@')[0] || 'Usuário'}! 👋
-                </h1>
-                <p className="text-gray-600">
+              <div className="flex-1">
+                <div className="flex items-center space-x-4 mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-r from-[#FF0080] to-[#A502CA] rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-lg">
+                    {(user.full_name || user.email || 'U').charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <h1 className="text-3xl font-bold text-[#520029] mb-1">
+                      Olá, {user.full_name || user.email?.split('@')[0] || 'Usuário'}! 👋
+                    </h1>
+                    <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-[#FF0080]/10 text-[#FF0080]">
+                      🎉 Área do Cliente
+                    </div>
+                  </div>
+                </div>
+                <p className="text-gray-600 text-lg">
                   Bem-vindo à sua área pessoal. Aqui você pode gerenciar suas festas e perfil.
                 </p>
               </div>
-              <div className="hidden sm:block">
-                <MdDashboard className="text-4xl text-[#FF0080]" />
+              <div className="hidden lg:block">
+                <div className="w-24 h-24 bg-gradient-to-r from-[#FF0080]/20 to-[#A502CA]/20 rounded-2xl flex items-center justify-center">
+                  <MdDashboard className="text-5xl text-[#FF0080]" />
+                </div>
               </div>
             </div>
           </motion.div>
@@ -255,15 +268,15 @@ export default function ProfileClient({ user, events, stats }: ProfileClientProp
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="bg-white rounded-xl shadow-sm p-4"
+                  className="bg-white rounded-2xl shadow-sm p-6 hover:shadow-lg transition-all duration-300 border border-gray-100 group"
                 >
-                  <div className="flex items-center">
-                    <div className={`p-3 rounded-lg ${stat.color}`}>
-                      <stat.icon className="text-xl text-white" />
+                  <div className="flex items-center space-x-4">
+                    <div className={`p-4 rounded-xl ${stat.color} group-hover:scale-110 transition-transform duration-300 shadow-md`}>
+                      <stat.icon className="text-2xl text-white" />
                     </div>
-                    <div className="ml-4">
-                      <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                      <p className="text-sm text-gray-600">{stat.label}</p>
+                    <div className="flex-1">
+                      <p className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</p>
+                      <p className="text-sm font-medium text-gray-600">{stat.label}</p>
                     </div>
                   </div>
                 </motion.div>
@@ -276,14 +289,19 @@ export default function ProfileClient({ user, events, stats }: ProfileClientProp
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="bg-white rounded-xl shadow-sm"
+            className="bg-white rounded-2xl shadow-sm border border-gray-100"
           >
-            <div className="p-6 border-b border-gray-200">
+            <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-[#520029]">Festas Recentes</h3>
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gradient-to-r from-[#FF0080]/10 to-[#A502CA]/10 rounded-xl flex items-center justify-center">
+                    <MdCelebration className="text-xl text-[#FF0080]" />
+                  </div>
+                  <h3 className="text-xl font-bold text-[#520029]">Festas Recentes</h3>
+                </div>
                 <button
                   onClick={() => handleTabChange('events')}
-                  className="text-[#FF0080] hover:text-[#E6006F] text-sm font-medium"
+                  className="px-4 py-2 bg-[#FF0080]/10 text-[#FF0080] hover:bg-[#FF0080] hover:text-white rounded-xl font-medium transition-all duration-200"
                 >
                   Ver Todas
                 </button>
@@ -292,31 +310,34 @@ export default function ProfileClient({ user, events, stats }: ProfileClientProp
             {events.length > 0 ? (
               <div className="divide-y divide-gray-200">
                 {events.slice(0, 3).map((event) => (
-                  <div key={event.id} className="p-6 hover:bg-gray-50">
+                  <div key={event.id} className="p-6 hover:bg-gradient-to-r hover:from-[#FF0080]/5 hover:to-[#A502CA]/5 transition-all duration-200 group">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center space-x-3">
-                          <h4 className="font-medium text-gray-900">{event.title}</h4>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(event.status)}`}>
+                        <div className="flex items-center space-x-3 mb-3">
+                          <div className="w-8 h-8 bg-gradient-to-r from-[#FF0080]/20 to-[#A502CA]/20 rounded-lg flex items-center justify-center">
+                            <MdCelebration className="text-sm text-[#FF0080]" />
+                          </div>
+                          <h4 className="font-semibold text-gray-900 text-lg">{event.title}</h4>
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(event.status)}`}>
                             {getStatusText(event.status)}
                           </span>
                         </div>
-                        <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
-                          <span className="flex items-center space-x-1">
-                            <MdCalendarToday />
-                            <span>{formatDate(event.event_date)}</span>
+                        <div className="flex items-center space-x-6 text-sm text-gray-500">
+                          <span className="flex items-center space-x-2">
+                            <MdCalendarToday className="text-[#FF0080]" />
+                            <span className="font-medium">{formatDate(event.event_date)}</span>
                           </span>
                           {event.location && (
-                            <span className="flex items-center space-x-1">
-                              <MdLocationOn />
-                              <span>{event.location}</span>
+                            <span className="flex items-center space-x-2">
+                              <MdLocationOn className="text-[#FF0080]" />
+                              <span className="font-medium">{event.location}</span>
                             </span>
                           )}
                         </div>
                       </div>
                       <Link
                         href={`/minhas-festas/${event.id}`}
-                        className="text-[#FF0080] hover:text-[#E6006F] text-sm font-medium"
+                        className="px-4 py-2 bg-[#FF0080]/10 text-[#FF0080] hover:bg-[#FF0080] hover:text-white rounded-xl font-medium transition-all duration-200 group-hover:shadow-md"
                       >
                         Ver Detalhes
                       </Link>
@@ -325,16 +346,21 @@ export default function ProfileClient({ user, events, stats }: ProfileClientProp
                 ))}
               </div>
             ) : (
-              <div className="p-12 text-center text-gray-500">
-                <MdCelebration className="text-6xl mx-auto mb-4 opacity-30" />
-                <h3 className="text-xl font-medium mb-2">Nenhuma festa criada</h3>
-                <p className="mb-4">Comece criando sua primeira festa!</p>
-                              <Link
-                href="/servicos"
-                className="bg-[#FF0080] text-white px-6 py-3 rounded-lg hover:bg-[#E6006F] transition-colors inline-block"
-              >
-                Explorar Serviços
-              </Link>
+              <div className="p-12 text-center">
+                <div className="w-24 h-24 bg-gradient-to-r from-[#FF0080]/10 to-[#A502CA]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <MdCelebration className="text-4xl text-[#FF0080]/50" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-700 mb-3">Nenhuma festa criada</h3>
+                <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                  Comece criando sua primeira festa e explore nossos incríveis serviços para tornar seu evento inesquecível!
+                </p>
+                <Link
+                  href="/servicos"
+                  className="inline-flex items-center space-x-2 bg-gradient-to-r from-[#FF0080] to-[#A502CA] text-white px-8 py-4 rounded-xl hover:shadow-lg transition-all duration-300 font-semibold"
+                >
+                  <MdCelebration className="text-xl" />
+                  <span>Explorar Serviços</span>
+                </Link>
               </div>
             )}
           </motion.div>
@@ -343,66 +369,82 @@ export default function ProfileClient({ user, events, stats }: ProfileClientProp
 
       {/* Events Tab */}
       {activeTab === 'events' && (
-        <div className="bg-white rounded-xl shadow-sm">
-          <div className="p-6 border-b border-gray-200">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+          <div className="p-6 border-b border-gray-100">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-[#520029]">Todas as Minhas Festas</h3>
-                          <Link
-              href="/servicos"
-              className="bg-[#FF0080] text-white px-4 py-2 rounded-lg hover:bg-[#E6006F] transition-colors"
-            >
-              Explorar Serviços
-            </Link>
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-gradient-to-r from-[#FF0080]/10 to-[#A502CA]/10 rounded-xl flex items-center justify-center">
+                  <MdCelebration className="text-2xl text-[#FF0080]" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-[#520029]">Todas as Minhas Festas</h3>
+                  <p className="text-gray-500">Gerencie todos os seus eventos</p>
+                </div>
+              </div>
+              <Link
+                href="/servicos"
+                className="inline-flex items-center space-x-2 bg-gradient-to-r from-[#FF0080] to-[#A502CA] text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all duration-300 font-semibold"
+              >
+                <MdAdd className="text-lg" />
+                <span>Explorar Serviços</span>
+              </Link>
             </div>
           </div>
           {events.length > 0 ? (
-            <div className="divide-y divide-gray-200">
+            <div className="divide-y divide-gray-100">
               {events.map((event) => (
                 <motion.div
                   key={event.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="p-6 hover:bg-gray-50"
+                  className="p-6 hover:bg-gradient-to-r hover:from-[#FF0080]/5 hover:to-[#A502CA]/5 transition-all duration-200 group"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center space-x-3">
-                        <h4 className="text-lg font-medium text-gray-900">{event.title}</h4>
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(event.status)}`}>
-                          {getStatusText(event.status)}
-                        </span>
+                      <div className="flex items-center space-x-4 mb-3">
+                        <div className="w-12 h-12 bg-gradient-to-r from-[#FF0080]/20 to-[#A502CA]/20 rounded-xl flex items-center justify-center">
+                          <MdCelebration className="text-xl text-[#FF0080]" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3 mb-1">
+                            <h4 className="text-xl font-bold text-gray-900">{event.title}</h4>
+                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(event.status)}`}>
+                              {getStatusText(event.status)}
+                            </span>
+                          </div>
+                          {event.description && (
+                            <p className="text-gray-600 text-sm">{event.description}</p>
+                          )}
+                        </div>
                       </div>
-                      {event.description && (
-                        <p className="text-gray-600 mt-1">{event.description}</p>
-                      )}
-                      <div className="flex items-center space-x-6 mt-3 text-sm text-gray-500">
-                        <span className="flex items-center space-x-1">
-                          <MdCalendarToday />
-                          <span>{formatDate(event.event_date)}</span>
-                        </span>
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                        <div className="flex items-center space-x-2 text-gray-600">
+                          <MdCalendarToday className="text-[#FF0080]" />
+                          <span className="font-medium">{formatDate(event.event_date)}</span>
+                        </div>
                         {event.location && (
-                          <span className="flex items-center space-x-1">
-                            <MdLocationOn />
-                            <span>{event.location}</span>
-                          </span>
+                          <div className="flex items-center space-x-2 text-gray-600">
+                            <MdLocationOn className="text-[#FF0080]" />
+                            <span className="font-medium">{event.location}</span>
+                          </div>
                         )}
                         {event.guest_count && (
-                          <span className="flex items-center space-x-1">
-                            <MdPeople />
-                            <span>{event.guest_count} convidados</span>
-                          </span>
+                          <div className="flex items-center space-x-2 text-gray-600">
+                            <MdPeople className="text-[#FF0080]" />
+                            <span className="font-medium">{event.guest_count} convidados</span>
+                          </div>
                         )}
                         {event.budget && (
-                          <span className="flex items-center space-x-1">
-                            <MdAttachMoney />
-                            <span>{formatCurrency(event.budget)}</span>
-                          </span>
+                          <div className="flex items-center space-x-2 text-gray-600">
+                            <MdAttachMoney className="text-[#FF0080]" />
+                            <span className="font-medium">{formatCurrency(event.budget)}</span>
+                          </div>
                         )}
                       </div>
                     </div>
                     <Link
                       href={`/minhas-festas/${event.id}`}
-                      className="bg-[#FF0080] text-white px-4 py-2 rounded-lg hover:bg-[#E6006F] transition-colors"
+                      className="px-6 py-3 bg-[#FF0080]/10 text-[#FF0080] hover:bg-[#FF0080] hover:text-white rounded-xl font-medium transition-all duration-200 group-hover:shadow-md ml-6"
                     >
                       Ver Detalhes
                     </Link>
@@ -411,15 +453,20 @@ export default function ProfileClient({ user, events, stats }: ProfileClientProp
               ))}
             </div>
           ) : (
-            <div className="p-12 text-center text-gray-500">
-              <MdCelebration className="text-6xl mx-auto mb-4 opacity-30" />
-              <h3 className="text-xl font-medium mb-2">Nenhuma festa criada</h3>
-              <p className="mb-4">Comece criando sua primeira festa!</p>
+            <div className="p-12 text-center">
+              <div className="w-24 h-24 bg-gradient-to-r from-[#FF0080]/10 to-[#A502CA]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <MdCelebration className="text-4xl text-[#FF0080]/50" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-700 mb-3">Nenhuma festa criada</h3>
+              <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                Comece criando sua primeira festa e explore nossos incríveis serviços para tornar seu evento inesquecível!
+              </p>
               <Link
                 href="/servicos"
-                className="bg-[#FF0080] text-white px-6 py-3 rounded-lg hover:bg-[#E6006F] transition-colors inline-block"
+                className="inline-flex items-center space-x-2 bg-gradient-to-r from-[#FF0080] to-[#A502CA] text-white px-8 py-4 rounded-xl hover:shadow-lg transition-all duration-300 font-semibold"
               >
-                Explorar Serviços
+                <MdCelebration className="text-xl" />
+                <span>Explorar Serviços</span>
               </Link>
             </div>
           )}

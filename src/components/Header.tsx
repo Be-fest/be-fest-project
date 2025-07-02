@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { Link as ScrollLink } from 'react-scroll';
 import { Logo } from '@/components/ui';
@@ -9,7 +9,178 @@ import { usePathname } from 'next/navigation';
 import { useOffCanvas } from '@/contexts/OffCanvasContext';
 import { createClient as createSupabaseClient } from '@/lib/supabase/client';
 import LogoutButton from './LogoutButton';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { 
+  MdAccountCircle,
+  MdDashboard,
+  MdExitToApp,
+  MdExpandMore,
+  MdPerson,
+  MdSettings,
+  MdKeyboardArrowDown
+} from 'react-icons/md';
+
+// Componente UserDropdown
+interface UserDropdownProps {
+  user: any;
+  userType: 'client' | 'service_provider' | null;
+}
+
+function UserDropdown({ user, userType }: UserDropdownProps) {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const supabase = createSupabaseClient();
+
+  // Fechar dropdown quando clicar fora
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = '/';
+  };
+
+  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuário';
+  const userInitial = userName.charAt(0).toUpperCase();
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      {/* Dropdown Trigger */}
+      <button
+        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+        className={`flex items-center space-x-3 p-2 rounded-xl transition-all duration-200 group ${
+          isDropdownOpen 
+            ? 'bg-gray-50 ring-2 ring-[#FF0080]/20' 
+            : 'hover:bg-gray-50 hover:shadow-sm'
+        }`}
+      >
+        <div className="flex items-center space-x-2">
+          <div className="w-10 h-10 bg-gradient-to-r from-[#FF0080] to-[#A502CA] rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-md ring-2 ring-white">
+            {userInitial}
+          </div>
+          <div className="hidden lg:block text-left">
+            <div className="text-sm font-semibold text-gray-800">Minha Conta</div>
+            <div className="text-xs text-gray-500 truncate max-w-32">{userName}</div>
+          </div>
+        </div>
+        <MdKeyboardArrowDown 
+          className={`text-gray-400 transition-all duration-200 ${
+            isDropdownOpen ? 'rotate-180 text-[#FF0080]' : 'group-hover:text-gray-600'
+          }`} 
+        />
+      </button>
+
+      {/* Dropdown Menu */}
+      <AnimatePresence>
+        {isDropdownOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ duration: 0.2, ease: [0.04, 0.62, 0.23, 0.98] }}
+            className="absolute right-0 top-full mt-3 w-72 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 backdrop-blur-sm"
+            style={{
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.5)'
+            }}
+          >
+            {/* User Info Header */}
+            <div className="px-5 py-4 border-b border-gray-100">
+              <div className="flex items-center space-x-4">
+                <div className="relative">
+                  <div className="w-14 h-14 bg-gradient-to-r from-[#FF0080] to-[#A502CA] rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md">
+                    {userInitial}
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-400 rounded-full border-2 border-white"></div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-gray-900 truncate">{userName}</div>
+                  <div className="text-sm text-gray-500 truncate">{user?.email}</div>
+                  <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#FF0080]/10 text-[#FF0080] mt-1">
+                    {userType === 'service_provider' ? '👔 Prestador' : '🎉 Cliente'}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Menu Items */}
+            <div className="py-3">
+              <Link
+                href="/perfil"
+                onClick={() => setIsDropdownOpen(false)}
+                className="flex items-center space-x-4 px-5 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-[#FF0080]/5 hover:to-[#A502CA]/5 hover:text-[#FF0080] transition-all duration-200 group mx-2 rounded-xl"
+              >
+                <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 group-hover:bg-[#FF0080]/10 transition-colors">
+                  <MdPerson className="text-lg group-hover:text-[#FF0080]" />
+                </div>
+                <div className="flex-1">
+                  <div className="font-medium">Minha Área</div>
+                  <div className="text-xs text-gray-500">Gerencie seu perfil</div>
+                </div>
+              </Link>
+
+              {userType === 'service_provider' && (
+                <Link
+                  href="/dashboard/prestador"
+                  onClick={() => setIsDropdownOpen(false)}
+                  className="flex items-center space-x-4 px-5 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-[#FF0080]/5 hover:to-[#A502CA]/5 hover:text-[#FF0080] transition-all duration-200 group mx-2 rounded-xl"
+                >
+                  <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 group-hover:bg-[#FF0080]/10 transition-colors">
+                    <MdDashboard className="text-lg group-hover:text-[#FF0080]" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-medium">Dashboard</div>
+                    <div className="text-xs text-gray-500">Área do prestador</div>
+                  </div>
+                </Link>
+              )}
+
+              <Link
+                href="/perfil?tab=settings"
+                onClick={() => setIsDropdownOpen(false)}
+                className="flex items-center space-x-4 px-5 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-[#FF0080]/5 hover:to-[#A502CA]/5 hover:text-[#FF0080] transition-all duration-200 group mx-2 rounded-xl"
+              >
+                <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 group-hover:bg-[#FF0080]/10 transition-colors">
+                  <MdSettings className="text-lg group-hover:text-[#FF0080]" />
+                </div>
+                <div className="flex-1">
+                  <div className="font-medium">Configurações</div>
+                  <div className="text-xs text-gray-500">Ajustar preferências</div>
+                </div>
+              </Link>
+            </div>
+
+            {/* Logout */}
+            <div className="border-t border-gray-100 pt-3 mt-1">
+              <button
+                onClick={() => {
+                  handleLogout();
+                  setIsDropdownOpen(false);
+                }}
+                className="flex items-center space-x-4 px-5 py-3 text-red-600 hover:bg-red-50 transition-all duration-200 w-full text-left group mx-2 rounded-xl"
+              >
+                <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 group-hover:bg-red-100 transition-colors">
+                  <MdExitToApp className="text-lg" />
+                </div>
+                <div className="flex-1">
+                  <div className="font-medium">Sair</div>
+                  <div className="text-xs text-red-400">Fazer logout da conta</div>
+                </div>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 export function Header() {
   const pathname = usePathname();
@@ -165,18 +336,7 @@ function HomeHeader() {
             {loading ? (
               <div className="w-20 h-8 bg-gray-200 animate-pulse rounded"></div>
             ) : user ? (
-              <div className="flex items-center space-x-3">
-                <Link 
-                  href="/perfil"
-                  className="flex items-center space-x-2 text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
-                >
-                  <div className="bg-[#FF0080] px-5 py-4 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                    {user.email?.charAt(0).toUpperCase()}
-                  </div>
-                  <span>Minha Conta</span>
-                </Link>
-                <LogoutButton />
-              </div>
+              <UserDropdown user={user} userType={userType} />
             ) : (
               <>
                 <Link 

@@ -12,7 +12,9 @@ import {
   MdLogout,
   MdClose,
   MdCalendarToday,
-  MdHistory
+  MdHistory,
+  MdHome,
+  MdArrowBack
 } from 'react-icons/md';
 import LogoutButton from '@/components/LogoutButton';
 
@@ -62,24 +64,46 @@ export function ClientSidebar({ onClose, userInitial = 'U', userName = 'Usuário
 
   return (
     <aside className="w-64 bg-white shadow-lg h-full flex flex-col">
-      {/* Header */}
-      <div className="p-4 sm:p-6 border-b border-gray-100 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-[#FF0080] rounded-full flex items-center justify-center text-white font-bold">
-            {userInitial}
+      {/* Back to Home Button */}
+      <div className="p-4 border-b border-gray-100">
+        <Link
+          href="/"
+          onClick={handleLinkClick}
+          className="flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-50 transition-all duration-200 group w-full"
+        >
+          <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 group-hover:bg-[#FF0080]/10 transition-colors">
+            <MdArrowBack className="text-lg text-gray-600 group-hover:text-[#FF0080]" />
           </div>
-          <div>
-            <h1 className="text-lg font-bold text-[#520029]">
+          <div className="flex-1">
+            <div className="font-medium text-gray-700 group-hover:text-[#FF0080]">Voltar ao Site</div>
+            <div className="text-xs text-gray-500">Página inicial</div>
+          </div>
+        </Link>
+      </div>
+
+      {/* Header */}
+      <div className="p-5 border-b border-gray-100 flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <div className="relative">
+            <div className="w-12 h-12 bg-gradient-to-r from-[#FF0080] to-[#A502CA] rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md">
+              {userInitial}
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white"></div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg font-bold text-[#520029] truncate">
               {userName}
             </h1>
-            <p className="text-sm text-gray-500">Cliente</p>
+            <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#FF0080]/10 text-[#FF0080]">
+              🎉 Cliente
+            </div>
           </div>
         </div>
         {/* Close button for mobile */}
         {onClose && (
           <button
             onClick={onClose}
-            className="lg:hidden p-1 rounded-lg hover:bg-gray-100 transition-colors"
+            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
           >
             <MdClose className="text-xl text-gray-600" />
           </button>
@@ -87,7 +111,7 @@ export function ClientSidebar({ onClose, userInitial = 'U', userName = 'Usuário
       </div>
 
       {/* Menu */}
-      <nav className="flex-1 p-3 sm:p-4 space-y-1 sm:space-y-2">
+      <nav className="flex-1 p-4 space-y-2">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.path || 
@@ -100,22 +124,49 @@ export function ClientSidebar({ onClose, userInitial = 'U', userName = 'Usuário
               href={item.path}
               onClick={handleLinkClick}
               className={`
-                flex items-center justify-between p-2 sm:p-3 rounded-lg transition-all duration-200
+                flex items-center space-x-4 p-3 rounded-xl transition-all duration-200 group
                 ${isActive 
-                  ? 'bg-[#FF0080] text-white font-medium' 
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-[#FF0080]'
+                  ? 'bg-gradient-to-r from-[#FF0080] to-[#A502CA] text-white shadow-lg' 
+                  : 'text-gray-700 hover:bg-gradient-to-r hover:from-[#FF0080]/5 hover:to-[#A502CA]/5 hover:text-[#FF0080]'
                 }
               `}
             >
-              <div className="flex items-center gap-2 sm:gap-3">
-                <Icon className="text-lg sm:text-xl flex-shrink-0" />
-                <span className="text-sm sm:text-base truncate">{item.label}</span>
+              <div className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${
+                isActive 
+                  ? 'bg-white/20' 
+                  : 'bg-gray-100 group-hover:bg-[#FF0080]/10'
+              }`}>
+                <Icon className={`text-xl ${
+                  isActive 
+                    ? 'text-white' 
+                    : 'text-gray-600 group-hover:text-[#FF0080]'
+                }`} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className={`font-medium truncate ${
+                  isActive ? 'text-white' : ''
+                }`}>
+                  {item.label}
+                </div>
+                <div className={`text-xs truncate ${
+                  isActive 
+                    ? 'text-white/70' 
+                    : 'text-gray-500'
+                }`}>
+                  {item.label === 'Visão Geral' && 'Dashboard principal'}
+                  {item.label === 'Minhas Festas' && 'Gerencie seus eventos'}
+                  {item.label === 'Configurações' && 'Ajustar preferências'}
+                </div>
               </div>
               {item.badge && (
                 <motion.span
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="bg-[#FF0080] text-white text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 ml-2"
+                  className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 ${
+                    isActive 
+                      ? 'bg-white/20 text-white' 
+                      : 'bg-[#FF0080] text-white'
+                  }`}
                 >
                   {item.badge}
                 </motion.span>
@@ -128,7 +179,7 @@ export function ClientSidebar({ onClose, userInitial = 'U', userName = 'Usuário
 
 
       {/* Logout */}
-      <div className="p-3 sm:p-4 border-t border-gray-100">
+      <div className="p-4 border-t border-gray-100">
         <div className="w-full">
           <LogoutButton />
         </div>
