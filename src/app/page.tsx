@@ -16,12 +16,22 @@ export default function Home() {
       <div id="categorias">
         <Categories />
       </div>
-      <ProvidersGrid />
-      <HowItWorks />
+      <div id="prestadores">
+        <ProvidersGrid />
+      </div>
+      <div id="como-funciona">
+        <HowItWorks />
+      </div>
       <Stats />
-      <Testimonials />
-      <AboutUs />
-      <FAQ />
+      <div id="depoimentos">
+        <Testimonials />
+      </div>
+      <div id="sobre-nos">
+        <AboutUs />
+      </div>
+      <div id="faq">
+        <FAQ />
+      </div>
       <CTA />
       <div id="contatos">
         <Footer />

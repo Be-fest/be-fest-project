@@ -45,25 +45,25 @@ export function ProviderFAQ() {
   };
 
   return (
-    <section className="py-16 md:py-24" style={{ backgroundColor: '#FFFFFF' }}>
-      <div className="container mx-auto px-4 md:px-6">
+    <section className="py-12 sm:py-16 lg:py-24" style={{ backgroundColor: '#FFFFFF' }}>
+      <div className="container mx-auto px-4 sm:px-6 md:px-8">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          className="text-center mb-12 sm:mb-16"
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-[#520029] mb-4">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#520029] mb-3 sm:mb-4">
             Dúvidas Frequentes dos Prestadores
           </h2>
-          <p className="text-lg text-[#6E5963] max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg text-[#6E5963] max-w-2xl mx-auto">
             Tire suas dúvidas sobre como funciona para prestadores de serviços
           </p>
         </motion.div>
 
         <div className="max-w-4xl mx-auto">
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {faqs.map((faq, index) => (
               <motion.div
                 key={faq.id}
@@ -75,9 +75,9 @@ export function ProviderFAQ() {
               >
                 <button
                   onClick={() => toggleQuestion(faq.id)}
-                  className="w-full px-6 py-5 text-left flex items-center justify-between hover:bg-gray-50 rounded-xl transition-colors duration-300"
+                  className="w-full px-4 sm:px-6 py-4 sm:py-5 text-left flex items-center justify-between hover:bg-gray-50 rounded-xl transition-colors duration-300"
                 >
-                  <h3 className="font-semibold text-[#520029] pr-4">
+                  <h3 className="font-semibold text-[#520029] pr-3 sm:pr-4 text-sm sm:text-base">
                     {faq.question}
                   </h3>
                   <motion.div
@@ -85,7 +85,7 @@ export function ProviderFAQ() {
                     transition={{ duration: 0.2 }}
                     className="flex-shrink-0"
                   >
-                    <MdExpandMore className="text-2xl text-[#A502CA]" />
+                    <MdExpandMore className="text-xl sm:text-2xl text-[#A502CA]" />
                   </motion.div>
                 </button>
 
@@ -98,8 +98,8 @@ export function ProviderFAQ() {
                       transition={{ duration: 0.3 }}
                       className="overflow-hidden"
                     >
-                      <div className="px-6 pb-5">
-                        <p className="text-[#6E5963] leading-relaxed">
+                      <div className="px-4 sm:px-6 pb-4 sm:pb-5">
+                        <p className="text-[#6E5963] leading-relaxed text-sm sm:text-base">
                           {faq.answer}
                         </p>
                       </div>

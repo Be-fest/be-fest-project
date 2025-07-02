@@ -6,12 +6,15 @@ import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { 
   MdDashboard, 
-  MdReceipt, 
-  MdPeople, 
-  MdBusinessCenter,
+  MdCelebration, 
+  MdPerson, 
+  MdSettings,
   MdLogout,
-  MdClose
+  MdClose,
+  MdCalendarToday,
+  MdHistory
 } from 'react-icons/md';
+import LogoutButton from '@/components/LogoutButton';
 
 interface MenuItem {
   label: string;
@@ -20,44 +23,35 @@ interface MenuItem {
   badge?: string;
 }
 
-interface AdminSidebarProps {
+interface ClientSidebarProps {
   onClose?: () => void;
+  userInitial?: string;
+  userName?: string;
 }
 
-export function AdminSidebar({ onClose }: AdminSidebarProps) {
+export function ClientSidebar({ onClose, userInitial = 'U', userName = 'Usuário' }: ClientSidebarProps) {
   const pathname = usePathname();
   
   const menuItems: MenuItem[] = [
     {
-      label: 'Dashboard',
+      label: 'Visão Geral',
       icon: MdDashboard,
-      path: '/admin',
+      path: '/perfil',
       badge: undefined
     },
     {
-      label: 'Pedidos',
-      icon: MdReceipt,
-      path: '/admin/pedidos',
-      badge: '12'
-    },
-    {
-      label: 'Clientes',
-      icon: MdPeople,
-      path: '/admin/clientes',
+      label: 'Minhas Festas',
+      icon: MdCelebration,
+      path: '/perfil?tab=events',
       badge: undefined
     },
     {
-      label: 'Prestadores',
-      icon: MdBusinessCenter,
-      path: '/admin/prestadores',
+      label: 'Configurações',
+      icon: MdSettings,
+      path: '/perfil?tab=settings',
       badge: undefined
     }
   ];
-
-  const handleLogout = () => {
-    // Implementar logout
-    window.location.href = '/';
-  };
 
   const handleLinkClick = () => {
     // Fecha a sidebar em mobile quando um link é clicado
@@ -70,9 +64,17 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
     <aside className="w-64 bg-white shadow-lg h-full flex flex-col">
       {/* Header */}
       <div className="p-4 sm:p-6 border-b border-gray-100 flex items-center justify-between">
-        <h1 className="text-xl sm:text-2xl font-bold text-primary">
-          Admin Be Fest
-        </h1>
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-[#FF0080] rounded-full flex items-center justify-center text-white font-bold">
+            {userInitial}
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-[#520029]">
+              {userName}
+            </h1>
+            <p className="text-sm text-gray-500">Cliente</p>
+          </div>
+        </div>
         {/* Close button for mobile */}
         {onClose && (
           <button
@@ -88,7 +90,9 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
       <nav className="flex-1 p-3 sm:p-4 space-y-1 sm:space-y-2">
         {menuItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.path;
+          const isActive = pathname === item.path || 
+            (item.path.includes('?tab=') && pathname === '/perfil' && 
+             typeof window !== 'undefined' && window.location.search.includes(item.path.split('?tab=')[1]));
           
           return (
             <Link
@@ -98,8 +102,8 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
               className={`
                 flex items-center justify-between p-2 sm:p-3 rounded-lg transition-all duration-200
                 ${isActive 
-                  ? 'bg-primary-light text-white font-medium' 
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-primary'
+                  ? 'bg-[#FF0080] text-white font-medium' 
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-[#FF0080]'
                 }
               `}
             >
@@ -111,7 +115,7 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
                 <motion.span
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="bg-primary text-white text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 ml-2"
+                  className="bg-[#FF0080] text-white text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 ml-2"
                 >
                   {item.badge}
                 </motion.span>
@@ -121,15 +125,13 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
         })}
       </nav>
 
+
+
       {/* Logout */}
       <div className="p-3 sm:p-4 border-t border-gray-100">
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-        >
-          <MdLogout className="text-lg sm:text-xl flex-shrink-0" />
-          <span className="text-sm sm:text-base">Sair</span>
-        </button>
+        <div className="w-full">
+          <LogoutButton />
+        </div>
       </div>
     </aside>
   );

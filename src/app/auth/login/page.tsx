@@ -1,42 +1,15 @@
 'use client';
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { LoginForm } from '@/components/forms';
 import { AuthLayout } from '@/components/AuthLayout';
-import { LoginFormData } from '@/types/auth';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 
 export default function LoginPage() {
-  const [userType, setUserType] = useState<'client' | 'service_provider'>('client');
-  const router = useRouter();
-
-  const handleLogin = async (data: LoginFormData) => {
-    try {
-      console.log('Login data:', data, 'User type:', userType);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      router.push('/dashboard');
-    } catch (error) {
-      console.error('Login failed:', error);
-    }
-  };
-
   return (
     <AuthLayout>
-      <div className="relative w-full">
-        <motion.div
-          key={userType}
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3, ease: "easeInOut" }}
-        >
-          <LoginForm 
-            onSubmit={handleLogin} 
-            userType={userType}
-            onUserTypeChange={setUserType}
-          />
-        </motion.div>
+      <div className="relative w-full px-4 sm:px-0">
+        <div className="w-full max-w-sm mx-auto sm:max-w-md">
+          <LoginForm />
+        </div>
       </div>
     </AuthLayout>
   );

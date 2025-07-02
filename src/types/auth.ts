@@ -22,32 +22,23 @@ export interface ServiceProviderFormData {
   areaOfOperation: string;
 }
 
-export interface AuthContextType {
-  user: User | null;
-  login: (data: LoginFormData) => Promise<void>;
-  register: (data: RegisterFormData) => Promise<void>;
-  registerServiceProvider: (data: ServiceProviderFormData) => Promise<void>;
-  logout: () => void;
-  isLoading: boolean;
-}
-
 export interface User {
   id: string;
   email: string;
-  fullName: string;
+  fullName?: string;
+  companyName?: string;
   type: 'client' | 'service_provider';
 }
 
-export interface RegisterFormProps {
-  onSubmit: (data: RegisterFormData) => Promise<void>;
-  userType: 'client' | 'service_provider';
-  onUserTypeChange: (type: 'client' | 'service_provider') => void;
+// Server Action result types
+export interface ActionResult {
+  success: boolean;
   error?: string;
+  data?: any;
 }
 
-export interface ServiceProviderFormProps {
-  onSubmit: (data: ServiceProviderFormData) => Promise<void>;
-  userType: 'client' | 'service_provider';
-  onUserTypeChange: (type: 'client' | 'service_provider') => void;
-  error?: string;
+export interface UserSession {
+  userId: string;
+  email: string;
+  type: 'client' | 'service_provider';
 }

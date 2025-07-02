@@ -10,8 +10,8 @@ export function ProviderHero() {
       className="relative min-h-screen flex items-center justify-center overflow-hidden"
       style={{ backgroundColor: '#FFF9F9' }}
     >
-      <div className="container mx-auto px-4 md:px-6 relative z-10">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+      <div className="container mx-auto pt-24 md:pt-0 px-4 sm:px-6 md:px-8 relative z-10">
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           {/* Content */}
           <motion.div
             initial={{ opacity: 0, x: -30 }}
@@ -23,7 +23,7 @@ export function ProviderHero() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="inline-block bg-gradient-to-r from-[#A502CA] to-[#CD0067] text-white px-4 py-2 rounded-full text-sm font-medium mb-6"
+              className="inline-block bg-gradient-to-r from-[#A502CA] to-[#CD0067] text-white px-4 py-2 rounded-full text-sm font-medium mb-4 sm:mb-6"
             >
               ✨ Seja um Prestador Be Fest
             </motion.span>
@@ -32,7 +32,7 @@ export function ProviderHero() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.3 }}
-              className="text-4xl md:text-4xl lg:text-5xl font-bold mb-6"
+              className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 leading-tight"
               style={{ color: '#520029' }}
             >
               Sua festa num clique! Be fest,{' '}
@@ -45,7 +45,7 @@ export function ProviderHero() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.5 }}
-              className="text-lg md:text-xl text-[#6E5963] mb-8 leading-relaxed max-w-2xl mx-auto lg:mx-0"
+              className="text-base sm:text-lg lg:text-xl text-[#6E5963] mb-6 sm:mb-8 leading-relaxed max-w-2xl mx-auto lg:mx-0"
             >
               Acompanhe o andamento de todos os eventos, cadastros e pagamentos.
             </motion.p>
@@ -55,19 +55,19 @@ export function ProviderHero() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.6 }}
-              className="flex flex-wrap justify-center lg:justify-start gap-6 mb-8"
+              className="flex flex-col sm:flex-row flex-wrap justify-center lg:justify-start gap-4 sm:gap-6 mb-6 sm:mb-8"
             >
-              <div className="flex items-center gap-2">
-                <MdStar className="text-[#A502CA] text-xl" />
-                <span className="text-[#520029] font-semibold">+1000 Prestadores</span>
+              <div className="flex items-center justify-center lg:justify-start gap-2">
+                <MdStar className="text-[#A502CA] text-lg sm:text-xl" />
+                <span className="text-[#520029] font-semibold text-sm sm:text-base">+1000 Prestadores</span>
               </div>
-              <div className="flex items-center gap-2">
-                <MdTrendingUp className="text-[#A502CA] text-xl" />
-                <span className="text-[#520029] font-semibold">95% Satisfação</span>
+              <div className="flex items-center justify-center lg:justify-start gap-2">
+                <MdTrendingUp className="text-[#A502CA] text-lg sm:text-xl" />
+                <span className="text-[#520029] font-semibold text-sm sm:text-base">95% Satisfação</span>
               </div>
-              <div className="flex items-center gap-2">
-                <MdAttachMoney className="text-[#A502CA] text-xl" />
-                <span className="text-[#520029] font-semibold">Sem Taxa Inicial</span>
+              <div className="flex items-center justify-center lg:justify-start gap-2">
+                <MdAttachMoney className="text-[#A502CA] text-lg sm:text-xl" />
+                <span className="text-[#520029] font-semibold text-sm sm:text-base">Sem Taxa Inicial</span>
               </div>
             </motion.div>
             
@@ -75,13 +75,13 @@ export function ProviderHero() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.7 }}
-              className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
+              className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start"
             >
-              <Link href="/auth/register">
+              <Link href="/auth/register" className="w-full sm:w-auto">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-8 py-4 rounded-full font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300"
+                  className="w-full sm:w-auto bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg shadow-lg hover:shadow-xl transition-all duration-300"
                 >
                   Cadastrar-se Agora
                 </motion.button>
@@ -90,7 +90,7 @@ export function ProviderHero() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="border-2 border-[#A502CA] text-[#A502CA] hover:bg-[#A502CA] hover:text-white px-8 py-4 rounded-full font-semibold text-lg transition-all duration-300"
+                className="w-full sm:w-auto border-2 border-[#A502CA] text-[#A502CA] hover:bg-[#A502CA] hover:text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg transition-all duration-300"
               >
                 Ver Como Funciona
               </motion.button>
@@ -102,12 +102,12 @@ export function ProviderHero() {
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="relative flex justify-center"
+            className="relative flex justify-center mt-8 lg:mt-0"
           >
             <img
               src="/hero-prestadorimg.png"
               alt="Prestadores Be Fest"
-              className="w-full h-auto max-w-lg"
+              className="w-full h-auto max-w-sm sm:max-w-md lg:max-w-lg"
             />
           </motion.div>
         </div>

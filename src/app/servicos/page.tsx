@@ -85,16 +85,16 @@ export default function ServicosPage() {
       {/* Header */}
       <div className="bg-white shadow-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-4 flex items-center gap-4">
+          <div className="py-4 flex items-center gap-2 sm:gap-4">
             <Link
               href="/minhas-festas"
               className="p-2 hover:bg-gray-100 rounded-full transition-colors"
             >
-              <MdArrowBack className="text-2xl text-gray-600" />
+              <MdArrowBack className="text-xl sm:text-2xl text-gray-600" />
             </Link>
             <div>
-              <h1 className="text-2xl font-bold text-[#520029]">Serviços</h1>
-              <p className="text-gray-600">
+              <h1 className="text-xl sm:text-2xl font-bold text-[#520029]">Serviços</h1>
+              <p className="text-gray-600 text-sm sm:text-base">
                 Encontre os melhores prestadores para sua festa
               </p>
             </div>
@@ -110,50 +110,50 @@ export default function ServicosPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Search and Price Filter */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 mb-8">
-          <div className="flex flex-col md:flex-row gap-6">
+        <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 mb-8">
+          <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
             {/* Search */}
             <div className="flex-1">
               <div className="relative">
-                <MdSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
+                <MdSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg sm:text-xl" />
                 <input
                   type="text"
                   placeholder="Buscar serviços..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none"
+                  className="w-full pl-10 sm:pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none text-sm sm:text-base"
                 />
               </div>
             </div>
 
             {/* Price Filter */}
-            <div className="flex-1">
+            <div className="flex-1 lg:max-w-md">
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
                   Faixa de Preço
                 </label>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 sm:gap-4">
                   <div className="relative flex-1">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">R$</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">R$</span>
                     <input
                       type="number"
                       min="0"
                       max={maxPrice}
                       value={minPrice}
                       onChange={(e) => setMinPrice(Number(e.target.value))}
-                      className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none"
+                      className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none text-sm"
                       placeholder="0"
                     />
                   </div>
-                  <span className="text-gray-400">até</span>
+                  <span className="text-gray-400 text-sm">até</span>
                   <div className="relative flex-1">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">R$</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">R$</span>
                     <input
                       type="number"
                       min={minPrice}
                       value={maxPrice}
                       onChange={(e) => setMaxPrice(Number(e.target.value))}
-                      className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none"
+                      className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none text-sm"
                       placeholder="10000"
                     />
                   </div>
@@ -164,7 +164,7 @@ export default function ServicosPage() {
         </div>
 
         {/* Service Providers Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 pb-8">
           {filteredProviders.map((provider) => (
             <motion.div
               key={provider.id}
@@ -172,7 +172,7 @@ export default function ServicosPage() {
               animate={{ opacity: 1, y: 0 }}
               className="bg-white rounded-2xl shadow-sm overflow-hidden"
             >
-              <div className="relative w-full h-48">
+              <div className="relative w-full h-40 sm:h-48">
                 <Image
                   src={provider.image}
                   alt={provider.name}
@@ -180,36 +180,32 @@ export default function ServicosPage() {
                   className="object-cover"
                 />
               </div>
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xl font-bold text-gray-900">
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900">
                     {provider.name}
                   </h3>
                   <div className="flex items-center gap-1">
                     <MdStar className="text-yellow-400" />
-                    <span className="font-medium">{provider.rating}</span>
+                    <span className="font-medium text-sm sm:text-base">{provider.rating}</span>
                   </div>
                 </div>
 
-                <p className="text-sm text-gray-500 flex items-center gap-1 mb-4">
+                <p className="text-xs sm:text-sm text-gray-500 flex items-center gap-1 mb-4">
                   <MdLocationOn />
                   {provider.location.neighborhood}, {provider.location.city}
                 </p>
 
-                <p className="text-gray-700 text-sm mb-6">
+                <p className="text-gray-700 text-xs sm:text-sm mb-4 sm:mb-6">
                   {provider.description}
                 </p>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-[#A502CA] text-2xl font-bold">
-                    R$ {provider.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </span>
-                  <button
-                    onClick={() => {/* Handle add to cart */}}
-                    className="flex items-center gap-2 bg-[#A502CA] text-white px-6 py-2 rounded-full hover:bg-[#8B0A9E] transition-colors"
-                  >
-                    <MdAdd />
-                    Adicionar
+                  <div className="text-lg sm:text-xl font-bold text-[#A502CA]">
+                    R$ {provider.price.toLocaleString()}
+                  </div>
+                  <button className="bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-medium transition-colors text-sm sm:text-base">
+                    Ver Detalhes
                   </button>
                 </div>
               </div>

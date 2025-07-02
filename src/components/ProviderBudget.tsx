@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { MdCalendarToday, MdGroup, MdCheckCircle, MdCalculate, MdInfo } from 'react-icons/md';
 import { getMockProviderById, getMockProviderServices } from '@/data/mockData';
+import { ServiceItem } from '@/data/mockProviders';
 
 interface ProviderBudgetProps {
   providerId: string;

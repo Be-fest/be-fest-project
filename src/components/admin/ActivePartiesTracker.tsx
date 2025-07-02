@@ -52,35 +52,35 @@ export function ActivePartiesTracker() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: 0.4 }}
-      className="bg-white rounded-xl p-6 shadow-sm border border-gray-100"
+      className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100"
     >
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-title">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-2">
+        <h2 className="text-lg sm:text-xl font-semibold text-title">
           Festas em Andamento
         </h2>
-        <span className="text-sm text-gray-500">
+        <span className="text-xs sm:text-sm text-gray-500">
           {mockParties.length} festas ativas
         </span>
       </div>
       
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {mockParties.map((party, index) => (
           <motion.div
             key={party.id}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.3, delay: 0.1 * index }}
-            className="space-y-4 p-4 bg-gray-50 rounded-lg"
+            className="space-y-3 sm:space-y-4 p-3 sm:p-4 bg-gray-50 rounded-lg"
           >
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="font-medium text-gray-800">{party.name}</h3>
-                <p className="text-sm text-gray-500">{party.client}</p>
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+              <div className="flex-1">
+                <h3 className="font-medium text-gray-800 text-sm sm:text-base">{party.name}</h3>
+                <p className="text-xs sm:text-sm text-gray-500">{party.client}</p>
                 <p className="text-xs text-gray-400 mt-1">
                   Data: {party.date.toLocaleDateString('pt-BR')}
                 </p>
               </div>
-              <div className="text-right">
+              <div className="text-left sm:text-right">
                 <div className="text-sm font-medium text-gray-700 mb-1">
                   {party.progress}% completo
                 </div>
@@ -99,7 +99,7 @@ export function ActivePartiesTracker() {
               </div>
               
               {/* Etapas */}
-              <div className="flex justify-between text-xs text-gray-500">
+              <div className="hidden sm:flex justify-between text-xs text-gray-500">
                 {getProgressSteps().map((step, stepIndex) => (
                   <span
                     key={step}
@@ -111,15 +111,29 @@ export function ActivePartiesTracker() {
                   </span>
                 ))}
               </div>
+              
+              {/* Etapas Mobile - Layout simplificado */}
+              <div className="sm:hidden grid grid-cols-2 gap-1 text-xs text-gray-500">
+                {getProgressSteps().map((step, stepIndex) => (
+                  <span
+                    key={step}
+                    className={`text-center ${
+                      stepIndex < (party.progress / 20) ? 'text-primary font-medium' : ''
+                    }`}
+                  >
+                    {step}
+                  </span>
+                ))}
+              </div>
             </div>
 
             {/* Serviços */}
             <div className="space-y-2">
-              <h4 className="text-sm font-medium text-gray-700">Serviços:</h4>
-              <div className="flex flex-wrap gap-2">
+              <h4 className="text-xs sm:text-sm font-medium text-gray-700">Serviços:</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {party.services.map((service) => (
-                  <div key={service.id} className="flex items-center gap-2 text-xs">
-                    <span className="text-gray-600">{service.name}</span>
+                  <div key={service.id} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs p-2 bg-white rounded border">
+                    <span className="text-gray-600 font-medium">{service.name}</span>
                     <StatusBadge status={service.status} size="sm" />
                   </div>
                 ))}

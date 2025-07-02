@@ -8,8 +8,8 @@ interface AuthLayoutProps {
 export function AuthLayout({ children }: AuthLayoutProps) {
   return (
     <div className="min-h-screen flex">
-      <div className="flex-1 flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8 bg-white">
-        <div className="w-full max-w-md">
+      <div className="flex-1 flex items-center justify-center px-4 py-8 sm:px-6 lg:px-8 bg-white">
+        <div className="w-full max-w-sm sm:max-w-md">
           {children}
         </div>
       </div>
@@ -19,6 +19,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
           src="/bg-auth.jpg"
           alt="Evento elegante com mesa de catering"
           fill
+          sizes="50vw"
           className="object-cover"
           priority
         />

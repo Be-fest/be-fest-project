@@ -10,21 +10,21 @@ export function Hero() {
 
   return (
     <div className="min-h-screen bg-[#FFF9F9] pt-20">
-      <Header />      <div className="container max-w-7xl mx-auto px-6 py-12">
-        {" "}
-        <div className="grid lg:grid-cols-5 gap-12 items-center min-h-[80vh]">
+      <Header />
+      <div className="container max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        <div className="grid lg:grid-cols-5 gap-8 lg:gap-12 items-center min-h-[70vh] sm:min-h-[80vh]">
           <motion.div
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
-            className="space-y-6 flex justify-start items-start flex-col lg:col-span-2"
+            className="space-y-4 sm:space-y-6 flex justify-start items-start flex-col lg:col-span-2 text-center lg:text-left"
           >
-            <h1 className="text-4xl lg:text-5xl font-medium text-[#520029] leading-tight font-poppins">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-medium text-[#520029] leading-tight font-poppins">
               Sua festa num clique!
               <span className="text-[#520029] block">Be fest, conectando </span>
               <span className="text-[#520029] block">você à felicidade.</span>
             </h1>
-            <p className="text-lg text-[#6E5963] leading-relaxed font-poppins">
+            <p className="text-base sm:text-lg text-[#6E5963] leading-relaxed font-poppins max-w-lg mx-auto lg:mx-0">
               Encontre serviços de comida e bebida na sua região e monte sua
               festa de forma rápida, prática e segura.
             </p>
@@ -32,6 +32,7 @@ export function Hero() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
+              className="w-full lg:w-auto"
             >
               <Button
                 onClick={openOffCanvas}
@@ -39,17 +40,20 @@ export function Hero() {
                   background:
                     "linear-gradient(180deg, #FF0080 0%, #CD0067 100%)",
                 }}
-                className="text-white px-12 py-4 text-lg font-poppins rounded-lg hover:opacity-90 transition-all duration-300"
+                className="w-full sm:w-auto text-white px-8 sm:px-12 py-3 sm:py-4 text-base sm:text-lg font-poppins rounded-lg hover:opacity-90 transition-all duration-300"
               >
                 New Fest
               </Button>
             </motion.div>
-          </motion.div>{" "}          <motion.div
+          </motion.div>
+
+          <motion.div
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
             className="flex justify-center items-center lg:col-span-3"
-          >            <div className="relative w-full">
+          >
+            <div className="relative w-full">
               <video
                 src="/hero-video.mp4"
                 autoPlay

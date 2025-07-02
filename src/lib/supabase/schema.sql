@@ -1,238 +1,138 @@
--- Enable necessary extensions
-create extension if not exists "uuid-ossp";
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
 
--- Create enum types
-create type user_role as enum ('client', 'provider', 'admin');
-create type event_status as enum ('draft', 'published', 'cancelled', 'completed');
-create type service_status as enum ('active', 'inactive');
-create type booking_status as enum ('pending', 'accepted', 'rejected', 'cancelled', 'completed');
-
--- Create tables
-create table if not exists public.profiles (
-    id uuid references auth.users on delete cascade primary key,
-    role user_role not null default 'client',
-    full_name text,
-    phone text,
-    avatar_url text,
-    created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-    updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+CREATE TABLE public.bookings (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  event_id uuid NOT NULL,
+  service_id uuid NOT NULL,
+  status USER-DEFINED DEFAULT 'pending'::booking_status,
+  price numeric NOT NULL,
+  guest_count integer NOT NULL,
+  notes text,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT bookings_pkey PRIMARY KEY (id),
+  CONSTRAINT bookings_service_id_fkey FOREIGN KEY (service_id) REFERENCES public.services(id),
+  CONSTRAINT bookings_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.events(id)
 );
-
-create table if not exists public.provider_profiles (
-    id uuid references profiles(id) on delete cascade primary key,
-    business_name text not null,
-    description text,
-    category text,
-    address text,
-    city text,
-    state text,
-    rating numeric(3,2) default 0,
-    created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-    updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+CREATE TABLE public.categories (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  name text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT categories_pkey PRIMARY KEY (id)
 );
-
-create table if not exists public.events (
-    id uuid default uuid_generate_v4() primary key,
-    client_id uuid references profiles(id) on delete cascade not null,
-    title text not null,
-    description text,
-    date timestamp with time zone not null,
-    location text,
-    status event_status default 'draft',
-    guest_count integer default 0,
-    budget numeric(10,2) default 0,
-    created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-    updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+CREATE TABLE public.event_services (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  event_id uuid NOT NULL,
+  service_id uuid NOT NULL,
+  provider_id uuid NOT NULL,
+  price_per_guest_at_booking numeric,
+  befest_fee_at_booking numeric,
+  total_estimated_price numeric,
+  provider_notes text,
+  client_notes text,
+  booking_status USER-DEFINED DEFAULT 'pending_provider_approval'::event_service_status,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT event_services_pkey PRIMARY KEY (id),
+  CONSTRAINT event_services_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.events(id),
+  CONSTRAINT event_services_service_id_fkey FOREIGN KEY (service_id) REFERENCES public.services(id)
 );
-
-create table if not exists public.services (
-    id uuid default uuid_generate_v4() primary key,
-    provider_id uuid references provider_profiles(id) on delete cascade not null,
-    name text not null,
-    description text,
-    category text not null,
-    base_price numeric(10,2) not null,
-    min_guests integer default 0,
-    max_guests integer,
-    status service_status default 'active',
-    created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-    updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+CREATE TABLE public.events (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  client_id uuid NOT NULL,
+  title text NOT NULL,
+  description text,
+  event_date date NOT NULL,
+  start_time time without time zone,
+  location text,
+  guest_count integer DEFAULT 0,
+  budget numeric,
+  status USER-DEFINED DEFAULT 'draft'::event_status,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT events_pkey PRIMARY KEY (id)
 );
-
-create table if not exists public.bookings (
-    id uuid default uuid_generate_v4() primary key,
-    event_id uuid references events(id) on delete cascade not null,
-    service_id uuid references services(id) on delete cascade not null,
-    status booking_status default 'pending',
-    price numeric(10,2) not null,
-    guest_count integer not null,
-    notes text,
-    created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-    updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
-    unique(event_id, service_id)
+CREATE TABLE public.service_age_pricing_rules (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  service_id uuid NOT NULL,
+  rule_description text NOT NULL,
+  age_min_years integer NOT NULL,
+  age_max_years integer,
+  pricing_method text CHECK (pricing_method = ANY (ARRAY['fixed'::text, 'percentage'::text])),
+  value numeric NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT service_age_pricing_rules_pkey PRIMARY KEY (id),
+  CONSTRAINT service_age_pricing_rules_service_id_fkey FOREIGN KEY (service_id) REFERENCES public.services(id)
 );
-
--- Create triggers for updated_at
-create or replace function update_updated_at_column()
-returns trigger as $$
-begin
-    new.updated_at = now();
-    return new;
-end;
-$$ language plpgsql;
-
-create trigger update_profiles_updated_at
-    before update on profiles
-    for each row
-    execute function update_updated_at_column();
-
-create trigger update_provider_profiles_updated_at
-    before update on provider_profiles
-    for each row
-    execute function update_updated_at_column();
-
-create trigger update_events_updated_at
-    before update on events
-    for each row
-    execute function update_updated_at_column();
-
-create trigger update_services_updated_at
-    before update on services
-    for each row
-    execute function update_updated_at_column();
-
-create trigger update_bookings_updated_at
-    before update on bookings
-    for each row
-    execute function update_updated_at_column();
-
--- Create profile on signup trigger
-create or replace function public.handle_new_user()
-returns trigger as $$
-begin
-    insert into public.profiles (id, full_name, avatar_url)
-    values (
-        new.id,
-        new.raw_user_meta_data->>'full_name',
-        new.raw_user_meta_data->>'avatar_url'
-    );
-    return new;
-end;
-$$ language plpgsql security definer;
-
-create trigger on_auth_user_created
-    after insert on auth.users
-    for each row execute function public.handle_new_user();
-
--- RLS Policies
-alter table public.profiles enable row level security;
-alter table public.provider_profiles enable row level security;
-alter table public.events enable row level security;
-alter table public.services enable row level security;
-alter table public.bookings enable row level security;
-
--- Profiles policies
-create policy "Public profiles are viewable by everyone"
-    on profiles for select
-    using (true);
-
-create policy "Users can update own profile"
-    on profiles for update
-    using (auth.uid() = id);
-
--- Provider profiles policies
-create policy "Provider profiles are viewable by everyone"
-    on provider_profiles for select
-    using (true);
-
-create policy "Providers can update own profile"
-    on provider_profiles for update
-    using (auth.uid() = id);
-
-create policy "Providers can insert own profile"
-    on provider_profiles for insert
-    with check (auth.uid() = id);
-
--- Events policies
-create policy "Users can view own events"
-    on events for select
-    using (auth.uid() = client_id);
-
-create policy "Providers can view events with their services"
-    on events for select
-    using (
-        exists (
-            select 1 from bookings b
-            join services s on b.service_id = s.id
-            where b.event_id = events.id
-            and s.provider_id = auth.uid()
-        )
-    );
-
-create policy "Users can create own events"
-    on events for insert
-    with check (auth.uid() = client_id);
-
-create policy "Users can update own events"
-    on events for update
-    using (auth.uid() = client_id);
-
-create policy "Users can delete own events"
-    on events for delete
-    using (auth.uid() = client_id);
-
--- Services policies
-create policy "Services are viewable by everyone"
-    on services for select
-    using (true);
-
-create policy "Providers can manage own services"
-    on services for all
-    using (auth.uid() = provider_id);
-
--- Bookings policies
-create policy "Users can view own bookings"
-    on bookings for select
-    using (
-        exists (
-            select 1 from events e
-            where e.id = bookings.event_id
-            and e.client_id = auth.uid()
-        )
-    );
-
-create policy "Providers can view bookings for their services"
-    on bookings for select
-    using (
-        exists (
-            select 1 from services s
-            where s.id = bookings.service_id
-            and s.provider_id = auth.uid()
-        )
-    );
-
-create policy "Users can create bookings for own events"
-    on bookings for insert
-    with check (
-        exists (
-            select 1 from events e
-            where e.id = bookings.event_id
-            and e.client_id = auth.uid()
-        )
-    );
-
-create policy "Users and providers can update relevant bookings"
-    on bookings for update
-    using (
-        exists (
-            select 1 from events e
-            where e.id = bookings.event_id
-            and e.client_id = auth.uid()
-        )
-        or
-        exists (
-            select 1 from services s
-            where s.id = bookings.service_id
-            and s.provider_id = auth.uid()
-        )
-    ); 
+CREATE TABLE public.service_date_surcharges (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  service_id uuid NOT NULL,
+  surcharge_description text NOT NULL,
+  start_date date NOT NULL,
+  end_date date NOT NULL,
+  surcharge_type text CHECK (surcharge_type = ANY (ARRAY['fixed'::text, 'percentage'::text])),
+  surcharge_value numeric NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT service_date_surcharges_pkey PRIMARY KEY (id),
+  CONSTRAINT service_date_surcharges_service_id_fkey FOREIGN KEY (service_id) REFERENCES public.services(id)
+);
+CREATE TABLE public.service_guest_tiers (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  service_id uuid NOT NULL,
+  min_total_guests integer NOT NULL,
+  max_total_guests integer,
+  base_price_per_adult numeric NOT NULL,
+  tier_description text,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT service_guest_tiers_pkey PRIMARY KEY (id),
+  CONSTRAINT service_guest_tiers_service_id_fkey FOREIGN KEY (service_id) REFERENCES public.services(id)
+);
+CREATE TABLE public.services (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  provider_id uuid NOT NULL,
+  name text NOT NULL,
+  description text,
+  category text NOT NULL,
+  images_urls ARRAY,
+  base_price numeric NOT NULL,
+  price_per_guest numeric,
+  min_guests integer DEFAULT 0,
+  max_guests integer,
+  status USER-DEFINED DEFAULT 'active'::service_status,
+  is_active boolean DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT services_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.subcategories (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  category_id uuid NOT NULL,
+  name text NOT NULL,
+  icon_url text,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT subcategories_pkey PRIMARY KEY (id),
+  CONSTRAINT subcategories_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.categories(id)
+);
+CREATE TABLE public.users (
+  id uuid NOT NULL,
+  role USER-DEFINED NOT NULL DEFAULT 'client'::user_role,
+  full_name text,
+  email text,
+  organization_name text,
+  cnpj text,
+  cpf text,
+  whatsapp_number text,
+  logo_url text,
+  area_of_operation text,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  coordenates jsonb,
+  CONSTRAINT users_pkey PRIMARY KEY (id),
+  CONSTRAINT users_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
+);

@@ -1,49 +1,100 @@
-import { useState } from 'react';
+import { useState, useActionState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { RegisterFormData, RegisterFormProps } from '@/types/auth';
 import { Input, Button } from '@/components/ui';
-import { useForm } from '@/hooks/useForm';
-import { formatCPF, formatPhoneNumber } from '@/utils/formatters';
+import { formatCPF, formatPhoneNumber, formatCNPJ } from '@/utils/formatters';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { MdVisibility, MdVisibilityOff } from 'react-icons/md';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
-import { useServices } from '@/hooks/useServices';
-import { Select } from '@/components/ui/Select';
+import { registerClientAction, registerProviderAction } from '@/lib/actions/auth';
 
-export const RegisterForm = ({ onSubmit, userType, onUserTypeChange, error: propError }: RegisterFormProps) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const { values, handleChange } = useForm<RegisterFormData>({
-    initialValues: {
-      fullName: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-      cpf: '',
-      phone: ''
+interface RegisterFormProps {
+  userType: 'client' | 'service_provider';
+  onUserTypeChange: (type: 'client' | 'service_provider') => void;
+}
+
+// Wrapper function for useActionState compatibility
+async function wrappedRegisterClientAction(
+  prevState: { success: boolean; error?: string; data?: any }, 
+  formData: FormData
+): Promise<{ success: boolean; error?: string; data?: any }> {
+  try {
+    const result = await registerClientAction(formData);
+    
+    // Garantir que sempre retornamos um objeto válido
+    if (!result || typeof result !== 'object') {
+      return { 
+        success: false, 
+        error: 'Resposta inválida do servidor' 
+      };
     }
-  });
+    
+    return {
+      success: result.success || false,
+      error: result.error,
+      data: result.data
+    };
+  } catch (error) {
+    console.error('Register action failed:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Ocorreu um erro inesperado. Tente novamente.' 
+    };
+  }
+}
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
-
-    if (values.password !== values.confirmPassword) {
-      setError('Passwords do not match');
-      setIsLoading(false);
-      return;
+// Wrapper function for provider registration
+async function wrappedRegisterProviderAction(
+  prevState: { success: boolean; error?: string; data?: any }, 
+  formData: FormData
+): Promise<{ success: boolean; error?: string; data?: any }> {
+  try {
+    const result = await registerProviderAction(formData);
+    
+    // Garantir que sempre retornamos um objeto válido
+    if (!result || typeof result !== 'object') {
+      return { 
+        success: false, 
+        error: 'Resposta inválida do servidor' 
+      };
     }
+    
+    return {
+      success: result.success || false,
+      error: result.error,
+      data: result.data
+    };
+  } catch (error) {
+    console.error('Register action failed:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Ocorreu um erro inesperado. Tente novamente.' 
+    };
+  }
+}
 
-    try {
-      await onSubmit(values);
-    } catch (error) {
-      setError('Error creating account');
-    } finally {
-      setIsLoading(false);
+export const RegisterForm = ({ userType, onUserTypeChange }: RegisterFormProps) => {
+  const initialState = { success: false, error: undefined, data: undefined };
+  const actionToUse = userType === 'client' ? wrappedRegisterClientAction : wrappedRegisterProviderAction;
+  const [state, formAction, isPending] = useActionState(actionToUse, initialState);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (state?.success && state?.data?.message) {
+      // Mostrar mensagem de sucesso por alguns segundos
+      const timer = setTimeout(() => {
+        try {
+          router.push('/auth/login');
+        } catch (error) {
+          console.error('Navigation error:', error);
+        }
+      }, 2000);
+      
+      return () => clearTimeout(timer);
     }
-  };
+  }, [state?.success, state?.data?.message, router]);
 
   return (
     <div className="w-full max-w-md space-y-6">
@@ -72,7 +123,9 @@ export const RegisterForm = ({ onSubmit, userType, onUserTypeChange, error: prop
           alt="Be Fest Logo"
           width={60}
           height={60}
-          className="object-contain"
+          style={{ height: "auto" }}
+          className="object-contain mx-auto"
+          priority
         />
       </div>
 
@@ -119,89 +172,136 @@ export const RegisterForm = ({ onSubmit, userType, onUserTypeChange, error: prop
       </div>
 
       <motion.form
-        onSubmit={handleSubmit}
+        action={formAction}
         className="space-y-4 text-[#8D8D8D]"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
       >
-        {(error || propError) && (
+        {!state?.success && state?.error && (
           <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">
-            {error || propError}
+            {state.error}
           </div>
         )}
+
+        {state?.success && state?.data?.message && (
+          <div className="bg-green-50 text-green-600 p-3 rounded-md text-sm">
+            {state.data.message}
+          </div>
+        )}
+        
         <Input
           type="text"
-          name="fullName"
-          placeholder="Full Name"
-          value={values.fullName}
-          onChange={handleChange}
+          name={userType === 'service_provider' ? 'companyName' : 'fullName'}
+          placeholder={userType === 'service_provider' ? 'Nome da Empresa' : 'Nome Completo'}
           required
-          disabled={isLoading}
+          disabled={isPending}
         />
 
         <Input
           type="email"
           name="email"
           placeholder="Email"
-          value={values.email}
-          onChange={handleChange}
           required
-          disabled={isLoading}
+          disabled={isPending}
         />
 
-        <div>
+        <div className="relative">
           <Input
-            type="password"
+            type={showPassword ? "text" : "password"}
             name="password"
-            placeholder="Password"
-            value={values.password}
-            onChange={handleChange}
+            placeholder="Senha"
             required
-            disabled={isLoading}
+            disabled={isPending}
           />
+          <button
+            type="button"
+            className="absolute inset-y-0 right-0 pr-3 flex items-center"
+            onClick={() => setShowPassword(!showPassword)}
+          >
+            {showPassword ? (
+              <MdVisibilityOff className="h-5 w-5 text-gray-400" />
+            ) : (
+              <MdVisibility className="h-5 w-5 text-gray-400" />
+            )}
+          </button>
         </div>
 
-        <div>
+        <div className="relative">
           <Input
-            type="password"
+            type={showConfirmPassword ? "text" : "password"}
             name="confirmPassword"
-            placeholder="Confirm Password"
-            value={values.confirmPassword}
-            onChange={handleChange}
+            placeholder="Confirmar Senha"
             required
-            disabled={isLoading}
+            disabled={isPending}
           />
+          <button
+            type="button"
+            className="absolute inset-y-0 right-0 pr-3 flex items-center"
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+          >
+            {showConfirmPassword ? (
+              <MdVisibilityOff className="h-5 w-5 text-gray-400" />
+            ) : (
+              <MdVisibility className="h-5 w-5 text-gray-400" />
+            )}
+          </button>
         </div>
 
-        <Input
-          type="text"
-          name="cpf"
-          placeholder="CPF"
-          value={formatCPF(values.cpf)}
-          onChange={handleChange}
-          focusColor="#F71875"
-          required
-          disabled={isLoading}
-        />
+        {userType === 'service_provider' ? (
+          <>
+            <Input
+              type="text"
+              name="cnpj"
+              placeholder="CNPJ"
+              maxLength={18}
+              required
+              disabled={isPending}
+              onChange={(e) => {
+                e.target.value = formatCNPJ(e.target.value);
+              }}
+            />
+            
+            <Input
+              type="text"
+              name="areaOfOperation"
+              placeholder="Área de Atuação (ex: Buffet, Decoração, etc.)"
+              required
+              disabled={isPending}
+            />
+          </>
+        ) : (
+          <Input
+            type="text"
+            name="cpf"
+            placeholder="CPF"
+            maxLength={14}
+            required
+            disabled={isPending}
+            onChange={(e) => {
+              e.target.value = formatCPF(e.target.value);
+            }}
+          />
+        )}
 
         <Input
           type="text"
           name="phone"
           placeholder="WhatsApp"
-          value={formatPhoneNumber(values.phone)}
-          onChange={handleChange}
-          focusColor="#F71875"
+          maxLength={15}
           required
-          disabled={isLoading}
+          disabled={isPending}
+          onChange={(e) => {
+            e.target.value = formatPhoneNumber(e.target.value);
+          }}
         />
 
         <Button
           type="submit"
           className="w-full"
-          disabled={isLoading}
+          disabled={isPending}
         >
-          {isLoading ? 'Creating account...' : 'Create account'}
+          {isPending ? 'Criando conta...' : 'Criar conta'}
         </Button>
       </motion.form>
 

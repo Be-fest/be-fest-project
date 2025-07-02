@@ -1,0 +1,311 @@
+-- Be Fest Database Setup
+-- Execute este arquivo completo no SQL Editor do Supabase
+
+-- Habilitar extensões necessárias
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Limpar tipos existentes (se houver)
+DROP TYPE IF EXISTS user_role CASCADE;
+DROP TYPE IF EXISTS event_status CASCADE;
+DROP TYPE IF EXISTS service_status CASCADE;
+DROP TYPE IF EXISTS booking_status CASCADE;
+DROP TYPE IF EXISTS event_service_status CASCADE;
+
+-- Criar tipos personalizados (enums)
+CREATE TYPE user_role AS ENUM ('client', 'provider', 'admin');
+CREATE TYPE event_status AS ENUM ('draft', 'published', 'cancelled', 'completed');
+CREATE TYPE service_status AS ENUM ('active', 'inactive');
+CREATE TYPE booking_status AS ENUM ('pending', 'accepted', 'rejected', 'cancelled', 'completed');
+CREATE TYPE event_service_status AS ENUM ('pending_provider_approval', 'approved', 'in_progress', 'completed', 'cancelled');
+
+-- Criar tabela de usuários
+CREATE TABLE IF NOT EXISTS public.users (
+  id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  role user_role NOT NULL DEFAULT 'client'::user_role,
+  full_name text,
+  email text,
+  organization_name text,
+  cnpj text,
+  cpf text,
+  whatsapp_number text,
+  logo_url text,
+  area_of_operation text,
+  coordenates jsonb,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT users_pkey PRIMARY KEY (id)
+);
+
+-- Criar tabela de categorias
+CREATE TABLE IF NOT EXISTS public.categories (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  name text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT categories_pkey PRIMARY KEY (id)
+);
+
+-- Criar tabela de subcategorias
+CREATE TABLE IF NOT EXISTS public.subcategories (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  category_id uuid NOT NULL,
+  name text NOT NULL,
+  icon_url text,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT subcategories_pkey PRIMARY KEY (id),
+  CONSTRAINT subcategories_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.categories(id)
+);
+
+-- Criar tabela de eventos
+CREATE TABLE IF NOT EXISTS public.events (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  client_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  title text NOT NULL,
+  description text,
+  event_date date NOT NULL,
+  start_time time without time zone,
+  location text,
+  guest_count integer DEFAULT 0,
+  budget numeric,
+  status event_status DEFAULT 'draft'::event_status,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT events_pkey PRIMARY KEY (id)
+);
+
+-- Criar tabela de serviços
+CREATE TABLE IF NOT EXISTS public.services (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  provider_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  description text,
+  category text NOT NULL,
+  images_urls text[],
+  base_price numeric NOT NULL,
+  price_per_guest numeric,
+  min_guests integer DEFAULT 0,
+  max_guests integer,
+  status service_status DEFAULT 'active'::service_status,
+  is_active boolean DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT services_pkey PRIMARY KEY (id)
+);
+
+-- Criar tabela de reservas
+CREATE TABLE IF NOT EXISTS public.bookings (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  event_id uuid NOT NULL,
+  service_id uuid NOT NULL,
+  status booking_status DEFAULT 'pending'::booking_status,
+  price numeric NOT NULL,
+  guest_count integer NOT NULL,
+  notes text,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT bookings_pkey PRIMARY KEY (id),
+  CONSTRAINT bookings_service_id_fkey FOREIGN KEY (service_id) REFERENCES public.services(id),
+  CONSTRAINT bookings_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.events(id)
+);
+
+-- Criar tabela de serviços por evento
+CREATE TABLE IF NOT EXISTS public.event_services (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  event_id uuid NOT NULL,
+  service_id uuid NOT NULL,
+  provider_id uuid NOT NULL,
+  price_per_guest_at_booking numeric,
+  befest_fee_at_booking numeric,
+  total_estimated_price numeric,
+  provider_notes text,
+  client_notes text,
+  booking_status event_service_status DEFAULT 'pending_provider_approval'::event_service_status,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT event_services_pkey PRIMARY KEY (id),
+  CONSTRAINT event_services_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.events(id),
+  CONSTRAINT event_services_service_id_fkey FOREIGN KEY (service_id) REFERENCES public.services(id),
+  CONSTRAINT event_services_provider_id_fkey FOREIGN KEY (provider_id) REFERENCES public.users(id)
+);
+
+-- Criar tabela de níveis de convidados para serviços
+CREATE TABLE IF NOT EXISTS public.service_guest_tiers (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  service_id uuid NOT NULL,
+  min_total_guests integer NOT NULL,
+  max_total_guests integer,
+  base_price_per_adult numeric NOT NULL,
+  tier_description text,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT service_guest_tiers_pkey PRIMARY KEY (id),
+  CONSTRAINT service_guest_tiers_service_id_fkey FOREIGN KEY (service_id) REFERENCES public.services(id)
+);
+
+-- Criar tabela de regras de preço por idade
+CREATE TABLE IF NOT EXISTS public.service_age_pricing_rules (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  service_id uuid NOT NULL,
+  rule_description text NOT NULL,
+  age_min_years integer NOT NULL,
+  age_max_years integer,
+  pricing_method text CHECK (pricing_method IN ('fixed', 'percentage')),
+  value numeric NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT service_age_pricing_rules_pkey PRIMARY KEY (id),
+  CONSTRAINT service_age_pricing_rules_service_id_fkey FOREIGN KEY (service_id) REFERENCES public.services(id)
+);
+
+-- Criar tabela de sobretaxas por data
+CREATE TABLE IF NOT EXISTS public.service_date_surcharges (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  service_id uuid NOT NULL,
+  surcharge_description text NOT NULL,
+  start_date date NOT NULL,
+  end_date date NOT NULL,
+  surcharge_type text CHECK (surcharge_type IN ('fixed', 'percentage')),
+  surcharge_value numeric NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT service_date_surcharges_pkey PRIMARY KEY (id),
+  CONSTRAINT service_date_surcharges_service_id_fkey FOREIGN KEY (service_id) REFERENCES public.services(id)
+);
+
+-- Criar índices para melhor performance (se não existirem)
+CREATE INDEX IF NOT EXISTS idx_users_email ON public.users(email);
+CREATE INDEX IF NOT EXISTS idx_users_cpf ON public.users(cpf);
+CREATE INDEX IF NOT EXISTS idx_users_cnpj ON public.users(cnpj);
+CREATE INDEX IF NOT EXISTS idx_events_client_id ON public.events(client_id);
+CREATE INDEX IF NOT EXISTS idx_events_status ON public.events(status);
+CREATE INDEX IF NOT EXISTS idx_services_provider_id ON public.services(provider_id);
+CREATE INDEX IF NOT EXISTS idx_services_category ON public.services(category);
+CREATE INDEX IF NOT EXISTS idx_services_status ON public.services(status);
+CREATE INDEX IF NOT EXISTS idx_bookings_event_id ON public.bookings(event_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_service_id ON public.bookings(service_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_status ON public.bookings(status);
+CREATE INDEX IF NOT EXISTS idx_event_services_event_id ON public.event_services(event_id);
+CREATE INDEX IF NOT EXISTS idx_event_services_provider_id ON public.event_services(provider_id);
+CREATE INDEX IF NOT EXISTS idx_event_services_booking_status ON public.event_services(booking_status);
+
+-- Criar função para atualizar updated_at automaticamente
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = timezone('utc'::text, now());
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Criar triggers para atualizar updated_at (se não existirem)
+DROP TRIGGER IF EXISTS update_users_updated_at ON public.users;
+CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON public.users
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_categories_updated_at ON public.categories;
+CREATE TRIGGER update_categories_updated_at BEFORE UPDATE ON public.categories
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_subcategories_updated_at ON public.subcategories;
+CREATE TRIGGER update_subcategories_updated_at BEFORE UPDATE ON public.subcategories
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_events_updated_at ON public.events;
+CREATE TRIGGER update_events_updated_at BEFORE UPDATE ON public.events
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_services_updated_at ON public.services;
+CREATE TRIGGER update_services_updated_at BEFORE UPDATE ON public.services
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_bookings_updated_at ON public.bookings;
+CREATE TRIGGER update_bookings_updated_at BEFORE UPDATE ON public.bookings
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_event_services_updated_at ON public.event_services;
+CREATE TRIGGER update_event_services_updated_at BEFORE UPDATE ON public.event_services
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_service_guest_tiers_updated_at ON public.service_guest_tiers;
+CREATE TRIGGER update_service_guest_tiers_updated_at BEFORE UPDATE ON public.service_guest_tiers
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_service_age_pricing_rules_updated_at ON public.service_age_pricing_rules;
+CREATE TRIGGER update_service_age_pricing_rules_updated_at BEFORE UPDATE ON public.service_age_pricing_rules
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_service_date_surcharges_updated_at ON public.service_date_surcharges;
+CREATE TRIGGER update_service_date_surcharges_updated_at BEFORE UPDATE ON public.service_date_surcharges
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Habilitar RLS (Row Level Security)
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.subcategories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.services ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.bookings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.event_services ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.service_guest_tiers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.service_age_pricing_rules ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.service_date_surcharges ENABLE ROW LEVEL SECURITY;
+
+-- Políticas de RLS básicas
+
+-- Limpar políticas antigas se existirem
+DROP POLICY IF EXISTS "Users can view their own profile" ON public.users;
+DROP POLICY IF EXISTS "Users can update their own profile" ON public.users;
+DROP POLICY IF EXISTS "Service role can manage all users" ON public.users;
+DROP POLICY IF EXISTS "Users can view their own events" ON public.events;
+DROP POLICY IF EXISTS "Users can create their own events" ON public.events;
+DROP POLICY IF EXISTS "Users can update their own events" ON public.events;
+DROP POLICY IF EXISTS "Anyone can view active services" ON public.services;
+DROP POLICY IF EXISTS "Providers can manage their own services" ON public.services;
+
+-- Políticas para users
+CREATE POLICY "Users can view their own profile" ON public.users
+    FOR SELECT USING (auth.uid() = id);
+
+CREATE POLICY "Users can update their own profile" ON public.users
+    FOR UPDATE USING (auth.uid() = id);
+
+CREATE POLICY "Service role can manage all users" ON public.users
+    FOR ALL USING (auth.jwt() ->> 'role' = 'service_role');
+
+-- Políticas para events
+CREATE POLICY "Users can view their own events" ON public.events
+    FOR SELECT USING (auth.uid() = client_id);
+
+CREATE POLICY "Users can create their own events" ON public.events
+    FOR INSERT WITH CHECK (auth.uid() = client_id);
+
+CREATE POLICY "Users can update their own events" ON public.events
+    FOR UPDATE USING (auth.uid() = client_id);
+
+-- Políticas para services
+CREATE POLICY "Anyone can view active services" ON public.services
+    FOR SELECT USING (is_active = true);
+
+CREATE POLICY "Providers can manage their own services" ON public.services
+    FOR ALL USING (auth.uid() = provider_id);
+
+-- Inserir categorias padrão (se não existirem)
+INSERT INTO public.categories (name) 
+SELECT name FROM (VALUES 
+    ('Buffet'),
+    ('Decoração'),
+    ('Fotografia'),
+    ('Música'),
+    ('Bebidas'),
+    ('Doces'),
+    ('Espaço'),
+    ('Outros')
+) AS v(name)
+WHERE NOT EXISTS (SELECT 1 FROM public.categories WHERE categories.name = v.name);
+
+-- Grant permissions
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated; 

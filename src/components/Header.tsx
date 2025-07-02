@@ -30,6 +30,7 @@ function HomeHeader() {
   const { isCartOpen, openOffCanvas } = useOffCanvas();
   const [user, setUser] = useState<any>(null);
   const [userType, setUserType] = useState<'client' | 'service_provider' | null>(null);
+  const [loading, setLoading] = useState(true);
   const supabase = createSupabaseClient();
 
   useEffect(() => {
@@ -40,7 +41,7 @@ function HomeHeader() {
         // Buscar o tipo do usuário da tabela users
         const { data: userData } = await supabase
           .from('users')
-          .select('role')
+          .select('role, full_name')
           .eq('id', user.id)
           .single();
         
@@ -48,10 +49,34 @@ function HomeHeader() {
           setUserType(userData.role === 'provider' ? 'service_provider' : 'client');
         }
       }
+      setLoading(false);
     };
 
     getUser();
-  }, []);
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+        // Buscar dados atualizados do usuário
+        const { data: userData } = await supabase
+          .from('users')
+          .select('role, full_name')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (userData) {
+          setUserType(userData.role === 'provider' ? 'service_provider' : 'client');
+        }
+      } else {
+        setUser(null);
+        setUserType(null);
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [supabase]);
 
   return (
     <>
@@ -79,14 +104,24 @@ function HomeHeader() {
             >
               Categorias
             </ScrollLink>
+            <ScrollLink 
+              to="como-funciona" 
+              smooth={true} 
+              duration={500} 
+              className="text-gray-600 hover:text-[#FF0080] transition-colors cursor-pointer font-poppins"
+            >
+              Como Funciona
+            </ScrollLink>
+            <ScrollLink 
+              to="prestadores" 
+              smooth={true} 
+              duration={500} 
+              className="text-gray-600 hover:text-[#FF0080] transition-colors cursor-pointer font-poppins"
+            >
+              Prestadores
+            </ScrollLink>
             {user ? (
               <>
-                <Link 
-                  href="/minhas-festas" 
-                  className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
-                >
-                  Minhas Festas
-                </Link>
                 {userType === 'service_provider' && (
                   <Link 
                     href="/dashboard/prestador" 
@@ -127,8 +162,21 @@ function HomeHeader() {
 
           {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            {user ? (
-              <LogoutButton />
+            {loading ? (
+              <div className="w-20 h-8 bg-gray-200 animate-pulse rounded"></div>
+            ) : user ? (
+              <div className="flex items-center space-x-3">
+                <Link 
+                  href="/perfil"
+                  className="flex items-center space-x-2 text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
+                >
+                  <div className="bg-[#FF0080] px-5 py-4 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                    {user.email?.charAt(0).toUpperCase()}
+                  </div>
+                  <span>Minha Conta</span>
+                </Link>
+                <LogoutButton />
+              </div>
             ) : (
               <>
                 <Link 
@@ -175,15 +223,26 @@ function HomeHeader() {
             >
               Categorias
             </ScrollLink>
+            <ScrollLink 
+              to="como-funciona" 
+              smooth={true} 
+              duration={500} 
+              className="block text-gray-600 hover:text-[#FF0080] transition-colors cursor-pointer py-2"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Como Funciona
+            </ScrollLink>
+            <ScrollLink 
+              to="prestadores" 
+              smooth={true} 
+              duration={500} 
+              className="block text-gray-600 hover:text-[#FF0080] transition-colors cursor-pointer py-2"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Prestadores
+            </ScrollLink>
             {user ? (
               <>
-                <Link 
-                  href="/minhas-festas" 
-                  className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Minhas Festas
-                </Link>
                 {userType === 'service_provider' && (
                   <Link 
                     href="/dashboard/prestador" 
@@ -193,6 +252,16 @@ function HomeHeader() {
                     Dashboard
                   </Link>
                 )}
+                <Link 
+                  href="/perfil" 
+                  className="flex items-center space-x-2 text-gray-600 hover:text-[#FF0080] transition-colors py-2"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <div className="w-6 h-6 bg-[#FF0080] rounded-full flex items-center justify-center text-white text-xs font-medium">
+                    {user.email?.charAt(0).toUpperCase()}
+                  </div>
+                  <span>Minha Área</span>
+                </Link>
                 <div className="pt-4 border-t border-gray-200">
                   <LogoutButton />
                 </div>
@@ -494,7 +563,7 @@ function DashboardHeader() {
         </nav>
 
         {/* Desktop Auth Buttons */}
-        <div className="hidden md:flex items-center space-x-4">
+        <div className="hidden md:flex items-center space-x-5">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-[#A502CA] rounded-full flex items-center justify-center">
               <span className="text-white font-bold text-sm">B</span>

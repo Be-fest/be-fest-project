@@ -26,15 +26,15 @@ export function PaymentForm({ services, totalValue, onSubmit }: PaymentFormProps
   };
 
   return (
-    <div className="w-full max-w-md space-y-8">
+    <div className="w-full space-y-6 sm:space-y-8">
       <Link
         href="/minhas-festas"
-        className="inline-block mb-6"
+        className="inline-block mb-4 sm:mb-6"
       >
         <motion.div
           whileHover={{ x: -5 }}
           whileTap={{ scale: 0.95 }}
-          className="text-[#F71875] text-4xl"
+          className="text-[#F71875] text-3xl sm:text-4xl"
         >
           ←
         </motion.div>
@@ -42,20 +42,20 @@ export function PaymentForm({ services, totalValue, onSubmit }: PaymentFormProps
 
       <div className="text-left">
         <motion.h1
-          className="text-4xl font-bold text-[#520029]"
+          className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#520029]"
           animate={{ scale: [1, 1.02, 1] }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
         >
           Pagamento
         </motion.h1>
         <motion.p
-          className="text-gray-500 mt-2 text-lg"
+          className="text-gray-500 mt-2 text-base sm:text-lg"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
           Você está a poucos cliques da sua festa perfeita!
-          <br />
+          <br className="hidden sm:block" />
           Finalize agora seu pedido e garanta os melhores serviços para o seu evento.
         </motion.p>
       </div>
@@ -66,11 +66,11 @@ export function PaymentForm({ services, totalValue, onSubmit }: PaymentFormProps
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
       >
-        <h2 className="font-medium text-[#520029]">Ver resumo da festa:</h2>
+        <h2 className="font-medium text-[#520029] text-sm sm:text-base">Ver resumo da festa:</h2>
         {services.map((service, index) => (
           <div
             key={index}
-            className="bg-gray-50 py-2 px-4 rounded-lg text-sm text-gray-600"
+            className="bg-gray-50 py-2 px-3 sm:px-4 rounded-lg text-xs sm:text-sm text-gray-600"
           >
             {service.name} - {service.provider}
           </div>
@@ -82,10 +82,10 @@ export function PaymentForm({ services, totalValue, onSubmit }: PaymentFormProps
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.2 }}
       >
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <div className="flex items-center justify-between">
-            <span className="font-medium text-[#520029]">Valor:</span>
-            <span className="font-bold text-[#520029] text-xl">
+            <span className="font-medium text-[#520029] text-sm sm:text-base">Valor:</span>
+            <span className="font-bold text-[#520029] text-lg sm:text-xl">
               R${totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </span>
           </div>
@@ -95,7 +95,7 @@ export function PaymentForm({ services, totalValue, onSubmit }: PaymentFormProps
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#F71875] hover:bg-[#E6006F] text-white font-medium py-4 px-8 rounded-xl transition-colors relative overflow-hidden group"
+            className="w-full bg-[#F71875] hover:bg-[#E6006F] text-white font-medium py-3 sm:py-4 px-6 sm:px-8 rounded-xl transition-colors relative overflow-hidden group text-sm sm:text-base"
           >
             <span className="relative z-10">
               {loading ? 'Processando...' : 'Pagar'}

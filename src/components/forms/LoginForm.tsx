@@ -1,48 +1,49 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useActionState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Input, Button, Logo } from "@/components/ui";
+import { Input, Button, Logo, ForgotPasswordModal } from "@/components/ui";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { MdVisibility, MdVisibilityOff } from "react-icons/md";
-import { useServices } from '@/hooks/useServices'
+import { loginAction } from '@/lib/actions/auth';
+
+// Wrapper function for useActionState compatibility
+async function wrappedLoginAction(prevState: { success: boolean; error?: string }, formData: FormData): Promise<{ success: boolean; error?: string }> {
+  return await loginAction(formData);
+}
 
 export function LoginForm() {
   const [userType, setUserType] = useState<"client" | "service_provider">("client");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [state, formAction, isPending] = useActionState(wrappedLoginAction, { success: false });
+  const [queryMessage, setQueryMessage] = useState<string | null>(null);
+
   const router = useRouter();
-  const { auth } = useServices();
+
+  // Check for query string messages on mount
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const message = searchParams.get('message');
+    if (message) {
+      setQueryMessage(message);
+      // Clear the query parameter
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, []);
+
+  // redirect after login success
+  useEffect(() => {
+    if (state.success && (state as any).data?.redirectTo) {
+      router.push((state as any).data.redirectTo);
+    }
+  }, [state.success, (state as any).data?.redirectTo]);
 
   const handleUserTypeChange = (type: "client" | "service_provider") => {
     setUserType(type);
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
-
-    try {
-      const { user } = await auth.signIn(email, password);
-      if (user) {
-        router.push('/dashboard');
-        router.refresh();
-      }
-    } catch (error) {
-      setError('Invalid email or password');
-    } finally {
-      setLoading(false);
-    }
   };
 
   return (
@@ -161,38 +162,42 @@ export function LoginForm() {
       </div>
 
       <motion.form
-        onSubmit={handleSubmit}
+        action={formAction}
         className="space-y-4 text-[#8D8D8D]"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
       >
-        {error && (
-          <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">
-            {error}
+        {queryMessage && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-3 rounded-md text-sm bg-green-50 text-green-600 border border-green-200"
+          >
+            {queryMessage}
+          </motion.div>
+        )}
+        
+        {!state.success && state.error && (
+          <div className={`p-3 rounded-md text-sm ${ (state as any).requiresConfirmation ? 'bg-yellow-50 text-yellow-600' : 'bg-red-50 text-red-500' }`}>
+            {state.error}
           </div>
         )}
         <Input
           type="email"
           name="email"
           placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          focusColor={userType === "service_provider" ? "#A502CA" : "#F71875"}
           required
-          disabled={loading}
+          disabled={isPending}
         />
 
         <div className="relative">
           <Input
             type={showPassword ? "text" : "password"}
             name="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            focusColor={userType === "service_provider" ? "#A502CA" : "#F71875"}
+            placeholder="Senha"
             required
-            disabled={loading}
+            disabled={isPending}
           />
           <button
             type="button"
@@ -207,13 +212,25 @@ export function LoginForm() {
           </button>
         </div>
 
+        {/* Link Esqueci a senha */}
+        <div className="text-right">
+          <button
+            type="button"
+            onClick={() => setShowForgotPassword(true)}
+            className="text-sm hover:underline"
+            style={{ color: userType === "service_provider" ? "#A502CA" : "#F71875" }}
+          >
+            Esqueci a senha
+          </button>
+        </div>
+
         <Button
           type="submit"
           className="w-full"
-          disabled={loading}
-          customColor={userType === "service_provider" ? "#A502CA" : "#F71875"}
+          disabled={isPending}
+          style={{ backgroundColor: userType === "service_provider" ? "#A502CA" : "#F71875" }}
         >
-          {loading ? 'Entrando...' : 'Entrar'}
+          {isPending ? 'Entrando...' : 'Entrar'}
         </Button>
       </motion.form>
 
@@ -234,6 +251,13 @@ export function LoginForm() {
           Criar conta
         </Link>
       </motion.div>
+
+      {/* Modal Esqueci a senha */}
+      <ForgotPasswordModal
+        isOpen={showForgotPassword}
+        onClose={() => setShowForgotPassword(false)}
+        userType={userType}
+      />
     </div>
   );
 }

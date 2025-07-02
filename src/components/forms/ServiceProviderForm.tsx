@@ -1,60 +1,46 @@
-import { useState } from 'react';
+import { useState, useActionState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ServiceProviderFormData, ServiceProviderFormProps } from '@/types/auth';
 import { Input, Button } from '@/components/ui';
-import { useForm } from '@/hooks/useForm';
 import { formatCNPJ, formatPhoneNumber } from '@/utils/formatters';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { MdVisibility, MdVisibilityOff } from 'react-icons/md';
 import Image from 'next/image';
+import { registerProviderAction } from '@/lib/actions/auth';
 
-export function ServiceProviderForm({ onSubmit, userType, onUserTypeChange, error }: ServiceProviderFormProps) {
+interface ServiceProviderFormProps {
+  userType: 'client' | 'service_provider';
+  onUserTypeChange: (type: 'client' | 'service_provider') => void;
+}
+
+// Wrapper function for useActionState compatibility
+async function wrappedRegisterProviderAction(prevState: { success: boolean; error?: string }, formData: FormData) {
+  try {
+    const result = await registerProviderAction(formData);
+    return result;
+  } catch (error) {
+    console.error('Provider register action failed:', error);
+    return { 
+      success: false, 
+      error: 'Ocorreu um erro inesperado. Tente novamente.' 
+    };
+  }
+}
+
+export function ServiceProviderForm({ userType, onUserTypeChange }: ServiceProviderFormProps) {
+  const [state, formAction, isPending] = useActionState(wrappedRegisterProviderAction, { success: false });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [formError, setFormError] = useState('');
+  const router = useRouter();
 
-  const { values, handleChange } = useForm<ServiceProviderFormData>({
-    initialValues: {
-      companyName: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-      cnpj: '',
-      phone: '',
-      areaOfOperation: '',
+  useEffect(() => {
+    if (state.success && state.data?.message) {
+      // Mostrar mensagem de sucesso por alguns segundos
+      setTimeout(() => {
+        router.push('/auth/login');
+      }, 2000);
     }
-  });
-
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setFormError('');
-
-    // Validações
-    if (!values.companyName || !values.email || !values.password || !values.confirmPassword || !values.cnpj || !values.phone || !values.areaOfOperation) {
-      setFormError('Por favor, preencha todos os campos');
-      return;
-    }
-
-    if (values.password !== values.confirmPassword) {
-      setFormError('As senhas não coincidem');
-      return;
-    }
-
-    if (values.password.length < 6) {
-      setFormError('A senha deve ter pelo menos 6 caracteres');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      await onSubmit(values);
-    } catch (error) {
-      console.error('Form submission error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [state.success, state.data, router]);
 
   return (
     <div className="w-full max-w-md space-y-6">
@@ -116,28 +102,38 @@ export function ServiceProviderForm({ onSubmit, userType, onUserTypeChange, erro
       </div>
 
       <motion.form
-        onSubmit={handleSubmit}
+        action={formAction}
         className="space-y-4 text-[#8D8D8D]"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
       >
+        {!state.success && state.error && (
+          <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">
+            {state.error}
+          </div>
+        )}
+
+        {state.success && state.data?.message && (
+          <div className="bg-green-50 text-green-600 p-3 rounded-md text-sm">
+            {state.data.message}
+          </div>
+        )}
+
         <Input
           type="text"
           name="companyName"
           placeholder="Nome da empresa"
-          value={values.companyName}
-          onChange={handleChange}
-          focusColor="#A502CA"
+          required
+          disabled={isPending}
         />
 
         <Input
           type="email"
           name="email"
           placeholder="E-mail"
-          value={values.email}
-          onChange={handleChange}
-          focusColor="#A502CA"
+          required
+          disabled={isPending}
         />
 
         <div className="relative">
@@ -145,9 +141,8 @@ export function ServiceProviderForm({ onSubmit, userType, onUserTypeChange, erro
             type={showPassword ? "text" : "password"}
             name="password"
             placeholder="Senha"
-            value={values.password}
-            onChange={handleChange}
-            focusColor="#A502CA"
+            required
+            disabled={isPending}
           />
           <button
             type="button"
@@ -167,9 +162,8 @@ export function ServiceProviderForm({ onSubmit, userType, onUserTypeChange, erro
             type={showConfirmPassword ? "text" : "password"}
             name="confirmPassword"
             placeholder="Confirmar senha"
-            value={values.confirmPassword}
-            onChange={handleChange}
-            focusColor="#A502CA"
+            required
+            disabled={isPending}
           />
           <button
             type="button"
@@ -188,42 +182,42 @@ export function ServiceProviderForm({ onSubmit, userType, onUserTypeChange, erro
           type="text"
           name="cnpj"
           placeholder="CNPJ"
-          value={formatCNPJ(values.cnpj)}
-          onChange={handleChange}
-          focusColor="#A502CA"
+          maxLength={18}
+          required
+          disabled={isPending}
+          onChange={(e) => {
+            e.target.value = formatCNPJ(e.target.value);
+          }}
         />
 
         <Input
           type="text"
           name="phone"
           placeholder="WhatsApp"
-          value={formatPhoneNumber(values.phone)}
-          onChange={handleChange}
-          focusColor="#A502CA"
+          maxLength={15}
+          required
+          disabled={isPending}
+          onChange={(e) => {
+            e.target.value = formatPhoneNumber(e.target.value);
+          }}
         />
 
         <Input
           type="text"
           name="areaOfOperation"
-          placeholder="Área de atuação"
-          value={values.areaOfOperation}
-          onChange={handleChange}
-          focusColor="#A502CA"
+          placeholder="Área de atuação (ex: Buffet, Decoração, Som)"
+          required
+          disabled={isPending}
         />
 
         <Button
           type="submit"
-          isLoading={loading}
-          customColor="#A502CA"
+          className="w-full"
+          disabled={isPending}
+          style={{ backgroundColor: '#A502CA' }}
         >
-          Criar Conta
+          {isPending ? 'Criando conta...' : 'Criar Conta'}
         </Button>
-
-        {(error || formError) && (
-          <p className="text-center text-sm text-red-500">
-            {error || formError}
-          </p>
-        )}
       </motion.form>
 
       <motion.div
