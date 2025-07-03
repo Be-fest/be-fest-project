@@ -94,14 +94,23 @@ export async function registerClientAction(formData: FormData): Promise<ActionRe
       }
     )
 
-    console.log('Attempting normal signup...')
+    console.log('Attempting client signup with trigger...')
+    
+    // Preparar metadados completos para o trigger SQL
+    const userMetadata = {
+      role: 'client',
+      full_name: validatedData.fullName,
+      cpf: cpf,
+      whatsapp_number: phone
+    }
+    
+    console.log('Sending client metadata to Supabase:', userMetadata)
+    
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: validatedData.email,
       password: validatedData.password,
       options: {
-        data: {
-          full_name: validatedData.fullName
-        }
+        data: userMetadata
       }
     })
 
@@ -119,48 +128,12 @@ export async function registerClientAction(formData: FormData): Promise<ActionRe
       return { success: false, error: 'Erro ao criar usuário: usuário não retornado' }
     }
 
-    console.log('User created with normal signup:', signUpData.user.id)
+    console.log('User created successfully with trigger:', signUpData.user.id)
 
-    // Usar admin client apenas para inserir na tabela users
-    const supabaseAdmin = createAdminClient()
+    // Aguardar um pouco para garantir que o trigger foi executado
+    await new Promise(resolve => setTimeout(resolve, 500))
 
-    // Aguardar um pouco para garantir que o usuário foi criado
-    await new Promise(resolve => setTimeout(resolve, 200))
-
-    console.log('Inserting user data:', {
-      id: signUpData.user.id,
-      full_name: validatedData.fullName,
-      email: validatedData.email,
-      cpf: cpf,
-      whatsapp_number: phone
-    })
-
-    const { data: insertData, error: userError } = await supabaseAdmin
-      .from('users')
-      .insert({
-        id: signUpData.user.id,
-        full_name: validatedData.fullName,
-        email: validatedData.email,
-        cpf: cpf,
-        whatsapp_number: phone
-      })
-      .select()
-
-    if (userError) {
-      console.error('User creation error:', userError)
-      console.error('User creation error details:', JSON.stringify(userError, null, 2))
-      
-      // Se falhar ao criar perfil, tentar deletar o usuário auth
-      try {
-        await supabaseAdmin.auth.admin.deleteUser(signUpData.user.id)
-      } catch (deleteError) {
-        console.error('Failed to cleanup user:', deleteError)
-      }
-      
-      return { success: false, error: `Erro ao criar perfil do usuário: ${userError.message}` }
-    }
-
-    console.log('User profile created successfully:', insertData)
+    console.log('Client registration completed successfully')
     
     return { 
       success: true, 
@@ -219,14 +192,25 @@ export async function registerProviderAction(formData: FormData): Promise<Action
       }
     )
 
-    console.log('Attempting provider normal signup...')
+    console.log('Attempting provider signup with trigger...')
+    
+    // Preparar metadados completos para o trigger SQL
+    const userMetadata = {
+      role: 'provider',
+      full_name: validatedData.companyName,
+      organization_name: validatedData.companyName,
+      cnpj: cnpj,
+      whatsapp_number: phone,
+      area_of_operation: validatedData.areaOfOperation
+    }
+    
+    console.log('Sending user metadata to Supabase:', userMetadata)
+    
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: validatedData.email,
       password: validatedData.password,
       options: {
-        data: {
-          full_name: validatedData.companyName
-        }
+        data: userMetadata
       }
     })
 
@@ -244,52 +228,12 @@ export async function registerProviderAction(formData: FormData): Promise<Action
       return { success: false, error: 'Erro ao criar usuário: usuário não retornado' }
     }
 
-    console.log('Provider user created with normal signup:', signUpData.user.id)
+    console.log('Provider user created successfully with trigger:', signUpData.user.id)
 
-    // Usar admin client apenas para inserir na tabela users
-    const supabaseAdmin = createAdminClient()
+    // Aguardar um pouco para garantir que o trigger foi executado
+    await new Promise(resolve => setTimeout(resolve, 500))
 
-    // Aguardar um pouco para garantir que o usuário foi criado
-    await new Promise(resolve => setTimeout(resolve, 200))
-
-    console.log('Inserting provider data:', {
-      id: signUpData.user.id,
-      full_name: validatedData.companyName,
-      email: validatedData.email,
-      organization_name: validatedData.companyName,
-      cnpj: cnpj,
-      whatsapp_number: phone,
-      area_of_operation: validatedData.areaOfOperation
-    })
-
-    const { data: insertData, error: userError } = await supabaseAdmin
-      .from('users')
-      .insert({
-        id: signUpData.user.id,
-        full_name: validatedData.companyName,
-        email: validatedData.email,
-        organization_name: validatedData.companyName,
-        cnpj: cnpj,
-        whatsapp_number: phone,
-        area_of_operation: validatedData.areaOfOperation
-      })
-      .select()
-
-    if (userError) {
-      console.error('Provider user creation error:', userError)
-      console.error('Provider user creation error details:', JSON.stringify(userError, null, 2))
-      
-      // Se falhar ao criar perfil, tentar deletar o usuário auth
-      try {
-        await supabaseAdmin.auth.admin.deleteUser(signUpData.user.id)
-      } catch (deleteError) {
-        console.error('Failed to cleanup provider user:', deleteError)
-      }
-      
-      return { success: false, error: `Erro ao criar perfil do usuário: ${userError.message}` }
-    }
-
-    console.log('Provider profile created successfully:', insertData)
+    console.log('Provider registration completed successfully')
     
     return { 
       success: true, 
@@ -349,7 +293,31 @@ export async function loginAction(formData: FormData): Promise<ActionResult> {
 
     if (userError) {
       console.error('User fetch error:', userError)
-      return { success: false, error: 'Erro ao carregar perfil do usuário' }
+      
+      // Fallback: criar perfil se não existir (para usuários antigos)
+      if (userError.code === 'PGRST116') { // No rows returned
+        console.log('User profile not found, creating fallback profile...')
+        
+        const { error: createError } = await supabase
+          .from('users')
+          .insert({
+            id: authData.user.id,
+            email: authData.user.email,
+            role: 'client', // default
+            full_name: authData.user.user_metadata?.full_name || '',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+        
+        if (createError) {
+          console.error('Failed to create fallback profile:', createError)
+          return { success: false, error: 'Perfil do usuário não encontrado e não foi possível criá-lo' }
+        }
+        
+        console.log('Fallback profile created successfully')
+      } else {
+        return { success: false, error: 'Erro ao carregar perfil do usuário' }
+      }
     }
 
     console.log('Login completed successfully')
