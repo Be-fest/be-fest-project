@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MdClose, MdAdd, MdRemove, MdShoppingCart, MdLocationOn } from 'react-icons/md';
+import { MdClose, MdAdd, MdRemove, MdShoppingCart, MdLocationOn, MdCalendarToday, MdPerson, MdPersonOutline, MdFace } from 'react-icons/md';
 import { useCart } from '../contexts/CartContext';
 import { PartyConfigForm } from './PartyConfigForm';
 
@@ -20,16 +20,28 @@ interface OffCanvasCartProps {
   };
 }
 
+interface GuestBreakdown {
+  fullGuests: number;
+  halfGuests: number;
+  freeGuests: number;
+}
+
 export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendingService }: OffCanvasCartProps) {
   const { 
     cartItems, 
     partyData, 
     updateQuantity, 
     removeFromCart, 
-    getTotalPrice
+    getTotalPrice,
+    setPartyData
   } = useCart();
 
   const [isConfiguring, setIsConfiguring] = useState(showPartyConfig);
+  const [guestBreakdown, setGuestBreakdown] = useState<GuestBreakdown>({
+    fullGuests: partyData?.fullGuests || 0,
+    halfGuests: partyData?.halfGuests || 0,
+    freeGuests: partyData?.freeGuests || 0
+  });
 
   const formatPrice = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -41,13 +53,39 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
   const calculateItemTotal = (item: any) => {
     if (!partyData) return item.price * item.quantity;
     
-    const fullGuestPrice = item.price * partyData.fullGuests;
-    const halfGuestPrice = (item.price * 0.5) * partyData.halfGuests;
-    return (fullGuestPrice + halfGuestPrice) * item.quantity;
+    // Calcular baseado nas regras de pricing por idade
+    const fullPrice = item.price * guestBreakdown.fullGuests; // 100%
+    const halfPrice = (item.price * 0.5) * guestBreakdown.halfGuests; // 50%
+    const freePrice = 0; // Free guests don't pay
+    
+    return (fullPrice + halfPrice + freePrice) * item.quantity;
   };
 
   const handlePartyConfigComplete = () => {
     setIsConfiguring(false);
+  };
+
+  const handleGuestBreakdownChange = (type: keyof GuestBreakdown, value: number) => {
+    const newBreakdown = { ...guestBreakdown, [type]: Math.max(0, value) };
+    setGuestBreakdown(newBreakdown);
+    
+    // Atualizar os dados da festa no contexto
+    if (partyData) {
+      setPartyData({
+        ...partyData,
+        fullGuests: newBreakdown.fullGuests,
+        halfGuests: newBreakdown.halfGuests,
+        freeGuests: newBreakdown.freeGuests
+      });
+    }
+  };
+
+  const getTotalGuests = () => {
+    return guestBreakdown.fullGuests + guestBreakdown.halfGuests + guestBreakdown.freeGuests;
+  };
+
+  const getCalculatedTotal = () => {
+    return cartItems.reduce((total, item) => total + calculateItemTotal(item), 0);
   };
 
   return (
@@ -61,7 +99,7 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={onClose}
-              className="fixed inset-0 bg-black bg-opacity-90 z-[60]"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
             />
             
             {/* Off-canvas Panel */}
@@ -70,45 +108,153 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-xl z-[70] flex flex-col"
-            >              {/* Header */}
-              <div className="bg-[#F71875] text-white px-4 py-4 flex items-center justify-between">
+              className="fixed right-0 top-0 h-full w-full max-w-lg bg-white shadow-2xl z-[70] flex flex-col"
+            >
+              {/* Header minimalista */}
+              <div className="bg-gradient-to-r from-[#F71875] to-[#A502CA] text-white px-6 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <MdShoppingCart className="text-2xl" />
+                  <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                    <MdShoppingCart className="text-xl" />
+                  </div>
                   <div>
-                    <h2 className="text-lg font-bold">
-                      {isConfiguring ? 'Nova Festa' : 'Seu pedido em'}
+                    <h2 className="text-lg font-semibold">
+                      {isConfiguring ? 'Nova Festa' : 'Carrinho'}
                     </h2>
                     <p className="text-sm opacity-90">
                       {isConfiguring 
-                        ? 'Configure sua festa dos sonhos' 
-                        : (partyData?.eventName || 'Configure sua festa')
+                        ? 'Configure sua festa' 
+                        : (partyData?.eventName || 'Sem festa configurada')
                       }
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={onClose}
-                  className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition-colors"
+                  className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors"
                 >
-                  <MdClose className="text-xl" />
+                  <MdClose className="text-lg" />
                 </button>
-              </div>              {/* Event Info */}
+              </div>
+
+              {/* Event Info Card - Design minimalista */}
               {partyData && !isConfiguring && (
-                <div className="px-4 py-3 bg-gray-50 border-b">
-                  <div className="flex items-start gap-2">
-                    <MdLocationOn className="text-[#F71875] mt-1 flex-shrink-0" />
-                    <div className="text-sm">
-                      <p className="font-medium text-gray-800">{partyData.eventName}</p>
-                      <p className="text-gray-600">{partyData.location}</p>
-                      <p className="text-gray-600">
-                        {new Date(partyData.eventDate).toLocaleDateString('pt-BR')} às {partyData.startTime}
-                      </p>
-                      <p className="text-gray-600 text-xs mt-1">
-                        {partyData.fullGuests} adultos, {partyData.halfGuests} crianças
-                        {partyData.freeGuests > 0 && `, ${partyData.freeGuests} grátis`}
-                      </p>
+                <div className="mx-6 mt-4 p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-[#F71875] rounded-lg flex items-center justify-center flex-shrink-0">
+                      <MdLocationOn className="text-white text-sm" />
                     </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 truncate">{partyData.eventName}</h3>
+                      <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
+                        <div className="flex items-center gap-1">
+                          <MdCalendarToday className="text-xs" />
+                          <span>{new Date(partyData.eventDate).toLocaleDateString('pt-BR')}</span>
+                        </div>
+                        {partyData.startTime && (
+                          <span>{partyData.startTime}</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1 truncate">{partyData.location}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Guest Breakdown - Apenas se há festa configurada */}
+              {partyData && !isConfiguring && (
+                <div className="mx-6 mt-4 p-4 bg-white border border-gray-200 rounded-xl">
+                  <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <MdPerson className="text-[#F71875]" />
+                    Convidados ({getTotalGuests()})
+                  </h3>
+                  
+                                    <div className="space-y-1">
+                     {/* Inteira */}
+                     <div className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
+                       <div className="flex items-center gap-3">
+                         <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                           <MdPerson className="text-green-600 text-sm" />
+                         </div>
+                         <div>
+                           <span className="text-sm font-medium text-gray-900">Inteira</span>
+                           <p className="text-xs text-gray-500">13+ anos (100%)</p>
+                         </div>
+                       </div>
+                       <div className="flex items-center gap-3">
+                         <button
+                           onClick={() => handleGuestBreakdownChange('fullGuests', guestBreakdown.fullGuests - 1)}
+                           disabled={guestBreakdown.fullGuests === 0}
+                           className="w-8 h-8 border border-gray-300 rounded-full flex items-center justify-center transition-all hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-gray-300"
+                         >
+                           <MdRemove className="text-sm text-gray-600" />
+                         </button>
+                         <span className="w-8 text-center text-sm font-medium text-gray-900">{guestBreakdown.fullGuests}</span>
+                         <button
+                           onClick={() => handleGuestBreakdownChange('fullGuests', guestBreakdown.fullGuests + 1)}
+                           className="w-8 h-8 border border-gray-300 rounded-full flex items-center justify-center transition-all hover:border-gray-400 hover:bg-gray-50"
+                         >
+                           <MdAdd className="text-sm text-gray-600" />
+                         </button>
+                       </div>
+                     </div>
+
+                     {/* Meia */}
+                     <div className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
+                       <div className="flex items-center gap-3">
+                         <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                           <MdPersonOutline className="text-blue-600 text-sm" />
+                         </div>
+                         <div>
+                           <span className="text-sm font-medium text-gray-900">Meia</span>
+                           <p className="text-xs text-gray-500">6-12 anos (50%)</p>
+                         </div>
+                       </div>
+                       <div className="flex items-center gap-3">
+                         <button
+                           onClick={() => handleGuestBreakdownChange('halfGuests', guestBreakdown.halfGuests - 1)}
+                           disabled={guestBreakdown.halfGuests === 0}
+                           className="w-8 h-8 border border-gray-300 rounded-full flex items-center justify-center transition-all hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-gray-300"
+                         >
+                           <MdRemove className="text-sm text-gray-600" />
+                         </button>
+                         <span className="w-8 text-center text-sm font-medium text-gray-900">{guestBreakdown.halfGuests}</span>
+                         <button
+                           onClick={() => handleGuestBreakdownChange('halfGuests', guestBreakdown.halfGuests + 1)}
+                           className="w-8 h-8 border border-gray-300 rounded-full flex items-center justify-center transition-all hover:border-gray-400 hover:bg-gray-50"
+                         >
+                           <MdAdd className="text-sm text-gray-600" />
+                         </button>
+                       </div>
+                     </div>
+
+                     {/* Free */}
+                     <div className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
+                       <div className="flex items-center gap-3">
+                         <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                           <MdFace className="text-orange-600 text-sm" />
+                         </div>
+                         <div>
+                           <span className="text-sm font-medium text-gray-900">Gratuito</span>
+                           <p className="text-xs text-gray-500">0-5 anos (0%)</p>
+                         </div>
+                       </div>
+                       <div className="flex items-center gap-3">
+                         <button
+                           onClick={() => handleGuestBreakdownChange('freeGuests', guestBreakdown.freeGuests - 1)}
+                           disabled={guestBreakdown.freeGuests === 0}
+                           className="w-8 h-8 border border-gray-300 rounded-full flex items-center justify-center transition-all hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-gray-300"
+                         >
+                           <MdRemove className="text-sm text-gray-600" />
+                         </button>
+                         <span className="w-8 text-center text-sm font-medium text-gray-900">{guestBreakdown.freeGuests}</span>
+                         <button
+                           onClick={() => handleGuestBreakdownChange('freeGuests', guestBreakdown.freeGuests + 1)}
+                           className="w-8 h-8 border border-gray-300 rounded-full flex items-center justify-center transition-all hover:border-gray-400 hover:bg-gray-50"
+                         >
+                           <MdAdd className="text-sm text-gray-600" />
+                         </button>
+                       </div>
+                     </div>
                   </div>
                 </div>
               )}
@@ -122,66 +268,71 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
                   />
                 ) : cartItems.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-                    <MdShoppingCart className="text-6xl text-gray-300 mb-4" />
-                    <h3 className="text-lg font-medium text-gray-600 mb-2">
-                      Sua sacola está vazia
+                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                      <MdShoppingCart className="text-3xl text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      Carrinho vazio
                     </h3>
-                    <p className="text-gray-500 text-sm mb-4">
-                      Adicione itens para começar a montar sua festa
+                    <p className="text-gray-500 text-sm mb-6 max-w-sm">
+                      Adicione serviços para começar a montar sua festa dos sonhos
                     </p>
                     {!partyData && (
                       <button
                         onClick={() => setIsConfiguring(true)}
-                        className="bg-[#F71875] hover:bg-[#E6006F] text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                        className="bg-gradient-to-r from-[#F71875] to-[#A502CA] hover:from-[#E6006F] hover:to-[#8B0A9E] text-white px-6 py-3 rounded-xl font-medium transition-all transform hover:scale-105"
                       >
                         Configurar Nova Festa
                       </button>
                     )}
                   </div>
                 ) : (
-                  <div className="p-4 space-y-4">
+                  <div className="p-6 space-y-4">
                     {cartItems.map((item) => (
-                      <div key={item.id} className="bg-white border border-gray-200 rounded-lg p-4">
-                        <div className="flex gap-3">
-                          <img
-                            src={item.image}
-                            alt={item.serviceName}
-                            className="w-16 h-16 rounded-lg object-cover"
-                          />
-                          <div className="flex-1">
-                            <h4 className="font-medium text-gray-800 text-sm">
+                      <div key={item.id} className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
+                        <div className="flex gap-4">
+                          <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
+                            <img
+                              src={item.image}
+                              alt={item.serviceName}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-gray-900 text-sm truncate">
                               {item.serviceName}
                             </h4>
-                            <p className="text-xs text-gray-500 mb-2">
+                            <p className="text-xs text-gray-500 mb-3 truncate">
                               {item.providerName}
                             </p>
                             
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
+                            <div className="flex items-center justify-between mt-2">
+                              <div className="flex items-center gap-3">
                                 <button
-                                  onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                  className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+                                  onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
+                                  disabled={item.quantity === 1}
+                                  className="w-8 h-8 border border-gray-300 rounded-full flex items-center justify-center transition-all hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-gray-300"
                                 >
-                                  <MdRemove className="text-sm" />
+                                  <MdRemove className="text-sm text-gray-600" />
                                 </button>
-                                <span className="w-8 text-center font-medium">
+                                <span className="w-8 text-center text-sm font-medium text-gray-900">
                                   {item.quantity}
                                 </span>
                                 <button
                                   onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                  className="w-8 h-8 rounded-full bg-[#F71875] hover:bg-[#E6006F] text-white flex items-center justify-center transition-colors"
+                                  className="w-8 h-8 border border-gray-300 rounded-full flex items-center justify-center transition-all hover:border-gray-400 hover:bg-gray-50"
                                 >
-                                  <MdAdd className="text-sm" />
+                                  <MdAdd className="text-sm text-gray-600" />
                                 </button>
                               </div>
                               
                               <div className="text-right">
-                                <p className="font-bold text-[#F71875]">
+                                <p className="font-bold text-[#F71875] text-sm">
                                   {formatPrice(calculateItemTotal(item))}
                                 </p>
                                 <button
                                   onClick={() => removeFromCart(item.id)}
-                                  className="text-xs text-red-500 hover:text-red-700 transition-colors"
+                                  className="text-xs text-red-500 hover:text-red-700 transition-colors mt-1"
                                 >
                                   Remover
                                 </button>
@@ -193,31 +344,37 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
                     ))}
                   </div>
                 )}
-              </div>              {/* Footer com Total e Checkout */}
+              </div>
+
+              {/* Footer com Total e Checkout - Design minimalista */}
               {cartItems.length > 0 && !isConfiguring && (
-                <div className="border-t bg-white p-4 space-y-3">
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
+                <div className="border-t border-gray-200 bg-white p-6">
+                  <div className="space-y-3 mb-4">
+                    {/* Breakdown de preços */}
+                    <div className="flex justify-between text-sm text-gray-600">
                       <span>Subtotal</span>
-                      <span>{formatPrice(getTotalPrice())}</span>
+                      <span>{formatPrice(getCalculatedTotal())}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-sm text-gray-600">
                       <span>Taxa de serviço</span>
-                      <span className="text-green-600">Grátis</span>
+                      <span className="text-emerald-600 font-medium">Grátis</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Taxa de entrega</span>
-                      <span className="text-green-600">Grátis</span>
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>Entrega</span>
+                      <span className="text-emerald-600 font-medium">Grátis</span>
                     </div>
-                    <hr />
-                    <div className="flex justify-between font-bold text-lg">
-                      <span>Total</span>
-                      <span className="text-[#F71875]">{formatPrice(getTotalPrice())}</span>
+                    <div className="border-t border-gray-200 pt-3">
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold text-gray-900">Total</span>
+                        <span className="text-xl font-bold text-[#F71875]">
+                          {formatPrice(getCalculatedTotal())}
+                        </span>
+                      </div>
                     </div>
                   </div>
                   
-                  <button className="w-full bg-[#F71875] hover:bg-[#E6006F] text-white font-bold py-4 rounded-lg transition-colors">
-                    Escolher forma de pagamento
+                  <button className="w-full bg-gradient-to-r from-[#F71875] to-[#A502CA] hover:from-[#E6006F] hover:to-[#8B0A9E] text-white font-semibold py-4 rounded-xl transition-all transform hover:scale-105 shadow-lg">
+                    Finalizar Pedido
                   </button>
                 </div>
               )}

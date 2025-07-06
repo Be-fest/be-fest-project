@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins, Roboto } from "next/font/google";
 import { CartProvider } from "@/contexts/CartContext";
 import { OffCanvasProvider } from "@/contexts/OffCanvasContext";
+import { SessionProvider } from "@/components/SessionProvider";
 import { FloatingCart } from "@/components/FloatingCart";
 import { CartWrapper } from "@/components/CartWrapper";
 import { RoutesModal } from "@/components/ui";
@@ -35,14 +36,16 @@ export default function RootLayout({
         className={`${poppins.variable} ${roboto.variable} antialiased font-poppins`}
         cz-shortcut-listen="true"
       >
-        <CartProvider>
-          <OffCanvasProvider>
-            {children}
-            <FloatingCart />
-            <CartWrapper />
-            <RoutesModal />
-          </OffCanvasProvider>
-        </CartProvider>
+        <SessionProvider>
+          <CartProvider>
+            <OffCanvasProvider>
+              {children}
+              <FloatingCart />
+              <CartWrapper />
+              <RoutesModal />
+            </OffCanvasProvider>
+          </CartProvider>
+        </SessionProvider>
       </body>
     </html>
   );

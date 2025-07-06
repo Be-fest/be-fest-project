@@ -1,54 +1,32 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { MdEdit, MdDelete, MdVisibility } from 'react-icons/md';
-import { Order } from '@/types/admin';
 import { StatusBadge } from './StatusBadge';
-
-// Mock data para demonstração
-const mockOrders: Order[] = [
-  {
-    id: 'ORD-001',
-    clientId: 'CLI-001',
-    clientName: 'João Silva',
-    providerId: 'PRO-001',
-    providerName: 'Barreto\'s Buffet',
-    serviceName: 'Buffet Completo',
-    value: 3500,
-    status: 'confirmado',
-    createdAt: new Date('2024-01-15'),
-    updatedAt: new Date('2024-01-16'),
-    partyDate: new Date('2024-02-15')
-  },
-  {
-    id: 'ORD-002',
-    clientId: 'CLI-002',
-    clientName: 'Maria Santos',
-    providerId: 'PRO-002',
-    providerName: 'DJ Mix',
-    serviceName: 'Som e Iluminação',
-    value: 1200,
-    status: 'aguardando_pagamento',
-    createdAt: new Date('2024-01-14'),
-    updatedAt: new Date('2024-01-14'),
-    partyDate: new Date('2024-02-20')
-  },
-  {
-    id: 'ORD-003',
-    clientId: 'CLI-003',
-    clientName: 'Pedro Costa',
-    providerId: 'PRO-003',
-    providerName: 'Flores & Cia',
-    serviceName: 'Decoração Premium',
-    value: 2500,
-    status: 'solicitacao_enviada',
-    createdAt: new Date('2024-01-13'),
-    updatedAt: new Date('2024-01-13'),
-    partyDate: new Date('2024-02-25')
-  }
-];
+import { getBookingsAction } from '@/lib/actions/bookings';
+import { BookingWithDetails, BookingStatus } from '@/types/database';
 
 export function OrdersTable() {
+  const [bookings, setBookings] = useState<BookingWithDetails[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Carregar bookings
+  const loadBookings = async () => {
+    setLoading(true);
+    const result = await getBookingsAction();
+    if (result.success && result.data) {
+      setBookings(result.data);
+    } else {
+      console.error('Erro ao carregar bookings:', result.error);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    loadBookings();
+  }, []);
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -56,9 +34,39 @@ export function OrdersTable() {
     }).format(value);
   };
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('pt-BR');
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR');
   };
+
+  const getStatusLabel = (status: BookingStatus) => {
+    switch (status) {
+      case 'pending':
+        return 'solicitacao_enviada';
+      case 'confirmed':
+        return 'confirmado';
+      case 'paid':
+        return 'aguardando_pagamento';
+      case 'completed':
+        return 'concluido';
+      case 'cancelled':
+        return 'cancelado';
+      default:
+        return status;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="bg-white border border-gray-200 rounded-lg p-4">
+            <div className="h-4 bg-gray-200 rounded animate-pulse mb-2"></div>
+            <div className="h-3 bg-gray-200 rounded animate-pulse w-2/3"></div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <>
@@ -68,50 +76,59 @@ export function OrdersTable() {
           <thead>
             <tr className="bg-primary-light">
               <th className="text-left py-4 px-6 font-medium text-white">ID</th>
-              <th className="text-left py-4 px-6 font-medium text-white">Cliente</th>
+              <th className="text-left py-4 px-6 font-medium text-white">Evento</th>
               <th className="text-left py-4 px-6 font-medium text-white">Prestador</th>
               <th className="text-left py-4 px-6 font-medium text-white">Serviço</th>
               <th className="text-left py-4 px-6 font-medium text-white">Valor</th>
+              <th className="text-left py-4 px-6 font-medium text-white">Convidados</th>
               <th className="text-left py-4 px-6 font-medium text-white">Status</th>
-              <th className="text-left py-4 px-6 font-medium text-white">Data da Festa</th>
+              <th className="text-left py-4 px-6 font-medium text-white">Data do Evento</th>
               <th className="text-left py-4 px-6 font-medium text-white">Ações</th>
             </tr>
           </thead>
           <tbody>
-            {mockOrders.map((order, index) => (
+            {bookings.map((booking, index) => (
               <motion.tr
-                key={order.id}
+                key={booking.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.1 }}
                 className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
               >
                 <td className="py-4 px-6 font-mono text-sm text-gray-600">
-                  {order.id}
+                  {booking.id.slice(0, 8)}...
                 </td>
                 <td className="py-4 px-6">
                   <div>
-                    <div className="font-medium text-gray-900">{order.clientName}</div>
-                    <div className="text-sm text-gray-500">ID: {order.clientId}</div>
+                    <div className="font-medium text-gray-900">{booking.event.title}</div>
+                    <div className="text-sm text-gray-500">{booking.event.location || 'Local não informado'}</div>
                   </div>
                 </td>
                 <td className="py-4 px-6">
                   <div>
-                    <div className="font-medium text-gray-900">{order.providerName}</div>
-                    <div className="text-sm text-gray-500">ID: {order.providerId}</div>
+                    <div className="font-medium text-gray-900">
+                      {booking.service.provider.organization_name || booking.service.provider.full_name}
+                    </div>
+                    <div className="text-sm text-gray-500">{booking.service.provider.area_of_operation}</div>
                   </div>
                 </td>
                 <td className="py-4 px-6 text-gray-900">
-                  {order.serviceName}
+                  <div>
+                    <div className="font-medium">{booking.service.name}</div>
+                    <div className="text-sm text-gray-500">{booking.service.category}</div>
+                  </div>
                 </td>
                 <td className="py-4 px-6 font-medium text-gray-900">
-                  {formatCurrency(order.value)}
-                </td>
-                <td className="py-4 px-6">
-                  <StatusBadge status={order.status} />
+                  {formatCurrency(booking.price)}
                 </td>
                 <td className="py-4 px-6 text-gray-600">
-                  {order.partyDate ? formatDate(order.partyDate) : '-'}
+                  {booking.guest_count}
+                </td>
+                <td className="py-4 px-6">
+                  <StatusBadge status={getStatusLabel(booking.status)} />
+                </td>
+                <td className="py-4 px-6 text-gray-600">
+                  {formatDate(booking.event.event_date)}
                 </td>
                 <td className="py-4 px-6">
                   <div className="flex gap-2">
@@ -134,9 +151,9 @@ export function OrdersTable() {
 
       {/* Mobile Cards */}
       <div className="lg:hidden space-y-4 p-4">
-        {mockOrders.map((order, index) => (
+        {bookings.map((booking, index) => (
           <motion.div
-            key={order.id}
+            key={booking.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: index * 0.1 }}
@@ -145,8 +162,10 @@ export function OrdersTable() {
             {/* Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="font-mono text-xs text-gray-500">{order.id}</span>
-                <StatusBadge status={order.status} size="sm" />
+                <span className="font-mono text-xs text-gray-500">
+                  {booking.id.slice(0, 8)}...
+                </span>
+                <StatusBadge status={getStatusLabel(booking.status)} size="sm" />
               </div>
               <div className="flex gap-1">
                 <button className="p-2 text-gray-600 hover:text-primary hover:bg-primary-light rounded-lg transition-colors">
@@ -161,15 +180,18 @@ export function OrdersTable() {
               </div>
             </div>
 
-            {/* Cliente e Prestador */}
+            {/* Evento e Prestador */}
             <div className="grid grid-cols-1 gap-3">
               <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Cliente</p>
-                <p className="font-medium text-gray-900">{order.clientName}</p>
+                <p className="text-xs text-gray-500 uppercase tracking-wide">Evento</p>
+                <p className="font-medium text-gray-900">{booking.event.title}</p>
+                <p className="text-sm text-gray-500">{booking.event.location || 'Local não informado'}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500 uppercase tracking-wide">Prestador</p>
-                <p className="font-medium text-gray-900">{order.providerName}</p>
+                <p className="font-medium text-gray-900">
+                  {booking.service.provider.organization_name || booking.service.provider.full_name}
+                </p>
               </div>
             </div>
 
@@ -177,25 +199,41 @@ export function OrdersTable() {
             <div className="space-y-2">
               <div>
                 <p className="text-xs text-gray-500 uppercase tracking-wide">Serviço</p>
-                <p className="text-gray-900">{order.serviceName}</p>
+                <p className="text-gray-900">{booking.service.name}</p>
+                <p className="text-sm text-gray-500">{booking.service.category}</p>
               </div>
               
               <div className="flex justify-between items-center pt-2 border-t border-gray-100">
                 <div>
                   <p className="text-xs text-gray-500">Valor</p>
-                  <p className="font-semibold text-primary">{formatCurrency(order.value)}</p>
+                  <p className="font-semibold text-primary">{formatCurrency(booking.price)}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-gray-500">Convidados</p>
+                  <p className="text-sm text-gray-900">{booking.guest_count}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-gray-500">Data da Festa</p>
-                  <p className="text-sm text-gray-900">
-                    {order.partyDate ? formatDate(order.partyDate) : '-'}
-                  </p>
+                  <p className="text-xs text-gray-500">Data do Evento</p>
+                  <p className="text-sm text-gray-900">{formatDate(booking.event.event_date)}</p>
                 </div>
               </div>
             </div>
           </motion.div>
         ))}
       </div>
+
+      {/* Empty State */}
+      {bookings.length === 0 && !loading && (
+        <div className="text-center py-12">
+          <div className="text-gray-400 text-6xl mb-4">📋</div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            Nenhuma reserva encontrada
+          </h3>
+          <p className="text-gray-600">
+            As reservas aparecerão aqui quando os clientes finalizarem seus pedidos
+          </p>
+        </div>
+      )}
     </>
   );
 } 

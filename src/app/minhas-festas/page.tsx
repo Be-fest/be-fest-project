@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -13,98 +13,176 @@ import {
   MdClose,
   MdMoreVert,
   MdArrowBack,
+  MdAttachMoney,
+  MdEvent,
 } from 'react-icons/md';
 import { motion } from 'framer-motion';
 import { NewPartyModal } from '@/components/NewPartyModal';
+import { getClientEventsAction, deleteEventAction } from '@/lib/actions/events';
+import { Event, EventStatus } from '@/types/database';
+import { ClientLayout } from '@/components/client/ClientLayout';
+import { AuthGuard } from '@/components/AuthGuard';
 
-interface Party {
-  id: string;
-  name: string;
-  date: string;
-  time: string;
-  location: string;
-  guests: {
-    full: number;
-    half: number;
-    free: number;
-  };
-  status: 'Planejamento' | 'Confirmada' | 'Realizada' | 'Cancelada';
-  totalServices: number;
-  confirmedServices: number;
-}
+// Skeleton Components
+const PartiesSkeleton = () => (
+  <div className="space-y-6">
+    {/* Header Skeleton */}
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-pulse">
+      <div className="space-y-2">
+        <div className="h-8 w-48 bg-gray-300 rounded"></div>
+        <div className="h-4 w-64 bg-gray-200 rounded"></div>
+      </div>
+      <div className="h-12 w-40 bg-gray-300 rounded-lg"></div>
+    </div>
 
-// Mock data
-const parties: Party[] = [
-  {
-    id: '1',
-    name: 'Aniversário da Ana',
-    date: '2024-08-15',
-    time: '19:00',
-    location: 'Rua das Flores, 123, São Paulo, SP',
-    guests: {
-      full: 30,
-      half: 15,
-      free: 5,
-    },
-    status: 'Planejamento',
-    totalServices: 8,
-    confirmedServices: 3,
-  },
-  {
-    id: '2',
-    name: 'Casamento João e Maria',
-    date: '2024-09-20',
-    time: '20:00',
-    location: 'Buffet Elegance, Av. Principal, 500',
-    guests: {
-      full: 150,
-      half: 20,
-      free: 10,
-    },
-    status: 'Confirmada',
-    totalServices: 12,
-    confirmedServices: 12,
-  },
-  // Add more mock parties here
-];
+    {/* Stats Cards Skeleton */}
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="bg-white rounded-xl p-6 shadow-sm animate-pulse">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-gray-300 rounded-full"></div>
+            <div className="space-y-2">
+              <div className="h-6 w-16 bg-gray-300 rounded"></div>
+              <div className="h-4 w-24 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {/* Parties Grid Skeleton */}
+    <div className="grid gap-6">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="bg-white rounded-xl shadow-sm overflow-hidden animate-pulse">
+          <div className="h-48 bg-gray-300"></div>
+          <div className="p-6 space-y-4">
+            <div className="flex items-start justify-between">
+              <div className="space-y-2">
+                <div className="h-6 w-48 bg-gray-300 rounded"></div>
+                <div className="h-4 w-32 bg-gray-200 rounded"></div>
+              </div>
+              <div className="h-6 w-20 bg-gray-300 rounded-full"></div>
+            </div>
+            <div className="space-y-2">
+              <div className="h-4 w-full bg-gray-200 rounded"></div>
+              <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="h-4 w-24 bg-gray-200 rounded"></div>
+              <div className="h-8 w-24 bg-gray-300 rounded"></div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
 
 export default function MinhasFestasPage() {
   const router = useRouter();
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isNewPartyModalOpen, setNewPartyModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<Party['status'] | 'Todas'>('Todas');
+  const [statusFilter, setStatusFilter] = useState<EventStatus | 'all'>('all');
 
-  const filteredParties = parties.filter(party => {
-    const matchesSearch = party.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      party.location.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'Todas' || party.status === statusFilter;
+  // Carregar eventos do cliente
+  const loadEvents = async () => {
+    setLoading(true);
+    const result = await getClientEventsAction();
+    if (result.success && result.data) {
+      setEvents(result.data);
+    } else {
+      console.error('Erro ao carregar eventos:', result.error);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    loadEvents();
+  }, []);
+
+  const filteredEvents = events.filter(event => {
+    const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (event.description && event.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (event.location && event.location.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesStatus = statusFilter === 'all' || event.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   const handleCreatePartySuccess = () => {
     setNewPartyModalOpen(false);
-    // Temporary alert for demo
-    alert('Festa criada com sucesso!');
+    loadEvents(); // Recarregar lista
   };
 
-  const getStatusColor = (status: Party['status']) => {
+  const handleDeleteEvent = async (eventId: string, eventTitle: string) => {
+    if (confirm(`Tem certeza que deseja excluir a festa "${eventTitle}"?`)) {
+      const result = await deleteEventAction(eventId);
+      if (result.success) {
+        setEvents(events.filter(e => e.id !== eventId));
+      } else {
+        alert(result.error || 'Erro ao excluir evento');
+      }
+    }
+  };
+
+  const getStatusColor = (status: EventStatus) => {
     switch (status) {
-      case 'Planejamento':
+      case 'draft':
+        return 'bg-gray-100 text-gray-800';
+      case 'planning':
         return 'bg-yellow-100 text-yellow-800';
-      case 'Confirmada':
+      case 'confirmed':
         return 'bg-green-100 text-green-800';
-      case 'Realizada':
+      case 'completed':
         return 'bg-blue-100 text-blue-800';
-      case 'Cancelada':
+      case 'cancelled':
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   };
 
+  const getStatusLabel = (status: EventStatus) => {
+    switch (status) {
+      case 'draft':
+        return 'Rascunho';
+      case 'planning':
+        return 'Planejamento';
+      case 'confirmed':
+        return 'Confirmada';
+      case 'completed':
+        return 'Realizada';
+      case 'cancelled':
+        return 'Cancelada';
+      default:
+        return status;
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR');
+  };
+
+  const formatTime = (timeString: string | null) => {
+    if (!timeString) return '';
+    return timeString.slice(0, 5); // HH:MM
+  };
+
+  if (loading) {
+    return (
+      <ClientLayout>
+        <div className="p-6">
+          <PartiesSkeleton />
+        </div>
+      </ClientLayout>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[#FFF6FB] py-10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <AuthGuard requiredRole="client">
+      <ClientLayout>
+      <div className="p-6">
         {/* Back Button */}
         <Link
           href="/"
@@ -115,21 +193,82 @@ export default function MinhasFestasPage() {
         </Link>
 
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-[#520029]">Minhas Festas</h1>
-            <p className="text-gray-600 mt-1">
-              Gerencie todas as suas festas em um só lugar
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#520029] mb-2">
+              Minhas Festas
+            </h1>
+            <p className="text-gray-600">
+              Gerencie e acompanhe todas as suas festas em um só lugar
             </p>
           </div>
-
-          <button
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => setNewPartyModalOpen(true)}
-            className="inline-flex items-center px-6 py-3 bg-[#A502CA] text-white rounded-lg hover:bg-[#8B0A9E] transition-colors font-medium gap-2"
+            className="bg-[#F71875] hover:bg-[#E6006F] text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 shadow-lg transition-colors"
           >
             <MdAdd className="text-xl" />
             Nova Festa
-          </button>
+          </motion.button>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="bg-white rounded-xl p-6 shadow-sm"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                <MdEvent className="text-blue-600 text-xl" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-800">{events.length}</p>
+                <p className="text-gray-600 text-sm">Total de Festas</p>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="bg-white rounded-xl p-6 shadow-sm"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                <MdCalendarToday className="text-green-600 text-xl" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-800">
+                  {events.filter(e => e.status === 'confirmed').length}
+                </p>
+                <p className="text-gray-600 text-sm">Confirmadas</p>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="bg-white rounded-xl p-6 shadow-sm"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                <MdPeople className="text-yellow-600 text-xl" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-800">
+                  {events.filter(e => e.status === 'planning').length}
+                </p>
+                <p className="text-gray-600 text-sm">Em Planejamento</p>
+              </div>
+            </div>
+          </motion.div>
         </div>
 
         {/* Filters */}
@@ -152,105 +291,114 @@ export default function MinhasFestasPage() {
               <MdFilterList className="text-gray-500 text-xl" />
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as Party['status'] | 'Todas')}
+                onChange={(e) => setStatusFilter(e.target.value as EventStatus | 'all')}
                 className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none"
               >
-                <option value="Todas">Todas</option>
-                <option value="Planejamento">Planejamento</option>
-                <option value="Confirmada">Confirmada</option>
-                <option value="Realizada">Realizada</option>
-                <option value="Cancelada">Cancelada</option>
+                <option value="all">Todas</option>
+                <option value="draft">Rascunho</option>
+                <option value="planning">Planejamento</option>
+                <option value="confirmed">Confirmada</option>
+                <option value="completed">Realizada</option>
+                <option value="cancelled">Cancelada</option>
               </select>
             </div>
           </div>
         </div>
 
-        {/* Party Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredParties.map((party) => (
+        {/* Events Grid */}
+        <div className="grid gap-6">
+          {filteredEvents.map((event, index) => (
             <motion.div
-              key={party.id}
+              key={event.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden"
             >
+              <div className="h-48 bg-gradient-to-r from-[#F71875] to-[#A502CA] relative">
+                <div className="absolute inset-0 bg-black bg-opacity-20"></div>
+                <div className="absolute bottom-4 left-6 text-white">
+                  <h2 className="text-2xl font-bold">{event.title}</h2>
+                  <p className="text-pink-100">{formatDate(event.event_date)}</p>
+                </div>
+                <div className="absolute top-4 right-4">
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(event.status)}`}>
+                    {getStatusLabel(event.status)}
+                  </span>
+                </div>
+              </div>
+
               <div className="p-6">
-                <div className="flex items-start justify-between">
-                  <h3 className="text-lg font-semibold text-[#520029] mb-2">
-                    {party.name}
-                  </h3>
-                  <button className="p-1 hover:bg-gray-100 rounded-full">
-                    <MdMoreVert className="text-gray-500" />
-                  </button>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <MdLocationOn className="text-lg" />
+                    <span>{event.location || 'Local não definido'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <MdPeople className="text-lg" />
+                    <span>{event.guest_count} convidados</span>
+                  </div>
                 </div>
 
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center text-gray-600">
-                    <MdCalendarToday className="mr-2" />
-                    <span>
-                      {new Date(party.date).toLocaleDateString('pt-BR')} às {party.time}
-                    </span>
-                  </div>
-                  <div className="flex items-center text-gray-600">
-                    <MdLocationOn className="mr-2" />
-                    <span className="line-clamp-1">{party.location}</span>
-                  </div>
-                  <div className="flex items-center text-gray-600">
-                    <MdPeople className="mr-2" />
-                    <span>
-                      {party.guests.full + party.guests.half + party.guests.free} convidados
-                    </span>
-                  </div>
-                </div>
+                {event.description && (
+                  <p className="text-gray-600 mb-4 line-clamp-2">
+                    {event.description}
+                  </p>
+                )}
 
                 <div className="flex items-center justify-between">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(party.status)}`}>
-                    {party.status}
-                  </span>
-                  <div className="text-sm text-gray-600">
-                    <span className="font-medium">{party.confirmedServices}</span>
-                    <span className="mx-1">/</span>
-                    <span>{party.totalServices}</span>
-                    <span className="ml-1">serviços</span>
-                  </div>
+                                      <div className="text-sm text-gray-500">
+                      0 serviços contratados
+                    </div>
+                  <Link
+                    href={`/minhas-festas/${event.id}`}
+                    className="bg-[#F71875] hover:bg-[#E6006F] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Ver Detalhes
+                  </Link>
                 </div>
-
-                <Link
-                  href={`/minhas-festas/${party.id}`}
-                  className="mt-4 block w-full text-center px-4 py-2 border-2 border-[#A502CA] text-[#A502CA] rounded-lg hover:bg-[#A502CA] hover:text-white transition-colors font-medium"
-                >
-                  Ver Detalhes
-                </Link>
               </div>
             </motion.div>
           ))}
         </div>
 
         {/* Empty State */}
-        {filteredParties.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500 text-lg mb-4">
-              {searchTerm || statusFilter !== 'Todas'
-                ? 'Nenhuma festa encontrada com os filtros atuais'
-                : 'Você ainda não tem nenhuma festa cadastrada'}
+        {filteredEvents.length === 0 && !loading && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-center py-12"
+          >
+            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <MdEvent className="text-gray-400 text-3xl" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-600 mb-4">
+              Nenhuma festa criada ainda
+            </h3>
+            <p className="text-gray-500 mb-6 max-w-md mx-auto">
+              Que tal começar a planejar sua primeira festa? É fácil e rápido!
             </p>
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => setNewPartyModalOpen(true)}
-              className="inline-flex items-center px-6 py-3 bg-[#A502CA] text-white rounded-lg hover:bg-[#8B0A9E] transition-colors font-medium gap-2"
+              className="bg-[#F71875] hover:bg-[#E6006F] text-white px-8 py-3 rounded-lg font-medium inline-flex items-center gap-2"
             >
               <MdAdd className="text-xl" />
-              Criar Minha Primeira Festa
-            </button>
-          </div>
+              Criar Primeira Festa
+            </motion.button>
+          </motion.div>
         )}
-      </div>
 
-      {/* New Party Modal */}
-      <NewPartyModal
-        isOpen={isNewPartyModalOpen}
-        onClose={() => setNewPartyModalOpen(false)}
-        onSuccess={handleCreatePartySuccess}
-      />
-    </div>
+        {/* New Party Modal */}
+        <NewPartyModal
+          isOpen={isNewPartyModalOpen}
+          onClose={() => setNewPartyModalOpen(false)}
+          onSuccess={handleCreatePartySuccess}
+        />
+      </div>
+    </ClientLayout>
+    </AuthGuard>
   );
 } 

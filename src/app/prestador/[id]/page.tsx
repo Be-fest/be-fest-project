@@ -1,11 +1,12 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { ProviderServices } from '@/components/ProviderServices';
 import { motion } from 'framer-motion';
-import { MdStar, MdLocationOn, MdArrowBack } from 'react-icons/md';
-import { getProviderById } from '@/data/mockProviders';
+import { MdStar, MdLocationOn, MdArrowBack, MdWarning } from 'react-icons/md';
+import { User, ServiceWithProvider } from '@/types/database';
+import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 
 interface PageProps {
@@ -14,15 +15,186 @@ interface PageProps {
   }>;
 }
 
+// Skeleton Components
+const ProviderSkeleton = () => (
+  <div className="bg-white rounded-2xl shadow-lg overflow-hidden animate-pulse">
+    {/* Header Skeleton */}
+    <div className="relative h-48 sm:h-64 bg-gray-300">
+      <div className="absolute bottom-4 sm:bottom-6 left-4 sm:left-6 flex flex-col sm:flex-row items-start sm:items-end gap-4 sm:gap-6">
+        <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-xl bg-gray-400"></div>
+        <div className="space-y-2">
+          <div className="h-8 w-48 bg-gray-400 rounded"></div>
+          <div className="h-4 w-32 bg-gray-400 rounded"></div>
+        </div>
+      </div>
+    </div>
+    
+    {/* Content Skeleton */}
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="mb-6 sm:mb-8">
+        <div className="h-6 w-24 bg-gray-300 rounded mb-4"></div>
+        <div className="h-4 w-full bg-gray-200 rounded mb-2"></div>
+        <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
+      </div>
+      
+      <div>
+        <div className="h-6 w-32 bg-gray-300 rounded mb-4"></div>
+        <div className="space-y-8">
+          {[1, 2].map((i) => (
+            <div key={i} className="bg-gray-50 rounded-xl overflow-hidden">
+              <div className="h-16 bg-gray-300"></div>
+              <div className="p-6 space-y-4">
+                {[1, 2, 3].map((j) => (
+                  <div key={j} className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg">
+                    <div className="w-20 h-20 rounded-lg bg-gray-300"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-5 w-32 bg-gray-300 rounded"></div>
+                      <div className="h-4 w-48 bg-gray-200 rounded"></div>
+                      <div className="flex items-center justify-between">
+                        <div className="h-6 w-20 bg-gray-300 rounded"></div>
+                        <div className="w-10 h-10 rounded-full bg-gray-300"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+// Converter dados reais para formato esperado pelo ProviderServices
+const convertToProviderData = (provider: User, services: ServiceWithProvider[]) => {
+  const providerName = provider.organization_name || provider.full_name || 'Prestador';
+  
+  // Agrupar serviços por categoria
+  const servicesByCategory = services.reduce((acc, service) => {
+    const category = service.category;
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push({
+      id: parseInt(service.id.slice(-3)) || Math.random() * 1000,
+      name: service.name,
+      description: service.description || 'Serviço de qualidade para sua festa',
+      price: service.base_price,
+      image: service.images_urls?.[0] || '/images/placeholder-service.png'
+    });
+    return acc;
+  }, {} as Record<string, any[]>);
+
+  // Converter para formato de categorias
+  const categorizedServices = Object.entries(servicesByCategory).map(([category, items], index) => ({
+    id: index + 1,
+    category,
+    items
+  }));
+  
+  return {
+    id: provider.id,
+    name: providerName,
+    description: provider.area_of_operation ? 
+      `Especializado em ${provider.area_of_operation}` : 
+      'Prestador de serviços para festas e eventos',
+    image: provider.logo_url || '/images/placeholder-provider.png',
+    rating: 4.8,
+    location: {
+      neighborhood: provider.area_of_operation || 'Região',
+      city: 'Cidade'
+    },
+    services: categorizedServices
+  };
+};
+
 export default function ProviderPage({ params }: PageProps) {
   const id = use(params).id;
-  const providerData = getProviderById(id);
+  const [providerData, setProviderData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!providerData) {
+  useEffect(() => {
+    const fetchProviderData = async () => {
+      try {
+        const supabase = createClient();
+        
+        // Buscar dados do prestador
+        const { data: provider, error: providerError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', id)
+          .eq('role', 'provider')
+          .single();
+
+        if (providerError || !provider) {
+          setError('Prestador não encontrado');
+          return;
+        }
+
+        // Buscar serviços do prestador
+        const { data: providerServices, error: servicesError } = await supabase
+          .from('services')
+          .select(`
+            *,
+            provider:users!services_provider_id_fkey (
+              id,
+              full_name,
+              organization_name,
+              logo_url,
+              area_of_operation
+            )
+          `)
+          .eq('provider_id', id)
+          .eq('is_active', true)
+          .eq('status', 'active');
+
+        if (servicesError) {
+          console.error('Error fetching services:', servicesError);
+        }
+
+        // Converter dados para formato esperado
+        const convertedData = convertToProviderData(provider, providerServices || []);
+        setProviderData(convertedData);
+
+      } catch (err) {
+        console.error('Error fetching provider data:', err);
+        setError('Erro ao carregar dados do prestador');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProviderData();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <>
+        <Header />
+        <div className="pt-20 pb-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            {/* Botão Voltar Skeleton */}
+            <div className="mb-4">
+              <div className="w-10 h-10 bg-gray-300 rounded-full animate-pulse"></div>
+            </div>
+            
+            <ProviderSkeleton />
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (error || !providerData) {
     return (
       <div className="min-h-screen bg-[#FFF6FB] flex items-center justify-center px-4">
         <div className="text-center">
-          <h2 className="text-xl sm:text-2xl font-bold text-[#520029] mb-4">Prestador não encontrado</h2>
+          <MdWarning className="text-red-500 text-4xl mx-auto mb-4" />
+          <h2 className="text-xl sm:text-2xl font-bold text-[#520029] mb-4">
+            {error || 'Prestador não encontrado'}
+          </h2>
           <Link
             href="/servicos"
             className="p-2 hover:bg-gray-100 rounded-full transition-colors inline-flex items-center"
@@ -96,7 +268,19 @@ export default function ProviderPage({ params }: PageProps) {
 
               <div>
                 <h2 className="text-xl sm:text-2xl font-bold text-[#520029] mb-4">Serviços</h2>
-                <ProviderServices services={providerData.services} />
+                {providerData.services && providerData.services.length > 0 ? (
+                  <ProviderServices services={providerData.services} />
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="text-gray-400 text-4xl mb-4">📋</div>
+                    <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                      Nenhum serviço disponível
+                    </h3>
+                    <p className="text-gray-500">
+                      Este prestador ainda não possui serviços cadastrados.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>

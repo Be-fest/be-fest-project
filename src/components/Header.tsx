@@ -267,14 +267,12 @@ function HomeHeader() {
           
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            <ScrollLink 
-              to="categorias" 
-              smooth={true} 
-              duration={500} 
-              className="text-gray-600 hover:text-[#FF0080] transition-colors cursor-pointer font-poppins"
+            <Link 
+              href="/categorias"
+              className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
             >
               Categorias
-            </ScrollLink>
+            </Link>
             <ScrollLink 
               to="como-funciona" 
               smooth={true} 
@@ -374,15 +372,13 @@ function HomeHeader() {
           transition={{ duration: 0.3 }}
         >
           <nav className="px-6 py-4 space-y-4">
-            <ScrollLink 
-              to="categorias" 
-              smooth={true} 
-              duration={500} 
-              className="block text-gray-600 hover:text-[#FF0080] transition-colors cursor-pointer py-2"
+            <Link 
+              href="/categorias"
+              className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
               onClick={() => setIsMenuOpen(false)}
             >
               Categorias
-            </ScrollLink>
+            </Link>
             <ScrollLink 
               to="como-funciona" 
               smooth={true} 

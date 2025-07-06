@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { MdTrendingUp, MdEvent, MdStar, MdAttachMoney } from 'react-icons/md';
+import { MdTrendingUp, MdEvent, MdStar, MdAttachMoney, MdAdd, MdNotifications } from 'react-icons/md';
 
 interface ProviderStatsProps {
   onQuickAction?: (action: string) => void;
@@ -67,6 +67,25 @@ export function ProviderStats({ onQuickAction }: ProviderStatsProps) {
       date: '2024-02-25',
       value: 'R$ 3.800',
       status: 'confirmed'
+    }
+  ];
+
+  const quickActions = [
+    {
+      id: 'addService',
+      title: 'Novo Serviço',
+      description: 'Adicione um novo serviço ao seu catálogo',
+      icon: MdAdd,
+      color: 'bg-[#A502CA] hover:bg-[#8B0A9E]',
+      textColor: 'text-white'
+    },
+    {
+      id: 'viewOrders',
+      title: 'Solicitações',
+      description: 'Veja pedidos pendentes de aprovação',
+      icon: MdNotifications,
+      color: 'bg-blue-50 hover:bg-blue-100',
+      textColor: 'text-blue-600'
     }
   ];
 
@@ -144,7 +163,7 @@ export function ProviderStats({ onQuickAction }: ProviderStatsProps) {
           </div>
         </motion.div>
 
-        {/* Quick Actions */}
+        {/* Quick Actions - Redesenhado */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -152,25 +171,27 @@ export function ProviderStats({ onQuickAction }: ProviderStatsProps) {
           className="bg-white rounded-lg shadow-sm p-6"
         >
           <h2 className="text-lg font-semibold text-[#520029] mb-4">Ações Rápidas</h2>
-          <div className="space-y-3">
-            <button
-              className="w-full bg-[#A502CA] hover:bg-[#8B0A9E] text-white py-3 px-4 rounded-lg font-medium transition-colors text-left"
-              onClick={() => onQuickAction && onQuickAction('addService')}
-            >
-              Adicionar Novo Serviço
-            </button>
-            <button
-              className="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 py-3 px-4 rounded-lg font-medium transition-colors text-left"
-              onClick={() => onQuickAction && onQuickAction('viewOrders')}
-            >
-              Ver Solicitações Pendentes
-            </button>
-            <button
-              className="w-full bg-green-50 hover:bg-green-100 text-green-600 py-3 px-4 rounded-lg font-medium transition-colors text-left"
-              onClick={() => onQuickAction && onQuickAction('updateProfile')}
-            >
-              Atualizar Perfil
-            </button>
+          <div className="space-y-4">
+            {quickActions.map((action) => {
+              const Icon = action.icon;
+              return (
+                <motion.button
+                  key={action.id}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => onQuickAction && onQuickAction(action.id)}
+                  className={`w-full ${action.color} ${action.textColor} p-4 rounded-lg font-medium transition-all text-left flex items-center gap-3 shadow-sm hover:shadow-md`}
+                >
+                  <div className="flex-shrink-0">
+                    <Icon className="text-xl" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">{action.title}</h3>
+                    <p className="text-sm opacity-90">{action.description}</p>
+                  </div>
+                </motion.button>
+              );
+            })}
           </div>
         </motion.div>
       </div>

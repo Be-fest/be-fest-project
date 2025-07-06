@@ -3,10 +3,6 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
-  // Autenticação temporariamente desabilitada para apresentação
-  return NextResponse.next();
-  
-  /* Código de autenticação comentado
   const res = NextResponse.next();
   const supabase = createMiddlewareClient({ req: request, res });
 
@@ -17,7 +13,9 @@ export async function middleware(request: NextRequest) {
   // Rotas que precisam de autenticação
   const protectedRoutes = [
     '/minhas-festas',
-    '/dashboard/prestador',
+    '/dashboard',
+    '/perfil',
+    '/pagamento',
   ];
 
   // Verifica se a rota atual precisa de autenticação
@@ -33,12 +31,13 @@ export async function middleware(request: NextRequest) {
   }
 
   return res;
-  */
 }
 
 export const config = {
   matcher: [
     '/minhas-festas/:path*',
-    '/dashboard/prestador/:path*',
+    '/dashboard/:path*',
+    '/perfil/:path*',
+    '/pagamento/:path*',
   ],
 }; 

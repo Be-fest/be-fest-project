@@ -3,15 +3,21 @@
 import { createClient as createSupabaseClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { MdExitToApp } from 'react-icons/md';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function LogoutButton() {
   const router = useRouter();
   const supabase = createSupabaseClient();
+  const { userData } = useAuth();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push('/'); // Redireciona para a home
-    router.refresh(); // Garante que o estado do servidor seja atualizado
+    try {
+      await supabase.auth.signOut();
+      router.push('/auth/login'); // Redireciona para login
+      router.refresh(); // Garante que o estado do servidor seja atualizado
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+    }
   };
 
   return (
@@ -24,7 +30,9 @@ export default function LogoutButton() {
       </div>
       <div className="flex-1 text-left">
         <div className="font-medium">Sair</div>
-        <div className="text-xs text-red-400">Fazer logout da conta</div>
+        <div className="text-xs text-red-400">
+          {userData?.full_name ? `${userData.full_name}` : 'Fazer logout da conta'}
+        </div>
       </div>
     </button>
   );

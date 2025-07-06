@@ -23,6 +23,7 @@ export type OrderStatus =
   | 'solicitacao_enviada'
   | 'aguardando_pagamento' 
   | 'confirmado'
+  | 'concluido'
   | 'cancelado';
 
 export interface ActiveParty {
