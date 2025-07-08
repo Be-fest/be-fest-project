@@ -13,6 +13,14 @@ interface ProvidersGridProps {
   searchQuery?: string;
 }
 
+interface GroupedProvider {
+  id: string;
+  name: string;
+  services: ServiceWithProvider[];
+  minPrice: number;
+  serviceCount: number;
+}
+
 export function ProvidersGrid({ selectedCategory, searchQuery }: ProvidersGridProps) {
   const router = useRouter();
   const [services, setServices] = useState<ServiceWithProvider[]>([]);
@@ -28,7 +36,7 @@ export function ProvidersGrid({ selectedCategory, searchQuery }: ProvidersGridPr
         const result = await getPublicServicesAction({
           category: selectedCategory,
           search: searchQuery,
-          limit: 12
+          limit: 100 // Aumentar para pegar mais serviços
         });
 
         if (result.success && result.data) {
@@ -46,6 +54,45 @@ export function ProvidersGrid({ selectedCategory, searchQuery }: ProvidersGridPr
 
     fetchServices();
   }, [selectedCategory, searchQuery]);
+
+  // Agrupar serviços por prestador
+  const groupedProviders = services.reduce((acc, service) => {
+    const providerId = service.provider_id;
+    const providerName = service.provider?.organization_name || service.provider?.full_name || 'Prestador';
+    
+    if (!acc[providerId]) {
+      acc[providerId] = {
+        id: providerId,
+        name: providerName,
+        services: [],
+        minPrice: Infinity,
+        serviceCount: 0,
+        provider: service.provider
+      };
+    }
+    
+    acc[providerId].services.push(service);
+    acc[providerId].serviceCount++;
+    
+    // Calcular o menor preço considerando base_price e price_per_guest
+    const servicePrice = service.base_price || 0;
+    const pricePerGuest = service.price_per_guest || 0;
+    
+    // Usar o menor entre base_price e price_per_guest (se existir)
+    let minServicePrice = servicePrice;
+    if (pricePerGuest > 0 && pricePerGuest < minServicePrice) {
+      minServicePrice = pricePerGuest;
+    }
+    
+    if (minServicePrice < acc[providerId].minPrice) {
+      acc[providerId].minPrice = minServicePrice;
+    }
+    
+    return acc;
+  }, {} as Record<string, GroupedProvider & { provider: any }>);
+
+  // Converter para array e pegar apenas os 12 primeiros
+  const providers = Object.values(groupedProviders).slice(0, 12);
 
   const handleProviderClick = (providerId: string) => {
     router.push(`/prestador/${providerId}`);
@@ -74,7 +121,7 @@ export function ProvidersGrid({ selectedCategory, searchQuery }: ProvidersGridPr
     );
   }
 
-  if (services.length === 0) {
+  if (providers.length === 0) {
     return (
       <section className="py-12 md:py-16" style={{ backgroundColor: '#F8F9FA' }}>
         <div className="container mx-auto px-4 md:px-6">
@@ -83,12 +130,12 @@ export function ProvidersGrid({ selectedCategory, searchQuery }: ProvidersGridPr
               <MdWarning className="text-gray-400 text-3xl" />
             </div>
             <h3 className="text-2xl font-bold text-gray-600 mb-4">
-              Nenhum serviço encontrado
+              Nenhum prestador encontrado
             </h3>
             <p className="text-gray-500 mb-6 max-w-md mx-auto">
               {selectedCategory 
-                ? `Não encontramos serviços para a categoria "${selectedCategory}". Tente outra categoria ou remova os filtros.`
-                : 'Não há serviços disponíveis no momento. Novos prestadores em breve!'
+                ? `Não encontramos prestadores para a categoria "${selectedCategory}". Tente outra categoria ou remova os filtros.`
+                : 'Não há prestadores disponíveis no momento. Novos prestadores em breve!'
               }
             </p>
             {selectedCategory && (
@@ -96,7 +143,7 @@ export function ProvidersGrid({ selectedCategory, searchQuery }: ProvidersGridPr
                 onClick={() => window.location.href = '/'}
                 className="px-6 py-3 bg-[#FF0080] text-white rounded-lg hover:bg-[#E6006F] transition-colors"
               >
-                Ver todos os serviços
+                Ver todos os prestadores
               </button>
             )}
           </div>
@@ -114,29 +161,29 @@ export function ProvidersGrid({ selectedCategory, searchQuery }: ProvidersGridPr
           transition={{ duration: 0.6 }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8"
         >
-          {services.map((service, index) => (
+          {providers.map((provider, index) => (
             <motion.div
-              key={service.id}
+              key={provider.id}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.4, delay: index * 0.05 }}
               whileHover={{ scale: 1.02, y: -4 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => handleProviderClick(service.provider_id)}
+              onClick={() => handleProviderClick(provider.id)}
               className="bg-white rounded-xl shadow-md border border-gray-100/50 overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 group relative"
             >
               <div className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-[#FF0080] to-[#E6006F] flex items-center justify-center text-white font-bold text-lg shadow-sm">
-                      {service.provider?.full_name?.charAt(0) || service.provider?.organization_name?.charAt(0) || 'P'}
+                      {provider.name.charAt(0)}
                     </div>
                     <div>
                       <h3 className="font-bold text-lg text-[#520029] group-hover:text-[#FF0080] transition-colors duration-300 leading-tight">
-                        {service.provider?.organization_name || service.provider?.full_name || 'Prestador'}
+                        {provider.name}
                       </h3>
                       <p className="text-sm text-gray-600 font-medium">
-                        {service.name}
+                        {provider.serviceCount} serviço{provider.serviceCount > 1 ? 's' : ''}
                       </p>
                     </div>
                   </div>
@@ -148,12 +195,12 @@ export function ProvidersGrid({ selectedCategory, searchQuery }: ProvidersGridPr
 
                 <div className="mb-3">
                   <span className="text-xs text-white bg-gradient-to-r from-[#FF0080] to-[#E6006F] font-medium uppercase tracking-wide px-3 py-1 rounded-full inline-block">
-                    {service.category || 'Serviço'}
+                    {provider.services[0]?.category || 'Serviços'}
                   </span>
                 </div>
 
                 <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                  {service.description || 'Serviço de qualidade para sua festa'}
+                  {provider.services[0]?.description || 'Prestador de serviços de qualidade para sua festa'}
                 </p>
 
                 <div className="flex items-center justify-between">
@@ -164,7 +211,7 @@ export function ProvidersGrid({ selectedCategory, searchQuery }: ProvidersGridPr
                   <div className="text-right">
                     <div className="text-xs text-gray-500">A partir de</div>
                     <div className="font-bold text-[#FF0080] text-lg">
-                      R$ {service.price_per_guest?.toFixed(2) || '0,00'}
+                      R$ {provider.minPrice === Infinity ? '0,00' : provider.minPrice.toFixed(2)}
                     </div>
                   </div>
                 </div>
