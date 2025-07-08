@@ -86,8 +86,13 @@ export function useSessionManager(options: SessionManagerOptions = {}) {
     try {
       const { data: { session }, error } = await supabase.auth.getSession();
       
-      if (error || !session) {
-        await handleSessionExpired();
+      if (error) {
+        console.error('Erro ao verificar sessão:', error);
+        return;
+      }
+
+      // Se não há sessão, não fazer nada (usuário não está logado)
+      if (!session) {
         return;
       }
 
@@ -122,7 +127,6 @@ export function useSessionManager(options: SessionManagerOptions = {}) {
 
     } catch (error) {
       console.error('Erro ao verificar expiração da sessão:', error);
-      await handleSessionExpired();
     }
   }, [supabase, warningMinutes, autoRefresh, handleSessionExpired, onSessionWarning, refreshSession]);
 
@@ -141,23 +145,47 @@ export function useSessionManager(options: SessionManagerOptions = {}) {
   }, []);
 
   useEffect(() => {
-    // Verificar imediatamente
-    checkSessionExpiry();
+    let isMounted = true;
+    
+    const initializeSessionManager = async () => {
+      // Verificar se há uma sessão ativa antes de iniciar os timers
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!isMounted || !session) {
+        return;
+      }
 
-    // Verificar a cada 30 segundos
-    warningIntervalRef.current = setInterval(checkSessionExpiry, 30000);
+      // Verificar imediatamente
+      await checkSessionExpiry();
 
-    // Auto-refresh a cada 50 minutos (tokens do Supabase duram 1 hora)
-    if (autoRefresh) {
-      refreshIntervalRef.current = setInterval(async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          await refreshSession();
+      if (!isMounted) return;
+
+      // Verificar a cada 30 segundos
+      warningIntervalRef.current = setInterval(() => {
+        if (isMounted) {
+          checkSessionExpiry();
         }
-      }, 50 * 60 * 1000); // 50 minutos
-    }
+      }, 30000);
+
+      // Auto-refresh a cada 50 minutos (tokens do Supabase duram 1 hora)
+      if (autoRefresh) {
+        refreshIntervalRef.current = setInterval(async () => {
+          if (!isMounted) return;
+          
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session && isMounted) {
+            await refreshSession();
+          }
+        }, 50 * 60 * 1000); // 50 minutos
+      }
+    };
+
+    // Aguardar um pouco antes de inicializar para evitar conflitos
+    const timeout = setTimeout(initializeSessionManager, 1000);
 
     return () => {
+      isMounted = false;
+      clearTimeout(timeout);
       clearIntervals();
     };
   }, [checkSessionExpiry, refreshSession, autoRefresh, clearIntervals, supabase]);

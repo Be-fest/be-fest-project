@@ -4,12 +4,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { Link as ScrollLink } from 'react-scroll';
 import { Logo } from '@/components/ui';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useOffCanvas } from '@/contexts/OffCanvasContext';
-import { createClient as createSupabaseClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/client';
 import LogoutButton from './LogoutButton';
-import { useEffect, useRef } from 'react';
 import { 
   MdAccountCircle,
   MdDashboard,
@@ -17,7 +16,11 @@ import {
   MdExpandMore,
   MdPerson,
   MdSettings,
-  MdKeyboardArrowDown
+  MdKeyboardArrowDown,
+  MdLogout,
+  MdMenu,
+  MdClose,
+  MdInfo
 } from 'react-icons/md';
 
 // Componente UserDropdown
@@ -26,15 +29,54 @@ interface UserDropdownProps {
   userType: 'client' | 'service_provider' | null;
 }
 
+// Componente ProviderNotice integrado
+function ProviderNotice({ userName, onClose }: { userName?: string; onClose: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -50 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -50 }}
+      className="bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2 px-4 relative z-50"
+    >
+      <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <MdInfo className="text-white text-lg flex-shrink-0" />
+          <div className="text-sm">
+            <span className="font-medium">Olá, {userName}!</span>
+            <span className="ml-2">
+              Você está navegando como prestador. Esta é a visão do cliente da plataforma.
+            </span>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Link
+            href="/dashboard/prestador"
+            className="flex items-center gap-1 bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg text-sm font-medium transition-all"
+          >
+            <MdDashboard className="text-sm" />
+            Meu Dashboard
+          </Link>
+          
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-white/20 rounded-lg transition-all"
+          >
+            <MdClose className="text-white text-lg" />
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 function UserDropdown({ user, userType }: UserDropdownProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const supabase = createSupabaseClient();
 
-  // Fechar dropdown quando clicar fora
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Element;
+      if (!target.closest('.user-dropdown')) {
         setIsDropdownOpen(false);
       }
     }
@@ -44,73 +86,56 @@ function UserDropdown({ user, userType }: UserDropdownProps) {
   }, []);
 
   const handleLogout = async () => {
+    const supabase = createClient();
     await supabase.auth.signOut();
-    window.location.href = '/';
+    setIsDropdownOpen(false);
   };
 
-  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuário';
-  const userInitial = userName.charAt(0).toUpperCase();
+  const userInitial = user?.user_metadata?.full_name ? 
+    user.user_metadata.full_name.charAt(0).toUpperCase() : 
+    user?.email?.charAt(0).toUpperCase() || 'U';
 
   return (
-    <div className="relative" ref={dropdownRef}>
-      {/* Dropdown Trigger */}
+    <div className="relative user-dropdown">
       <button
         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-        className={`flex items-center space-x-3 p-2 rounded-xl transition-all duration-200 group ${
-          isDropdownOpen 
-            ? 'bg-gray-50 ring-2 ring-[#FF0080]/20' 
-            : 'hover:bg-gray-50 hover:shadow-sm'
-        }`}
+        className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
       >
-        <div className="flex items-center space-x-2">
-          <div className="w-10 h-10 bg-gradient-to-r from-[#FF0080] to-[#A502CA] rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-md ring-2 ring-white">
-            {userInitial}
-          </div>
-          <div className="hidden lg:block text-left">
-            <div className="text-sm font-semibold text-gray-800">Minha Conta</div>
-            <div className="text-xs text-gray-500 truncate max-w-32">{userName}</div>
-          </div>
+        <div className="w-8 h-8 bg-[#FF0080] rounded-full flex items-center justify-center text-white text-sm font-medium">
+          {userInitial}
         </div>
-        <MdKeyboardArrowDown 
-          className={`text-gray-400 transition-all duration-200 ${
-            isDropdownOpen ? 'rotate-180 text-[#FF0080]' : 'group-hover:text-gray-600'
-          }`} 
-        />
+        <span className="text-sm font-medium text-gray-700 hidden md:block">
+          {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuário'}
+        </span>
       </button>
 
-      {/* Dropdown Menu */}
       <AnimatePresence>
         {isDropdownOpen && (
           <motion.div
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ duration: 0.2, ease: [0.04, 0.62, 0.23, 0.98] }}
-            className="absolute right-0 top-full mt-3 w-72 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 backdrop-blur-sm"
-            style={{
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.5)'
-            }}
+            transition={{ duration: 0.2 }}
+            className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden"
           >
             {/* User Info Header */}
-            <div className="px-5 py-4 border-b border-gray-100">
-              <div className="flex items-center space-x-4">
-                <div className="relative">
-                  <div className="w-14 h-14 bg-gradient-to-r from-[#FF0080] to-[#A502CA] rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md">
-                    {userInitial}
-                  </div>
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-400 rounded-full border-2 border-white"></div>
+            <div className="bg-gradient-to-r from-[#FF0080] to-[#A502CA] p-5 text-white">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-white text-lg font-bold">
+                  {userInitial}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-gray-900 truncate">{userName}</div>
-                  <div className="text-sm text-gray-500 truncate">{user?.email}</div>
-                  <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#FF0080]/10 text-[#FF0080] mt-1">
-                    {userType === 'service_provider' ? '👔 Prestador' : '🎉 Cliente'}
-                  </div>
+                <div>
+                  <h3 className="font-semibold text-lg">
+                    {user?.user_metadata?.full_name || 'Usuário'}
+                  </h3>
+                  <p className="text-white/80 text-sm">{user?.email}</p>
+                  <span className="inline-block mt-1 px-2 py-1 bg-white/20 rounded-full text-xs font-medium">
+                    {userType === 'service_provider' ? 'Prestador' : 'Cliente'}
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Menu Items */}
             <div className="py-3">
               <Link
                 href="/perfil"
@@ -141,37 +166,19 @@ function UserDropdown({ user, userType }: UserDropdownProps) {
                   </div>
                 </Link>
               )}
-
-              <Link
-                href="/perfil?tab=settings"
-                onClick={() => setIsDropdownOpen(false)}
-                className="flex items-center space-x-4 px-5 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-[#FF0080]/5 hover:to-[#A502CA]/5 hover:text-[#FF0080] transition-all duration-200 group mx-2 rounded-xl"
-              >
-                <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 group-hover:bg-[#FF0080]/10 transition-colors">
-                  <MdSettings className="text-lg group-hover:text-[#FF0080]" />
-                </div>
-                <div className="flex-1">
-                  <div className="font-medium">Configurações</div>
-                  <div className="text-xs text-gray-500">Ajustar preferências</div>
-                </div>
-              </Link>
             </div>
 
-            {/* Logout */}
-            <div className="border-t border-gray-100 pt-3 mt-1">
+            <div className="border-t border-gray-100 p-3">
               <button
-                onClick={() => {
-                  handleLogout();
-                  setIsDropdownOpen(false);
-                }}
-                className="flex items-center space-x-4 px-5 py-3 text-red-600 hover:bg-red-50 transition-all duration-200 w-full text-left group mx-2 rounded-xl"
+                onClick={handleLogout}
+                className="flex items-center space-x-4 px-5 py-3 text-gray-700 hover:bg-red-50 hover:text-red-600 transition-all duration-200 group mx-2 rounded-xl w-full"
               >
-                <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 group-hover:bg-red-100 transition-colors">
-                  <MdExitToApp className="text-lg" />
+                <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 group-hover:bg-red-100 transition-colors">
+                  <MdLogout className="text-lg group-hover:text-red-600" />
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 text-left">
                   <div className="font-medium">Sair</div>
-                  <div className="text-xs text-red-400">Fazer logout da conta</div>
+                  <div className="text-xs text-gray-500">Encerrar sessão</div>
                 </div>
               </button>
             </div>
@@ -190,7 +197,11 @@ export function Header() {
   }
   
   if (pathname?.startsWith('/dashboard/prestador')) {
-    return <DashboardHeader />;
+    return null; // Não renderizar header, pois o ProviderLayout já tem seu próprio
+  }
+  
+  if (pathname?.startsWith('/admin')) {
+    return null; // Admin tem seu próprio layout
   }
   
   return <HomeHeader />;
@@ -198,11 +209,12 @@ export function Header() {
 
 function HomeHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showProviderNotice, setShowProviderNotice] = useState(true);
   const { isCartOpen, openOffCanvas } = useOffCanvas();
   const [user, setUser] = useState<any>(null);
   const [userType, setUserType] = useState<'client' | 'service_provider' | null>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createSupabaseClient();
+  const supabase = createClient();
 
   useEffect(() => {
     const getUser = async () => {
@@ -251,12 +263,22 @@ function HomeHeader() {
 
   return (
     <>
+      {/* Provider Notice - Fixo no topo */}
+      <AnimatePresence>
+        {userType === 'service_provider' && showProviderNotice && (
+          <ProviderNotice 
+            userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]} 
+            onClose={() => setShowProviderNotice(false)}
+          />
+        )}
+      </AnimatePresence>
+      
       {isCartOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-40" />
       )}
       
       <header 
-        className={`w-full bg-white shadow-sm py-4 px-6 fixed top-0 z-40 transition-all duration-300 ${
+        className={`w-full bg-white shadow-sm py-4 px-6 fixed ${userType === 'service_provider' && showProviderNotice ? 'top-12' : 'top-0'} z-40 transition-all duration-300 ${
           isCartOpen ? 'opacity-90' : ''
         }`}
       >
@@ -479,7 +501,7 @@ function ProviderHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [userType, setUserType] = useState<'client' | 'service_provider' | null>(null);
-  const supabase = createSupabaseClient();
+  const supabase = createClient();
 
   useEffect(() => {
     const getUser = async () => {
@@ -681,103 +703,6 @@ function ProviderHeader() {
               </div>
             </>
           )}
-        </nav>
-      </motion.div>
-    </header>
-  );
-}
-
-// Header para o dashboard do prestador
-function DashboardHeader() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  return (
-    <header className="w-full bg-white shadow-sm py-4 px-6 fixed top-0 z-50">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <Link href="/dashboard/prestador" className="flex items-center">
-          <img 
-            src="/be-fest-provider-logo.png" 
-            alt="Be Fest Provider Logo" 
-            className="h-10 w-auto"
-          />
-        </Link>
-        
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-8">
-          <Link 
-            href="/"
-            className="text-gray-600 hover:text-[#A502CA] transition-colors font-poppins"
-          >
-            Site Principal
-          </Link>
-          <Link 
-            href="/prestadores"
-            className="text-gray-600 hover:text-[#A502CA] transition-colors font-poppins"
-          >
-            Página Prestadores
-          </Link>
-        </nav>
-
-        {/* Desktop Auth Buttons */}
-        <div className="hidden md:flex items-center space-x-5">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-[#A502CA] rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-sm">B</span>
-            </div>
-            <span className="text-sm font-medium text-gray-700">
-              Barreto's Buffet
-            </span>
-          </div>
-          <Link 
-            href="/auth/login"
-            className="text-gray-600 hover:text-red-600 transition-colors font-poppins"
-          >
-            Sair
-          </Link>
-        </div>
-
-        {/* Mobile Menu Button */}
-        <button
-          className="md:hidden flex flex-col items-center justify-center w-6 h-6 space-y-1"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-        >
-          <span className={`w-6 h-0.5 bg-gray-600 transition-all duration-300 ${isMenuOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
-          <span className={`w-6 h-0.5 bg-gray-600 transition-all duration-300 ${isMenuOpen ? 'opacity-0' : ''}`}></span>
-          <span className={`w-6 h-0.5 bg-gray-600 transition-all duration-300 ${isMenuOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
-        </button>
-      </div>
-
-      {/* Mobile Menu */}
-      <motion.div 
-        className={`md:hidden bg-white border-t border-gray-200 ${isMenuOpen ? 'block' : 'hidden'}`}
-        initial={{ opacity: 0, height: 0 }}
-        animate={{ opacity: isMenuOpen ? 1 : 0, height: isMenuOpen ? 'auto' : 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        <nav className="px-6 py-4 space-y-4">
-          <Link 
-            href="/"
-            className="block text-gray-600 hover:text-[#A502CA] transition-colors py-2"
-            onClick={() => setIsMenuOpen(false)}
-          >
-            Site Principal
-          </Link>
-          <Link 
-            href="/prestadores"
-            className="block text-gray-600 hover:text-[#A502CA] transition-colors py-2"
-            onClick={() => setIsMenuOpen(false)}
-          >
-            Página Prestadores
-          </Link>
-          <div className="pt-4 border-t border-gray-200">
-            <Link 
-              href="/auth/login"
-              className="block text-gray-600 hover:text-red-600 transition-colors py-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Sair
-            </Link>
-          </div>
         </nav>
       </motion.div>
     </header>

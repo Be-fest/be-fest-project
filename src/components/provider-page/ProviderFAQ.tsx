@@ -45,67 +45,62 @@ export function ProviderFAQ() {
   };
 
   return (
-    <section className="py-12 sm:py-16 lg:py-24" style={{ backgroundColor: '#FFFFFF' }}>
-      <div className="container mx-auto px-4 sm:px-6 md:px-8">
+    <section className="py-12 md:py-16 lg:py-24" style={{ backgroundColor: '#FFFFFF' }}>
+      <div className="container mx-auto px-4 md:px-6 md:px-8">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-12 sm:mb-16"
+          className="text-center mb-12 md:mb-16"
         >
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#520029] mb-3 sm:mb-4">
-            Dúvidas Frequentes dos Prestadores
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#520029] mb-3 md:mb-4">
+            Perguntas Frequentes
           </h2>
-          <p className="text-base sm:text-lg text-[#6E5963] max-w-2xl mx-auto">
-            Tire suas dúvidas sobre como funciona para prestadores de serviços
+          <p className="text-base md:text-lg text-[#6E5963] max-w-2xl mx-auto">
+            Tire suas dúvidas sobre como funciona para prestadores
           </p>
         </motion.div>
 
-        <div className="max-w-4xl mx-auto">
-          <div className="space-y-3 sm:space-y-4">
+        <div className="max-w-3xl mx-auto">
+          <div className="space-y-3 md:space-y-4">
             {faqs.map((faq, index) => (
               <motion.div
                 key={faq.id}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: index * 0.05 }}
-                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-100"
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
               >
                 <button
                   onClick={() => toggleQuestion(faq.id)}
-                  className="w-full px-4 sm:px-6 py-4 sm:py-5 text-left flex items-center justify-between hover:bg-gray-50 rounded-xl transition-colors duration-300"
+                  className="w-full px-4 md:px-6 py-4 md:py-5 text-left flex items-center justify-between hover:bg-gray-50 rounded-xl transition-colors duration-300"
                 >
-                  <h3 className="font-semibold text-[#520029] pr-3 sm:pr-4 text-sm sm:text-base">
+                  <h3 className="font-semibold text-[#520029] pr-3 md:pr-4 text-sm md:text-base">
                     {faq.question}
                   </h3>
                   <motion.div
                     animate={{ rotate: openQuestion === faq.id ? 180 : 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="flex-shrink-0"
+                    transition={{ duration: 0.3 }}
                   >
-                    <MdExpandMore className="text-xl sm:text-2xl text-[#A502CA]" />
+                    <MdExpandMore className="text-xl md:text-2xl text-[#A502CA]" />
                   </motion.div>
                 </button>
-
-                <AnimatePresence>
-                  {openQuestion === faq.id && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="px-4 sm:px-6 pb-4 sm:pb-5">
-                        <p className="text-[#6E5963] leading-relaxed text-sm sm:text-base">
-                          {faq.answer}
-                        </p>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                
+                <motion.div
+                  initial={false}
+                  animate={{
+                    height: openQuestion === faq.id ? 'auto' : 0,
+                    opacity: openQuestion === faq.id ? 1 : 0
+                  }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
+                >
+                  <div className="px-4 md:px-6 pb-4 md:pb-5">
+                    <p className="text-[#6E5963] leading-relaxed text-sm md:text-base">
+                      {faq.answer}
+                    </p>
+                  </div>
+                </motion.div>
               </motion.div>
             ))}
           </div>

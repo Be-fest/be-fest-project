@@ -6,6 +6,7 @@ import { MdStar, MdLocationOn, MdWarning } from 'react-icons/md';
 import { useState, useEffect } from 'react';
 import { getPublicServicesAction } from '@/lib/actions/services';
 import { ServiceWithProvider } from '@/types/database';
+import { ServicesSkeleton } from '@/components/ui';
 
 interface ProvidersGridProps {
   selectedCategory?: string;
@@ -51,16 +52,7 @@ export function ProvidersGrid({ selectedCategory, searchQuery }: ProvidersGridPr
   };
 
   if (loading) {
-    return (
-      <section className="py-12 md:py-16" style={{ backgroundColor: '#F8F9FA' }}>
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF0080] mx-auto mb-4"></div>
-            <p className="text-gray-600">Carregando serviços...</p>
-          </div>
-        </div>
-      </section>
-    );
+    return <ServicesSkeleton count={12} />;
   }
 
   if (error) {

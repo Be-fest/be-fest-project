@@ -27,8 +27,8 @@ export default function PaymentPage() {
 
   return (
     <AuthLayout>
-      <div className="relative w-full px-4 sm:px-0">
-        <div className="w-full max-w-sm mx-auto sm:max-w-md">
+      <div className="relative w-full px-4 md:px-0">
+        <div className="w-full max-w-sm mx-auto md:max-w-md">
           <PaymentForm
             services={mockServices}
             totalValue={7000}

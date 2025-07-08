@@ -9,51 +9,26 @@ import { getPublicServicesAction } from '@/lib/actions/services';
 import { ServiceWithProvider } from '@/types/database';
 import { Header } from '@/components/Header';
 import { ProvidersGrid } from '@/components/ProvidersGrid';
+import { ServicesSkeleton } from '@/components/ui';
 
-// Skeleton Components
-const ServicesSkeleton = () => (
+// Skeleton Components para a página de serviços
+const SearchSkeleton = () => (
   <div className="space-y-8">
     {/* Search Bar Skeleton */}
     <div className="bg-white rounded-xl shadow-lg p-6 animate-pulse">
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col md:flex-row gap-4">
         <div className="flex-1 h-12 bg-gray-300 rounded-lg"></div>
-        <div className="w-full sm:w-48 h-12 bg-gray-300 rounded-lg"></div>
-        <div className="w-full sm:w-32 h-12 bg-gray-300 rounded-lg"></div>
+        <div className="w-full md:w-48 h-12 bg-gray-300 rounded-lg"></div>
+        <div className="w-full md:w-32 h-12 bg-gray-300 rounded-lg"></div>
       </div>
     </div>
 
     {/* Categories Skeleton */}
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
       {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
         <div key={i} className="bg-white rounded-xl p-4 shadow-sm animate-pulse">
           <div className="w-16 h-16 bg-gray-300 rounded-lg mx-auto mb-3"></div>
           <div className="h-4 bg-gray-300 rounded mx-auto w-20"></div>
-        </div>
-      ))}
-    </div>
-
-    {/* Providers Grid Skeleton */}
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {[1, 2, 3, 4, 5, 6].map((i) => (
-        <div key={i} className="bg-white rounded-xl shadow-lg overflow-hidden animate-pulse">
-          <div className="h-48 bg-gray-300"></div>
-          <div className="p-6 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gray-300 rounded-lg"></div>
-              <div className="flex-1 space-y-2">
-                <div className="h-5 bg-gray-300 rounded w-32"></div>
-                <div className="h-4 bg-gray-200 rounded w-24"></div>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="h-4 bg-gray-200 rounded w-full"></div>
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="h-4 bg-gray-300 rounded w-20"></div>
-              <div className="h-8 bg-gray-300 rounded w-24"></div>
-            </div>
-          </div>
         </div>
       ))}
     </div>
@@ -132,7 +107,8 @@ export default function ServicesPage() {
               <div className="h-8 w-64 bg-gray-300 rounded animate-pulse mb-4"></div>
               <div className="h-4 w-96 bg-gray-200 rounded animate-pulse"></div>
             </div>
-            <ServicesSkeleton />
+            <SearchSkeleton />
+            <ServicesSkeleton count={9} />
           </div>
         </div>
       </>
@@ -143,7 +119,7 @@ export default function ServicesPage() {
     <>
       <Header />
       <div className="min-h-screen bg-[#FFF6FB] pt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-8">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -151,7 +127,7 @@ export default function ServicesPage() {
             transition={{ duration: 0.5 }}
             className="mb-8"
           >
-            <h1 className="text-3xl sm:text-4xl font-bold text-[#520029] mb-4">
+            <h1 className="text-3xl md:text-4xl font-bold text-[#520029] mb-4">
               Encontre Prestadores
             </h1>
             <p className="text-[#6E5963] text-lg">
@@ -166,7 +142,7 @@ export default function ServicesPage() {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="bg-white rounded-xl shadow-lg p-6 mb-8"
           >
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
                 <MdSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
                 <input
@@ -174,13 +150,13 @@ export default function ServicesPage() {
                   placeholder="Buscar prestadores..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F71875] focus:border-transparent"
+                  className="w-full md:w-48 pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F71875] focus:border-transparent"
                 />
               </div>
               <select
                 value={locationFilter}
                 onChange={(e) => setLocationFilter(e.target.value)}
-                className="w-full sm:w-48 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F71875] focus:border-transparent"
+                className="w-full md:w-48 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F71875] focus:border-transparent"
               >
                 <option value="">Todas as regiões</option>
                 <option value="centro">Centro</option>
@@ -189,7 +165,7 @@ export default function ServicesPage() {
                 <option value="zona-leste">Zona Leste</option>
                 <option value="zona-oeste">Zona Oeste</option>
               </select>
-              <button className="w-full sm:w-auto px-6 py-3 bg-[#F71875] text-white rounded-lg hover:bg-[#E6006F] transition-colors flex items-center justify-center gap-2">
+              <button className="w-full md:w-auto px-6 py-3 bg-[#F71875] text-white rounded-lg hover:bg-[#E6006F] transition-colors flex items-center justify-center gap-2">
                 <MdTune />
                 Filtros
               </button>
@@ -211,7 +187,7 @@ export default function ServicesPage() {
           {/* Active Filters */}
           {(selectedCategory || searchQuery || locationFilter) && (
             <div className="bg-white border-b border-gray-200">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+              <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-3">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm text-gray-600">Filtros ativos:</span>
                   {selectedCategory && (

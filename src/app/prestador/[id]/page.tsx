@@ -19,9 +19,9 @@ interface PageProps {
 const ProviderSkeleton = () => (
   <div className="bg-white rounded-2xl shadow-lg overflow-hidden animate-pulse">
     {/* Header Skeleton */}
-    <div className="relative h-48 sm:h-64 bg-gray-300">
-      <div className="absolute bottom-4 sm:bottom-6 left-4 sm:left-6 flex flex-col sm:flex-row items-start sm:items-end gap-4 sm:gap-6">
-        <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-xl bg-gray-400"></div>
+    <div className="relative h-48 md:h-64 bg-gray-300">
+      <div className="absolute bottom-4 md:bottom-6 left-4 md:left-6 flex flex-col md:flex-row items-start md:items-end gap-4 md:gap-6">
+        <div className="w-16 h-16 md:w-24 md:h-24 rounded-xl bg-gray-400"></div>
         <div className="space-y-2">
           <div className="h-8 w-48 bg-gray-400 rounded"></div>
           <div className="h-4 w-32 bg-gray-400 rounded"></div>
@@ -30,8 +30,8 @@ const ProviderSkeleton = () => (
     </div>
     
     {/* Content Skeleton */}
-    <div className="p-4 sm:p-6 lg:p-8">
-      <div className="mb-6 sm:mb-8">
+    <div className="p-4 md:p-6 lg:p-8">
+      <div className="mb-6 md:mb-8">
         <div className="h-6 w-24 bg-gray-300 rounded mb-4"></div>
         <div className="h-4 w-full bg-gray-200 rounded mb-2"></div>
         <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
@@ -174,7 +174,7 @@ export default function ProviderPage({ params }: PageProps) {
       <>
         <Header />
         <div className="pt-20 pb-8">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
             {/* Botão Voltar Skeleton */}
             <div className="mb-4">
               <div className="w-10 h-10 bg-gray-300 rounded-full animate-pulse"></div>
@@ -192,7 +192,7 @@ export default function ProviderPage({ params }: PageProps) {
       <div className="min-h-screen bg-[#FFF6FB] flex items-center justify-center px-4">
         <div className="text-center">
           <MdWarning className="text-red-500 text-4xl mx-auto mb-4" />
-          <h2 className="text-xl sm:text-2xl font-bold text-[#520029] mb-4">
+          <h2 className="text-xl md:text-2xl font-bold text-[#520029] mb-4">
             {error || 'Prestador não encontrado'}
           </h2>
           <Link
@@ -210,7 +210,7 @@ export default function ProviderPage({ params }: PageProps) {
     <>
       <Header />
       <div className="pt-20 pb-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
           {/* Botão Voltar */}
           <div className="mb-4">
             <Link
@@ -228,15 +228,15 @@ export default function ProviderPage({ params }: PageProps) {
             className="bg-white rounded-2xl shadow-lg overflow-hidden"
           >
             {/* Provider Header */}
-            <div className="relative h-48 sm:h-64 bg-gradient-to-r from-[#520029] to-[#FF0080]">
+            <div className="relative h-48 md:h-64 bg-gradient-to-r from-[#520029] to-[#FF0080]">
               <div className="absolute inset-0 bg-black bg-opacity-20"></div>
               <img
                 src={providerData.image}
                 alt={providerData.name}
                 className="w-full h-full object-cover mix-blend-overlay"
               />
-              <div className="absolute bottom-4 sm:bottom-6 left-4 sm:left-6 flex flex-col sm:flex-row items-start sm:items-end gap-4 sm:gap-6">
-                <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-xl bg-white p-2 shadow-lg">
+              <div className="absolute bottom-4 md:bottom-6 left-4 md:left-6 flex flex-col md:flex-row items-start md:items-end gap-4 md:gap-6">
+                <div className="w-16 h-16 md:w-24 md:h-24 rounded-xl bg-white p-2 shadow-lg">
                   <img
                     src={providerData.image}
                     alt={`${providerData.name} logo`}
@@ -244,8 +244,8 @@ export default function ProviderPage({ params }: PageProps) {
                   />
                 </div>
                 <div className="text-white">
-                  <h1 className="text-2xl sm:text-3xl font-bold mb-2">{providerData.name}</h1>
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm sm:text-base">
+                  <h1 className="text-2xl md:text-3xl font-bold mb-2">{providerData.name}</h1>
+                  <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 text-sm md:text-base">
                     <div className="flex items-center gap-1">
                       <MdStar className="text-yellow-400" />
                       <span>{providerData.rating}</span>
@@ -260,14 +260,14 @@ export default function ProviderPage({ params }: PageProps) {
             </div>
 
             {/* Provider Content */}
-            <div className="p-4 sm:p-6 lg:p-8">
-              <div className="mb-6 sm:mb-8">
-                <h2 className="text-xl sm:text-2xl font-bold text-[#520029] mb-4">Sobre</h2>
-                <p className="text-gray-600 text-sm sm:text-base">{providerData.description}</p>
+            <div className="p-4 md:p-6 lg:p-8">
+              <div className="mb-6 md:mb-8">
+                <h2 className="text-xl md:text-2xl font-bold text-[#520029] mb-4">Sobre</h2>
+                <p className="text-gray-600 text-sm md:text-base">{providerData.description}</p>
               </div>
 
               <div>
-                <h2 className="text-xl sm:text-2xl font-bold text-[#520029] mb-4">Serviços</h2>
+                <h2 className="text-xl md:text-2xl font-bold text-[#520029] mb-4">Serviços</h2>
                 {providerData.services && providerData.services.length > 0 ? (
                   <ProviderServices services={providerData.services} />
                 ) : (

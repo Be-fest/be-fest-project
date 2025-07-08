@@ -33,8 +33,8 @@ export const ProviderSetupForm = () => {
   const [state, formAction, isPending] = useActionState(completeProviderSetupAction, { success: false })
 
   return (
-    <div className="max-w-md mx-auto p-4 sm:p-6">
-      <form action={formAction} className="space-y-4 sm:space-y-6">
+    <div className="max-w-md mx-auto p-4 md:p-6">
+      <form action={formAction} className="space-y-4 md:space-y-6">
         {state.error && (
           <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">
             {state.error}
@@ -53,7 +53,7 @@ export const ProviderSetupForm = () => {
           <textarea
             name="description"
             placeholder="Business Description"
-            className="w-full p-2 sm:p-3 border rounded-md text-sm sm:text-base"
+            className="w-full p-2 md:p-3 border rounded-md text-sm md:text-base"
             rows={4}
             required
             disabled={isPending}
@@ -76,7 +76,7 @@ export const ProviderSetupForm = () => {
             disabled={isPending}
           />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
             type="text"
             name="city"
@@ -94,7 +94,7 @@ export const ProviderSetupForm = () => {
         </div>
         <Button
           type="submit"
-          className="w-full text-sm sm:text-base"
+          className="w-full text-sm md:text-base"
           disabled={isPending}
         >
           {isPending ? 'Creating profile...' : 'Complete setup'}

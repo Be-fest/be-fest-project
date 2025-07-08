@@ -58,37 +58,37 @@ export default function AdminProviders() {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4"
+        className="flex flex-col md:flex-row md:justify-between md:items-center gap-4"
       >
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-title">Prestadores</h1>
-          <p className="text-gray-600 mt-1 text-sm sm:text-base">
-            Gerencie todos os prestadores da plataforma
+          <h1 className="text-2xl md:text-3xl font-bold text-title">Prestadores</h1>
+          <p className="text-gray-600 mt-1 text-sm md:text-base">
+            Gerencie todos os prestadores de serviços
           </p>
         </div>
       </motion.div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.1 }}
-          className="bg-white rounded-xl p-3 sm:p-6 shadow-sm border border-gray-100"
+          className="bg-white rounded-xl p-3 md:p-6 shadow-sm border border-gray-100"
         >
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div className="flex-1">
-              <p className="text-gray-600 text-xs sm:text-sm font-medium">Total de Prestadores</p>
-              <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{mockProviders.length}</p>
+              <p className="text-gray-600 text-xs md:text-sm font-medium">Total de Prestadores</p>
+              <p className="text-lg md:text-2xl font-bold text-gray-900 mt-1">{mockProviders.length}</p>
             </div>
-            <div className="bg-primary-light p-2 sm:p-3 rounded-lg mt-2 sm:mt-0 self-end sm:self-auto">
-              <MdBusinessCenter className="text-base sm:text-2xl text-white" />
+            <div className="bg-primary-light p-2 md:p-3 rounded-lg mt-2 md:mt-0 self-end md:self-auto">
+              <MdBusinessCenter className="text-base md:text-2xl text-white" />
             </div>
           </div>
         </motion.div>
@@ -97,17 +97,17 @@ export default function AdminProviders() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.2 }}
-          className="bg-white rounded-xl p-3 sm:p-6 shadow-sm border border-gray-100"
+          className="bg-white rounded-xl p-3 md:p-6 shadow-sm border border-gray-100"
         >
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div className="flex-1">
-              <p className="text-gray-600 text-xs sm:text-sm font-medium">Ativos</p>
-              <p className="text-lg sm:text-2xl font-bold text-green-600 mt-1">
+              <p className="text-gray-600 text-xs md:text-sm font-medium">Ativos</p>
+              <p className="text-lg md:text-2xl font-bold text-green-600 mt-1">
                 {mockProviders.filter(p => p.isActive).length}
               </p>
             </div>
-            <div className="bg-green-100 p-2 sm:p-3 rounded-lg mt-2 sm:mt-0 self-end sm:self-auto">
-              <MdCheckCircle className="text-base sm:text-2xl text-green-600" />
+            <div className="bg-green-100 p-2 md:p-3 rounded-lg mt-2 md:mt-0 self-end md:self-auto">
+              <MdCheckCircle className="text-base md:text-2xl text-green-600" />
             </div>
           </div>
         </motion.div>
@@ -116,17 +116,17 @@ export default function AdminProviders() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.3 }}
-          className="bg-white rounded-xl p-3 sm:p-6 shadow-sm border border-gray-100"
+          className="bg-white rounded-xl p-3 md:p-6 shadow-sm border border-gray-100"
         >
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div className="flex-1">
-              <p className="text-gray-600 text-xs sm:text-sm font-medium">Avaliação Média</p>
-              <p className="text-lg sm:text-2xl font-bold text-yellow-600 mt-1">
+              <p className="text-gray-600 text-xs md:text-sm font-medium">Avaliação Média</p>
+              <p className="text-lg md:text-2xl font-bold text-yellow-600 mt-1">
                 {(mockProviders.reduce((acc, p) => acc + p.rating, 0) / mockProviders.length).toFixed(1)}
               </p>
             </div>
-            <div className="bg-yellow-100 p-2 sm:p-3 rounded-lg mt-2 sm:mt-0 self-end sm:self-auto">
-              <MdStar className="text-base sm:text-2xl text-yellow-600" />
+            <div className="bg-yellow-100 p-2 md:p-3 rounded-lg mt-2 md:mt-0 self-end md:self-auto">
+              <MdStar className="text-base md:text-2xl text-yellow-600" />
             </div>
           </div>
         </motion.div>
@@ -135,17 +135,17 @@ export default function AdminProviders() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.4 }}
-          className="bg-white rounded-xl p-3 sm:p-6 shadow-sm border border-gray-100"
+          className="bg-white rounded-xl p-3 md:p-6 shadow-sm border border-gray-100"
         >
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div className="flex-1">
-              <p className="text-gray-600 text-xs sm:text-sm font-medium">Total de Serviços</p>
-              <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">
+              <p className="text-gray-600 text-xs md:text-sm font-medium">Total de Serviços</p>
+              <p className="text-lg md:text-2xl font-bold text-gray-900 mt-1">
                 {mockProviders.reduce((acc, p) => acc + p.totalServices, 0)}
               </p>
             </div>
-            <div className="bg-primary-light p-2 sm:p-3 rounded-lg mt-2 sm:mt-0 self-end sm:self-auto">
-              <MdBusinessCenter className="text-base sm:text-2xl text-white" />
+            <div className="bg-primary-light p-2 md:p-3 rounded-lg mt-2 md:mt-0 self-end md:self-auto">
+              <MdBusinessCenter className="text-base md:text-2xl text-white" />
             </div>
           </div>
         </motion.div>

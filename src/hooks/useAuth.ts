@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
+import { useRouter } from 'next/navigation';
+import { useToastGlobal } from '@/contexts/GlobalToastContext';
 
 interface UserData {
   id: string;
@@ -12,24 +14,94 @@ interface UserData {
   organization_name: string | null;
 }
 
+// Função para verificar se o erro é de JWT expirado
+const isJWTExpiredError = (error: any): boolean => {
+  return (
+    error?.code === 'PGRST301' ||
+    error?.message?.includes('JWT expired') ||
+    error?.message?.includes('jwt expired')
+  );
+};
+
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const toast = useToastGlobal();
   const supabase = createClient();
 
+  // Função para lidar com JWT expirado
+  const handleJWTExpired = async () => {
+    try {
+      // Mostrar toast de sessão expirada
+      toast.warning(
+        'Sessão Expirada',
+        'Sua sessão expirou. Você será redirecionado para fazer login novamente.',
+        6000
+      );
+
+      // Fazer logout
+      await supabase.auth.signOut();
+      setUser(null);
+      setUserData(null);
+      setError(null);
+      
+      // Aguardar um pouco para o usuário ver o toast
+      setTimeout(() => {
+        // Usar localStorage como fallback
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('sessionExpired', 'true');
+          router.push('/auth/login');
+        }
+      }, 2000);
+      
+    } catch (logoutError) {
+      console.error('Erro ao fazer logout após JWT expirado:', logoutError);
+      
+      // Mostrar toast de erro
+      toast.error(
+        'Erro de Sessão',
+        'Houve um problema ao encerrar sua sessão. Você será redirecionado para o login.',
+        4000
+      );
+      
+      // Forçar redirecionamento mesmo se o logout falhar
+      setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('sessionExpired', 'true');
+          window.location.href = '/auth/login';
+        }
+      }, 2000);
+    }
+  };
+
   useEffect(() => {
+    let isMounted = true;
+
     const getSession = async () => {
       try {
+        if (!isMounted) return;
+        
         setLoading(true);
         setError(null);
 
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
+        if (!isMounted) return;
+        
         if (sessionError) {
           console.error('Erro ao buscar sessão:', sessionError);
+          
+          // Verificar se é erro de JWT expirado
+          if (isJWTExpiredError(sessionError)) {
+            await handleJWTExpired();
+            return;
+          }
+          
           setError('Erro ao verificar autenticação');
+          setLoading(false);
           return;
         }
 
@@ -37,28 +109,67 @@ export function useAuth() {
           setUser(session.user);
           
           // Buscar dados do usuário na tabela users
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('id, role, full_name, email, organization_name')
-            .eq('id', session.user.id)
-            .single();
+          try {
+            const { data: userData, error: userError } = await supabase
+              .from('users')
+              .select('id, role, full_name, email, organization_name')
+              .eq('id', session.user.id)
+              .single();
 
-          if (userError) {
-            console.error('Erro ao buscar dados do usuário:', userError);
+            if (!isMounted) return;
+
+            if (userError) {
+              console.error('Erro ao buscar dados do usuário:', userError);
+              
+              // Verificar se é erro de JWT expirado
+              if (isJWTExpiredError(userError)) {
+                await handleJWTExpired();
+                return;
+              }
+              
+              setError('Erro ao carregar dados do usuário');
+            } else {
+              setUserData(userData);
+            }
+          } catch (fetchError) {
+            if (!isMounted) return;
+            console.error('Erro ao buscar dados do usuário:', fetchError);
+            
+            // Verificar se é erro de JWT expirado
+            if (isJWTExpiredError(fetchError)) {
+              await handleJWTExpired();
+              return;
+            }
+            
             setError('Erro ao carregar dados do usuário');
-          } else {
-            setUserData(userData);
           }
+        } else {
+          setUser(null);
+          setUserData(null);
         }
       } catch (error) {
+        if (!isMounted) return;
         console.error('Erro na autenticação:', error);
+        
+        // Verificar se é erro de JWT expirado
+        if (isJWTExpiredError(error)) {
+          await handleJWTExpired();
+          return;
+        }
+        
         setError('Erro inesperado na autenticação');
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     getSession();
+
+    return () => {
+      isMounted = false;
+    };
 
     // Escutar mudanças na autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -70,14 +181,28 @@ export function useAuth() {
           setUser(session.user);
           
           // Buscar dados do usuário
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('id, role, full_name, email, organization_name')
-            .eq('id', session.user.id)
-            .single();
+          try {
+            const { data: userData, error: userError } = await supabase
+              .from('users')
+              .select('id, role, full_name, email, organization_name')
+              .eq('id', session.user.id)
+              .single();
 
-          if (!userError) {
-            setUserData(userData);
+            if (userError) {
+              // Verificar se é erro de JWT expirado
+              if (isJWTExpiredError(userError)) {
+                await handleJWTExpired();
+                return;
+              }
+            } else {
+              setUserData(userData);
+            }
+          } catch (fetchError) {
+            // Verificar se é erro de JWT expirado
+            if (isJWTExpiredError(fetchError)) {
+              await handleJWTExpired();
+              return;
+            }
           }
         }
       }
@@ -86,7 +211,7 @@ export function useAuth() {
     return () => {
       subscription.unsubscribe();
     };
-  }, [supabase]);
+  }, [supabase, router, toast]);
 
   const signOut = async () => {
     try {
@@ -113,11 +238,23 @@ export function useAuth() {
         .eq('id', user.id)
         .single();
 
-      if (!userError) {
+      if (userError) {
+        // Verificar se é erro de JWT expirado
+        if (isJWTExpiredError(userError)) {
+          await handleJWTExpired();
+          return;
+        }
+      } else {
         setUserData(userData);
       }
     } catch (error) {
       console.error('Erro ao atualizar dados do usuário:', error);
+      
+      // Verificar se é erro de JWT expirado
+      if (isJWTExpiredError(error)) {
+        await handleJWTExpired();
+        return;
+      }
     }
   };
 

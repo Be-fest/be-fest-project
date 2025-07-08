@@ -64,13 +64,13 @@ export function FAQ() {
 						>
 							<button
 								onClick={() => toggleFAQ(index)}
-								className="w-full px-4 sm:px-6 py-4 sm:py-5 text-left flex items-center justify-between hover:bg-gray-100 transition-colors"
+								className="w-full px-4 md:px-6 py-4 md:py-5 text-left flex items-center justify-between hover:bg-gray-100 transition-colors"
 							>
-								<h3 className="text-sm sm:text-base md:text-lg font-semibold text-[#520029] pr-4">
+								<h3 className="text-sm md:text-base md:text-lg font-semibold text-[#520029] pr-4">
 									{faq.question}
 								</h3>
 								<MdExpandMore 
-									className={`text-xl sm:text-2xl text-[#520029] transition-transform duration-300 flex-shrink-0 ${
+									className={`text-xl md:text-2xl text-[#520029] transition-transform duration-300 flex-shrink-0 ${
 										openIndex === index ? 'rotate-180' : ''
 									}`}
 								/>
@@ -85,8 +85,8 @@ export function FAQ() {
 										transition={{ duration: 0.3 }}
 										className="overflow-hidden"
 									>
-										<div className="px-4 sm:px-6 pb-4 sm:pb-5">
-											<p className="text-sm sm:text-base text-[#6E5963] leading-relaxed">
+										<div className="px-4 md:px-6 pb-4 md:pb-5">
+											<p className="text-sm md:text-base text-[#6E5963] leading-relaxed">
 												{faq.answer}
 											</p>
 										</div>

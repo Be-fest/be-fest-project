@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { MdPersonAdd, MdBusiness, MdNotifications, MdMoney } from 'react-icons/md';
+import Link from 'next/link';
 
 const steps = [
   {
@@ -32,24 +33,23 @@ const steps = [
 
 export function ProviderHowItWorks() {
   return (
-    <section className="py-12 sm:py-16 lg:py-24" style={{ backgroundColor: '#F8F9FA' }}>
-      <div className="container mx-auto px-4 sm:px-6 md:px-8">
+    <section className="py-12 md:py-16 lg:py-24" style={{ backgroundColor: '#F8F9FA' }}>
+      <div className="container mx-auto px-4 md:px-6 md:px-8">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-12 sm:mb-16"
+          className="text-center mb-12 md:mb-16"
         >
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#520029] mb-3 sm:mb-4">
-            Como Funciona para Prestadores
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#520029] mb-3 md:mb-4">
+            Como Funciona
           </h2>
-          <p className="text-base sm:text-lg text-[#6E5963] max-w-2xl mx-auto">
-            Em poucos passos você estará conectado a milhares de clientes
+          <p className="text-base md:text-lg text-[#6E5963] max-w-2xl mx-auto">
+            Comece a receber pedidos em 4 passos simples
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 relative">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 relative">
           {steps.map((step, index) => {
             const Icon = step.icon;
             return (
@@ -57,8 +57,7 @@ export function ProviderHowItWorks() {
                 key={step.number}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: index * 0.15 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
                 className="text-center relative"
               >
                 {/* Connector Line - Only on desktop */}
@@ -68,20 +67,20 @@ export function ProviderHowItWorks() {
                 
                 {/* Step Content */}
                 <div className="relative z-10">
-                  <div className="relative mb-4 sm:mb-6">
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto bg-gradient-to-r from-[#A502CA] to-[#CD0067] rounded-full flex items-center justify-center mb-3 sm:mb-4 shadow-lg">
-                      <Icon className="text-white text-2xl sm:text-3xl" />
+                  <div className="relative mb-4 md:mb-6">
+                    <div className="w-20 h-20 md:w-24 md:h-24 mx-auto bg-gradient-to-r from-[#A502CA] to-[#CD0067] rounded-full flex items-center justify-center mb-3 md:mb-4 shadow-lg">
+                      <Icon className="text-white text-2xl md:text-3xl" />
                     </div>
-                    <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 w-6 h-6 sm:w-8 sm:h-8 bg-white rounded-full flex items-center justify-center shadow-md border-2 border-[#A502CA]">
-                      <span className="text-[#A502CA] font-bold text-xs sm:text-sm">{step.number}</span>
+                    <div className="absolute -top-1 -right-1 md:-top-2 md:-right-2 w-6 h-6 md:w-8 md:h-8 bg-white rounded-full flex items-center justify-center shadow-md border-2 border-[#A502CA]">
+                      <span className="text-[#A502CA] font-bold text-xs md:text-sm">{step.number}</span>
                     </div>
                   </div>
                   
-                  <h3 className="text-lg sm:text-xl font-bold text-[#520029] mb-3 sm:mb-4">
+                  <h3 className="text-lg md:text-xl font-bold text-[#520029] mb-3 md:mb-4">
                     {step.title}
                   </h3>
                   
-                  <p className="text-sm sm:text-base text-[#6E5963] leading-relaxed">
+                  <p className="text-sm md:text-base text-[#6E5963] leading-relaxed">
                     {step.description}
                   </p>
                 </div>
@@ -94,17 +93,16 @@ export function ProviderHowItWorks() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.8 }}
-          className="text-center mt-8 sm:mt-12"
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="text-center mt-8 md:mt-12"
         >
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="w-full sm:w-auto bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg shadow-lg hover:shadow-xl transition-all duration-300"
-          >
-            Começar Agora - É Grátis!
-          </motion.button>
+          <Link href="/auth/register">
+            <button
+              className="w-full md:w-auto bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-6 md:px-8 py-3 md:py-4 rounded-full font-semibold text-base md:text-lg shadow-lg hover:shadow-xl transition-all duration-300"
+            >
+              Começar Agora
+            </button>
+          </Link>
         </motion.div>
       </div>
     </section>

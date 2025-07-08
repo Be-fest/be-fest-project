@@ -27,7 +27,7 @@ import { AuthGuard } from '@/components/AuthGuard';
 const PartiesSkeleton = () => (
   <div className="space-y-6">
     {/* Header Skeleton */}
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-pulse">
+    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 animate-pulse">
       <div className="space-y-2">
         <div className="h-8 w-48 bg-gray-300 rounded"></div>
         <div className="h-4 w-64 bg-gray-200 rounded"></div>
@@ -193,9 +193,9 @@ export default function MinhasFestasPage() {
         </Link>
 
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#520029] mb-2">
+            <h1 className="text-2xl md:text-3xl font-bold text-[#520029] mb-2">
               Minhas Festas
             </h1>
             <p className="text-gray-600">

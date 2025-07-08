@@ -144,9 +144,9 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8" style={{ backgroundColor: '#FFF9F9' }}>
+    <div className="min-h-screen flex items-center justify-center px-4 md:px-6 lg:px-8" style={{ backgroundColor: '#FFF9F9' }}>
       <motion.div 
-        className="max-w-md w-full bg-white rounded-lg shadow-lg p-6 sm:p-8 text-center"
+        className="max-w-md w-full bg-white rounded-lg shadow-lg p-6 md:p-8 text-center"
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}

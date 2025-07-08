@@ -495,7 +495,7 @@ export function ProviderBudget({ providerId }: ProviderBudgetProps) {
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col md:flex-row gap-4">
               <button
                 onClick={() => setCurrentStep(2)}
                 className="border-2 border-[#FF0080] text-[#FF0080] px-8 py-3 rounded-lg font-semibold hover:bg-[#FF0080] hover:text-white transition-all"

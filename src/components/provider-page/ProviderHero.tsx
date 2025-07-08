@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { MdStar, MdTrendingUp, MdAttachMoney } from 'react-icons/md';
+import Image from 'next/image';
 
 export function ProviderHero() {
   return (
@@ -10,104 +11,102 @@ export function ProviderHero() {
       className="relative min-h-screen flex items-center justify-center overflow-hidden"
       style={{ backgroundColor: '#FFF9F9' }}
     >
-      <div className="container mx-auto pt-24 md:pt-0 px-4 sm:px-6 md:px-8 relative z-10">
-        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-          {/* Content */}
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="text-center lg:text-left"
-          >
-            <motion.span
+      <div className="container mx-auto pt-24 md:pt-0 px-4 md:px-6 md:px-8 relative z-10">
+        <div className="lg:grid lg:grid-cols-2 lg:gap-12 items-center">
+          <div className="text-center lg:text-left">
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="inline-block bg-gradient-to-r from-[#A502CA] to-[#CD0067] text-white px-4 py-2 rounded-full text-sm font-medium mb-4 sm:mb-6"
+              transition={{ duration: 0.6 }}
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-[#A502CA] to-[#CD0067] text-white px-4 py-2 rounded-full text-sm font-medium mb-4 md:mb-6"
             >
-              ✨ Seja um Prestador Be Fest
-            </motion.span>
-            
+              <MdTrendingUp className="text-lg" />
+              <span>Plataforma #1 para Prestadores</span>
+            </motion.div>
+
             <motion.h1
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.3 }}
-              className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 leading-tight"
-              style={{ color: '#520029' }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-6 leading-tight"
             >
-              Sua festa num clique! Be fest,{' '}
-              <span className="bg-gradient-to-r from-[#A502CA] to-[#FF0080] bg-clip-text text-transparent">
-                conectando você à felicidade.
+              <span className="text-[#520029]">Transforme Seu Negócio</span>
+              <br />
+              <span className="bg-gradient-to-r from-[#A502CA] to-[#CD0067] bg-clip-text text-transparent">
+                de Eventos
               </span>
             </motion.h1>
-            
+
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.5 }}
-              className="text-base sm:text-lg lg:text-xl text-[#6E5963] mb-6 sm:mb-8 leading-relaxed max-w-2xl mx-auto lg:mx-0"
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="text-base md:text-lg lg:text-xl text-[#6E5963] mb-6 md:mb-8 leading-relaxed max-w-2xl mx-auto lg:mx-0"
             >
-              Acompanhe o andamento de todos os eventos, cadastros e pagamentos.
+              Conecte-se com milhares de clientes, gerencie seus serviços e 
+              <br className="hidden md:block" />
+              faça seu negócio crescer na maior plataforma de eventos do Brasil.
             </motion.p>
 
-            {/* Stats */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.6 }}
-              className="flex flex-col sm:flex-row flex-wrap justify-center lg:justify-start gap-4 sm:gap-6 mb-6 sm:mb-8"
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="flex flex-col md:flex-row flex-wrap justify-center lg:justify-start gap-4 md:gap-6 mb-6 md:mb-8"
             >
-              <div className="flex items-center justify-center lg:justify-start gap-2">
-                <MdStar className="text-[#A502CA] text-lg sm:text-xl" />
-                <span className="text-[#520029] font-semibold text-sm sm:text-base">+1000 Prestadores</span>
+              <div className="flex items-center gap-2">
+                <MdStar className="text-[#A502CA] text-lg md:text-xl" />
+                <span className="text-[#520029] font-semibold text-sm md:text-base">+1000 Prestadores</span>
               </div>
-              <div className="flex items-center justify-center lg:justify-start gap-2">
-                <MdTrendingUp className="text-[#A502CA] text-lg sm:text-xl" />
-                <span className="text-[#520029] font-semibold text-sm sm:text-base">95% Satisfação</span>
+              <div className="flex items-center gap-2">
+                <MdTrendingUp className="text-[#A502CA] text-lg md:text-xl" />
+                <span className="text-[#520029] font-semibold text-sm md:text-base">95% Satisfação</span>
               </div>
-              <div className="flex items-center justify-center lg:justify-start gap-2">
-                <MdAttachMoney className="text-[#A502CA] text-lg sm:text-xl" />
-                <span className="text-[#520029] font-semibold text-sm sm:text-base">Sem Taxa Inicial</span>
+              <div className="flex items-center gap-2">
+                <MdAttachMoney className="text-[#A502CA] text-lg md:text-xl" />
+                <span className="text-[#520029] font-semibold text-sm md:text-base">Sem Taxa Inicial</span>
               </div>
             </motion.div>
-            
+
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.7 }}
-              className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start"
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="flex flex-col md:flex-row gap-3 md:gap-4 justify-center lg:justify-start"
             >
-              <Link href="/auth/register" className="w-full sm:w-auto">
+              <Link href="/auth/register" className="w-full md:w-auto">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="w-full sm:w-auto bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg shadow-lg hover:shadow-xl transition-all duration-300"
+                  className="w-full md:w-auto bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-6 md:px-8 py-3 md:py-4 rounded-full font-semibold text-base md:text-lg shadow-lg hover:shadow-xl transition-all duration-300"
                 >
-                  Cadastrar-se Agora
+                  Começar Agora - Grátis
                 </motion.button>
               </Link>
               
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="w-full sm:w-auto border-2 border-[#A502CA] text-[#A502CA] hover:bg-[#A502CA] hover:text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold text-base sm:text-lg transition-all duration-300"
+                className="w-full md:w-auto border-2 border-[#A502CA] text-[#A502CA] hover:bg-[#A502CA] hover:text-white px-6 md:px-8 py-3 md:py-4 rounded-full font-semibold text-base md:text-lg transition-all duration-300"
               >
                 Ver Como Funciona
               </motion.button>
             </motion.div>
-          </motion.div>
+          </div>
 
-          {/* Hero Image */}
           <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-            className="relative flex justify-center mt-8 lg:mt-0"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="mt-12 lg:mt-0 flex justify-center"
           >
-            <img
+            <Image
               src="/hero-prestadorimg.png"
-              alt="Prestadores Be Fest"
-              className="w-full h-auto max-w-sm sm:max-w-md lg:max-w-lg"
+              alt="Prestador de Serviços"
+              width={500}
+              height={500}
+              className="w-full h-auto max-w-sm md:max-w-md lg:max-w-lg"
+              priority
             />
           </motion.div>
         </div>

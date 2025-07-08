@@ -120,7 +120,7 @@ export function ProviderServices({ services }: ProviderServicesProps) {
         <p className="text-pink-100 mb-6 max-w-2xl mx-auto">
           Compartilhe este prestador e ajude outros a encontrarem serviços incríveis para seus eventos!
         </p>        
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="flex flex-col md:flex-row gap-4 justify-center">
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}

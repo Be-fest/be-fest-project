@@ -24,14 +24,14 @@ export function ProviderLayout({ children }: ProviderLayoutProps) {
     <div className="min-h-screen bg-gray-50">
       {/* Top Navigation */}
       <nav className="bg-white shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <Link href="/dashboard/prestador">
                 <Logo width={40} height={40} />
               </Link>
               <span className="ml-3 text-lg font-semibold text-[#520029]">
-                Be Fest Pro
+                Dashboard do Prestador
               </span>
             </div>
 
@@ -81,7 +81,7 @@ export function ProviderLayout({ children }: ProviderLayoutProps) {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden border-t bg-white"
+            className="md:hidden border-t bg-white z-50"
           >
             <div className="px-4 py-3 space-y-3">
               <Link 
@@ -102,7 +102,9 @@ export function ProviderLayout({ children }: ProviderLayoutProps) {
       </nav>
 
       {/* Main Content */}
-      <main>{children}</main>
+      <main className="bg-gray-50 min-h-[calc(100vh-4rem)]">
+        {children}
+      </main>
     </div>
   );
 }

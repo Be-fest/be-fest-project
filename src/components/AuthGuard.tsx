@@ -19,9 +19,13 @@ export function AuthGuard({ children, requiredRole, redirectTo = '/auth/login' }
   const supabase = createClient();
 
   useEffect(() => {
+    let isMounted = true;
+
     const checkAuth = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (!isMounted) return;
         
         if (error) {
           console.error('Erro ao verificar sessão:', error);
@@ -34,7 +38,9 @@ export function AuthGuard({ children, requiredRole, redirectTo = '/auth/login' }
           return;
         }
 
-        setUser(session.user);
+        if (isMounted) {
+          setUser(session.user);
+        }
 
         // Buscar dados do usuário na tabela users
         const { data: userData, error: userError } = await supabase
@@ -42,6 +48,8 @@ export function AuthGuard({ children, requiredRole, redirectTo = '/auth/login' }
           .select('role')
           .eq('id', session.user.id)
           .single();
+
+        if (!isMounted) return;
 
         if (userError) {
           console.error('Erro ao buscar dados do usuário:', userError);
@@ -59,18 +67,25 @@ export function AuthGuard({ children, requiredRole, redirectTo = '/auth/login' }
         }
 
       } catch (error) {
-        console.error('Erro na verificação de autenticação:', error);
-        router.push(redirectTo);
+        if (isMounted) {
+          console.error('Erro na verificação de autenticação:', error);
+          router.push(redirectTo);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
-    checkAuth();
+    // Aguardar um pouco antes de verificar para evitar conflitos
+    const timeout = setTimeout(checkAuth, 500);
 
     // Escutar mudanças na autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!isMounted) return;
+        
         if (event === 'SIGNED_OUT' || !session) {
           setUser(null);
           setUserRole(null);
@@ -85,12 +100,16 @@ export function AuthGuard({ children, requiredRole, redirectTo = '/auth/login' }
             .eq('id', session.user.id)
             .single();
 
-          setUserRole(userData?.role || 'client');
+          if (isMounted) {
+            setUserRole(userData?.role || 'client');
+          }
         }
       }
     );
 
     return () => {
+      isMounted = false;
+      clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, [router, redirectTo, requiredRole, supabase]);

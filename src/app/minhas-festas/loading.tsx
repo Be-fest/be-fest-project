@@ -2,7 +2,7 @@ export default function MinhasFestasLoading() {
   return (
     <div className="min-h-screen bg-[#FFF6FB] animate-pulse">
       {/* Header Skeleton */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-10">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
             <div className="h-8 w-48 bg-gray-200 rounded mb-2" />

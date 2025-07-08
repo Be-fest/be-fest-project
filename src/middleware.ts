@@ -18,6 +18,12 @@ export async function middleware(request: NextRequest) {
     '/pagamento',
   ];
 
+  // Rotas bloqueadas para providers
+  const clientOnlyRoutes = [
+    '/minhas-festas',
+    '/pagamento',
+  ];
+
   // Verifica se a rota atual precisa de autenticação
   const isProtectedRoute = protectedRoutes.some(route => 
     request.nextUrl.pathname.startsWith(route)
@@ -28,6 +34,25 @@ export async function middleware(request: NextRequest) {
     const redirectUrl = new URL('/auth/login', request.url);
     redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname);
     return NextResponse.redirect(redirectUrl);
+  }
+
+  // Verificar role do usuário para rotas específicas de cliente
+  if (session && clientOnlyRoutes.some(route => request.nextUrl.pathname.startsWith(route))) {
+    try {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+
+      // Se for provider tentando acessar rota de cliente, redireciona
+      if (userData?.role === 'provider') {
+        const redirectUrl = new URL('/acesso-negado', request.url);
+        return NextResponse.redirect(redirectUrl);
+      }
+    } catch (error) {
+      console.error('Erro ao verificar role do usuário:', error);
+    }
   }
 
   return res;

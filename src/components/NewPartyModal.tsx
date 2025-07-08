@@ -30,20 +30,20 @@ export function NewPartyModal({ isOpen, onClose, onSuccess }: NewPartyModalProps
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-xs sm:max-w-lg lg:max-w-2xl max-h-[90vh] overflow-y-auto"
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-xs md:max-w-lg lg:max-w-2xl max-h-[90vh] overflow-y-auto"
             >
               {/* Header */}
-              <div className="bg-gradient-to-r from-[#A502CA] to-[#8B0A9E] p-4 sm:p-6 rounded-t-2xl">
+              <div className="bg-gradient-to-r from-[#A502CA] to-[#8B0A9E] p-4 md:p-6 rounded-t-2xl">
                 <div className="flex items-center justify-between text-white">
                   <div>
-                    <h2 className="text-xl sm:text-2xl font-bold">Nova Festa</h2>
-                    <p className="text-purple-100 text-sm sm:text-base">Configure sua festa dos sonhos</p>
+                    <h2 className="text-xl md:text-2xl font-bold">Nova Festa</h2>
+                    <p className="text-purple-100 text-sm md:text-base">Configure sua festa dos sonhos</p>
                   </div>
                   <button
                     onClick={onClose}
-                    className="p-1 sm:p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition-colors"
+                    className="p-1 md:p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition-colors"
                   >
-                    <MdClose className="text-xl sm:text-2xl" />
+                    <MdClose className="text-xl md:text-2xl" />
                   </button>
                 </div>
               </div>
