@@ -19,32 +19,40 @@ const iconMap = {
 
 const colorMap = {
   success: {
-    bg: 'bg-green-50',
-    border: 'border-green-200',
-    icon: 'text-green-600',
-    title: 'text-green-800',
-    message: 'text-green-700',
+    bg: 'bg-white',
+    border: 'border-green-500',
+    icon: 'text-green-500',
+    title: 'text-gray-900',
+    message: 'text-gray-600',
+    accent: 'bg-green-500',
+    shadow: 'shadow-green-100',
   },
   error: {
-    bg: 'bg-red-50',
-    border: 'border-red-200',
-    icon: 'text-red-600',
-    title: 'text-red-800',
-    message: 'text-red-700',
+    bg: 'bg-white',
+    border: 'border-red-500',
+    icon: 'text-red-500',
+    title: 'text-gray-900',
+    message: 'text-gray-600',
+    accent: 'bg-red-500',
+    shadow: 'shadow-red-100',
   },
   warning: {
-    bg: 'bg-yellow-50',
-    border: 'border-yellow-200',
-    icon: 'text-yellow-600',
-    title: 'text-yellow-800',
-    message: 'text-yellow-700',
+    bg: 'bg-white',
+    border: 'border-yellow-500',
+    icon: 'text-yellow-500',
+    title: 'text-gray-900',
+    message: 'text-gray-600',
+    accent: 'bg-yellow-500',
+    shadow: 'shadow-yellow-100',
   },
   info: {
-    bg: 'bg-blue-50',
-    border: 'border-blue-200',
-    icon: 'text-blue-600',
-    title: 'text-blue-800',
-    message: 'text-blue-700',
+    bg: 'bg-white',
+    border: 'border-blue-500',
+    icon: 'text-blue-500',
+    title: 'text-gray-900',
+    message: 'text-gray-600',
+    accent: 'bg-blue-500',
+    shadow: 'shadow-blue-100',
   },
 };
 
@@ -64,39 +72,43 @@ export function Toast({ toast, onClose }: ToastProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 50, scale: 0.3 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
-      className={`
-        ${colors.bg} ${colors.border} 
-        border rounded-lg p-4 shadow-lg backdrop-blur-sm
-        w-full pointer-events-auto
-      `}
+      initial={{ opacity: 0, x: 400, scale: 0.9 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
+      exit={{ opacity: 0, x: 400, scale: 0.9 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      className="pointer-events-auto"
+      style={{ width: '600px', minWidth: '600px' }}
     >
-      <div className="flex items-start">
-        <div className="flex-shrink-0">
-          <Icon className={`h-5 w-5 ${colors.icon}`} />
-        </div>
-        <div className="ml-3 w-0 flex-1">
-          <p className={`text-sm font-medium ${colors.title}`}>
-            {toast.title}
-          </p>
-          {toast.message && (
-            <p className={`mt-1 text-sm ${colors.message}`}>
-              {toast.message}
+      <div className={`
+        ${colors.bg} 
+        border-l-4 ${colors.border}
+        border-r border-t border-b border-gray-200
+        rounded-lg shadow-xl ${colors.shadow}
+        relative overflow-hidden
+        backdrop-blur-sm
+      `}>
+        <div className="flex items-start p-5">
+          <div className="flex-shrink-0">
+            <Icon className={`h-6 w-6 ${colors.icon}`} />
+          </div>
+          <div className="ml-4 flex-1">
+            <p className={`text-base font-semibold ${colors.title} leading-tight`}>
+              {toast.title}
             </p>
-          )}
-        </div>
-        <div className="ml-4 flex-shrink-0 flex">
-          <button
-            className={`
-              inline-flex rounded-md p-1.5 transition-colors
-              ${colors.icon} hover:bg-black/5
-            `}
-            onClick={() => onClose(toast.id)}
-          >
-            <MdClose className="h-4 w-4" />
-          </button>
+            {toast.message && (
+              <p className={`mt-2 text-sm ${colors.message} leading-relaxed`}>
+                {toast.message}
+              </p>
+            )}
+          </div>
+          <div className="ml-4 flex-shrink-0">
+            <button
+              className="inline-flex items-center justify-center w-8 h-8 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-200"
+              onClick={() => onClose(toast.id)}
+            >
+              <MdClose className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       </div>
     </motion.div>
@@ -110,8 +122,8 @@ interface ToastContainerProps {
 
 export function ToastContainer({ toasts, onClose }: ToastContainerProps) {
   return (
-    <div className="fixed top-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none">
-      <AnimatePresence>
+    <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-3 pointer-events-none">
+      <AnimatePresence mode="popLayout">
         {toasts.map((toast) => (
           <Toast key={toast.id} toast={toast} onClose={onClose} />
         ))}

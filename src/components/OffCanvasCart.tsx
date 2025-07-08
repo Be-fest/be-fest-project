@@ -5,6 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MdClose, MdAdd, MdRemove, MdShoppingCart, MdLocationOn, MdCalendarToday, MdPerson, MdPersonOutline, MdFace } from 'react-icons/md';
 import { useCart } from '../contexts/CartContext';
 import { PartyConfigForm } from './PartyConfigForm';
+import { updateEventStatusAction } from '@/lib/actions/events';
+import { useToastGlobal } from '@/contexts/GlobalToastContext';
+import { useRouter } from 'next/navigation';
 
 interface OffCanvasCartProps {
   isOpen: boolean;
@@ -40,11 +43,15 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
   } = useCart();
 
   const [isConfiguring, setIsConfiguring] = useState(showPartyConfig);
+  const [isFinalizingOrder, setIsFinalizingOrder] = useState(false);
   const [guestBreakdown, setGuestBreakdown] = useState<GuestBreakdown>({
     fullGuests: partyData?.fullGuests || 0,
     halfGuests: partyData?.halfGuests || 0,
     freeGuests: partyData?.freeGuests || 0
   });
+
+  const toast = useToastGlobal();
+  const router = useRouter();
 
   // Sincronizar guest breakdown com partyData quando mudar
   useEffect(() => {
@@ -107,6 +114,61 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
   // Função para forçar sincronização manual
   const handleSyncNow = async () => {
     await syncWithDatabase();
+  };
+
+  // Função para finalizar pedido
+  const handleFinalizarPedido = async () => {
+    if (!eventId) {
+      toast.error(
+        'Erro',
+        'Nenhum evento encontrado. Sincronize o carrinho primeiro.',
+        5000
+      );
+      return;
+    }
+
+    setIsFinalizingOrder(true);
+
+    try {
+      // Primeiro, sincronizar com o banco de dados se necessário
+      if (cartItems.length > 0) {
+        await syncWithDatabase();
+      }
+
+      // Atualizar status do evento para "planning" (em análise)
+      const result = await updateEventStatusAction(eventId, 'planning');
+
+      if (result.success) {
+        toast.success(
+          'Pedido finalizado!',
+          'Seus serviços foram enviados para análise dos prestadores. Você será notificado quando eles responderem.',
+          6000
+        );
+
+        // Fechar o offcanvas
+        onClose();
+
+        // Redirecionar para minhas festas após 2 segundos
+        setTimeout(() => {
+          router.push('/minhas-festas');
+        }, 2000);
+      } else {
+        toast.error(
+          'Erro ao finalizar pedido',
+          result.error || 'Não foi possível finalizar o pedido. Tente novamente.',
+          5000
+        );
+      }
+    } catch (error) {
+      console.error('Erro ao finalizar pedido:', error);
+      toast.error(
+        'Erro ao finalizar pedido',
+        'Ocorreu um erro inesperado. Tente novamente.',
+        5000
+      );
+    } finally {
+      setIsFinalizingOrder(false);
+    }
   };
 
   return (
@@ -408,10 +470,11 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
                   </div>
                   
                   <button 
+                    onClick={handleFinalizarPedido}
                     className="w-full bg-gradient-to-r from-[#F71875] to-[#A502CA] hover:from-[#E6006F] hover:to-[#8B0A9E] text-white font-semibold py-4 rounded-xl transition-all transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                    disabled={isLoading}
+                    disabled={isLoading || isFinalizingOrder}
                   >
-                    {isLoading ? 'Sincronizando...' : 'Finalizar Pedido'}
+                    {isFinalizingOrder ? 'Finalizando...' : isLoading ? 'Sincronizando...' : 'Finalizar Pedido'}
                   </button>
                 </div>
               )}
