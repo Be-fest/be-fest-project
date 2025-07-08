@@ -8,15 +8,15 @@ import { useOffCanvas } from '@/contexts/OffCanvasContext';
 import { usePathname } from 'next/navigation';
 
 export function FloatingCart() {
-  const { getItemCount } = useCart();
+  const { cartItems } = useCart();
   const { openOffCanvas } = useOffCanvas();
   const pathname = usePathname();
-  const itemCount = getItemCount();
+  const hasItems = cartItems.length > 0;
 
   // Mostrar apenas na home e na página de serviços
   const shouldShow = pathname === '/' || pathname.startsWith('/servicos');
 
-  if (!shouldShow || itemCount === 0) return null;
+  if (!shouldShow || !hasItems) return null;
 
   return (
     <AnimatePresence>
@@ -32,7 +32,7 @@ export function FloatingCart() {
         <div className="relative">
           <MdShoppingCart className="text-2xl" />
           <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
-            {itemCount}
+            {cartItems.length}
           </span>
         </div>
       </motion.button>

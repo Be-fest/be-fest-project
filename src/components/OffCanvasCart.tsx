@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MdClose, MdAdd, MdRemove, MdShoppingCart, MdLocationOn, MdCalendarToday, MdPerson, MdPersonOutline, MdFace } from 'react-icons/md';
 import { useCart } from '../contexts/CartContext';
@@ -30,10 +30,13 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
   const { 
     cartItems, 
     partyData, 
+    eventId,
+    isLoading,
     updateQuantity, 
     removeFromCart, 
     getTotalPrice,
-    setPartyData
+    setPartyData,
+    syncWithDatabase
   } = useCart();
 
   const [isConfiguring, setIsConfiguring] = useState(showPartyConfig);
@@ -42,6 +45,17 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
     halfGuests: partyData?.halfGuests || 0,
     freeGuests: partyData?.freeGuests || 0
   });
+
+  // Sincronizar guest breakdown com partyData quando mudar
+  useEffect(() => {
+    if (partyData) {
+      setGuestBreakdown({
+        fullGuests: partyData.fullGuests || 0,
+        halfGuests: partyData.halfGuests || 0,
+        freeGuests: partyData.freeGuests || 0
+      });
+    }
+  }, [partyData]);
 
   const formatPrice = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -63,6 +77,8 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
 
   const handlePartyConfigComplete = () => {
     setIsConfiguring(false);
+    // Sincronizar automaticamente após configurar a festa
+    syncWithDatabase();
   };
 
   const handleGuestBreakdownChange = (type: keyof GuestBreakdown, value: number) => {
@@ -86,6 +102,11 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
 
   const getCalculatedTotal = () => {
     return cartItems.reduce((total, item) => total + calculateItemTotal(item), 0);
+  };
+
+  // Função para forçar sincronização manual
+  const handleSyncNow = async () => {
+    await syncWithDatabase();
   };
 
   return (
@@ -128,13 +149,41 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={onClose}
-                  className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors"
-                >
-                  <MdClose className="text-lg" />
-                </button>
+                <div className="flex items-center gap-2">
+                  {/* Indicador de sincronização */}
+                  {isLoading && (
+                    <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  )}
+                  {eventId && !isLoading && (
+                    <button
+                      onClick={handleSyncNow}
+                      className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors"
+                      title="Sincronizar com banco de dados"
+                    >
+                      <MdShoppingCart className="text-sm" />
+                    </button>
+                  )}
+                  <button
+                    onClick={onClose}
+                    className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors"
+                  >
+                    <MdClose className="text-lg" />
+                  </button>
+                </div>
               </div>
+
+              {/* Status de sincronização */}
+              {eventId && (
+                <div className="mx-6 mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-green-700">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm font-medium">Festa salva no banco de dados</span>
+                  </div>
+                  <p className="text-xs text-green-600 mt-1">
+                    ID: {eventId.slice(0, 8)}...
+                  </p>
+                </div>
+              )}
 
               {/* Event Info Card - Design minimalista */}
               {partyData && !isConfiguring && (
@@ -168,7 +217,7 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
                     Convidados ({getTotalGuests()})
                   </h3>
                   
-                                    <div className="space-y-1">
+                  <div className="space-y-1">
                      {/* Inteira */}
                      <div className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
                        <div className="flex items-center gap-3">
@@ -307,23 +356,8 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
                             </p>
                             
                             <div className="flex items-center justify-between mt-2">
-                              <div className="flex items-center gap-3">
-                                <button
-                                  onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
-                                  disabled={item.quantity === 1}
-                                  className="w-8 h-8 border border-gray-300 rounded-full flex items-center justify-center transition-all hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-gray-300"
-                                >
-                                  <MdRemove className="text-sm text-gray-600" />
-                                </button>
-                                <span className="w-8 text-center text-sm font-medium text-gray-900">
-                                  {item.quantity}
-                                </span>
-                                <button
-                                  onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                  className="w-8 h-8 border border-gray-300 rounded-full flex items-center justify-center transition-all hover:border-gray-400 hover:bg-gray-50"
-                                >
-                                  <MdAdd className="text-sm text-gray-600" />
-                                </button>
+                              <div className="text-sm text-gray-600">
+                                Serviço contratado
                               </div>
                               
                               <div className="text-right">
@@ -373,8 +407,11 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
                     </div>
                   </div>
                   
-                  <button className="w-full bg-gradient-to-r from-[#F71875] to-[#A502CA] hover:from-[#E6006F] hover:to-[#8B0A9E] text-white font-semibold py-4 rounded-xl transition-all transform hover:scale-105 shadow-lg">
-                    Finalizar Pedido
+                  <button 
+                    className="w-full bg-gradient-to-r from-[#F71875] to-[#A502CA] hover:from-[#E6006F] hover:to-[#8B0A9E] text-white font-semibold py-4 rounded-xl transition-all transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Sincronizando...' : 'Finalizar Pedido'}
                   </button>
                 </div>
               )}

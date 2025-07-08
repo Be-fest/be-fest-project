@@ -6,12 +6,14 @@ import { MdEdit, MdDelete, MdVisibility, MdVisibilityOff } from 'react-icons/md'
 import { ServiceFormModal } from './ServiceFormModal';
 import { getProviderServicesAction, toggleServiceStatusAction, deleteServiceAction } from '@/lib/actions/services';
 import { Service } from '@/types/database';
+import { useToastGlobal } from '@/contexts/GlobalToastContext';
 
 export function ServiceManagement() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
+  const toast = useToastGlobal();
 
   // Carregar serviços do prestador
   const loadServices = async () => {
@@ -21,6 +23,11 @@ export function ServiceManagement() {
       setServices(result.data);
     } else {
       console.error('Erro ao carregar serviços:', result.error);
+      toast.error(
+        'Erro ao carregar serviços',
+        result.error || 'Não foi possível carregar seus serviços.',
+        5000
+      );
     }
     setLoading(false);
   };
@@ -40,30 +47,65 @@ export function ServiceManagement() {
   };
 
   const handleDeleteService = async (serviceId: string) => {
+    const serviceToDelete = services.find(s => s.id === serviceId);
+    
     if (confirm('Tem certeza que deseja excluir este serviço?')) {
       const result = await deleteServiceAction(serviceId);
       if (result.success) {
         setServices(services.filter(s => s.id !== serviceId));
+        
+        // Toast de sucesso
+        toast.success(
+          'Serviço excluído!',
+          `O serviço "${serviceToDelete?.name}" foi excluído com sucesso.`,
+          4000
+        );
       } else {
-        alert(result.error || 'Erro ao excluir serviço');
+        const errorMessage = result.error || 'Erro ao excluir serviço';
+        
+        // Toast de erro
+        toast.error(
+          'Erro ao excluir serviço',
+          errorMessage,
+          5000
+        );
       }
     }
   };
 
   const toggleServiceStatus = async (serviceId: string) => {
+    const serviceToToggle = services.find(s => s.id === serviceId);
+    const newStatus = !serviceToToggle?.is_active;
+    
     const result = await toggleServiceStatusAction(serviceId);
     if (result.success && result.data) {
       setServices(services.map(s => 
         s.id === serviceId ? result.data! : s
       ));
+      
+      // Toast de sucesso
+      toast.success(
+        `Serviço ${newStatus ? 'ativado' : 'desativado'}!`,
+        `O serviço "${serviceToToggle?.name}" foi ${newStatus ? 'ativado' : 'desativado'} com sucesso.`,
+        3000
+      );
     } else {
-      alert(result.error || 'Erro ao alterar status do serviço');
+      const errorMessage = result.error || 'Erro ao alterar status do serviço';
+      
+      // Toast de erro
+      toast.error(
+        'Erro ao alterar status',
+        errorMessage,
+        5000
+      );
     }
   };
 
   const handleServiceSubmit = () => {
     setIsModalOpen(false);
     loadServices(); // Recarregar lista após criar/editar
+    
+    // Toast será mostrado pelo modal
   };
 
   if (loading) {

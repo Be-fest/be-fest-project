@@ -29,6 +29,7 @@ import { Button, Input, ConfirmationModal } from '@/components/ui';
 import { updateCompleteProfileAction, deleteAccountAction } from '@/lib/actions/auth';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
+import { useToastGlobal } from '@/contexts/GlobalToastContext';
 
 interface User {
   id: string;
@@ -78,6 +79,7 @@ export default function ProfileClient({ user, events, stats }: ProfileClientProp
   const searchParams = useSearchParams();
   const activeTab = searchParams.get('tab') || 'overview';
   const supabase = createClient();
+  const toast = useToastGlobal();
 
   const [formData, setFormData] = useState({
     full_name: user.full_name || '',
@@ -113,13 +115,37 @@ export default function ProfileClient({ user, events, stats }: ProfileClientProp
       if (result.success) {
         setIsEditing(false);
         setMessage({ type: 'success', text: 'Perfil atualizado com sucesso!' });
+        
+        // Toast de sucesso
+        toast.success(
+          'Perfil atualizado!',
+          'Suas informações foram atualizadas com sucesso.',
+          4000
+        );
+        
         router.refresh();
       } else {
-        setMessage({ type: 'error', text: result.error || 'Erro ao atualizar perfil' });
+        const errorMessage = result.error || 'Erro ao atualizar perfil';
+        setMessage({ type: 'error', text: errorMessage });
+        
+        // Toast de erro
+        toast.error(
+          'Erro ao atualizar perfil',
+          errorMessage,
+          5000
+        );
       }
     } catch (error) {
       console.error('Error updating profile:', error);
-      setMessage({ type: 'error', text: 'Erro ao atualizar perfil. Tente novamente.' });
+      const errorMessage = 'Erro ao atualizar perfil. Tente novamente.';
+      setMessage({ type: 'error', text: errorMessage });
+      
+      // Toast de erro
+      toast.error(
+        'Erro inesperado',
+        errorMessage,
+        5000
+      );
     } finally {
       setLoading(false);
     }
@@ -134,6 +160,13 @@ export default function ProfileClient({ user, events, stats }: ProfileClientProp
     });
     setIsEditing(false);
     setMessage(null);
+    
+    // Toast de cancelamento
+    toast.info(
+      'Edição cancelada',
+      'As alterações foram descartadas.',
+      3000
+    );
   };
 
   const handleDeleteAccount = async () => {
@@ -143,14 +176,41 @@ export default function ProfileClient({ user, events, stats }: ProfileClientProp
       const result = await deleteAccountAction();
       
       if (result.success) {
+        // Toast de sucesso
+        toast.success(
+          'Conta excluída',
+          'Sua conta foi excluída com sucesso.',
+          4000
+        );
+        
         await supabase.auth.signOut();
-        router.push('/?message=Conta excluída com sucesso');
+        
+        // Redirecionar após delay
+        setTimeout(() => {
+          router.push('/?message=Conta excluída com sucesso');
+        }, 2000);
       } else {
-        setMessage({ type: 'error', text: result.error || 'Erro ao excluir conta' });
+        const errorMessage = result.error || 'Erro ao excluir conta';
+        setMessage({ type: 'error', text: errorMessage });
+        
+        // Toast de erro
+        toast.error(
+          'Erro ao excluir conta',
+          errorMessage,
+          5000
+        );
       }
     } catch (error: any) {
       console.error('Error deleting account:', error);
-      setMessage({ type: 'error', text: error.message || 'Erro ao excluir conta. Tente novamente.' });
+      const errorMessage = error.message || 'Erro ao excluir conta. Tente novamente.';
+      setMessage({ type: 'error', text: errorMessage });
+      
+      // Toast de erro
+      toast.error(
+        'Erro inesperado',
+        errorMessage,
+        5000
+      );
     } finally {
       setLoading(false);
       setShowDeleteModal(false);

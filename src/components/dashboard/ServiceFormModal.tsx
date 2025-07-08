@@ -6,6 +6,7 @@ import { MdClose, MdCloudUpload, MdAdd, MdRemove } from 'react-icons/md';
 import { createServiceAction, updateServiceAction } from '@/lib/actions/services';
 import { Service } from '@/types/database';
 import { useEffect } from 'react';
+import { useToastGlobal } from '@/contexts/GlobalToastContext';
 
 interface ServiceFormModalProps {
   isOpen: boolean;
@@ -23,6 +24,8 @@ interface PricingRule {
 }
 
 export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: ServiceFormModalProps) {
+  const toast = useToastGlobal();
+
   const [formData, setFormData] = useState({
     name: service?.name || '',
     description: service?.description || '',
@@ -188,12 +191,37 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
         : await createServiceAction(formDataToSend);
       
       if (result.success) {
+        // Toast de sucesso
+        toast.success(
+          service ? 'Serviço atualizado!' : 'Serviço criado!',
+          service 
+            ? `O serviço "${formData.name}" foi atualizado com sucesso.`
+            : `O serviço "${formData.name}" foi criado com sucesso.`,
+          4000
+        );
+        
         onSubmit();
       } else {
-        setErrors({ general: result.error || 'Erro ao salvar serviço' });
+        const errorMessage = result.error || 'Erro ao salvar serviço';
+        setErrors({ general: errorMessage });
+        
+        // Toast de erro
+        toast.error(
+          service ? 'Erro ao atualizar serviço' : 'Erro ao criar serviço',
+          errorMessage,
+          5000
+        );
       }
     } catch (error) {
-      setErrors({ general: 'Erro inesperado ao salvar serviço' });
+      const errorMessage = 'Erro inesperado ao salvar serviço';
+      setErrors({ general: errorMessage });
+      
+      // Toast de erro
+      toast.error(
+        'Erro inesperado',
+        errorMessage,
+        5000
+      );
     } finally {
       setLoading(false);
     }

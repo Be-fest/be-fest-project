@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { MdVisibility, MdVisibilityOff } from 'react-icons/md';
 import Image from 'next/image';
 import { registerClientAction, registerProviderAction } from '@/lib/actions/auth';
+import { useToastGlobal } from '@/contexts/GlobalToastContext';
 
 interface RegisterFormProps {
   userType: 'client' | 'service_provider';
@@ -80,21 +81,40 @@ export const RegisterForm = ({ userType, onUserTypeChange }: RegisterFormProps) 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const router = useRouter();
+  const toast = useToastGlobal();
 
   useEffect(() => {
     if (state?.success && state?.data?.message) {
-      // Mostrar mensagem de sucesso por alguns segundos
+      // Toast de sucesso
+      toast.success(
+        'Conta criada com sucesso!',
+        state.data.message,
+        6000
+      );
+      
+      // Redirecionar após mostrar o toast
       const timer = setTimeout(() => {
         try {
           router.push('/auth/login');
         } catch (error) {
           console.error('Navigation error:', error);
         }
-      }, 2000);
+      }, 3000);
       
       return () => clearTimeout(timer);
     }
-  }, [state?.success, state?.data?.message, router]);
+  }, [state?.success, state?.data?.message, router, toast]);
+
+  useEffect(() => {
+    // Mostrar toast de erro se houver
+    if (!state?.success && state?.error) {
+      toast.error(
+        'Erro no cadastro',
+        state.error,
+        5000
+      );
+    }
+  }, [state?.error, state?.success, toast]);
 
   return (
     <div className="w-full max-w-md space-y-6">
@@ -178,18 +198,6 @@ export const RegisterForm = ({ userType, onUserTypeChange }: RegisterFormProps) 
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
       >
-        {!state?.success && state?.error && (
-          <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">
-            {state.error}
-          </div>
-        )}
-
-        {state?.success && state?.data?.message && (
-          <div className="bg-green-50 text-green-600 p-3 rounded-md text-sm">
-            {state.data.message}
-          </div>
-        )}
-        
         <Input
           type="text"
           name={userType === 'service_provider' ? 'companyName' : 'fullName'}

@@ -8,6 +8,7 @@ import { MdCalendarToday, MdLocationOn, MdGroup, MdAccessTime, MdAttachMoney } f
 import { useCart } from '@/contexts/CartContext';
 import { createEventAction } from '@/lib/actions/events';
 import { useRouter } from 'next/navigation';
+import { useToastGlobal } from '@/contexts/GlobalToastContext';
 
 interface PartyConfigFormProps {
   onComplete: () => void;
@@ -55,6 +56,7 @@ export function PartyConfigForm({ onComplete, initialData, pendingService }: Par
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const toast = useToastGlobal();
   
   const {
     register,
@@ -93,6 +95,13 @@ export function PartyConfigForm({ onComplete, initialData, pendingService }: Par
       const result = await createEventAction(formData);
 
       if (result.success && result.data) {
+        // Toast de sucesso
+        toast.success(
+          'Festa criada com sucesso!',
+          `A festa "${data.title}" foi criada e você será redirecionado para gerenciá-la.`,
+          4000
+        );
+
         // Save the party data for cart context (legacy compatibility)
         setPartyData({
           eventName: data.title,
@@ -116,16 +125,37 @@ export function PartyConfigForm({ onComplete, initialData, pendingService }: Par
             category: 'service',
             image: pendingService.image
           });
+
+          // Toast para serviço adicionado
+          toast.info(
+            'Serviço adicionado!',
+            `${pendingService.serviceName} foi adicionado à sua festa.`,
+            3000
+          );
         }
 
-        // Redirecionar para a página da festa criada
-        router.push(`/minhas-festas/${result.data.id}`);
-        onComplete();
+        // Redirecionar para a página da festa criada após um delay
+        setTimeout(() => {
+          router.push(`/minhas-festas/${result.data.id}`);
+          onComplete();
+        }, 1000);
       } else {
-        setError(result.error || 'Erro ao criar evento');
+        const errorMessage = result.error || 'Erro ao criar evento';
+        setError(errorMessage);
+        toast.error(
+          'Erro ao criar festa',
+          errorMessage,
+          5000
+        );
       }
     } catch (error) {
-      setError('Erro inesperado ao criar evento');
+      const errorMessage = 'Erro inesperado ao criar evento';
+      setError(errorMessage);
+      toast.error(
+        'Erro inesperado',
+        errorMessage,
+        5000
+      );
     } finally {
       setLoading(false);
     }
@@ -138,13 +168,6 @@ export function PartyConfigForm({ onComplete, initialData, pendingService }: Par
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
-      {/* Error message */}
-      {error && (
-        <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
-          {error}
-        </div>
-      )}
-
       {/* Nome do Evento */}
       <div>
         <label className="block text-sm font-semibold text-[#520029] mb-2">

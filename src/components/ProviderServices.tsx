@@ -5,6 +5,7 @@ import { MdAdd } from 'react-icons/md';
 import { ShareButton } from './ShareButton';
 import { useCart } from '@/contexts/CartContext';
 import { useOffCanvas } from '@/contexts/OffCanvasContext';
+import { useToastGlobal } from '@/contexts/GlobalToastContext';
 
 interface ServiceItem {
   id: number;
@@ -27,6 +28,7 @@ interface ProviderServicesProps {
 export function ProviderServices({ services }: ProviderServicesProps) {
   const { addToCart, partyData } = useCart();
   const { openOffCanvas } = useOffCanvas();
+  const toast = useToastGlobal();
 
   const handleAddToCart = (item: ServiceItem, categoryName: string) => {
     const serviceData = {
@@ -40,13 +42,18 @@ export function ProviderServices({ services }: ProviderServicesProps) {
       image: item.image
     };
 
-    if (!partyData) {
-      // Se não há dados da festa, abre o config com o serviço pendente
-      openOffCanvas();
-    } else {
-      // Se já tem dados da festa, adiciona diretamente
-      addToCart(serviceData);
-    }
+    // Sempre adicionar ao carrinho primeiro
+    addToCart(serviceData);
+
+    // Mostrar toast de sucesso
+    toast.success(
+      'Serviço adicionado!',
+      `${item.name} foi adicionado ao seu carrinho.`,
+      3000
+    );
+
+    // Sempre abrir o offcanvas para mostrar o carrinho
+    openOffCanvas();
   };
   return (
     <div className="space-y-8">

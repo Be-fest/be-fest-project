@@ -4,14 +4,41 @@ import { useState, useActionState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input, Button, Logo, ForgotPasswordModal } from "@/components/ui";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { MdVisibility, MdVisibilityOff } from "react-icons/md";
 import { loginAction } from '@/lib/actions/auth';
+import { useToastGlobal } from '@/contexts/GlobalToastContext';
 
 // Wrapper function for useActionState compatibility
-async function wrappedLoginAction(prevState: { success: boolean; error?: string }, formData: FormData): Promise<{ success: boolean; error?: string }> {
-  return await loginAction(formData);
+async function wrappedLoginAction(
+  prevState: { success: boolean; error?: string; data?: any; requiresConfirmation?: boolean }, 
+  formData: FormData
+): Promise<{ success: boolean; error?: string; data?: any; requiresConfirmation?: boolean }> {
+  try {
+    const result = await loginAction(formData);
+    
+    // Garantir que sempre retornamos um objeto válido
+    if (!result || typeof result !== 'object') {
+      return { 
+        success: false, 
+        error: 'Resposta inválida do servidor' 
+      };
+    }
+    
+    return {
+      success: result.success || false,
+      error: result.error,
+      data: result.data,
+      requiresConfirmation: (result as any).requiresConfirmation || false
+    };
+  } catch (error) {
+    console.error('Login action failed:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Ocorreu um erro inesperado. Tente novamente.' 
+    };
+  }
 }
 
 export function LoginForm() {
@@ -19,28 +46,48 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [state, formAction, isPending] = useActionState(wrappedLoginAction, { success: false });
-  const [queryMessage, setQueryMessage] = useState<string | null>(null);
-
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const toast = useToastGlobal();
 
-  // Check for query string messages on mount
-  useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const message = searchParams.get('message');
-    if (message) {
-      setQueryMessage(message);
-      // Clear the query parameter
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, '', newUrl);
-    }
-  }, []);
+  // Mensagem de query da URL
+  const queryMessage = searchParams.get('message');
 
-  // redirect after login success
   useEffect(() => {
-    if (state.success && (state as any).data?.redirectTo) {
-      router.push((state as any).data.redirectTo);
+    if (state.success && state.data?.redirectTo) {
+      // Toast de sucesso
+      toast.success(
+        'Login realizado com sucesso!',
+        'Você será redirecionado para o dashboard.',
+        3000
+      );
+      
+      // Redirecionar após mostrar o toast
+      setTimeout(() => {
+        router.push(state.data.redirectTo);
+      }, 1000);
     }
-  }, [state.success, (state as any).data?.redirectTo]);
+  }, [state.success, state.data, router, toast]);
+
+  useEffect(() => {
+    // Mostrar toast de erro se houver
+    if (!state.success && state.error && !state.requiresConfirmation) {
+      toast.error(
+        'Erro no login',
+        state.error,
+        5000
+      );
+    }
+    
+    // Mostrar toast de aviso se precisar de confirmação
+    if (state.requiresConfirmation) {
+      toast.warning(
+        'Confirmação necessária',
+        state.error,
+        6000
+      );
+    }
+  }, [state.error, state.success, state.requiresConfirmation, toast]);
 
   const handleUserTypeChange = (type: "client" | "service_provider") => {
     setUserType(type);
