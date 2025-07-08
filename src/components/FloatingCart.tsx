@@ -13,8 +13,8 @@ export function FloatingCart() {
   const pathname = usePathname();
   const hasItems = cartItems.length > 0;
 
-  // Mostrar apenas na home e na página de serviços
-  const shouldShow = pathname === '/' || pathname.startsWith('/servicos');
+  // Mostrar na home, página de serviços e página de prestador
+  const shouldShow = pathname === '/' || pathname.startsWith('/servicos') || pathname.startsWith('/prestador');
 
   if (!shouldShow || !hasItems) return null;
 

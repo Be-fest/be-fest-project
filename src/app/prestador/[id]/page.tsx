@@ -176,7 +176,7 @@ export default function ProviderPage({ params }: PageProps) {
         <div className="pt-20 pb-8">
           <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
             {/* Botão Voltar Skeleton */}
-            <div className="mb-4">
+            <div className="mb-4 mt-8">
               <div className="w-10 h-10 bg-gray-300 rounded-full animate-pulse"></div>
             </div>
             
@@ -212,7 +212,7 @@ export default function ProviderPage({ params }: PageProps) {
       <div className="pt-20 pb-8">
         <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
           {/* Botão Voltar */}
-          <div className="mb-4">
+          <div className="mb-4 mt-8">
             <Link
               href="/servicos"
               className="p-2 hover:bg-gray-100 rounded-full transition-colors inline-block"

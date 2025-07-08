@@ -351,18 +351,21 @@ export async function updateEventStatusAction(eventId: string, status: string): 
       return { success: false, error: 'Evento não encontrado ou acesso negado' }
     }
 
-    // Validar transições de status
+    // Validar transições de status - permitir mais flexibilidade
     const validTransitions: Record<string, string[]> = {
       'draft': ['planning', 'cancelled'],
-      'planning': ['confirmed', 'cancelled'],
+      'planning': ['confirmed', 'cancelled', 'draft'], // Permitir voltar para draft
       'confirmed': ['completed', 'cancelled'],
       'completed': [],
-      'cancelled': []
+      'cancelled': ['draft'] // Permitir reativar evento cancelado
     }
 
     const allowedStatuses = validTransitions[existingEvent.status] || []
-    if (!allowedStatuses.includes(status)) {
-      return { success: false, error: 'Transição de status inválida' }
+    
+    // Se não há transições definidas ou a transição não é permitida, verificar se é uma transição válida
+    if (allowedStatuses.length > 0 && !allowedStatuses.includes(status)) {
+      console.error(`Transição inválida: ${existingEvent.status} -> ${status}`)
+      return { success: false, error: `Não é possível alterar o status de "${existingEvent.status}" para "${status}"` }
     }
 
     const { data: event, error } = await supabase
