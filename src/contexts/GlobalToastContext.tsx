@@ -66,7 +66,7 @@ export function GlobalToastProvider({ children }: { children: ReactNode }) {
       {children}
       
       {/* Toast Container */}
-      <div className="fixed top-4 right-4 z-[9999] space-y-2 max-w-sm">
+      <div className="fixed top-4 right-4 z-[9999] space-y-3 max-w-[500px] w-full pointer-events-none">
         <AnimatePresence mode="popLayout">
           {toasts.map((toast) => (
             <SimpleToast

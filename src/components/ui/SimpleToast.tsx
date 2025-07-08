@@ -22,32 +22,36 @@ const iconMap = {
 
 const colorMap = {
   success: {
-    bg: 'bg-green-50',
-    border: 'border-green-200',
-    icon: 'text-green-600',
-    title: 'text-green-800',
-    message: 'text-green-700',
+    bg: 'bg-white',
+    border: 'border-l-green-500',
+    icon: 'text-green-500',
+    title: 'text-gray-900',
+    message: 'text-gray-600',
+    accent: 'bg-green-500',
   },
   error: {
-    bg: 'bg-red-50',
-    border: 'border-red-200',
-    icon: 'text-red-600',
-    title: 'text-red-800',
-    message: 'text-red-700',
+    bg: 'bg-white',
+    border: 'border-l-red-500',
+    icon: 'text-red-500',
+    title: 'text-gray-900',
+    message: 'text-gray-600',
+    accent: 'bg-red-500',
   },
   warning: {
-    bg: 'bg-yellow-50',
-    border: 'border-yellow-200',
-    icon: 'text-yellow-600',
-    title: 'text-yellow-800',
-    message: 'text-yellow-700',
+    bg: 'bg-white',
+    border: 'border-l-yellow-500',
+    icon: 'text-yellow-500',
+    title: 'text-gray-900',
+    message: 'text-gray-600',
+    accent: 'bg-yellow-500',
   },
   info: {
-    bg: 'bg-blue-50',
-    border: 'border-blue-200',
-    icon: 'text-blue-600',
-    title: 'text-blue-800',
-    message: 'text-blue-700',
+    bg: 'bg-white',
+    border: 'border-l-blue-500',
+    icon: 'text-blue-500',
+    title: 'text-gray-900',
+    message: 'text-gray-600',
+    accent: 'bg-blue-500',
   },
 };
 
@@ -84,48 +88,57 @@ export function SimpleToast({
   };
 
   return (
-    <div className="fixed top-4 right-4 z-50 pointer-events-none">
-      <AnimatePresence>
-        {isVisible && (
+    <AnimatePresence>
+      {isVisible && (
+        <motion.div
+          initial={{ opacity: 0, x: 400, scale: 0.8 }}
+          animate={{ opacity: 1, x: 0, scale: 1 }}
+          exit={{ opacity: 0, x: 400, scale: 0.8, transition: { duration: 0.2 } }}
+          className={`
+            ${colors.bg} ${colors.border} 
+            border-l-4 border-r border-t border-b border-gray-200
+            rounded-lg shadow-lg backdrop-blur-sm
+            w-full pointer-events-auto
+            relative overflow-hidden
+          `}
+        >
+          {/* Accent bar animada */}
           <motion.div
-            initial={{ opacity: 0, y: -50, scale: 0.3 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
-            className={`
-              ${colors.bg} ${colors.border} 
-              border rounded-lg p-4 shadow-lg backdrop-blur-sm
-              max-w-md w-full pointer-events-auto
-            `}
-          >
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <Icon className={`h-5 w-5 ${colors.icon}`} />
-              </div>
-              <div className="ml-3 w-0 flex-1">
-                <p className={`text-sm font-medium ${colors.title}`}>
-                  {title}
-                </p>
-                {message && (
-                  <p className={`mt-1 text-sm ${colors.message}`}>
-                    {message}
-                  </p>
-                )}
-              </div>
-              <div className="ml-4 flex-shrink-0 flex">
-                <button
-                  className={`
-                    inline-flex rounded-md p-1.5 transition-colors
-                    ${colors.icon} hover:bg-black/5
-                  `}
-                  onClick={handleClose}
-                >
-                  <MdClose className="h-4 w-4" />
-                </button>
-              </div>
+            initial={{ width: '0%' }}
+            animate={{ width: '100%' }}
+            transition={{ duration: duration / 1000, ease: 'linear' }}
+            className={`absolute top-0 left-0 h-1 ${colors.accent}`}
+          />
+          
+          <div className="flex items-start p-4">
+            <div className="flex-shrink-0 mt-0.5">
+              <Icon className={`h-5 w-5 ${colors.icon}`} />
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+            <div className="ml-3 flex-1 min-w-0">
+              <p className={`text-sm font-semibold ${colors.title} leading-tight`}>
+                {title}
+              </p>
+              {message && (
+                <p className={`mt-1 text-sm ${colors.message} leading-relaxed`}>
+                  {message}
+                </p>
+              )}
+            </div>
+            <div className="ml-4 flex-shrink-0">
+              <button
+                className={`
+                  inline-flex items-center justify-center w-6 h-6 rounded-full
+                  text-gray-400 hover:text-gray-600 hover:bg-gray-100
+                  transition-colors duration-200
+                `}
+                onClick={handleClose}
+              >
+                <MdClose className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 } 

@@ -70,7 +70,7 @@ export function Toast({ toast, onClose }: ToastProps) {
       className={`
         ${colors.bg} ${colors.border} 
         border rounded-lg p-4 shadow-lg backdrop-blur-sm
-        max-w-md w-full pointer-events-auto
+        w-full pointer-events-auto
       `}
     >
       <div className="flex items-start">
