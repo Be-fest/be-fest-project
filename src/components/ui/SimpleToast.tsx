@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MdClose, MdCheckCircle, MdError, MdWarning, MdInfo } from 'react-icons/md';
 
@@ -59,6 +59,56 @@ const colorMap = {
   },
 };
 
+// Hook personalizado para gerenciar timers de forma mais eficiente
+function useToastTimer(
+  isVisible: boolean,
+  duration: number,
+  onClose: (() => void) | undefined,
+  onProgressUpdate: (updater: (prev: number) => number) => void
+) {
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const onCloseRef = useRef(onClose);
+
+  // Manter a referência atualizada do callback
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  const startTimer = useCallback(() => {
+    if (!isVisible || duration <= 0) return;
+
+    // Limpar timers existentes
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+    // Iniciar animação da barra de progresso
+    intervalRef.current = setInterval(() => {
+      onProgressUpdate((prev: number) => {
+        const newProgress = prev - (100 / (duration / 100));
+        return newProgress <= 0 ? 0 : newProgress;
+      });
+    }, 100);
+
+    // Timer para fechar o toast
+    timeoutRef.current = setTimeout(() => {
+      onCloseRef.current?.();
+    }, duration);
+  }, [isVisible, duration, onProgressUpdate]);
+
+  const clearTimers = useCallback(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+  }, []);
+
+  useEffect(() => {
+    startTimer();
+    return clearTimers;
+  }, [startTimer, clearTimers]);
+
+  return clearTimers;
+}
+
 export function SimpleToast({ 
   type, 
   title, 
@@ -79,33 +129,21 @@ export function SimpleToast({
     }
   }, [show]);
 
-  useEffect(() => {
-    if (isVisible && duration > 0) {
-      // Animação da barra de progresso
-      const progressInterval = setInterval(() => {
-        setProgress(prev => {
-          const newProgress = prev - (100 / (duration / 100));
-          return newProgress <= 0 ? 0 : newProgress;
-        });
-      }, 100);
+  const clearTimers = useToastTimer(
+    isVisible,
+    duration,
+    () => {
+      setIsVisible(false);
+      setTimeout(() => onClose?.(), 200);
+    },
+    setProgress
+  );
 
-      // Timer para fechar o toast
-      const timer = setTimeout(() => {
-        setIsVisible(false);
-        setTimeout(() => onClose?.(), 200);
-      }, duration);
-
-      return () => {
-        clearInterval(progressInterval);
-        clearTimeout(timer);
-      };
-    }
-  }, [isVisible, duration, onClose]);
-
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
+    clearTimers();
     setIsVisible(false);
     setTimeout(() => onClose?.(), 200);
-  };
+  }, [clearTimers, onClose]);
 
   if (!isVisible) return null;
 

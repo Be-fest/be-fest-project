@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useActionState, useEffect } from "react";
+import { useState, useActionState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input, Button, Logo, ForgotPasswordModal } from "@/components/ui";
 import Link from "next/link";
@@ -41,6 +41,60 @@ async function wrappedLoginAction(
   }
 }
 
+// Hook personalizado para gerenciar o estado de autenticação
+function useAuthHandler(
+  state: { success: boolean; error?: string; data?: any; requiresConfirmation?: boolean }
+) {
+  const [hasShownSuccessToast, setHasShownSuccessToast] = useState(false);
+  const [lastErrorMessage, setLastErrorMessage] = useState('');
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  const toast = useToastGlobal();
+
+  const handleSuccess = useCallback(() => {
+    if (state.success && state.data?.redirectTo && !isRedirecting && !hasShownSuccessToast) {
+      console.log('Login bem-sucedido, redirecionando para:', state.data.redirectTo);
+      
+      setIsRedirecting(true);
+      setHasShownSuccessToast(true);
+      
+      toast.success('Login realizado com sucesso!', 'Redirecionando...', 1000);
+      
+      setTimeout(() => {
+        console.log('Executando redirecionamento...');
+        window.location.href = state.data.redirectTo;
+      }, 1000);
+    }
+  }, [state.success, state.data?.redirectTo, isRedirecting, hasShownSuccessToast, toast]);
+
+  const handleError = useCallback(() => {
+    if (!state.success && state.error && state.error !== lastErrorMessage) {
+      setLastErrorMessage(state.error);
+      
+      if (state.requiresConfirmation) {
+        toast.warning('Confirmação necessária', state.error, 6000);
+      } else {
+        toast.error('Erro no login', state.error, 5000);
+      }
+    }
+  }, [state.error, state.success, state.requiresConfirmation, lastErrorMessage, toast]);
+
+  const resetFlags = useCallback(() => {
+    setHasShownSuccessToast(false);
+    setLastErrorMessage('');
+    setIsRedirecting(false);
+  }, []);
+
+  useEffect(() => {
+    handleSuccess();
+  }, [handleSuccess]);
+
+  useEffect(() => {
+    handleError();
+  }, [handleError]);
+
+  return { isRedirecting, resetFlags };
+}
+
 export function LoginForm() {
   const [userType, setUserType] = useState<"client" | "service_provider">("client");
   const [showPassword, setShowPassword] = useState(false);
@@ -48,50 +102,17 @@ export function LoginForm() {
   const [state, formAction, isPending] = useActionState(wrappedLoginAction, { success: false });
   const router = useRouter();
   const searchParams = useSearchParams();
-  const toast = useToastGlobal();
+
+  // Hook personalizado para gerenciar autenticação
+  const { isRedirecting, resetFlags } = useAuthHandler(state);
 
   // Mensagem de query da URL
   const queryMessage = searchParams.get('message');
 
-  useEffect(() => {
-    if (state.success && state.data?.redirectTo) {
-      // Toast de sucesso
-      toast.success(
-        'Login realizado com sucesso!',
-        'Você será redirecionado para o dashboard.',
-        3000
-      );
-      
-      // Redirecionar após mostrar o toast
-      setTimeout(() => {
-        router.push(state.data.redirectTo);
-      }, 1000);
-    }
-  }, [state.success, state.data, router, toast]);
-
-  useEffect(() => {
-    // Mostrar toast de erro se houver
-    if (!state.success && state.error && !state.requiresConfirmation) {
-      toast.error(
-        'Erro no login',
-        state.error,
-        5000
-      );
-    }
-    
-    // Mostrar toast de aviso se precisar de confirmação
-    if (state.requiresConfirmation) {
-      toast.warning(
-        'Confirmação necessária',
-        state.error,
-        6000
-      );
-    }
-  }, [state.error, state.success, state.requiresConfirmation, toast]);
-
-  const handleUserTypeChange = (type: "client" | "service_provider") => {
+  const handleUserTypeChange = useCallback((type: "client" | "service_provider") => {
     setUserType(type);
-  };
+    resetFlags(); // Reset dos flags quando o tipo de usuário muda
+  }, [resetFlags]);
 
   return (
     <div className="w-full max-w-md space-y-6">
@@ -274,10 +295,10 @@ export function LoginForm() {
         <Button
           type="submit"
           className="w-full"
-          disabled={isPending}
+          disabled={isPending || isRedirecting}
           style={{ backgroundColor: userType === "service_provider" ? "#A502CA" : "#F71875" }}
         >
-          {isPending ? 'Entrando...' : 'Entrar'}
+          {isRedirecting ? 'Redirecionando...' : (isPending ? 'Entrando...' : 'Entrar')}
         </Button>
       </motion.form>
 

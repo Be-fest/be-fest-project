@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Link as ScrollLink } from 'react-scroll';
 import { Logo } from '@/components/ui';
 import { useState, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useOffCanvas } from '@/contexts/OffCanvasContext';
 import { createClient } from '@/lib/supabase/client';
 import LogoutButton from './LogoutButton';
@@ -72,6 +72,7 @@ function ProviderNotice({ userName, onClose }: { userName?: string; onClose: () 
 
 function UserDropdown({ user, userType }: UserDropdownProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -86,9 +87,15 @@ function UserDropdown({ user, userType }: UserDropdownProps) {
   }, []);
 
   const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    setIsDropdownOpen(false);
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      setIsDropdownOpen(false);
+      router.push('/auth/login'); // Redireciona para login
+      router.refresh(); // Garante que o estado do servidor seja atualizado
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+    }
   };
 
   const userInitial = user?.user_metadata?.full_name ? 

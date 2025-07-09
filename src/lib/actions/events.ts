@@ -337,18 +337,36 @@ export async function updateEventAction(formData: FormData): Promise<ActionResul
 
 export async function updateEventStatusAction(eventId: string, status: string): Promise<ActionResult<Event>> {
   try {
+    console.log('updateEventStatusAction iniciado:', { eventId, status });
+    
     const user = await getCurrentUser()
+    console.log('Usuário autenticado:', user.id);
+    
     const supabase = await createServerClient()
 
     // Verificar se o evento pertence ao usuário
-    const { data: existingEvent } = await supabase
+    console.log('Verificando evento no banco...');
+    const { data: existingEvent, error: fetchError } = await supabase
       .from('events')
       .select('client_id, status')
       .eq('id', eventId)
       .single()
 
-    if (!existingEvent || existingEvent.client_id !== user.id) {
-      return { success: false, error: 'Evento não encontrado ou acesso negado' }
+    if (fetchError) {
+      console.error('Erro ao buscar evento:', fetchError);
+      return { success: false, error: `Erro ao buscar evento: ${fetchError.message}` }
+    }
+
+    if (!existingEvent) {
+      console.error('Evento não encontrado:', eventId);
+      return { success: false, error: 'Evento não encontrado' }
+    }
+
+    console.log('Evento encontrado:', existingEvent);
+
+    if (existingEvent.client_id !== user.id) {
+      console.error('Acesso negado. Event client_id:', existingEvent.client_id, 'User id:', user.id);
+      return { success: false, error: 'Acesso negado - evento não pertence ao usuário' }
     }
 
     // Validar transições de status - permitir mais flexibilidade
@@ -361,24 +379,61 @@ export async function updateEventStatusAction(eventId: string, status: string): 
     }
 
     const allowedStatuses = validTransitions[existingEvent.status] || []
+    console.log('Transição de status:', {
+      from: existingEvent.status,
+      to: status,
+      allowedStatuses
+    });
     
-    // Se não há transições definidas ou a transição não é permitida, verificar se é uma transição válida
+    // Se não há transições definidas ou a transição não é permitida
     if (allowedStatuses.length > 0 && !allowedStatuses.includes(status)) {
-      console.error(`Transição inválida: ${existingEvent.status} -> ${status}`)
-      return { success: false, error: `Não é possível alterar o status de "${existingEvent.status}" para "${status}"` }
+      const errorMsg = `Transição inválida: "${existingEvent.status}" -> "${status}". Transições permitidas: ${allowedStatuses.join(', ')}`;
+      console.error(errorMsg);
+      return { success: false, error: errorMsg }
     }
 
-    const { data: event, error } = await supabase
-      .from('events')
-      .update({ status })
-      .eq('id', eventId)
-      .select()
-      .single()
+    console.log('Atualizando status do evento...');
+    
+    // Usar SQL direto para evitar problemas de tipos
+    const { data: event, error: updateError } = await supabase
+      .rpc('update_event_status', {
+        event_id: eventId,
+        new_status: status,
+        user_id: user.id
+      })
 
-    if (error) {
-      console.error('Error updating event status:', error)
-      return { success: false, error: 'Erro ao atualizar status do evento' }
+    if (updateError) {
+      console.error('Erro com RPC, tentando update direto:', updateError);
+      
+      // Fallback: tentar update direto
+      const { data: eventData, error: directError } = await supabase
+        .from('events')
+        .update({ status: status })
+        .eq('id', eventId)
+        .eq('client_id', user.id)
+        .select()
+        .single()
+
+      if (directError) {
+        console.error('Erro ao atualizar status do evento:', directError);
+        return { success: false, error: `Erro ao atualizar status: ${directError.message}` }
+      }
+
+      console.log('Status do evento atualizado com sucesso (fallback):', eventData);
+      
+      revalidatePath('/minhas-festas')
+      revalidatePath(`/minhas-festas/${eventId}`)
+      revalidatePath('/dashboard')
+      
+      return { success: true, data: eventData }
     }
+
+    if (!event) {
+      console.error('Evento não retornado após atualização');
+      return { success: false, error: 'Evento não foi atualizado corretamente' }
+    }
+
+    console.log('Status do evento atualizado com sucesso:', event);
 
     revalidatePath('/minhas-festas')
     revalidatePath(`/minhas-festas/${eventId}`)
@@ -386,10 +441,10 @@ export async function updateEventStatusAction(eventId: string, status: string): 
     
     return { success: true, data: event }
   } catch (error) {
-    console.error('Event status update failed:', error)
+    console.error('updateEventStatusAction falhou:', error)
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : 'Erro ao atualizar status do evento' 
+      error: error instanceof Error ? error.message : 'Erro inesperado ao atualizar status do evento' 
     }
   }
 }

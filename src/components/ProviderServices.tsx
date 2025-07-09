@@ -8,11 +8,12 @@ import { useOffCanvas } from '@/contexts/OffCanvasContext';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
 
 interface ServiceItem {
-  id: number;
+  id: string; // Mudar para string para aceitar UUIDs
   name: string;
   description: string;
   price: number;
   image: string;
+  providerId?: string; // Adicionar providerId opcional
 }
 
 interface ServiceCategory {
@@ -23,20 +24,22 @@ interface ServiceCategory {
 
 interface ProviderServicesProps {
   services: ServiceCategory[];
+  providerId?: string; // Adicionar providerId como prop
 }
 
-export function ProviderServices({ services }: ProviderServicesProps) {
+export function ProviderServices({ services, providerId }: ProviderServicesProps) {
   const { addToCart, partyData } = useCart();
   const { openOffCanvas } = useOffCanvas();
   const toast = useToastGlobal();
 
   const handleAddToCart = (item: ServiceItem, categoryName: string) => {
     const serviceData = {
+      serviceId: item.id, // Usar o ID real do serviço
       name: item.name,
       serviceName: item.name,
       price: item.price,
       quantity: 1,
-      providerId: '1', // Você pode passar isso como prop se necessário
+      providerId: item.providerId || providerId || '1', // Usar providerId do item ou da prop
       providerName: categoryName,
       category: 'service',
       image: item.image

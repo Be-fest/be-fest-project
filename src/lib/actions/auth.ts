@@ -322,11 +322,11 @@ export async function loginAction(formData: FormData): Promise<ActionResult> {
 
     console.log('Login completed successfully')
     
-    // Sempre redirecionar para /dashboard primeiro, independente do tipo de usuário
-    revalidatePath('/dashboard')
+    // Redirecionar diretamente para a home
     revalidatePath('/')
+    revalidatePath('/dashboard')
     
-    return { success: true, data: { redirectTo: '/dashboard' } }
+    return { success: true, data: { redirectTo: '/' } }
     
   } catch (error) {
     console.error('Login failed:', error)

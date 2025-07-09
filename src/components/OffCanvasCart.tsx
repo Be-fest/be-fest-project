@@ -8,6 +8,7 @@ import { PartyConfigForm } from './PartyConfigForm';
 import { updateEventStatusAction } from '@/lib/actions/events';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
 import { useRouter } from 'next/navigation';
+import { calculateGuestCount } from '@/utils/formatters';
 
 interface OffCanvasCartProps {
   isOpen: boolean;
@@ -85,7 +86,7 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
   const handlePartyConfigComplete = () => {
     setIsConfiguring(false);
     // Sincronizar automaticamente após configurar a festa
-    syncWithDatabase();
+    syncWithDatabase(true);
   };
 
   const handleGuestBreakdownChange = (type: keyof GuestBreakdown, value: number) => {
@@ -104,7 +105,7 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
   };
 
   const getTotalGuests = () => {
-    return guestBreakdown.fullGuests + guestBreakdown.halfGuests + guestBreakdown.freeGuests;
+    return calculateGuestCount(guestBreakdown.fullGuests, guestBreakdown.halfGuests, guestBreakdown.freeGuests);
   };
 
   const getCalculatedTotal = () => {
@@ -113,27 +114,35 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
 
   // Função para forçar sincronização manual
   const handleSyncNow = async () => {
-    await syncWithDatabase();
+    await syncWithDatabase(true); // Forçar sincronização imediata
   };
 
   // Função para finalizar pedido
   const handleFinalizarPedido = async () => {
-    if (!eventId) {
-      toast.error(
-        'Erro',
-        'Nenhum evento encontrado. Sincronize o carrinho primeiro.',
-        5000
-      );
-      return;
-    }
-
     setIsFinalizingOrder(true);
 
     try {
-      // Primeiro, sincronizar com o banco de dados se necessário
-      if (cartItems.length > 0) {
-        await syncWithDatabase();
+      // Primeiro, sempre sincronizar com o banco de dados se há dados da festa e itens
+      if (partyData && cartItems.length > 0) {
+        console.log('Sincronizando carrinho antes de finalizar...');
+        await syncWithDatabase(true); // Forçar sincronização imediata
+        
+        // Aguardar um pouco para garantir que o eventId foi atualizado
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
+
+      // Verificar se temos eventId após a sincronização
+      if (!eventId) {
+        console.error('EventId ainda é null após sincronização');
+        toast.error(
+          'Erro',
+          'Não foi possível criar o evento. Verifique se você configurou sua festa e tente novamente.',
+          5000
+        );
+        return;
+      }
+
+      console.log('Finalizando pedido com eventId:', eventId);
 
       // Atualizar status do evento para "planning" (em análise)
       const result = await updateEventStatusAction(eventId, 'planning');
@@ -153,6 +162,7 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
           router.push('/minhas-festas');
         }, 2000);
       } else {
+        console.error('Erro ao atualizar status do evento:', result.error);
         toast.error(
           'Erro ao finalizar pedido',
           result.error || 'Não foi possível finalizar o pedido. Tente novamente.',
@@ -220,7 +230,7 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
                     <button
                       onClick={handleSyncNow}
                       className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors"
-                      title="Sincronizar com banco de dados"
+                      title="Sincronizar manualmente com banco de dados"
                     >
                       <MdShoppingCart className="text-sm" />
                     </button>
@@ -239,10 +249,23 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
                 <div className="mx-6 mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
                   <div className="flex items-center gap-2 text-green-700">
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-sm font-medium">Festa salva no banco de dados</span>
+                    <span className="text-sm font-medium">Festa sincronizada</span>
                   </div>
                   <p className="text-xs text-green-600 mt-1">
-                    ID: {eventId.slice(0, 8)}...
+                    Auto-sincronização: A cada 5 minutos ou quando modificada
+                  </p>
+                </div>
+              )}
+              
+              {/* Status quando não sincronizado */}
+              {!eventId && partyData && (
+                <div className="mx-6 mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-yellow-700">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                    <span className="text-sm font-medium">Aguardando sincronização</span>
+                  </div>
+                  <p className="text-xs text-yellow-600 mt-1">
+                    A festa será sincronizada automaticamente em breve
                   </p>
                 </div>
               )}
@@ -468,6 +491,17 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
                       </div>
                     </div>
                   </div>
+                  
+                  {/* Botão de sincronização manual caso não tenha eventId */}
+                  {!eventId && partyData && (
+                    <button 
+                      onClick={handleSyncNow}
+                      className="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 rounded-lg mb-2 transition-colors"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? 'Sincronizando...' : 'Sincronizar Festa'}
+                    </button>
+                  )}
                   
                   <button 
                     onClick={handleFinalizarPedido}

@@ -3,7 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createServerClient } from '@/lib/supabase/server'
-import { Event, EventService } from '@/types/database'
+import type { Event, EventService } from '@/types/database'
+import { calculateGuestCount } from '@/utils/formatters'
 
 // Validation schemas
 const saveCartEventSchema = z.object({
@@ -70,7 +71,11 @@ export async function saveCartEventAction(eventData: {
   event_id?: string // Para atualizar evento existente
 }): Promise<ActionResult<Event>> {
   try {
+    console.log('saveCartEventAction iniciado com:', eventData);
+    
     const user = await getCurrentUser()
+    console.log('Usuário autenticado:', user.id);
+    
     const supabase = await createServerClient()
 
     // Verificar se o usuário é um cliente
@@ -80,17 +85,23 @@ export async function saveCartEventAction(eventData: {
       .eq('id', user.id)
       .single()
 
+    console.log('Dados do usuário:', userData);
+
     if (!userData || userData.role !== 'client') {
+      console.error('Usuário não é cliente:', userData);
       return { success: false, error: 'Apenas clientes podem criar eventos' }
     }
 
     const validatedData = saveCartEventSchema.parse(eventData)
+    console.log('Dados validados:', validatedData);
     
-    // Calcular guest_count total se não fornecido
-    const totalGuests = validatedData.guest_count || 
-      (validatedData.full_guests || 0) + 
-      (validatedData.half_guests || 0) + 
-      (validatedData.free_guests || 0)
+    // Usar os valores individuais ou calcular a partir deles
+    const fullGuests = validatedData.full_guests || 0;
+    const halfGuests = validatedData.half_guests || 0;
+    const freeGuests = validatedData.free_guests || 0;
+    
+    // Calcular guest_count total usando nossa função
+    const totalGuests = calculateGuestCount(fullGuests, halfGuests, freeGuests);
 
     const eventPayload = {
       client_id: user.id,
@@ -98,16 +109,19 @@ export async function saveCartEventAction(eventData: {
       event_date: validatedData.event_date,
       start_time: validatedData.start_time,
       location: validatedData.location,
-      guest_count: totalGuests,
-      full_guests: validatedData.full_guests || 0,
-      half_guests: validatedData.half_guests || 0,
-      free_guests: validatedData.free_guests || 0,
+      guest_count: totalGuests, // Usar o valor calculado
+      full_guests: fullGuests,
+      half_guests: halfGuests,
+      free_guests: freeGuests,
       status: 'draft' as const
     }
+
+    console.log('Payload do evento:', eventPayload);
 
     let result
 
     if (eventData.event_id) {
+      console.log('Atualizando evento existente:', eventData.event_id);
       // Atualizar evento existente
       const { data: event, error } = await supabase
         .from('events')
@@ -124,6 +138,7 @@ export async function saveCartEventAction(eventData: {
 
       result = event
     } else {
+      console.log('Criando novo evento');
       // Criar novo evento
       const { data: event, error } = await supabase
         .from('events')
@@ -139,6 +154,7 @@ export async function saveCartEventAction(eventData: {
       result = event
     }
 
+    console.log('Evento salvo com sucesso:', result);
     revalidatePath('/minhas-festas')
     return { success: true, data: result }
   } catch (error) {
@@ -339,6 +355,7 @@ export async function syncCartWithDatabaseAction(cartData: {
   }
   cartItems: Array<{
     id: string
+    serviceId: string
     serviceName: string
     providerId: string
     quantity: number
@@ -346,6 +363,8 @@ export async function syncCartWithDatabaseAction(cartData: {
   eventId?: string
 }): Promise<ActionResult<{ eventId: string }>> {
   try {
+    console.log('syncCartWithDatabaseAction iniciado com:', cartData);
+    
     // Primeiro, salvar/atualizar o evento
     const eventResult = await saveCartEventAction({
       title: cartData.partyData.eventName,
@@ -358,20 +377,27 @@ export async function syncCartWithDatabaseAction(cartData: {
       event_id: cartData.eventId
     })
 
+    console.log('Resultado do saveCartEventAction:', eventResult);
+
     if (!eventResult.success) {
       return { success: false, error: eventResult.error }
     }
 
     const eventId = eventResult.data!.id
+    console.log('EventId criado/atualizado:', eventId);
 
     // Depois, sincronizar os serviços
     for (const item of cartData.cartItems) {
+      console.log('Sincronizando serviço:', item);
+      
       const serviceResult = await addServiceToCartAction({
         event_id: eventId,
-        service_id: item.id,
+        service_id: String(item.serviceId), // Converter para string
         provider_id: item.providerId,
         quantity: item.quantity
       })
+
+      console.log('Resultado do addServiceToCartAction:', serviceResult);
 
       if (!serviceResult.success) {
         console.error('Erro ao sincronizar serviço:', serviceResult.error)
@@ -379,6 +405,7 @@ export async function syncCartWithDatabaseAction(cartData: {
       }
     }
 
+    console.log('Sincronização concluída com sucesso, eventId:', eventId);
     return { success: true, data: { eventId } }
   } catch (error) {
     console.error('Sync cart with database failed:', error)

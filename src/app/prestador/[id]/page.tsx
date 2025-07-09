@@ -77,11 +77,12 @@ const convertToProviderData = (provider: User, services: ServiceWithProvider[]) 
       acc[category] = [];
     }
     acc[category].push({
-      id: parseInt(service.id.slice(-3)) || Math.random() * 1000,
+      id: service.id, // Manter o ID real do serviço
       name: service.name,
       description: service.description || 'Serviço de qualidade para sua festa',
       price: service.base_price,
-      image: service.images_urls?.[0] || '/images/placeholder-service.png'
+      image: service.images_urls?.[0] || '/images/placeholder-service.png',
+      providerId: service.provider_id // Adicionar providerId real
     });
     return acc;
   }, {} as Record<string, any[]>);
@@ -269,7 +270,10 @@ export default function ProviderPage({ params }: PageProps) {
               <div>
                 <h2 className="text-xl md:text-2xl font-bold text-[#520029] mb-4">Serviços</h2>
                 {providerData.services && providerData.services.length > 0 ? (
-                  <ProviderServices services={providerData.services} />
+                  <ProviderServices 
+                    services={providerData.services} 
+                    providerId={providerData.id} 
+                  />
                 ) : (
                   <div className="text-center py-12">
                     <div className="text-gray-400 text-4xl mb-4">📋</div>

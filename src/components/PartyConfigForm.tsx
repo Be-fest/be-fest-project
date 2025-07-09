@@ -9,6 +9,7 @@ import { useCart } from '@/contexts/CartContext';
 import { createEventAction } from '@/lib/actions/events';
 import { useRouter } from 'next/navigation';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
+import { calculateGuestCount } from '@/utils/formatters';
 
 interface PartyConfigFormProps {
   onComplete: () => void;
@@ -89,7 +90,7 @@ export function PartyConfigForm({ onComplete, initialData, pendingService }: Par
       formData.append('event_date', data.event_date);
       if (data.start_time) formData.append('start_time', data.start_time);
       if (data.location) formData.append('location', data.location);
-      formData.append('guest_count', (data.full_guests + data.half_guests + data.free_guests).toString());
+      formData.append('guest_count', calculateGuestCount(data.full_guests, data.half_guests, data.free_guests).toString());
       if (data.budget) formData.append('budget', data.budget.toString());
 
       const result = await createEventAction(formData);
@@ -118,6 +119,7 @@ export function PartyConfigForm({ onComplete, initialData, pendingService }: Par
           addToCart({
             name: pendingService.serviceName,
             serviceName: pendingService.serviceName,
+            serviceId: pendingService.serviceId,
             price: pendingService.price,
             quantity: 1,
             providerId: pendingService.providerId,
@@ -136,7 +138,7 @@ export function PartyConfigForm({ onComplete, initialData, pendingService }: Par
 
         // Redirecionar para a página da festa criada após um delay
         setTimeout(() => {
-          router.push(`/minhas-festas/${result.data.id}`);
+          router.push(`/minhas-festas/${result.data!.id}`);
           onComplete();
         }, 1000);
       } else {
@@ -164,7 +166,7 @@ export function PartyConfigForm({ onComplete, initialData, pendingService }: Par
   const fullGuests = watch('full_guests');
   const halfGuests = watch('half_guests');
   const freeGuests = watch('free_guests');
-  const totalGuests = fullGuests + halfGuests + freeGuests;
+  const totalGuests = calculateGuestCount(fullGuests, halfGuests, freeGuests);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
