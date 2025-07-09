@@ -43,6 +43,30 @@ function LoginContent() {
           message: 'Acesso negado. Você precisa estar logado para acessar esta página.',
           icon: '🚫'
         };
+      case 'cookie_error':
+        return {
+          type: 'warning',
+          message: 'Houve um problema com os dados de autenticação. Dados limpos automaticamente.',
+          icon: '🔧'
+        };
+      case 'cookie_refresh':
+        return {
+          type: 'info',
+          message: 'Dados de autenticação atualizados. Faça login novamente.',
+          icon: '🔄'
+        };
+      case 'cookies_cleared':
+        return {
+          type: 'success',
+          message: 'Cookies limpos com sucesso. Você pode fazer login novamente.',
+          icon: '✅'
+        };
+      case 'general_error':
+        return {
+          type: 'error',
+          message: 'Ocorreu um erro técnico. Tente fazer login novamente.',
+          icon: '⚠️'
+        };
       default:
         return null;
     }
@@ -58,13 +82,22 @@ function LoginContent() {
             <div className={`mb-6 p-4 rounded-lg border-l-4 ${
               sessionMessage.type === 'warning' 
                 ? 'bg-yellow-50 border-yellow-400 text-yellow-800' 
-                : 'bg-red-50 border-red-400 text-red-800'
+                : sessionMessage.type === 'error'
+                ? 'bg-red-50 border-red-400 text-red-800'
+                : sessionMessage.type === 'info'
+                ? 'bg-blue-50 border-blue-400 text-blue-800'
+                : sessionMessage.type === 'success'
+                ? 'bg-green-50 border-green-400 text-green-800'
+                : 'bg-gray-50 border-gray-400 text-gray-800'
             }`}>
               <div className="flex items-center">
                 <span className="text-lg mr-2">{sessionMessage.icon}</span>
                 <div>
                   <p className="text-sm font-medium">
-                    {sessionMessage.type === 'warning' ? 'Sessão Expirada' : 'Acesso Negado'}
+                    {sessionMessage.type === 'warning' ? 'Atenção' : 
+                     sessionMessage.type === 'error' ? 'Erro' :
+                     sessionMessage.type === 'info' ? 'Informação' :
+                     sessionMessage.type === 'success' ? 'Sucesso' : 'Aviso'}
                   </p>
                   <p className="text-sm mt-1">{sessionMessage.message}</p>
                 </div>
@@ -72,6 +105,19 @@ function LoginContent() {
             </div>
           )}
           <LoginForm />
+          
+          {/* Link para debug de cookies */}
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              Problemas para fazer login?{' '}
+              <a 
+                href="/debug-cookies" 
+                className="text-[#F71875] hover:text-[#E6006F] underline"
+              >
+                Limpar dados corrompidos
+              </a>
+            </p>
+          </div>
         </div>
       </div>
     </AuthLayout>

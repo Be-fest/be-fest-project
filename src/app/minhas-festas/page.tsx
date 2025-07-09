@@ -21,7 +21,7 @@ import { NewPartyModal } from '@/components/NewPartyModal';
 import { getClientEventsAction, deleteEventAction } from '@/lib/actions/events';
 import { Event, EventStatus } from '@/types/database';
 import { ClientLayout } from '@/components/client/ClientLayout';
-import { AuthGuard } from '@/components/AuthGuard';
+
 
 // Skeleton Components
 const PartiesSkeleton = () => (
@@ -130,10 +130,8 @@ export default function MinhasFestasPage() {
     switch (status) {
       case 'draft':
         return 'bg-gray-100 text-gray-800';
-      case 'planning':
+      case 'published':
         return 'bg-yellow-100 text-yellow-800';
-      case 'confirmed':
-        return 'bg-green-100 text-green-800';
       case 'completed':
         return 'bg-blue-100 text-blue-800';
       case 'cancelled':
@@ -147,10 +145,8 @@ export default function MinhasFestasPage() {
     switch (status) {
       case 'draft':
         return 'Rascunho';
-      case 'planning':
-        return 'Planejamento';
-      case 'confirmed':
-        return 'Confirmada';
+      case 'published':
+        return 'Publicada';
       case 'completed':
         return 'Realizada';
       case 'cancelled':
@@ -180,8 +176,7 @@ export default function MinhasFestasPage() {
   }
 
   return (
-    <AuthGuard requiredRole="client">
-      <ClientLayout>
+    <ClientLayout>
       <div className="p-6">
         {/* Back Button */}
         <Link
@@ -244,9 +239,9 @@ export default function MinhasFestasPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-800">
-                  {events.filter(e => e.status === 'confirmed').length}
+                  {events.filter(e => e.status === 'published').length}
                 </p>
-                <p className="text-gray-600 text-sm">Confirmadas</p>
+                <p className="text-gray-600 text-sm">Publicadas</p>
               </div>
             </div>
           </motion.div>
@@ -263,9 +258,9 @@ export default function MinhasFestasPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-800">
-                  {events.filter(e => e.status === 'planning').length}
+                  {events.filter(e => e.status === 'published').length}
                 </p>
-                <p className="text-gray-600 text-sm">Em Planejamento</p>
+                <p className="text-gray-600 text-sm">Publicadas</p>
               </div>
             </div>
           </motion.div>
@@ -296,8 +291,7 @@ export default function MinhasFestasPage() {
               >
                 <option value="all">Todas</option>
                 <option value="draft">Rascunho</option>
-                <option value="planning">Planejamento</option>
-                <option value="confirmed">Confirmada</option>
+                <option value="published">Publicada</option>
                 <option value="completed">Realizada</option>
                 <option value="cancelled">Cancelada</option>
               </select>
@@ -399,6 +393,5 @@ export default function MinhasFestasPage() {
         />
       </div>
     </ClientLayout>
-    </AuthGuard>
   );
 } 
