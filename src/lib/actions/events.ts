@@ -25,7 +25,7 @@ const updateEventSchema = z.object({
   location: z.string().max(200, 'Localização deve ter no máximo 200 caracteres').optional().nullable(),
   guest_count: z.coerce.number().min(1, 'Número de convidados deve ser maior que 0').optional(),
   budget: z.coerce.number().min(0, 'Orçamento deve ser maior ou igual a 0').optional().nullable(),
-  status: z.enum(['draft', 'planning', 'confirmed', 'completed', 'cancelled']).optional()
+  status: z.enum(['draft', 'published', 'completed', 'cancelled']).optional()
 })
 
 // Result types
@@ -369,11 +369,10 @@ export async function updateEventStatusAction(eventId: string, status: string): 
       return { success: false, error: 'Acesso negado - evento não pertence ao usuário' }
     }
 
-    // Validar transições de status - permitir mais flexibilidade
+    // Validar transições de status baseado no enum atual do banco
     const validTransitions: Record<string, string[]> = {
-      'draft': ['planning', 'cancelled'],
-      'planning': ['confirmed', 'cancelled', 'draft'], // Permitir voltar para draft
-      'confirmed': ['completed', 'cancelled'],
+      'draft': ['published', 'cancelled'],
+      'published': ['completed', 'cancelled', 'draft'], // Permitir voltar para draft
       'completed': [],
       'cancelled': ['draft'] // Permitir reativar evento cancelado
     }

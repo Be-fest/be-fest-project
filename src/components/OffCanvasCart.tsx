@@ -144,13 +144,13 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
 
       console.log('Finalizando pedido com eventId:', eventId);
 
-      // Atualizar status do evento para "planning" (em análise)
-      const result = await updateEventStatusAction(eventId, 'planning');
+      // Atualizar status do evento para "published" (publicado para prestadores)
+      const result = await updateEventStatusAction(eventId, 'published');
 
       if (result.success) {
         toast.success(
-          'Pedido finalizado!',
-          'Seus serviços foram enviados para análise dos prestadores. Você será notificado quando eles responderem.',
+          'Festa publicada!',
+          'Sua festa foi publicada e os prestadores já podem visualizar e responder aos seus pedidos de serviços.',
           6000
         );
 
@@ -508,7 +508,7 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
                     className="w-full bg-gradient-to-r from-[#F71875] to-[#A502CA] hover:from-[#E6006F] hover:to-[#8B0A9E] text-white font-semibold py-4 rounded-xl transition-all transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                     disabled={isLoading || isFinalizingOrder}
                   >
-                    {isFinalizingOrder ? 'Finalizando...' : isLoading ? 'Sincronizando...' : 'Finalizar Pedido'}
+                    {isFinalizingOrder ? 'Publicando...' : isLoading ? 'Sincronizando...' : 'Publicar Festa'}
                   </button>
                 </div>
               )}

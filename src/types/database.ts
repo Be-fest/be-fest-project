@@ -8,7 +8,7 @@ export type Json =
 
 // Enums
 export type UserRole = 'client' | 'provider' | 'admin'
-export type EventStatus = 'draft' | 'planning' | 'confirmed' | 'completed' | 'cancelled'
+export type EventStatus = 'draft' | 'published' | 'completed' | 'cancelled'
 export type ServiceStatus = 'active' | 'inactive' | 'pending_approval'
 export type EventServiceStatus = 'pending_provider_approval' | 'approved' | 'rejected' | 'cancelled'
 export type BookingStatus = 'pending' | 'confirmed' | 'paid' | 'completed' | 'cancelled'
