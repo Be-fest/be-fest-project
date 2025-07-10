@@ -53,7 +53,6 @@ interface Tab {
 const tabs: Tab[] = [
   { id: 'dashboard', label: 'Dashboard', icon: MdDashboard },
   { id: 'minhas-festas', label: 'Minhas Festas', icon: MdCelebration },
-  { id: 'perfil', label: 'Perfil', icon: MdPerson },
   { id: 'configuracoes', label: 'Configurações', icon: MdSettings }
 ];
 
@@ -754,22 +753,6 @@ function ProfilePageContent() {
         return <DashboardTab />;
       case 'minhas-festas':
         return <MinhasFestasTab />;
-      case 'perfil':
-        return user && userData ? (
-          <ProfileClient 
-            user={{
-              id: user.id,
-              full_name: userData.full_name,
-              email: user.email || null,
-              whatsapp_number: null,
-              organization_name: userData.organization_name,
-              cnpj: null,
-              role: userData.role
-            }}
-            events={[]}
-            stats={null}
-          />
-        ) : null;
       case 'configuracoes':
         return <ConfiguracoesTab />;
       default:
