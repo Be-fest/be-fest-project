@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createServerClient, createAdminClient } from '@/lib/supabase/server'
-import { checkEmailExists, checkDocumentExists, verifySession } from '@/lib/dal'
+import { checkEmailExists, checkDocumentExists, verifySession, getCurrentUser } from '@/lib/dal'
 import { removeMask } from '@/utils/formatters'
 import { createClient } from '@supabase/supabase-js'
 import { Database } from '@/types/database'
@@ -45,15 +45,14 @@ const forgotPasswordSchema = z.object({
   email: z.string().email('Email inválido')
 })
 
-// Schema para atualização completa de perfil
+// Esquema para atualização de perfil
 const updateProfileSchema = z.object({
   fullName: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  phone: z.string().optional(),
-  organizationName: z.string().optional(),
-  cnpj: z.string().optional()
+  whatsappNumber: z.string().min(10, 'Telefone inválido'),
+  organizationName: z.string().optional()
 })
 
-// Result types for better type safety
+// Definir tipo de retorno das actions
 type ActionResult<T = any> = {
   success: boolean
   error?: string
@@ -82,63 +81,70 @@ export async function registerClientAction(formData: FormData): Promise<ActionRe
 
     console.log('Cleaned data:', { cpf, phone })
 
-    // Criar cliente Supabase sem cookies (anon key) para signup
-    const supabase = createClient<Database>(
+    // Criar cliente Supabase Admin para criar usuário
+    const supabaseAdmin = createClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
       {
         auth: {
-          persistSession: false,
-          autoRefreshToken: false
+          autoRefreshToken: false,
+          persistSession: false
         }
       }
     )
 
-    console.log('Attempting client signup with trigger...')
+    console.log('Creating client with admin client...')
     
-    // Preparar metadados completos para o trigger SQL
-    const userMetadata = {
-      role: 'client',
-      full_name: validatedData.fullName,
-      cpf: cpf,
-      whatsapp_number: phone
-    }
-    
-    console.log('Sending client metadata to Supabase:', userMetadata)
-    
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+    // Criar usuário no auth.users
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: validatedData.email,
       password: validatedData.password,
-      options: {
-        data: userMetadata
-      }
+      email_confirm: true // Auto-confirmar email para não precisar de verificação
     })
 
-    if (signUpError) {
-      console.error('SignUp error:', signUpError)
+    if (authError) {
+      console.error('Auth creation error:', authError)
       
-      if (signUpError.message.includes('User already registered')) {
+      if (authError.message.includes('User already registered')) {
         return { success: false, error: 'Este email já está em uso' }
       }
       
-      return { success: false, error: `Erro ao criar usuário: ${signUpError.message}` }
+      return { success: false, error: `Erro ao criar usuário: ${authError.message}` }
     }
 
-    if (!signUpData.user) {
+    if (!authData.user) {
       return { success: false, error: 'Erro ao criar usuário: usuário não retornado' }
     }
 
-    console.log('User created successfully with trigger:', signUpData.user.id)
+    console.log('Auth user created successfully:', authData.user.id)
 
-    // Aguardar um pouco para garantir que o trigger foi executado
-    await new Promise(resolve => setTimeout(resolve, 500))
+    // Criar registro na tabela users com role 'client'
+    const { error: userError } = await supabaseAdmin
+      .from('users')
+      .insert({
+        id: authData.user.id,
+        role: 'client',
+        full_name: validatedData.fullName,
+        email: validatedData.email,
+        cpf: cpf,
+        whatsapp_number: phone
+      })
+
+    if (userError) {
+      console.error('User profile creation error:', userError)
+      
+      // Se falhar ao criar o perfil, deletar o usuário criado
+      await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
+      
+      return { success: false, error: 'Erro ao criar perfil do usuário' }
+    }
 
     console.log('Client registration completed successfully')
     
     return { 
       success: true, 
       data: { 
-        message: 'Conta criada com sucesso! Verifique seu email para confirmar sua conta antes de fazer login.' 
+        message: 'Conta criada com sucesso! Você já pode fazer login.' 
       } 
     }
     
@@ -180,65 +186,72 @@ export async function registerProviderAction(formData: FormData): Promise<Action
 
     console.log('Cleaned provider data:', { cnpj, phone })
 
-    // Criar cliente Supabase sem cookies (anon key) para signup
-    const supabase = createClient<Database>(
+    // Criar cliente Supabase Admin para criar usuário
+    const supabaseAdmin = createClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
       {
         auth: {
-          persistSession: false,
-          autoRefreshToken: false
+          autoRefreshToken: false,
+          persistSession: false
         }
       }
     )
 
-    console.log('Attempting provider signup with trigger...')
+    console.log('Creating provider with admin client...')
     
-    // Preparar metadados completos para o trigger SQL
-    const userMetadata = {
-      role: 'provider',
-      full_name: validatedData.companyName,
-      organization_name: validatedData.companyName,
-      cnpj: cnpj,
-      whatsapp_number: phone,
-      area_of_operation: validatedData.areaOfOperation
-    }
-    
-    console.log('Sending user metadata to Supabase:', userMetadata)
-    
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+    // Criar usuário no auth.users
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: validatedData.email,
       password: validatedData.password,
-      options: {
-        data: userMetadata
-      }
+      email_confirm: true // Auto-confirmar email para não precisar de verificação
     })
 
-    if (signUpError) {
-      console.error('Provider SignUp error:', signUpError)
+    if (authError) {
+      console.error('Provider auth creation error:', authError)
       
-      if (signUpError.message.includes('User already registered')) {
+      if (authError.message.includes('User already registered')) {
         return { success: false, error: 'Este email já está em uso' }
       }
       
-      return { success: false, error: `Erro ao criar usuário: ${signUpError.message}` }
+      return { success: false, error: `Erro ao criar usuário: ${authError.message}` }
     }
 
-    if (!signUpData.user) {
+    if (!authData.user) {
       return { success: false, error: 'Erro ao criar usuário: usuário não retornado' }
     }
 
-    console.log('Provider user created successfully with trigger:', signUpData.user.id)
+    console.log('Provider auth user created successfully:', authData.user.id)
 
-    // Aguardar um pouco para garantir que o trigger foi executado
-    await new Promise(resolve => setTimeout(resolve, 500))
+    // Criar registro na tabela users com role 'provider'
+    const { error: userError } = await supabaseAdmin
+      .from('users')
+      .insert({
+        id: authData.user.id,
+        role: 'provider',
+        full_name: validatedData.companyName,
+        email: validatedData.email,
+        organization_name: validatedData.companyName,
+        cnpj: cnpj,
+        whatsapp_number: phone,
+        area_of_operation: validatedData.areaOfOperation
+      })
+
+    if (userError) {
+      console.error('Provider profile creation error:', userError)
+      
+      // Se falhar ao criar o perfil, deletar o usuário criado
+      await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
+      
+      return { success: false, error: 'Erro ao criar perfil do prestador' }
+    }
 
     console.log('Provider registration completed successfully')
     
     return { 
       success: true, 
       data: { 
-        message: 'Conta criada com sucesso! Verifique seu email para confirmar sua conta antes de fazer login.' 
+        message: 'Conta criada com sucesso! Você já pode fazer login.' 
       } 
     }
     
@@ -287,47 +300,27 @@ export async function loginAction(formData: FormData): Promise<ActionResult> {
     // Get user profile to determine redirect
     const { data: user, error: userError } = await supabase
       .from('users')
-      .select('role, organization_name, cnpj')
+      .select('role')
       .eq('id', authData.user.id)
       .single()
 
-    if (userError) {
-      console.error('User fetch error:', userError)
-      
-      // Fallback: criar perfil se não existir (para usuários antigos)
-      if (userError.code === 'PGRST116') { // No rows returned
-        console.log('User profile not found, creating fallback profile...')
-        
-        const { error: createError } = await supabase
-          .from('users')
-          .insert({
-            id: authData.user.id,
-            email: authData.user.email,
-            role: 'client', // default
-            full_name: authData.user.user_metadata?.full_name || '',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-        
-        if (createError) {
-          console.error('Failed to create fallback profile:', createError)
-          return { success: false, error: 'Perfil do usuário não encontrado e não foi possível criá-lo' }
-        }
-        
-        console.log('Fallback profile created successfully')
-      } else {
-        return { success: false, error: 'Erro ao carregar perfil do usuário' }
-      }
+    if (userError || !user) {
+      console.error('Error fetching user profile:', userError)
+      return { success: false, error: 'Erro ao carregar perfil do usuário' }
     }
 
-    console.log('Login completed successfully')
-    
-    // Redirecionar diretamente para a home
-    revalidatePath('/')
-    revalidatePath('/dashboard')
-    
-    return { success: true, data: { redirectTo: '/' } }
-    
+    // Revalidate cache
+    revalidatePath('/', 'layout')
+
+    // Redirect based on user role
+    if (user.role === 'provider') {
+      redirect('/dashboard/prestador')
+    } else if (user.role === 'admin') {
+      redirect('/admin')
+    } else {
+      redirect('/dashboard')
+    }
+
   } catch (error) {
     console.error('Login failed:', error)
     
@@ -354,15 +347,14 @@ export async function logoutAction(): Promise<ActionResult> {
       return { success: false, error: 'Erro ao fazer logout' }
     }
 
-    console.log('Logout completed successfully')
-    
-    // Revalidate and redirect
-    revalidatePath('/')
+    // Revalidate cache
+    revalidatePath('/', 'layout')
+
+    // Redirect to home
     redirect('/')
-    
+
   } catch (error) {
     console.error('Logout failed:', error)
-    
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Ocorreu um erro ao fazer logout' 
@@ -372,141 +364,52 @@ export async function logoutAction(): Promise<ActionResult> {
 
 export async function updateUserProfileAction(formData: FormData): Promise<ActionResult> {
   try {
-    // Verify authentication
-    const session = await verifySession()
-    if (!session) {
-      return { success: false, error: 'Usuário não autenticado' }
-    }
-
-    const supabase = await createServerClient()
+    const user = await getCurrentUser()
     
-    // Parse form data
-    const fullName = formData.get('fullName') as string
-    const phone = formData.get('phone') as string
-
-    // Validate required fields
-    if (!fullName || fullName.trim().length < 2) {
-      return { success: false, error: 'Nome deve ter pelo menos 2 caracteres' }
-    }
-
-    // Update profile
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({
-        full_name: fullName.trim(),
-        whatsapp_number: phone ? removeMask(phone) : null,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', session.user.id)
-
-    if (updateError) {
-      console.error('Profile update error:', updateError)
-      return { success: false, error: 'Erro ao atualizar perfil' }
-    }
-
-    console.log('Profile updated successfully')
-    
-    // Revalidate cache
-    revalidatePath('/dashboard')
-    
-    return { success: true }
-    
-  } catch (error) {
-    console.error('Profile update failed:', error)
-    
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Ocorreu um erro ao atualizar perfil' 
-    }
-  }
-}
-
-export async function forgotPasswordAction(formData: FormData): Promise<ActionResult> {
-  try {
-    const rawData = {
-      email: formData.get('email') as string,
-    }
-
-    const validatedData = forgotPasswordSchema.parse(rawData)
-
-    // Usar client anônimo para enviar email de recuperação
-    const supabase = createClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false,
-        },
-      },
-    )
-
-    const { error } = await supabase.auth.resetPasswordForEmail(validatedData.email, {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/reset-password`,
-    })
-
-    if (error) {
-      console.error('Forgot password error:', error)
-      return { success: false, error: 'Erro ao enviar email de recuperação. Tente novamente.' }
-    }
-
-    return { success: true, data: { message: 'Email de recuperação enviado! Verifique sua caixa de entrada.' } }
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message }
-    }
-    return { success: false, error: error instanceof Error ? error.message : 'Erro inesperado' }
-  }
-}
-
-export async function updateCompleteProfileAction(formData: FormData): Promise<ActionResult> {
-  try {
-    const session = await verifySession()
-    if (!session) {
+    if (!user) {
       return { success: false, error: 'Usuário não autenticado' }
     }
 
     const rawData = {
       fullName: formData.get('fullName') as string,
-      phone: formData.get('phone') as string,
-      organizationName: formData.get('organizationName') as string,
-      cnpj: formData.get('cnpj') as string,
+      whatsappNumber: formData.get('whatsappNumber') as string,
+      organizationName: formData.get('organizationName') as string || undefined
     }
 
     const validatedData = updateProfileSchema.parse(rawData)
     const supabase = await createServerClient()
 
+    // Clean phone number
+    const cleanPhone = removeMask(validatedData.whatsappNumber)
+
     const updateData: any = {
-      full_name: validatedData.fullName.trim(),
+      full_name: validatedData.fullName,
+      whatsapp_number: cleanPhone,
       updated_at: new Date().toISOString()
     }
 
-    if (validatedData.phone) {
-      updateData.whatsapp_number = removeMask(validatedData.phone)
-    }
-
     if (validatedData.organizationName) {
-      updateData.organization_name = validatedData.organizationName.trim()
+      updateData.organization_name = validatedData.organizationName
     }
 
-    if (validatedData.cnpj) {
-      updateData.cnpj = removeMask(validatedData.cnpj)
-    }
-
-    const { error: updateError } = await supabase
+    const { error } = await supabase
       .from('users')
       .update(updateData)
-      .eq('id', session.user.id)
+      .eq('id', user.id)
 
-    if (updateError) {
-      console.error('Profile update error:', updateError)
+    if (error) {
+      console.error('Error updating profile:', error)
       return { success: false, error: 'Erro ao atualizar perfil' }
     }
 
+    // Revalidate profile data
     revalidatePath('/perfil')
-    
-    return { success: true, data: { message: 'Perfil atualizado com sucesso!' } }
-    
+
+    return { 
+      success: true, 
+      data: { message: 'Perfil atualizado com sucesso!' } 
+    }
+
   } catch (error) {
     console.error('Profile update failed:', error)
     
@@ -517,70 +420,152 @@ export async function updateCompleteProfileAction(formData: FormData): Promise<A
     
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : 'Ocorreu um erro ao atualizar perfil' 
+      error: error instanceof Error ? error.message : 'Ocorreu um erro ao atualizar o perfil' 
+    }
+  }
+}
+
+export async function forgotPasswordAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const rawData = {
+      email: formData.get('email') as string
+    }
+
+    const validatedData = forgotPasswordSchema.parse(rawData)
+    const supabase = await createServerClient()
+
+    const { error } = await supabase.auth.resetPasswordForEmail(validatedData.email, {
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/reset-password`
+    })
+
+    if (error) {
+      console.error('Password reset error:', error)
+      return { success: false, error: 'Erro ao enviar email de recuperação' }
+    }
+
+    return { 
+      success: true, 
+      data: { 
+        message: 'Email de recuperação enviado! Verifique sua caixa de entrada.' 
+      } 
+    }
+
+  } catch (error) {
+    console.error('Password reset failed:', error)
+    
+    if (error instanceof z.ZodError) {
+      const firstError = error.errors[0]
+      return { success: false, error: firstError.message }
+    }
+    
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Ocorreu um erro ao solicitar recuperação de senha' 
+    }
+  }
+}
+
+export async function updateCompleteProfileAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const user = await getCurrentUser()
+    
+    if (!user) {
+      return { success: false, error: 'Usuário não autenticado' }
+    }
+
+    const rawData = {
+      fullName: formData.get('fullName') as string,
+      whatsappNumber: formData.get('whatsappNumber') as string,
+      organizationName: formData.get('organizationName') as string || undefined,
+      areaOfOperation: formData.get('areaOfOperation') as string || undefined
+    }
+
+    const supabase = await createServerClient()
+
+    // Clean phone number
+    const cleanPhone = removeMask(rawData.whatsappNumber)
+
+    const updateData: any = {
+      full_name: rawData.fullName,
+      whatsapp_number: cleanPhone,
+      updated_at: new Date().toISOString()
+    }
+
+    if (rawData.organizationName) {
+      updateData.organization_name = rawData.organizationName
+    }
+
+    if (rawData.areaOfOperation) {
+      updateData.area_of_operation = rawData.areaOfOperation
+    }
+
+    const { error } = await supabase
+      .from('users')
+      .update(updateData)
+      .eq('id', user.id)
+
+    if (error) {
+      console.error('Error updating complete profile:', error)
+      return { success: false, error: 'Erro ao atualizar perfil completo' }
+    }
+
+    // Revalidate profile data
+    revalidatePath('/perfil')
+
+    return { 
+      success: true, 
+      data: { message: 'Perfil atualizado com sucesso!' } 
+    }
+
+  } catch (error) {
+    console.error('Complete profile update failed:', error)
+    
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Ocorreu um erro ao atualizar o perfil completo' 
     }
   }
 }
 
 export async function deleteAccountAction(): Promise<ActionResult> {
   try {
-    const session = await verifySession()
-    if (!session) {
+    const user = await getCurrentUser()
+    
+    if (!user) {
       return { success: false, error: 'Usuário não autenticado' }
     }
 
     const supabase = await createServerClient()
 
-    // Verificar se o usuário tem eventos ativos
-    const { data: activeEvents, error: eventsError } = await supabase
-      .from('events')
-      .select('id')
-      .eq('user_id', session.user.id)
-      .eq('status', 'active')
-
-    if (eventsError) {
-      console.error('Error checking events:', eventsError)
-      return { success: false, error: 'Erro ao verificar eventos do usuário' }
-    }
-
-    if (activeEvents && activeEvents.length > 0) {
-      return { 
-        success: false, 
-        error: 'Não é possível excluir conta com eventos ativos. Cancele ou finalize seus eventos primeiro.' 
-      }
-    }
-
-    // Soft delete - marcar como deletado
-    const { error: deleteError } = await supabase
+    // Delete user profile first (this will cascade delete related data)
+    const { error: profileError } = await supabase
       .from('users')
-      .update({ 
-        email: `deleted_${session.user.id}@befest.com`,
-        full_name: 'Conta Excluída',
-        whatsapp_number: null,
-        organization_name: null,
-        cnpj: null,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', session.user.id)
+      .delete()
+      .eq('id', user.id)
 
-    if (deleteError) {
-      console.error('Account deletion error:', deleteError)
-      return { success: false, error: 'Erro ao excluir conta' }
+    if (profileError) {
+      console.error('Error deleting user profile:', profileError)
+      return { success: false, error: 'Erro ao deletar perfil do usuário' }
     }
 
-    // Fazer logout
+    // Then delete auth user
+    const { error: authError } = await supabase.auth.admin.deleteUser(user.id)
+
+    if (authError) {
+      console.error('Error deleting auth user:', authError)
+      return { success: false, error: 'Erro ao deletar usuário de autenticação' }
+    }
+
+    // Sign out and redirect
     await supabase.auth.signOut()
-    
-    revalidatePath('/')
-    
-    return { success: true, data: { message: 'Conta excluída com sucesso!' } }
-    
+    revalidatePath('/', 'layout')
+    redirect('/')
+
   } catch (error) {
     console.error('Account deletion failed:', error)
-    
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : 'Ocorreu um erro ao excluir conta' 
+      error: error instanceof Error ? error.message : 'Ocorreu um erro ao deletar a conta' 
     }
   }
 } 
