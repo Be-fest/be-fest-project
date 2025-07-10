@@ -21,10 +21,10 @@ export default function RegisterPage() {
                 exit={{ opacity: 0, x: 20 }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
               >
-                              <RegisterForm 
-                userType={userType}
-                onUserTypeChange={setUserType}
-              />
+                <RegisterForm 
+                  userType={userType}
+                  onUserTypeChange={setUserType}
+                />
               </motion.div>
             ) : (
               <motion.div
@@ -34,10 +34,10 @@ export default function RegisterPage() {
                 exit={{ opacity: 0, x: 20 }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
               >
-                              <ServiceProviderForm 
-                userType={userType}
-                onUserTypeChange={setUserType}
-              />
+                <ServiceProviderForm 
+                  userType={userType}
+                  onUserTypeChange={setUserType}
+                />
               </motion.div>
             )}
           </AnimatePresence>
@@ -45,4 +45,4 @@ export default function RegisterPage() {
       </div>
     </AuthLayout>
   );
-}
+} 

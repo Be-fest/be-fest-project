@@ -31,15 +31,16 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [isNewPartyModalOpen, setNewPartyModalOpen] = useState(false);
 
+  const loadEvents = async () => {
+    setLoading(true);
+    const result = await getClientEventsAction();
+    if (result.success && result.data) {
+      setEvents(result.data);
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const loadEvents = async () => {
-      setLoading(true);
-      const result = await getClientEventsAction();
-      if (result.success && result.data) {
-        setEvents(result.data);
-      }
-      setLoading(false);
-    };
     loadEvents();
   }, []);
 
