@@ -363,6 +363,7 @@ export async function updateEventServiceAction(formData: FormData): Promise<Acti
     }
 
     revalidatePath('/minhas-festas')
+    revalidatePath(`/minhas-festas/${eventService.event_id}`)
     revalidatePath('/dashboard/prestador')
     
     return { success: true, data: eventService }
@@ -435,6 +436,7 @@ export async function updateEventServiceStatusAction(
     }
 
     revalidatePath('/minhas-festas')
+    revalidatePath(`/minhas-festas/${existingEventService.event_id}`)
     revalidatePath('/dashboard/prestador')
     
     return { success: true, data: eventService }

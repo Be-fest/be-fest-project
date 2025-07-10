@@ -25,65 +25,84 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { PartyConfigForm } from '@/components/PartyConfigForm';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { getEventByIdAction, updateEventStatusAction, deleteEventAction } from '@/lib/actions/events';
-import { getEventServicesAction, createEventServiceAction, updateEventServiceStatusAction, deleteEventServiceAction } from '@/lib/actions/event-services';
+import { getEventServicesAction, deleteEventServiceAction } from '@/lib/actions/event-services';
 import { createBookingAction } from '@/lib/actions/bookings';
-import { getServicesAction } from '@/lib/actions/services';
-import { Event, EventWithServices, EventServiceWithDetails, Service } from '@/types/database';
+import { Event, EventWithServices, EventServiceWithDetails } from '@/types/database';
 import { ClientLayout } from '@/components/client/ClientLayout';
-import { AuthGuard } from '@/components/AuthGuard';
+import { FastAuthGuard } from '@/components/FastAuthGuard';
+import { useCart } from '@/contexts/CartContext';
 
 export default function PartyDetailsPage() {
   const params = useParams();
+  const eventId = params.id as string;
+  
+  console.log('🎯 PartyDetailsPage renderizado!');
+  console.log('📋 params:', params);
+  console.log('🆔 eventId extraído:', eventId);
+
   const router = useRouter();
-  const eventId = params?.id ? (Array.isArray(params.id) ? params.id[0] : params.id) : '';
+  const { setPartyData, setEventId } = useCart();
   
   const [event, setEvent] = useState<EventWithServices | null>(null);
   const [eventServices, setEventServices] = useState<EventServiceWithDetails[]>([]);
-  const [availableServices, setAvailableServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [isAddServiceModalOpen, setAddServiceModalOpen] = useState(false);
-  const [selectedService, setSelectedService] = useState<string>('');
-  const [clientNotes, setClientNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   // Carregar dados do evento
   const loadEventData = async () => {
-    setLoading(true);
-    setError(null);
-    
     try {
-      // Carregar evento
+      console.log('🔄 Iniciando loadEventData para eventId:', eventId);
+      setLoading(true);
+      setError(null);
+
+      // Buscar dados do evento
+      console.log('📞 Chamando getEventByIdAction...');
       const eventResult = await getEventByIdAction(eventId);
-      if (!eventResult.success || !eventResult.data) {
-        setError('Evento não encontrado');
+      console.log('✅ getEventByIdAction resultado:', eventResult);
+      
+      if (!eventResult.success) {
+        console.error('❌ Erro ao buscar evento:', eventResult.error);
+        setError(eventResult.error || 'Erro ao carregar evento');
         return;
       }
-      setEvent(eventResult.data);
 
-      // Carregar serviços do evento
+      setEvent(eventResult.data || null);
+      console.log('✅ Event setado:', eventResult.data?.title);
+
+      // Buscar serviços do evento
+      console.log('📞 Chamando getEventServicesAction...');
       const servicesResult = await getEventServicesAction({ event_id: eventId });
-      if (servicesResult.success && servicesResult.data) {
-        setEventServices(servicesResult.data);
+      console.log('✅ getEventServicesAction resultado:', servicesResult);
+      
+      if (!servicesResult.success) {
+        console.error('❌ Erro ao buscar serviços:', servicesResult.error);
+        setError(servicesResult.error || 'Erro ao carregar serviços');
+        return;
       }
 
-      // Carregar serviços disponíveis
-      const availableResult = await getServicesAction();
-      if (availableResult.success && availableResult.data) {
-        setAvailableServices(availableResult.data);
-      }
+      setEventServices(servicesResult.data || []);
+      console.log('✅ EventServices setado:', servicesResult.data?.length, 'serviços');
+
+      console.log('✅ loadEventData concluído com sucesso');
+
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
-      setError('Erro ao carregar dados do evento');
+      console.error('❌ Erro em loadEventData:', error);
+      setError('Erro inesperado ao carregar dados');
     } finally {
+      console.log('🏁 Finalizando loadEventData, setLoading(false)');
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    console.log('🔵 useEffect executado! eventId:', eventId);
     if (eventId) {
+      console.log('🟢 eventId existe, chamando loadEventData');
       loadEventData();
+    } else {
+      console.log('🔴 eventId não existe');
     }
   }, [eventId]);
 
@@ -95,30 +114,13 @@ export default function PartyDetailsPage() {
   const handleDelete = async () => {
     const result = await deleteEventAction(eventId);
     if (result.success) {
-      router.push('/minhas-festas');
+      router.push('/perfil?tab=minhas-festas');
     } else {
       alert(result.error || 'Erro ao excluir evento');
     }
   };
 
-  const handleAddService = async () => {
-    if (!selectedService) return;
 
-    const formData = new FormData();
-    formData.append('event_id', eventId);
-    formData.append('service_id', selectedService);
-    formData.append('client_notes', clientNotes);
-
-    const result = await createEventServiceAction(formData);
-    if (result.success) {
-      setAddServiceModalOpen(false);
-      setSelectedService('');
-      setClientNotes('');
-      loadEventData(); // Recarregar dados
-    } else {
-      alert(result.error || 'Erro ao adicionar serviço');
-    }
-  };
 
   const handleRemoveService = async (eventServiceId: string) => {
     if (confirm('Tem certeza que deseja remover este serviço?')) {
@@ -132,11 +134,11 @@ export default function PartyDetailsPage() {
   };
 
   const handleConfirmEvent = async () => {
-    const result = await updateEventStatusAction(eventId, 'confirmed');
+    const result = await updateEventStatusAction(eventId, 'published');
     if (result.success) {
       loadEventData(); // Recarregar dados
     } else {
-      alert(result.error || 'Erro ao confirmar evento');
+      alert(result.error || 'Erro ao publicar evento');
     }
   };
 
@@ -162,6 +164,30 @@ export default function PartyDetailsPage() {
     loadEventData(); // Recarregar dados
   };
 
+  const handleAddServiceRedirect = () => {
+    if (!event) return;
+    
+    // Setar dados da festa no contexto do carrinho
+    setPartyData({
+      eventName: event.title,
+      eventDate: event.event_date,
+      startTime: event.start_time || '',
+      location: event.location || '',
+      fullGuests: Math.floor((event.guest_count || 0) * 0.6), // Estimativa
+      halfGuests: Math.floor((event.guest_count || 0) * 0.3), // Estimativa
+      freeGuests: Math.floor((event.guest_count || 0) * 0.1), // Estimativa
+    });
+    
+    // Setar o ID do evento no contexto do carrinho
+    setEventId(eventId);
+    
+    // Armazenar o ID do evento no localStorage para referência
+    localStorage.setItem('befest-current-event-id', eventId);
+    
+    // Redirecionar para a página de serviços
+    router.push('/servicos');
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'approved':
@@ -170,6 +196,8 @@ export default function PartyDetailsPage() {
         return 'bg-yellow-100 text-yellow-800';
       case 'rejected':
         return 'bg-red-100 text-red-800';
+      case 'pending_payment':
+        return 'bg-blue-100 text-blue-800';
       case 'cancelled':
         return 'bg-gray-100 text-gray-800';
       default:
@@ -182,9 +210,11 @@ export default function PartyDetailsPage() {
       case 'approved':
         return 'Confirmado';
       case 'pending_provider_approval':
-        return 'Pendente';
+        return 'Aguardando aprovação de disponibilidade do prestador';
       case 'rejected':
-        return 'Recusado';
+        return 'Rejeitado - Procurar outro serviço';
+      case 'pending_payment':
+        return 'Aguardando pagamento';
       case 'cancelled':
         return 'Cancelado';
       default:
@@ -212,10 +242,7 @@ export default function PartyDetailsPage() {
     return (
       <ClientLayout>
         <div className="min-h-screen bg-[#FFF6FB] flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-16 h-16 border-4 border-[#F71875] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Carregando festa...</p>
-          </div>
+          <div className="w-8 h-8 border-2 border-[#F71875] border-t-transparent rounded-full animate-spin"></div>
         </div>
       </ClientLayout>
     );
@@ -244,7 +271,7 @@ export default function PartyDetailsPage() {
   }
 
   return (
-    <AuthGuard requiredRole="client">
+    <FastAuthGuard requiredRole="client">
       <ClientLayout>
         <div className="min-h-screen bg-[#FFF6FB]">
         {/* Header */}
@@ -347,7 +374,7 @@ export default function PartyDetailsPage() {
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-bold text-[#520029]">Serviços</h2>
                   <button
-                    onClick={() => setAddServiceModalOpen(true)}
+                    onClick={handleAddServiceRedirect}
                     className="bg-[#F71875] hover:bg-[#E6006F] text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
                   >
                     <MdAdd />
@@ -364,12 +391,9 @@ export default function PartyDetailsPage() {
                     <p className="text-gray-500 mb-6">
                       Adicione serviços para completar sua festa
                     </p>
-                    <button
-                      onClick={() => setAddServiceModalOpen(true)}
-                      className="bg-[#F71875] hover:bg-[#E6006F] text-white px-6 py-3 rounded-lg font-medium"
-                    >
-                      Adicionar Primeiro Serviço
-                    </button>
+                    <p className="text-gray-500 text-sm">
+                      Use o botão "Adicionar Serviço" acima para explorar nossos serviços
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -422,15 +446,18 @@ export default function PartyDetailsPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-600">Status atual:</span>
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      event.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                      event.status === 'planning' ? 'bg-blue-100 text-blue-800' :
+                      event.status === 'published' ? 'bg-green-100 text-green-800' :
+                      event.status === 'waiting_payment' ? 'bg-yellow-100 text-yellow-800' :
+                      event.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                      event.status === 'cancelled' ? 'bg-red-100 text-red-800' :
                       'bg-gray-100 text-gray-800'
                     }`}>
                       {event.status === 'draft' ? 'Rascunho' :
-                       event.status === 'planning' ? 'Planejamento' :
-                       event.status === 'confirmed' ? 'Confirmada' :
-                       event.status === 'completed' ? 'Realizada' :
-                       event.status === 'cancelled' ? 'Cancelada' : event.status}
+                       event.status === 'published' ? 'Publicado' :
+                       event.status === 'waiting_payment' ? 'Aguardando Pagamento' :
+                       event.status === 'completed' ? 'Realizado' :
+                       event.status === 'cancelled' ? 'Cancelado' : 
+                       event.status === null ? 'Sem Status' : event.status}
                     </span>
                   </div>
                   
@@ -449,11 +476,11 @@ export default function PartyDetailsPage() {
                     onClick={handleConfirmEvent}
                     className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors"
                   >
-                    Confirmar Festa
+                    Publicar Festa
                   </button>
                 )}
 
-                {allServicesConfirmed && event.status === 'confirmed' && (
+                {allServicesConfirmed && event.status === 'published' && (
                   <button
                     onClick={handleCreateBooking}
                     className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
@@ -545,90 +572,7 @@ export default function PartyDetailsPage() {
           )}
         </AnimatePresence>
 
-        {/* Modal Adicionar Serviço */}
-        <AnimatePresence>
-          {isAddServiceModalOpen && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-            >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="bg-white rounded-2xl shadow-2xl w-full max-w-md"
-              >
-                <div className="bg-gradient-to-r from-[#F71875] to-[#A502CA] p-6 rounded-t-2xl">
-                  <div className="flex items-center justify-between text-white">
-                    <div>
-                      <h2 className="text-xl font-bold">Adicionar Serviço</h2>
-                      <p className="text-pink-100">Escolha um serviço para sua festa</p>
-                    </div>
-                    <button
-                      onClick={() => setAddServiceModalOpen(false)}
-                      className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition-colors"
-                    >
-                      <MdClose className="text-xl" />
-                    </button>
-                  </div>
-                </div>
 
-                <div className="p-6 space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Serviço
-                    </label>
-                    <select
-                      value={selectedService}
-                      onChange={(e) => setSelectedService(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#F71875] focus:border-transparent"
-                    >
-                      <option value="">Selecione um serviço</option>
-                      {availableServices
-                        .filter(service => !eventServices.some(es => es.service_id === service.id))
-                        .map((service) => (
-                                                     <option key={service.id} value={service.id}>
-                             {service.name}
-                           </option>
-                        ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Observações (opcional)
-                    </label>
-                    <textarea
-                      value={clientNotes}
-                      onChange={(e) => setClientNotes(e.target.value)}
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#F71875] focus:border-transparent"
-                      placeholder="Observações sobre o serviço..."
-                    />
-                  </div>
-
-                  <div className="flex gap-3 pt-4">
-                    <button
-                      onClick={() => setAddServiceModalOpen(false)}
-                      className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      onClick={handleAddService}
-                      disabled={!selectedService}
-                      className="flex-1 px-4 py-2 bg-[#F71875] text-white rounded-lg hover:bg-[#E6006F] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      Adicionar
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* Modal Confirmação Exclusão */}
         <ConfirmationModal
@@ -643,6 +587,6 @@ export default function PartyDetailsPage() {
         />
       </div>
     </ClientLayout>
-    </AuthGuard>
+    </FastAuthGuard>
   );
 } 

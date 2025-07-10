@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
@@ -31,9 +31,19 @@ export function useAuth() {
   const router = useRouter();
   const toast = useToastGlobal();
   const supabase = createClient();
+  
+  // Ref para prevenir múltiplos toasts de sessão expirada
+  const sessionExpiredToastShownRef = useRef(false);
 
   // Função para lidar com JWT expirado
   const handleJWTExpired = useCallback(async () => {
+    // Prevenir múltiplos toasts
+    if (sessionExpiredToastShownRef.current) {
+      return;
+    }
+    
+    sessionExpiredToastShownRef.current = true;
+    
     try {
       // Mostrar toast de sessão expirada
       toast.warning(
@@ -121,8 +131,6 @@ export function useAuth() {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
-        console.error('Erro ao buscar sessão:', sessionError);
-        
         // Verificar se é erro de JWT expirado
         if (isJWTExpiredError(sessionError)) {
           await handleJWTExpired();
@@ -142,8 +150,6 @@ export function useAuth() {
         setUserData(null);
       }
     } catch (error) {
-      console.error('Erro na autenticação:', error);
-      
       // Verificar se é erro de JWT expirado
       if (isJWTExpiredError(error)) {
         await handleJWTExpired();
@@ -172,6 +178,8 @@ export function useAuth() {
         } else if (event === 'SIGNED_IN' && session) {
           setUser(session.user);
           await fetchUserData(session.user.id);
+          // Reset flag para permitir novos toasts de sessão expirada
+          sessionExpiredToastShownRef.current = false;
         }
       }
     );

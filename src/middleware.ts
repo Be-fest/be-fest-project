@@ -3,7 +3,6 @@ import type { NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  console.log('🔍 [MIDDLEWARE] Executando para:', pathname);
   
   // Pular middleware para rotas que não precisam de verificação
   if (
@@ -19,7 +18,6 @@ export async function middleware(request: NextRequest) {
     pathname === '/favicon.ico' ||
     pathname.includes('.')
   ) {
-    console.log('🚫 [MIDDLEWARE] Rota ignorada:', pathname);
     return NextResponse.next();
   }
 
@@ -36,11 +34,8 @@ export async function middleware(request: NextRequest) {
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
   
   if (!isProtectedRoute) {
-    console.log('🔓 [MIDDLEWARE] Rota não protegida, permitindo acesso:', pathname);
     return NextResponse.next();
   }
-
-  console.log('🔒 [MIDDLEWARE] Rota protegida detectada:', pathname);
 
   // Verificação simples: verificar se há algum cookie de autenticação do Supabase
   const cookies = request.cookies;
@@ -49,17 +44,13 @@ export async function middleware(request: NextRequest) {
     cookie.name.includes('sb-') ||
     cookie.name.includes('supabase')
   );
-
-  console.log('🍪 [MIDDLEWARE] Cookies de auth encontrados:', authCookies.length);
   
   if (authCookies.length === 0) {
-    console.log('🚨 [MIDDLEWARE] Nenhum cookie de auth encontrado, redirecionando para login');
     const redirectUrl = new URL('/auth/login', request.url);
     redirectUrl.searchParams.set('redirectTo', pathname);
     return NextResponse.redirect(redirectUrl);
   }
 
-  console.log('✅ [MIDDLEWARE] Cookies de auth presentes, permitindo acesso - verificação detalhada será feita no client-side');
   return NextResponse.next();
 }
 

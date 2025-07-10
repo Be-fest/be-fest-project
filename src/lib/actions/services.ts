@@ -517,4 +517,57 @@ export async function getServicesByCategoryAction(category: string): Promise<Act
 
 export async function searchServicesAction(searchTerm: string): Promise<ActionResult<ServiceWithProvider[]>> {
   return getPublicServicesAction({ search: searchTerm })
+}
+
+// Novo: Action para buscar estatísticas do prestador
+export async function getProviderStatsAction(): Promise<ActionResult<{
+  totalEvents: number;
+  activeServices: number;
+  averageRating: number;
+  totalRatings: number;
+}>> {
+  try {
+    const user = await getCurrentUser()
+    const supabase = await createServerClient()
+    
+    // Buscar total de eventos onde o prestador participou
+    const { count: eventsCount, error: eventsError } = await supabase
+      .from('event_services')
+      .select('*', { count: 'exact', head: true })
+      .eq('provider_id', user.id)
+      .eq('booking_status', 'approved')
+
+    if (eventsError) {
+      console.error('Error fetching events count:', eventsError)
+    }
+
+    // Buscar total de serviços ativos
+    const { count: servicesCount, error: servicesError } = await supabase
+      .from('services')
+      .select('*', { count: 'exact', head: true })
+      .eq('provider_id', user.id)
+      .eq('is_active', true)
+      .eq('status', 'active')
+
+    if (servicesError) {
+      console.error('Error fetching services count:', servicesError)
+    }
+
+    // Para avaliações, vamos usar valores padrão por enquanto já que não temos uma tabela de reviews ainda
+    // Você pode implementar isso quando tiver uma tabela de avaliações/reviews
+    const stats = {
+      totalEvents: Number(eventsCount) || 0,
+      activeServices: Number(servicesCount) || 0,
+      averageRating: 0, // Implementar quando tiver sistema de avaliações
+      totalRatings: 0   // Implementar quando tiver sistema de avaliações
+    }
+
+    return { success: true, data: stats }
+  } catch (error) {
+    console.error('Provider stats fetch failed:', error)
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Erro ao buscar estatísticas' 
+    }
+  }
 } 

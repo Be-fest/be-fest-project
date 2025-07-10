@@ -3,7 +3,7 @@
 // Enums baseados no schema
 export type UserRole = 'client' | 'provider';
 export type ServiceCategory = 'Comida e Bebida';
-export type BookingStatus = 'pending_provider_approval' | 'confirmed' | 'cancelled' | 'completed';
+export type BookingStatus = 'pending_provider_approval' | 'approved' | 'cancelled' | 'completed';
 export type PricingMethod = 'fixed_price' | 'percentage' | 'multiplier';
 export type SurchargeType = 'fixed_amount' | 'percentage';
 

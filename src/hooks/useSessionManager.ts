@@ -180,12 +180,10 @@ export function useSessionManager(options: SessionManagerOptions = {}) {
       }
     };
 
-    // Aguardar um pouco antes de inicializar para evitar conflitos
-    const timeout = setTimeout(initializeSessionManager, 1000);
+    initializeSessionManager();
 
     return () => {
       isMounted = false;
-      clearTimeout(timeout);
       clearIntervals();
     };
   }, [checkSessionExpiry, refreshSession, autoRefresh, clearIntervals, supabase]);

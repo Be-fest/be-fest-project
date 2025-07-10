@@ -34,7 +34,8 @@ import {
   MdPhone,
   MdStar,
   MdVisibility,
-  MdDownload
+  MdDownload,
+  MdDelete
 } from 'react-icons/md';
 import { useAuth } from '@/hooks/useAuth';
 import { ClientLayout } from '@/components/client/ClientLayout';
@@ -43,6 +44,8 @@ import { NewPartyModal } from '@/components/NewPartyModal';
 import { getClientEventsAction, deleteEventAction } from '@/lib/actions/events';
 import { Event, EventStatus } from '@/types/database';
 import ProfileClient from '@/components/profile/ProfileClient';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
+import { useToast } from '@/hooks/useToast';
 
 interface Tab {
   id: string;
@@ -58,6 +61,21 @@ const tabs: Tab[] = [
 
 // Componente Dashboard
 const DashboardTab = () => {
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadEvents = async () => {
+      setLoading(true);
+      const result = await getClientEventsAction();
+      if (result.success && result.data) {
+        setEvents(result.data);
+      }
+      setLoading(false);
+    };
+    loadEvents();
+  }, []);
+
   const quickLinks = [
     {
       title: 'Minhas Festas',
@@ -87,10 +105,10 @@ const DashboardTab = () => {
       textColor: 'text-blue-600'
     },
     {
-      title: 'Meu Perfil',
+      title: 'Minha Conta',
       description: 'Visualize e edite suas informações',
       icon: MdPerson,
-      href: '/perfil',
+      href: '/perfil?tab=configuracoes',
       color: 'from-green-500 to-emerald-500',
       bgColor: 'bg-green-50',
       textColor: 'text-green-600'
@@ -104,47 +122,77 @@ const DashboardTab = () => {
       bgColor: 'bg-orange-50',
       textColor: 'text-orange-600'
     },
-    {
-      title: 'Histórico',
-      description: 'Veja seus eventos anteriores',
-      icon: MdHistory,
-      href: '/perfil?tab=historico',
-      color: 'from-gray-500 to-slate-500',
-      bgColor: 'bg-gray-50',
-      textColor: 'text-gray-600'
-    }
+
   ];
+
+  // Calcular estatísticas reais
+  const activeEvents = events.filter(e => e.status === 'published').length;
+  const completedEvents = events.filter(e => e.status === 'completed').length;
+  const totalEvents = events.length;
+  
+  // Calcular próximo evento
+  const upcomingEvents = events.filter(e => 
+    e.status === 'published' && new Date(e.event_date) > new Date()
+  ).sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
+  
+  const nextEventDays = upcomingEvents.length > 0 
+    ? Math.ceil((new Date(upcomingEvents[0].event_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+    : 0;
 
   const stats = [
     {
-      title: 'Eventos Ativos',
-      value: '3',
+      title: 'Total de Eventos',
+      value: totalEvents.toString(),
       icon: MdEvent,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50'
     },
     {
-      title: 'Próximo Evento',
-      value: '15 dias',
+      title: 'Eventos Ativos',
+      value: activeEvents.toString(),
       icon: MdCalendarToday,
       color: 'text-green-600',
       bgColor: 'bg-green-50'
     },
     {
-      title: 'Prestadores Favoritos',
-      value: '8',
-      icon: MdFavorite,
-      color: 'text-red-600',
-      bgColor: 'bg-red-50'
-    },
-    {
-      title: 'Eventos Realizados',
-      value: '12',
+      title: 'Próximo Evento',
+      value: nextEventDays > 0 ? `${nextEventDays} dias` : 'Nenhum',
       icon: MdTrendingUp,
       color: 'text-purple-600',
       bgColor: 'bg-purple-50'
+    },
+    {
+      title: 'Eventos Realizados',
+      value: completedEvents.toString(),
+      icon: MdCheckCircle,
+      color: 'text-emerald-600',
+      bgColor: 'bg-emerald-50'
     }
   ];
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="text-center space-y-4">
+          <div className="h-8 w-48 bg-gray-300 rounded-lg animate-pulse mx-auto"></div>
+          <div className="h-5 w-96 bg-gray-200 rounded animate-pulse mx-auto"></div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-gray-300 rounded-xl"></div>
+                <div className="space-y-2">
+                  <div className="h-6 w-16 bg-gray-300 rounded"></div>
+                  <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -223,35 +271,33 @@ const DashboardTab = () => {
           Atividade Recente
         </h4>
         <div className="space-y-4">
-          <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
-            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-              <MdEvent className="text-blue-600" />
+          {events.length > 0 ? (
+            events
+              .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+              .slice(0, 3)
+              .map((event, index) => {
+                const daysDiff = Math.floor((new Date().getTime() - new Date(event.created_at).getTime()) / (1000 * 60 * 60 * 24));
+                const timeAgo = daysDiff === 0 ? 'Hoje' : daysDiff === 1 ? 'Ontem' : `Há ${daysDiff} dias`;
+                
+                return (
+                  <div key={event.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <MdEvent className="text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">{event.title} foi criada</p>
+                      <p className="text-sm text-gray-500">{timeAgo}</p>
+                    </div>
+                  </div>
+                );
+              })
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <MdEvent className="text-4xl mx-auto mb-2 text-gray-300" />
+              <p>Nenhuma atividade recente</p>
+              <p className="text-sm">Crie sua primeira festa para ver as atividades aqui</p>
             </div>
-            <div className="flex-1">
-              <p className="font-medium text-gray-900">Festa de Aniversário criada</p>
-              <p className="text-sm text-gray-500">Há 2 dias</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
-            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-              <MdFavorite className="text-green-600" />
-            </div>
-            <div className="flex-1">
-              <p className="font-medium text-gray-900">Prestador adicionado aos favoritos</p>
-              <p className="text-sm text-gray-500">Há 3 dias</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
-            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-              <MdSearch className="text-purple-600" />
-            </div>
-            <div className="flex-1">
-              <p className="font-medium text-gray-900">Serviços de buffet pesquisados</p>
-              <p className="text-sm text-gray-500">Há 5 dias</p>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
@@ -264,18 +310,33 @@ const MinhasFestasTab = () => {
   const [loading, setLoading] = useState(true);
   const [isNewPartyModalOpen, setNewPartyModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<EventStatus | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'published' | 'waiting_payment' | 'completed' | 'cancelled' | 'null'>('all');
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
   const searchParams = useSearchParams();
+  const { toast } = useToast();
 
   const loadEvents = async () => {
+    console.log('📥 [PROFILE] Carregando eventos do cliente...');
     setLoading(true);
-    const result = await getClientEventsAction();
-    if (result.success && result.data) {
-      setEvents(result.data);
-    } else {
-      console.error('Erro ao carregar eventos:', result.error);
+    
+    try {
+      const result = await getClientEventsAction();
+      console.log('📋 [PROFILE] Resultado do carregamento:', result);
+      
+      if (result.success && result.data) {
+        console.log('✅ [PROFILE] Eventos carregados com sucesso:', result.data.length, 'eventos');
+        setEvents(result.data);
+      } else {
+        console.error('❌ [PROFILE] Erro ao carregar eventos:', result.error);
+        setEvents([]);
+      }
+    } catch (error) {
+      console.error('💥 [PROFILE] Erro inesperado ao carregar eventos:', error);
+      setEvents([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -293,7 +354,9 @@ const MinhasFestasTab = () => {
     const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (event.description && event.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (event.location && event.location.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesStatus = statusFilter === 'all' || event.status === statusFilter;
+    const matchesStatus = statusFilter === 'all' || 
+      (statusFilter === 'null' && event.status === null) ||
+      (statusFilter !== 'null' && event.status === statusFilter);
     return matchesSearch && matchesStatus;
   });
 
@@ -302,16 +365,62 @@ const MinhasFestasTab = () => {
     loadEvents();
   };
 
+  const handleDeleteEvent = (event: Event) => {
+    setEventToDelete(event);
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!eventToDelete) {
+      console.error('🚫 [PROFILE] Nenhum evento selecionado para exclusão');
+      return;
+    }
+
+    console.log('🗑️ [PROFILE] Iniciando exclusão da festa:', {
+      id: eventToDelete.id,
+      title: eventToDelete.title,
+      status: eventToDelete.status
+    });
+
+    try {
+      const result = await deleteEventAction(eventToDelete.id);
+      console.log('📋 [PROFILE] Resultado da exclusão:', result);
+      
+      if (result.success) {
+        console.log('✅ [PROFILE] Festa excluída com sucesso, recarregando lista...');
+        setDeleteModalOpen(false);
+        setEventToDelete(null);
+        await loadEvents(); // Recarregar a lista de eventos
+        toast.success('Festa excluída com sucesso!', 'A festa foi removida permanentemente.');
+      } else {
+        console.error('❌ [PROFILE] Erro na exclusão:', result.error);
+        toast.error('Erro ao excluir festa', result.error || 'Ocorreu um erro inesperado.');
+      }
+    } catch (error) {
+      console.error('💥 [PROFILE] Erro inesperado ao excluir evento:', error);
+      toast.error('Erro ao excluir festa', 'Ocorreu um erro inesperado.');
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteModalOpen(false);
+    setEventToDelete(null);
+  };
+
   const getStatusColor = (status: EventStatus) => {
     switch (status) {
       case 'draft':
         return 'bg-gray-100 text-gray-800 border-gray-200';
       case 'published':
         return 'bg-green-100 text-green-800 border-green-200';
+      case 'waiting_payment':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'completed':
         return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'cancelled':
         return 'bg-red-100 text-red-800 border-red-200';
+      case null:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -323,10 +432,14 @@ const MinhasFestasTab = () => {
         return <MdEdit className="text-gray-600" />;
       case 'published':
         return <MdCheckCircle className="text-green-600" />;
+      case 'waiting_payment':
+        return <MdError className="text-yellow-600" />;
       case 'completed':
         return <MdCheckCircle className="text-blue-600" />;
       case 'cancelled':
         return <MdError className="text-red-600" />;
+      case null:
+        return <MdInfo className="text-gray-600" />;
       default:
         return <MdInfo className="text-gray-600" />;
     }
@@ -338,12 +451,16 @@ const MinhasFestasTab = () => {
         return 'Rascunho';
       case 'published':
         return 'Publicada';
+      case 'waiting_payment':
+        return 'Aguardando Pagamento';
       case 'completed':
         return 'Realizada';
       case 'cancelled':
         return 'Cancelada';
+      case null:
+        return 'Sem Status';
       default:
-        return status;
+        return status || 'Sem Status';
     }
   };
 
@@ -369,6 +486,13 @@ const MinhasFestasTab = () => {
       icon: MdCheckCircle,
       bgColor: 'bg-green-50',
       textColor: 'text-green-600'
+    },
+    {
+      title: 'Aguardando Pagamento',
+      value: events.filter(e => e.status === 'waiting_payment').length,
+      icon: MdHistory,
+      bgColor: 'bg-yellow-50',
+      textColor: 'text-yellow-600'
     },
     {
       title: 'Realizadas',
@@ -426,7 +550,7 @@ const MinhasFestasTab = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, index) => (
           <motion.div
             key={stat.title}
@@ -466,14 +590,16 @@ const MinhasFestasTab = () => {
             <MdFilterList className="text-gray-500 text-xl" />
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as EventStatus | 'all')}
+              onChange={(e) => setStatusFilter(e.target.value as 'all' | 'draft' | 'published' | 'waiting_payment' | 'completed' | 'cancelled' | 'null')}
               className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#F71875] focus:border-transparent outline-none transition-all duration-200 min-w-[140px]"
             >
               <option value="all">Todas</option>
               <option value="draft">Rascunho</option>
               <option value="published">Publicada</option>
+              <option value="waiting_payment">Aguardando Pagamento</option>
               <option value="completed">Realizada</option>
               <option value="cancelled">Cancelada</option>
+              <option value="null">Sem Status</option>
             </select>
           </div>
         </div>
@@ -530,13 +656,33 @@ const MinhasFestasTab = () => {
                   <MdWorkOutline className="text-lg" />
                   <span>0 serviços contratados</span>
                 </div>
-                <Link
-                  href={`/minhas-festas/${event.id}`}
-                  className="bg-[#F71875] hover:bg-[#E6006F] text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-                >
-                  <MdListAlt className="text-lg" />
-                  Ver Detalhes
-                </Link>
+                <div className="flex items-center gap-2">
+                  <Link
+                    href={`/minhas-festas/${event.id}`}
+                    className="bg-[#F71875] hover:bg-[#E6006F] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                  >
+                    <MdListAlt className="text-lg" />
+                    Ver Detalhes
+                  </Link>
+                  {(event.status === 'draft' || event.status === 'cancelled' || event.status === null) ? (
+                    <button
+                      onClick={() => handleDeleteEvent(event)}
+                      className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                    >
+                      <MdDelete className="text-lg" />
+                      Excluir
+                    </button>
+                  ) : (
+                    <button
+                      disabled
+                      className="bg-gray-300 text-gray-500 px-4 py-2 rounded-lg text-sm font-medium cursor-not-allowed flex items-center gap-2"
+                      title="Não é possível excluir festas publicadas ou completas"
+                    >
+                      <MdDelete className="text-lg" />
+                      Excluir
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </motion.div>
@@ -582,6 +728,20 @@ const MinhasFestasTab = () => {
         isOpen={isNewPartyModalOpen}
         onClose={() => setNewPartyModalOpen(false)}
         onSuccess={handleCreatePartySuccess}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteModalOpen}
+        title="Excluir Festa"
+        message={`Tem certeza que deseja excluir a festa "${eventToDelete?.title}"? 
+
+Esta ação não pode ser desfeita. Apenas festas em rascunho ou canceladas podem ser excluídas.`}
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        confirmVariant="danger"
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
       />
     </div>
   );

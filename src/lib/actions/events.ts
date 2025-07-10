@@ -68,6 +68,8 @@ export async function getEventsAction(filters?: {
   limit?: number
 }): Promise<ActionResult<Event[]>> {
   try {
+    console.log('📥 [GET_EVENTS] Buscando eventos com filtros:', filters);
+    
     const supabase = await createServerClient()
     
     let query = supabase
@@ -77,56 +79,73 @@ export async function getEventsAction(filters?: {
 
     // Apply filters
     if (filters?.client_id) {
+      console.log('🔍 [GET_EVENTS] Filtrando por client_id:', filters.client_id);
       query = query.eq('client_id', filters.client_id)
     }
     
     if (filters?.status) {
+      console.log('🔍 [GET_EVENTS] Filtrando por status:', filters.status);
       query = query.eq('status', filters.status)
     }
     
     if (filters?.search) {
+      console.log('🔍 [GET_EVENTS] Filtrando por busca:', filters.search);
       query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%,location.ilike.%${filters.search}%`)
     }
     
     if (filters?.limit) {
+      console.log('🔍 [GET_EVENTS] Limitando resultados:', filters.limit);
       query = query.limit(filters.limit)
     }
 
     const { data: events, error } = await query
 
     if (error) {
-      console.error('Error fetching events:', error)
-      return { success: false, error: 'Erro ao buscar eventos' }
+      console.error('❌ [GET_EVENTS] Erro ao buscar eventos:', error)
+      return { success: false, error: `Erro ao buscar eventos: ${error.message}` }
     }
 
-    return { success: true, data: events }
+    console.log('✅ [GET_EVENTS] Eventos encontrados:', events?.length || 0);
+    return { success: true, data: events || [] }
   } catch (error) {
-    console.error('Events fetch failed:', error)
+    console.error('💥 [GET_EVENTS] Falha ao buscar eventos:', error)
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : 'Erro ao buscar eventos' 
+      error: error instanceof Error ? error.message : 'Erro inesperado ao buscar eventos' 
     }
   }
 }
 
 export async function getClientEventsAction(): Promise<ActionResult<Event[]>> {
   try {
+    console.log('📥 [CLIENT_EVENTS] Buscando eventos do cliente...');
+    
     const user = await getCurrentUser()
-    return getEventsAction({ client_id: user.id })
+    console.log('👤 [CLIENT_EVENTS] Usuário autenticado:', user.id);
+    
+    const result = await getEventsAction({ client_id: user.id })
+    console.log('📋 [CLIENT_EVENTS] Resultado da busca:', result);
+    
+    return result
   } catch (error) {
-    console.error('Client events fetch failed:', error)
+    console.error('💥 [CLIENT_EVENTS] Falha ao buscar eventos do cliente:', error)
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : 'Erro ao buscar seus eventos' 
+      error: error instanceof Error ? error.message : 'Erro inesperado ao buscar seus eventos' 
     }
   }
 }
 
 export async function getEventByIdAction(eventId: string): Promise<ActionResult<EventWithServices>> {
   try {
+    console.log('🔍 [GET_EVENT] Iniciando busca do evento, eventId:', eventId);
+    
     const user = await getCurrentUser()
+    console.log('👤 [GET_EVENT] Usuário autenticado:', user.id, user.email);
+    
     const supabase = await createServerClient()
     
+    console.log('📞 [GET_EVENT] Fazendo query no Supabase...');
     const { data: event, error } = await supabase
       .from('events')
       .select(`
@@ -154,22 +173,36 @@ export async function getEventByIdAction(eventId: string): Promise<ActionResult<
       .eq('id', eventId)
       .single()
 
+    console.log('📊 [GET_EVENT] Resultado da query:', { data: event, error });
+
     if (error) {
-      console.error('Error fetching event:', error)
+      console.error('❌ [GET_EVENT] Erro na query Supabase:', error)
       return { success: false, error: 'Evento não encontrado' }
     }
 
+    console.log('🔐 [GET_EVENT] Verificando acesso...');
+    console.log('🔐 [GET_EVENT] event.client_id:', event.client_id);
+    console.log('🔐 [GET_EVENT] user.id:', user.id);
+    console.log('🔐 [GET_EVENT] event_services:', event.event_services?.length);
+
     // Verificar se o usuário tem acesso ao evento (cliente ou prestador)
-    const hasAccess = event.client_id === user.id || 
-      event.event_services?.some((es: any) => es.provider_id === user.id)
+    const isOwner = event.client_id === user.id;
+    const isProvider = event.event_services?.some((es: any) => es.provider_id === user.id);
+    
+    console.log('🔐 [GET_EVENT] isOwner:', isOwner);
+    console.log('🔐 [GET_EVENT] isProvider:', isProvider);
+    
+    const hasAccess = isOwner || isProvider;
 
     if (!hasAccess) {
+      console.error('🚫 [GET_EVENT] Acesso negado!');
       return { success: false, error: 'Acesso negado' }
     }
 
+    console.log('✅ [GET_EVENT] Acesso autorizado, retornando evento');
     return { success: true, data: event as EventWithServices }
   } catch (error) {
-    console.error('Event fetch failed:', error)
+    console.error('❌ [GET_EVENT] Erro geral:', error)
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Erro ao buscar evento' 
@@ -252,7 +285,10 @@ export async function createEventAction(formData: FormData): Promise<ActionResul
 
 export async function updateEventAction(formData: FormData): Promise<ActionResult<Event>> {
   try {
+    console.log('✏️ [UPDATE] Iniciando atualização do evento...');
+    
     const user = await getCurrentUser()
+    console.log('👤 [UPDATE] Usuário autenticado:', user.id);
     
     const rawData = {
       id: formData.get('id') as string,
@@ -266,19 +302,37 @@ export async function updateEventAction(formData: FormData): Promise<ActionResul
       status: formData.get('status') as string
     }
 
+    console.log('📝 [UPDATE] Dados recebidos:', rawData);
+
     const validatedData = updateEventSchema.parse(rawData)
+    console.log('✅ [UPDATE] Dados validados:', validatedData);
+    
     const supabase = await createServerClient()
 
     // Verificar se o evento pertence ao usuário
-    const { data: existingEvent } = await supabase
+    console.log('🔍 [UPDATE] Verificando propriedade do evento...');
+    const { data: existingEvent, error: fetchError } = await supabase
       .from('events')
-      .select('client_id, status')
+      .select('client_id, status, title')
       .eq('id', validatedData.id)
       .single()
 
-    if (!existingEvent || existingEvent.client_id !== user.id) {
-      return { success: false, error: 'Evento não encontrado ou acesso negado' }
+    if (fetchError) {
+      console.error('❌ [UPDATE] Erro ao buscar evento:', fetchError);
+      return { success: false, error: `Erro ao buscar evento: ${fetchError.message}` }
     }
+
+    if (!existingEvent) {
+      console.error('❌ [UPDATE] Evento não encontrado:', validatedData.id);
+      return { success: false, error: 'Evento não encontrado' }
+    }
+
+    if (existingEvent.client_id !== user.id) {
+      console.error('🚫 [UPDATE] Acesso negado. Event client_id:', existingEvent.client_id, 'User id:', user.id);
+      return { success: false, error: 'Acesso negado - evento não pertence ao usuário' }
+    }
+
+    console.log('✅ [UPDATE] Evento encontrado e validado:', existingEvent.title);
 
     // Verificar se a data não é no passado (apenas se for fornecida)
     if (validatedData.event_date) {
@@ -287,130 +341,152 @@ export async function updateEventAction(formData: FormData): Promise<ActionResul
       today.setHours(0, 0, 0, 0)
       
       if (eventDate < today) {
+        console.error('🚫 [UPDATE] Data no passado:', validatedData.event_date);
         return { success: false, error: 'A data do evento não pode ser no passado' }
       }
     }
 
     // Não permitir edição de eventos já finalizados
     if (existingEvent.status === 'completed' || existingEvent.status === 'cancelled') {
+      console.error('🚫 [UPDATE] Status não permite edição:', existingEvent.status);
       return { success: false, error: 'Não é possível editar eventos finalizados ou cancelados' }
     }
 
     const updateData: Partial<EventUpdate> = {}
     Object.keys(validatedData).forEach(key => {
-      if (key !== 'id' && validatedData[key as keyof typeof validatedData] !== undefined) {
-        updateData[key as keyof EventUpdate] = validatedData[key as keyof typeof validatedData]
+      const value = validatedData[key as keyof typeof validatedData]
+      if (key !== 'id' && value !== undefined && value !== null) {
+        (updateData as any)[key] = value
       }
     })
 
-    const { data: event, error } = await supabase
+    console.log('📝 [UPDATE] Dados para atualização:', updateData);
+
+    const { data: event, error: updateError } = await supabase
       .from('events')
       .update(updateData)
       .eq('id', validatedData.id)
+      .eq('client_id', user.id) // Segurança extra
       .select()
       .single()
 
-    if (error) {
-      console.error('Error updating event:', error)
-      return { success: false, error: 'Erro ao atualizar evento' }
+    if (updateError) {
+      console.error('❌ [UPDATE] Erro ao atualizar evento:', updateError);
+      return { success: false, error: `Erro ao atualizar evento: ${updateError.message}` }
     }
 
+    if (!event) {
+      console.error('❌ [UPDATE] Evento não retornado após atualização');
+      return { success: false, error: 'Erro ao atualizar evento - nenhum dado retornado' }
+    }
+
+    console.log('✅ [UPDATE] Evento atualizado com sucesso:', event.title);
+
+    // Limpar cache
     revalidatePath('/minhas-festas')
     revalidatePath(`/minhas-festas/${validatedData.id}`)
     revalidatePath('/dashboard')
+    revalidatePath('/perfil')
     
+    console.log('🎉 [UPDATE] Atualização concluída com sucesso!');
     return { success: true, data: event }
   } catch (error) {
-    console.error('Event update failed:', error)
+    console.error('💥 [UPDATE] Falha na atualização:', error)
     
     if (error instanceof z.ZodError) {
       const firstError = error.errors[0]
-      return { success: false, error: firstError.message }
+      console.error('📋 [UPDATE] Erro de validação:', firstError.message);
+      return { success: false, error: `Erro de validação: ${firstError.message}` }
     }
     
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : 'Erro ao atualizar evento' 
+      error: error instanceof Error ? error.message : 'Erro inesperado ao atualizar evento' 
     }
   }
 }
 
 export async function updateEventStatusAction(eventId: string, status: string): Promise<ActionResult<Event>> {
   try {
-    console.log('updateEventStatusAction iniciado:', { eventId, status });
+    console.log('📝 [STATUS] Iniciando atualização de status:', { eventId, status });
     
     const user = await getCurrentUser()
-    console.log('Usuário autenticado:', user.id);
+    console.log('👤 [STATUS] Usuário autenticado:', user.id);
     
     const supabase = await createServerClient()
 
     // Verificar se o evento pertence ao usuário
-    console.log('Verificando evento no banco...');
+    console.log('🔍 [STATUS] Verificando propriedade do evento...');
     const { data: existingEvent, error: fetchError } = await supabase
       .from('events')
-      .select('client_id, status')
+      .select('client_id, status, title')
       .eq('id', eventId)
       .single()
 
     if (fetchError) {
-      console.error('Erro ao buscar evento:', fetchError);
+      console.error('❌ [STATUS] Erro ao buscar evento:', fetchError);
       return { success: false, error: `Erro ao buscar evento: ${fetchError.message}` }
     }
 
     if (!existingEvent) {
-      console.error('Evento não encontrado:', eventId);
+      console.error('❌ [STATUS] Evento não encontrado:', eventId);
       return { success: false, error: 'Evento não encontrado' }
     }
 
-    console.log('Evento encontrado:', existingEvent);
+    console.log('✅ [STATUS] Evento encontrado:', {
+      id: eventId,
+      title: existingEvent.title,
+      currentStatus: existingEvent.status,
+      newStatus: status,
+      client_id: existingEvent.client_id,
+      user_id: user.id
+    });
 
     if (existingEvent.client_id !== user.id) {
-      console.error('Acesso negado. Event client_id:', existingEvent.client_id, 'User id:', user.id);
+      console.error('🚫 [STATUS] Acesso negado. Event client_id:', existingEvent.client_id, 'User id:', user.id);
       return { success: false, error: 'Acesso negado - evento não pertence ao usuário' }
     }
 
-    // Validar transições de status baseado no enum atual do banco
+    // Validar transições de status
     const validTransitions: Record<string, string[]> = {
       'draft': ['published', 'cancelled'],
-      'published': ['completed', 'cancelled', 'draft'], // Permitir voltar para draft
-      'completed': [],
-      'cancelled': ['draft'] // Permitir reativar evento cancelado
+      'published': ['waiting_payment', 'completed', 'cancelled'],
+      'waiting_payment': ['completed', 'cancelled'],
+      'completed': [], // Status final
+      'cancelled': [] // Status final
     }
 
-    const allowedStatuses = validTransitions[existingEvent.status] || []
-    console.log('Transição de status:', {
-      from: existingEvent.status,
-      to: status,
-      allowedStatuses
-    });
-    
-    // Se não há transições definidas ou a transição não é permitida
-    if (allowedStatuses.length > 0 && !allowedStatuses.includes(status)) {
-      const errorMsg = `Transição inválida: "${existingEvent.status}" -> "${status}". Transições permitidas: ${allowedStatuses.join(', ')}`;
-      console.error(errorMsg);
-      return { success: false, error: errorMsg }
+    const currentStatus = existingEvent.status || 'draft'
+    const allowedStatuses = validTransitions[currentStatus] || []
+
+    if (!allowedStatuses.includes(status)) {
+      console.error('🚫 [STATUS] Transição inválida:', { from: currentStatus, to: status, allowed: allowedStatuses });
+      return { success: false, error: `Não é possível alterar status de ${currentStatus} para ${status}` }
     }
 
-    console.log('Atualizando status do evento...');
-    
-    // Usar SQL direto para evitar problemas de tipos
-    const { data: event, error: updateError } = await supabase
-      .rpc('update_event_status', {
-        event_id: eventId,
-        new_status: status,
-        user_id: user.id
+    console.log('✅ [STATUS] Transição válida, atualizando...');
+
+    // Atualizar o status
+    const { data: event, error } = await supabase
+      .from('events')
+      .update({ 
+        status, 
+        updated_at: new Date().toISOString() 
       })
+      .eq('id', eventId)
+      .eq('client_id', user.id) // Segurança extra
+      .select()
+      .single()
 
-    if (updateError) {
-      console.error('Erro com RPC, tentando update direto:', updateError);
+    if (error) {
+      console.error('❌ [STATUS] Erro ao atualizar:', error);
       
-      // Fallback: tentar update direto
+      // Tentar buscar o evento atualizado diretamente se a atualização não retornou os dados
+      console.log('🔄 [STATUS] Tentando buscar evento atualizado...');
       const { data: eventData, error: directError } = await supabase
         .from('events')
-        .update({ status: status })
+        .select('*')
         .eq('id', eventId)
-        .eq('client_id', user.id)
-        .select()
         .single()
 
       if (directError) {
@@ -450,56 +526,114 @@ export async function updateEventStatusAction(eventId: string, status: string): 
 
 export async function deleteEventAction(eventId: string): Promise<ActionResult> {
   try {
+    console.log('🗑️ [DELETE] Iniciando exclusão do evento:', eventId);
+    
     const user = await getCurrentUser()
+    console.log('👤 [DELETE] Usuário autenticado:', user.id);
+    
     const supabase = await createServerClient()
 
     // Verificar se o evento pertence ao usuário
-    const { data: existingEvent } = await supabase
+    console.log('🔍 [DELETE] Buscando evento no banco...');
+    const { data: existingEvent, error: fetchError } = await supabase
       .from('events')
-      .select('client_id, status')
+      .select('client_id, status, title')
       .eq('id', eventId)
       .single()
 
-    if (!existingEvent || existingEvent.client_id !== user.id) {
-      return { success: false, error: 'Evento não encontrado ou acesso negado' }
+    if (fetchError) {
+      console.error('❌ [DELETE] Erro ao buscar evento:', fetchError);
+      return { success: false, error: `Erro ao buscar evento: ${fetchError.message}` }
     }
 
-    // Não permitir exclusão de eventos confirmados ou completos
-    if (existingEvent.status === 'confirmed' || existingEvent.status === 'completed') {
-      return { success: false, error: 'Não é possível excluir eventos confirmados ou completos' }
+    if (!existingEvent) {
+      console.error('❌ [DELETE] Evento não encontrado:', eventId);
+      return { success: false, error: 'Evento não encontrado' }
+    }
+
+    console.log('✅ [DELETE] Evento encontrado:', {
+      id: eventId,
+      title: existingEvent.title,
+      client_id: existingEvent.client_id,
+      status: existingEvent.status,
+      user_id: user.id
+    });
+
+    if (existingEvent.client_id !== user.id) {
+      console.error('🚫 [DELETE] Acesso negado. Event client_id:', existingEvent.client_id, 'User id:', user.id);
+      return { success: false, error: 'Acesso negado - evento não pertence ao usuário' }
+    }
+
+    // Não permitir exclusão de eventos publicados ou completos
+    if (existingEvent.status === 'published' || existingEvent.status === 'completed') {
+      console.error('🚫 [DELETE] Status não permite exclusão:', existingEvent.status);
+      return { success: false, error: 'Não é possível excluir eventos publicados ou completos' }
     }
 
     // Verificar se o evento tem serviços aprovados
-    const { data: approvedServices } = await supabase
+    console.log('🔍 [DELETE] Verificando serviços aprovados...');
+    const { data: approvedServices, error: servicesError } = await supabase
       .from('event_services')
       .select('id')
       .eq('event_id', eventId)
       .eq('booking_status', 'approved')
       .limit(1)
 
+    if (servicesError) {
+      console.error('❌ [DELETE] Erro ao verificar serviços:', servicesError);
+    }
+
     if (approvedServices && approvedServices.length > 0) {
+      console.error('🚫 [DELETE] Evento tem serviços aprovados:', approvedServices.length);
       return { success: false, error: 'Não é possível excluir evento com serviços aprovados' }
     }
 
-    const { error } = await supabase
-      .from('events')
-      .delete()
-      .eq('id', eventId)
+    console.log('✅ [DELETE] Validações passaram, executando exclusão...');
 
-    if (error) {
-      console.error('Error deleting event:', error)
-      return { success: false, error: 'Erro ao excluir evento' }
+    // Primeiro deletar todos os event_services relacionados
+    const { error: deleteServicesError } = await supabase
+      .from('event_services')
+      .delete()
+      .eq('event_id', eventId)
+
+    if (deleteServicesError) {
+      console.error('❌ [DELETE] Erro ao deletar serviços do evento:', deleteServicesError);
+      // Continuar mesmo se der erro, pois pode não ter serviços
+    } else {
+      console.log('✅ [DELETE] Serviços do evento deletados');
     }
 
+    // Agora deletar o evento
+    const { error: deleteError, count } = await supabase
+      .from('events')
+      .delete({ count: 'exact' })
+      .eq('id', eventId)
+      .eq('client_id', user.id) // Segurança extra
+
+    if (deleteError) {
+      console.error('❌ [DELETE] Erro ao deletar evento:', deleteError);
+      return { success: false, error: `Erro ao excluir evento: ${deleteError.message}` }
+    }
+
+    console.log('✅ [DELETE] Evento deletado com sucesso. Linhas afetadas:', count);
+
+    if (count === 0) {
+      console.error('⚠️ [DELETE] Nenhuma linha foi deletada');
+      return { success: false, error: 'O evento não foi encontrado ou você não tem permissão para excluí-lo' }
+    }
+
+    // Limpar cache
     revalidatePath('/minhas-festas')
     revalidatePath('/dashboard')
+    revalidatePath('/perfil')
     
+    console.log('🎉 [DELETE] Exclusão concluída com sucesso!');
     return { success: true }
   } catch (error) {
-    console.error('Event deletion failed:', error)
+    console.error('💥 [DELETE] Falha na exclusão:', error)
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : 'Erro ao excluir evento' 
+      error: error instanceof Error ? error.message : 'Erro inesperado ao excluir evento' 
     }
   }
 }

@@ -41,8 +41,8 @@ export function ClientSidebar({
     {
       label: 'Dashboard',
       icon: MdDashboard,
-      path: '/perfil?tab=dashboard',
-      description: 'Links rápidos'
+      path: '/dashboard',
+      description: 'Visão geral'
     },
     {
       label: 'Minhas Festas',

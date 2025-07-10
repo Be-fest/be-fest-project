@@ -230,9 +230,9 @@ export async function createBookingAction(formData: FormData): Promise<ActionRes
       return { success: false, error: 'Evento não encontrado ou acesso negado' }
     }
 
-    // Verificar se o evento está confirmado
-    if (event.status !== 'confirmed') {
-      return { success: false, error: 'Apenas eventos confirmados podem ter reservas finalizadas' }
+    // Verificar se o evento está publicado
+    if (event.status !== 'published') {
+      return { success: false, error: 'Apenas eventos publicados podem ter reservas finalizadas' }
     }
 
     // Verificar se existe um event_service aprovado para este serviço
@@ -381,6 +381,7 @@ export async function updateBookingAction(formData: FormData): Promise<ActionRes
     }
 
     revalidatePath('/minhas-festas')
+    revalidatePath(`/minhas-festas/${existingBooking.event_id}`)
     revalidatePath('/dashboard/prestador')
     
     return { success: true, data: booking }
@@ -457,6 +458,7 @@ export async function updateBookingStatusAction(
     }
 
     revalidatePath('/minhas-festas')
+    revalidatePath(`/minhas-festas/${existingBooking.event_id}`)
     revalidatePath('/dashboard/prestador')
     
     return { success: true, data: booking }
@@ -551,9 +553,9 @@ export async function createBookingFromEventServiceAction(eventServiceId: string
       return { success: false, error: 'Acesso negado' }
     }
 
-    // Verificar se o evento está confirmado
-    if (eventService.event.status !== 'confirmed') {
-      return { success: false, error: 'Evento deve estar confirmado para criar reservas' }
+    // Verificar se o evento está publicado
+    if (eventService.event.status !== 'published') {
+      return { success: false, error: 'Evento deve estar publicado para criar reservas' }
     }
 
     // Criar a reserva automaticamente

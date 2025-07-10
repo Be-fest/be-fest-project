@@ -4,12 +4,27 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { MdEdit, MdSave, MdCancel, MdCloudUpload, MdWarning } from 'react-icons/md';
 import { createClient } from '@/lib/supabase/client';
+import { getProviderStatsAction } from '@/lib/actions/services';
 import { User } from '@/types/database';
+
+interface ProviderStats {
+  totalEvents: number;
+  activeServices: number;
+  averageRating: number;
+  totalRatings: number;
+}
 
 export function ProviderProfile() {
   const [isEditing, setIsEditing] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [stats, setStats] = useState<ProviderStats>({
+    totalEvents: 0,
+    activeServices: 0,
+    averageRating: 0,
+    totalRatings: 0
+  });
   const [loading, setLoading] = useState(true);
+  const [statsLoading, setStatsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   
@@ -64,6 +79,30 @@ export function ProviderProfile() {
 
     fetchUserData();
   }, []);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setStatsLoading(true);
+        const result = await getProviderStatsAction();
+        
+        if (result.success && result.data) {
+          setStats(result.data);
+        } else {
+          console.error('Erro ao carregar estatísticas:', result.error);
+        }
+      } catch (err) {
+        console.error('Error loading provider stats:', err);
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    // Só buscar estatísticas se o usuário estiver carregado
+    if (!loading && user) {
+      fetchStats();
+    }
+  }, [loading, user]);
 
   const handleSave = async () => {
     if (!user) return;
@@ -342,24 +381,36 @@ export function ProviderProfile() {
         className="bg-white rounded-lg shadow-sm p-6"
       >
         <h3 className="text-lg font-semibold text-[#520029] mb-4">Estatísticas do Perfil</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="text-center">
-            <p className="text-2xl font-bold text-[#A502CA]">4.8</p>
-            <p className="text-sm text-gray-600">Avaliação Média</p>
+        {statsLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#A502CA]"></div>
+            <span className="ml-3 text-gray-600">Carregando estatísticas...</span>
           </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-[#A502CA]">156</p>
-            <p className="text-sm text-gray-600">Total de Avaliações</p>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-[#A502CA]">
+                {stats.averageRating > 0 ? stats.averageRating.toFixed(1) : '-'}
+              </p>
+              <p className="text-sm text-gray-600">Avaliação Média</p>
+              {stats.averageRating === 0 && (
+                <p className="text-xs text-gray-400 mt-1">Ainda sem avaliações</p>
+              )}
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-[#A502CA]">{stats.totalRatings}</p>
+              <p className="text-sm text-gray-600">Total de Avaliações</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-[#A502CA]">{stats.totalEvents}</p>
+              <p className="text-sm text-gray-600">Eventos Realizados</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-[#A502CA]">{stats.activeServices}</p>
+              <p className="text-sm text-gray-600">Serviços Ativos</p>
+            </div>
           </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-[#A502CA]">243</p>
-            <p className="text-sm text-gray-600">Eventos Realizados</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-[#A502CA]">7</p>
-            <p className="text-sm text-gray-600">Serviços Ativos</p>
-          </div>
-        </div>
+        )}
       </motion.div>
     </div>
   );

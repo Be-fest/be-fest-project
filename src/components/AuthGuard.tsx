@@ -78,8 +78,7 @@ export function AuthGuard({ children, requiredRole, redirectTo = '/auth/login' }
       }
     };
 
-    // Aguardar um pouco antes de verificar para evitar conflitos
-    const timeout = setTimeout(checkAuth, 500);
+    checkAuth();
 
     // Escutar mudanças na autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -109,20 +108,16 @@ export function AuthGuard({ children, requiredRole, redirectTo = '/auth/login' }
 
     return () => {
       isMounted = false;
-      clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, [router, redirectTo, requiredRole, supabase]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#FFF6FB] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-[#F71875] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Verificando autenticação...</p>
+          return (
+        <div className="min-h-screen bg-[#FFF6FB] flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-[#F71875] border-t-transparent rounded-full animate-spin"></div>
         </div>
-      </div>
-    );
+      );
   }
 
   if (!user) {

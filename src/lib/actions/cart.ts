@@ -155,7 +155,7 @@ export async function saveCartEventAction(eventData: {
     }
 
     console.log('Evento salvo com sucesso:', result);
-    revalidatePath('/minhas-festas')
+    revalidatePath('/perfil')
     return { success: true, data: result }
   } catch (error) {
     console.error('Save cart event failed:', error)
@@ -190,16 +190,18 @@ export async function addServiceToCartAction(serviceData: {
       return { success: false, error: 'Evento não encontrado ou acesso negado' }
     }
 
-    // Verificar se o serviço já foi adicionado ao evento
+    // Verificar se o serviço já foi adicionado ao evento (incluindo provider_id)
     const { data: existingService } = await supabase
       .from('event_services')
       .select('id, quantity')
       .eq('event_id', validatedData.event_id)
       .eq('service_id', validatedData.service_id)
+      .eq('provider_id', validatedData.provider_id)
       .single()
 
     if (existingService) {
-      // Atualizar quantidade se já existe
+      console.log('Serviço já existe, atualizando observações apenas:', existingService.id);
+      // Atualizar observações se já existe
       const { data: updatedService, error } = await supabase
         .from('event_services')
         .update({ 
@@ -229,6 +231,12 @@ export async function addServiceToCartAction(serviceData: {
       return { success: false, error: 'Serviço não encontrado' }
     }
 
+    console.log('Criando novo event_service:', {
+      event_id: validatedData.event_id,
+      service_id: validatedData.service_id,
+      provider_id: validatedData.provider_id
+    });
+
     // Criar novo event_service
     const { data: eventService, error } = await supabase
       .from('event_services')
@@ -245,10 +253,28 @@ export async function addServiceToCartAction(serviceData: {
 
     if (error) {
       console.error('Error creating event service:', error)
+      
+      // Se o erro for de duplicação, tentar buscar o serviço existente
+      if (error.code === '23505') { // Unique constraint violation
+        const { data: existingService } = await supabase
+          .from('event_services')
+          .select('*')
+          .eq('event_id', validatedData.event_id)
+          .eq('service_id', validatedData.service_id)
+          .eq('provider_id', validatedData.provider_id)
+          .single()
+
+        if (existingService) {
+          console.log('Serviço já existe após erro de duplicação:', existingService.id);
+          return { success: true, data: existingService }
+        }
+      }
+      
       return { success: false, error: 'Erro ao adicionar serviço' }
     }
 
-    revalidatePath('/minhas-festas')
+    console.log('Event service criado com sucesso:', eventService.id);
+    revalidatePath('/perfil')
     revalidatePath(`/minhas-festas/${validatedData.event_id}`)
     return { success: true, data: eventService }
   } catch (error) {
@@ -406,12 +432,97 @@ export async function syncCartWithDatabaseAction(cartData: {
     }
 
     console.log('Sincronização concluída com sucesso, eventId:', eventId);
+    revalidatePath('/minhas-festas')
+    revalidatePath(`/minhas-festas/${eventId}`)
     return { success: true, data: { eventId } }
   } catch (error) {
     console.error('Sync cart with database failed:', error)
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Erro ao sincronizar carrinho' 
+    }
+  }
+} 
+
+export async function cleanDuplicateServicesAction(eventId: string): Promise<ActionResult> {
+  try {
+    const user = await getCurrentUser()
+    const supabase = await createServerClient()
+
+    // Verificar se o evento pertence ao usuário
+    const { data: event } = await supabase
+      .from('events')
+      .select('client_id')
+      .eq('id', eventId)
+      .single()
+
+    if (!event || event.client_id !== user.id) {
+      return { success: false, error: 'Evento não encontrado ou acesso negado' }
+    }
+
+    // Buscar todos os serviços do evento
+    const { data: eventServices } = await supabase
+      .from('event_services')
+      .select('id, service_id, provider_id, created_at')
+      .eq('event_id', eventId)
+      .order('created_at', { ascending: true })
+
+    if (!eventServices || eventServices.length === 0) {
+      return { success: true, data: { removedCount: 0 } }
+    }
+
+    // Agrupar por service_id + provider_id
+    const serviceGroups = new Map<string, typeof eventServices>()
+    
+    for (const service of eventServices) {
+      const key = `${service.service_id}-${service.provider_id}`
+      if (!serviceGroups.has(key)) {
+        serviceGroups.set(key, [])
+      }
+      serviceGroups.get(key)!.push(service)
+    }
+
+    // Identificar duplicatas (manter apenas o primeiro de cada grupo)
+    const duplicateIds: string[] = []
+    
+    for (const [key, services] of serviceGroups) {
+      if (services.length > 1) {
+        console.log(`Encontrado ${services.length} duplicatas para ${key}`)
+        // Remover todos exceto o primeiro (mais antigo)
+        const toRemove = services.slice(1)
+        duplicateIds.push(...toRemove.map(s => s.id))
+      }
+    }
+
+    if (duplicateIds.length === 0) {
+      console.log('Nenhuma duplicata encontrada')
+      return { success: true, data: { removedCount: 0 } }
+    }
+
+    console.log(`Removendo ${duplicateIds.length} serviços duplicados:`, duplicateIds)
+
+    // Remover as duplicatas
+    const { error } = await supabase
+      .from('event_services')
+      .delete()
+      .in('id', duplicateIds)
+
+    if (error) {
+      console.error('Error removing duplicate services:', error)
+      return { success: false, error: 'Erro ao remover serviços duplicados' }
+    }
+
+    console.log(`${duplicateIds.length} serviços duplicados removidos com sucesso`)
+    
+    revalidatePath('/minhas-festas')
+    revalidatePath(`/minhas-festas/${eventId}`)
+    
+    return { success: true, data: { removedCount: duplicateIds.length } }
+  } catch (error) {
+    console.error('Clean duplicate services failed:', error)
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Erro ao limpar serviços duplicados' 
     }
   }
 } 

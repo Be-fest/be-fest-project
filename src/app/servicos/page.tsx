@@ -3,13 +3,14 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { MdArrowBack, MdSearch, MdStar, MdLocationOn, MdWarning, MdTune } from 'react-icons/md';
+import { MdArrowBack, MdSearch, MdStar, MdLocationOn, MdWarning, MdTune, MdEvent } from 'react-icons/md';
 import { Categories } from '@/components/Categories';
 import { getPublicServicesAction } from '@/lib/actions/services';
 import { ServiceWithProvider } from '@/types/database';
 import { Header } from '@/components/Header';
 import { ProvidersGrid } from '@/components/ProvidersGrid';
 import { ServicesSkeleton } from '@/components/ui';
+import { useCart } from '@/contexts/CartContext';
 
 // Skeleton Components para a página de serviços
 const SearchSkeleton = () => (
@@ -43,6 +44,7 @@ export default function ServicesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
+  const { partyData, eventId } = useCart();
 
   // Debounce search query
   useEffect(() => {
@@ -133,6 +135,21 @@ export default function ServicesPage() {
             <p className="text-[#6E5963] text-lg">
               Descubra os melhores prestadores para sua festa
             </p>
+            
+            {/* Banner informativo quando vem de uma festa específica */}
+            {partyData && eventId && (
+              <div className="mt-6 bg-gradient-to-r from-[#F71875] to-[#A502CA] rounded-lg p-4 text-white">
+                <div className="flex items-center gap-3">
+                  <MdEvent className="text-2xl flex-shrink-0" />
+                  <div>
+                    <h3 className="font-bold text-lg">Adicionando serviços para: {partyData.eventName}</h3>
+                    <p className="text-pink-100 text-sm">
+                      Data: {new Date(partyData.eventDate).toLocaleDateString('pt-BR')} • {partyData.fullGuests + partyData.halfGuests + partyData.freeGuests} convidados
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </motion.div>
 
           {/* Search and Filters */}
@@ -279,10 +296,10 @@ export default function ServicesPage() {
             )}
 
             {!loading && !error && services.length > 0 && (
-                             <ProvidersGrid 
-                 selectedCategory={selectedCategory}
-                 searchQuery={searchQuery}
-               />
+              <ProvidersGrid 
+                selectedCategory={selectedCategory}
+                searchQuery={searchQuery}
+              />
             )}
           </motion.div>
         </div>

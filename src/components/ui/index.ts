@@ -7,4 +7,6 @@ export * from './RoutesModal';
 export * from './ForgotPasswordModal';
 export * from './ServicesSkeleton';
 export * from './CategoriesSkeleton';
+export * from './DashboardSkeleton';
+export * from './AuthLoadingSpinner';
 export * from './SimpleToast';

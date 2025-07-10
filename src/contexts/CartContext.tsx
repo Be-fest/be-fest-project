@@ -39,6 +39,7 @@ interface CartContextType {
   clearCart: () => void;
   setPartyData: (data: PartyData) => void;
   clearPartyData: () => void;
+  setEventId: (eventId: string) => void;
   getTotalPrice: () => number;
   getItemCount: () => number;
   syncWithDatabase: (forceSync?: boolean) => Promise<void>;
@@ -52,13 +53,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [eventId, setEventId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { user, loading: authLoading } = useAuth();
+  const { user, userData, loading: authLoading } = useAuth();
   
   // Refs para controlar sincronização
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastSyncTimeRef = useRef<number>(0);
   const needsSyncRef = useRef<boolean>(false);
+  const syncInProgressRef = useRef<boolean>(false); // Nova flag para prevenir sincronização simultânea
 
   // Carregar dados do localStorage quando o componente montar
   useEffect(() => {
@@ -108,9 +110,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   // Função para sincronizar com o banco de dados
   const syncWithDatabase = useCallback(async (forceSync = false) => {
+    // Verificar se já está sincronizando
+    if (syncInProgressRef.current) {
+      console.log('Sincronização já em andamento, ignorando chamada');
+      return;
+    }
+    
     // Verificar se o usuário está autenticado
     if (!user || authLoading) {
       console.log('Sincronização cancelada: usuário não autenticado', { user, authLoading });
+      return;
+    }
+
+    // CORREÇÃO: Verificar se o usuário é um prestador - prestadores não devem sincronizar carrinhos
+    if (userData?.role === 'provider') {
+      console.log('Sincronização cancelada: usuário é prestador', { role: userData.role });
       return;
     }
 
@@ -131,6 +145,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
 
     console.log('Iniciando sincronização...', { partyData, cartItems, eventId, forceSync });
+    
+    // Marcar que está sincronizando
+    syncInProgressRef.current = true;
     setIsLoading(true);
     
     try {
@@ -167,11 +184,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
       toast.error('Erro ao sincronizar carrinho');
     } finally {
       setIsLoading(false);
+      syncInProgressRef.current = false; // Resetar flag
     }
-  }, [user, authLoading, partyData, cartItems, eventId, toast]);
+  }, [user, userData, authLoading, partyData, cartItems, eventId, toast]);
 
   // Sistema de sincronização inteligente
   const scheduleSync = useCallback(() => {
+    // Não agendar sincronização para prestadores
+    if (userData?.role === 'provider') {
+      return;
+    }
+
     // Limpar timeout anterior
     if (debounceTimeoutRef.current) {
       clearTimeout(debounceTimeoutRef.current);
@@ -186,20 +209,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
         syncWithDatabase(false);
       }
     }, 5000);
-  }, [syncWithDatabase]);
+  }, [syncWithDatabase, userData]);
 
   // Auto-sincronizar quando partyData ou cartItems mudam (com debounce)
   useEffect(() => {
-    // Só sincronizar se o usuário estiver autenticado
+    // Só sincronizar se o usuário estiver autenticado e for cliente
     if (!user || authLoading) return;
+    if (userData?.role === 'provider') return; // Não sincronizar para prestadores
     if (!partyData || cartItems.length === 0) return;
 
     scheduleSync();
-  }, [partyData, cartItems, user, authLoading, scheduleSync]);
+  }, [partyData, cartItems, user, userData, authLoading, scheduleSync]);
 
-  // Sincronização por intervalo (5 minutos)
+  // Sincronização por intervalo (5 minutos) - apenas para clientes
   useEffect(() => {
     if (!user || authLoading) return;
+    if (userData?.role === 'provider') return; // Não sincronizar para prestadores
 
     // Limpar intervalo anterior
     if (intervalRef.current) {
@@ -220,7 +245,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         clearInterval(intervalRef.current);
       }
     };
-  }, [user, authLoading, partyData, cartItems, syncWithDatabase]);
+  }, [user, userData, authLoading, partyData, cartItems, syncWithDatabase]);
 
   // Cleanup dos timeouts quando o componente for desmontado
   useEffect(() => {
@@ -307,6 +332,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('befest-event-id');
   };
 
+  const setEventIdFunction = (eventId: string) => {
+    setEventId(eventId);
+  };
+
   const getTotalPrice = () => {
     return cartItems.reduce((total, item) => total + item.price, 0);
   };
@@ -328,6 +357,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         clearCart,
         setPartyData,
         clearPartyData,
+        setEventId: setEventIdFunction,
         getTotalPrice,
         getItemCount,
         syncWithDatabase,

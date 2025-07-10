@@ -1,44 +1,47 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { MdPeople, MdEmail, MdPhone, MdCalendarToday } from 'react-icons/md';
-import { Client } from '@/types/admin';
+import { 
+  MdPeople, 
+  MdEmail, 
+  MdPhone, 
+  MdSearch,
+  MdRefresh,
+  MdError,
+  MdTrendingUp,
+  MdEvent,
+  MdAttachMoney
+} from 'react-icons/md';
+import { SearchInput } from '@/components/admin/SearchInput';
+import { getAllUsersAction } from '@/lib/actions/admin';
 
-// Mock data para demonstração
-const mockClients: Client[] = [
-  {
-    id: 'CLI-001',
-    name: 'João Silva',
-    email: 'joao.silva@email.com',
-    phone: '(11) 99999-9999',
-    cpf: '123.456.789-00',
-    createdAt: new Date('2024-01-15'),
-    totalOrders: 5,
-    totalSpent: 15000
-  },
-  {
-    id: 'CLI-002',
-    name: 'Maria Santos',
-    email: 'maria.santos@email.com',
-    phone: '(11) 88888-8888',
-    cpf: '987.654.321-00',
-    createdAt: new Date('2024-01-10'),
-    totalOrders: 3,
-    totalSpent: 8500
-  },
-  {
-    id: 'CLI-003',
-    name: 'Pedro Costa',
-    email: 'pedro.costa@email.com',
-    phone: '(11) 77777-7777',
-    cpf: '456.789.123-00',
-    createdAt: new Date('2024-01-05'),
-    totalOrders: 8,
-    totalSpent: 25000
-  }
-];
+interface ClientData {
+  id: string;
+  full_name: string;
+  email: string;
+  role: string;
+  created_at: string;
+  whatsapp_number?: string;
+  totalEvents?: number;
+  totalSpent?: number;
+}
 
-export default function AdminClients() {
+export default function ClientesPage() {
+  const [clients, setClients] = useState<ClientData[]>([]);
+  const [filteredClients, setFilteredClients] = useState<ClientData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -46,12 +49,88 @@ export default function AdminClients() {
     }).format(value);
   };
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('pt-BR');
+  const loadClients = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const result = await getAllUsersAction();
+      
+      if (result.success && result.data) {
+        // Filtrar apenas clientes
+        const clientUsers = result.data.filter(user => user.role === 'client');
+        setClients(clientUsers);
+        setFilteredClients(clientUsers);
+      } else {
+        setError(result.error || 'Erro ao carregar clientes');
+      }
+    } catch (err) {
+      console.error('Erro ao carregar clientes:', err);
+      setError('Erro ao carregar lista de clientes');
+    } finally {
+      setLoading(false);
+    }
   };
 
+  useEffect(() => {
+    loadClients();
+  }, []);
+
+  useEffect(() => {
+    if (searchTerm.trim() === '') {
+      setFilteredClients(clients);
+    } else {
+      const filtered = clients.filter(client =>
+        client.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        client.email.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredClients(filtered);
+    }
+  }, [searchTerm, clients]);
+
+  const stats = {
+    totalClients: clients.length,
+    newClientsThisMonth: clients.filter(client => {
+      const clientDate = new Date(client.created_at);
+      const currentDate = new Date();
+      return clientDate.getMonth() === currentDate.getMonth() && 
+             clientDate.getFullYear() === currentDate.getFullYear();
+    }).length,
+    averageEventsPerClient: 0, // Implementar quando tiver dados de eventos
+    totalRevenue: 0 // Implementar quando tiver dados de faturamento
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando clientes...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <MdError className="text-red-500 text-6xl mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Erro ao carregar clientes</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={loadClients}
+            className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-6 sm:space-y-8">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -65,23 +144,48 @@ export default function AdminClients() {
             Gerencie todos os clientes da plataforma
           </p>
         </div>
+        <button
+          onClick={loadClients}
+          disabled={loading}
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors text-sm sm:text-base disabled:opacity-50"
+        >
+          <MdRefresh className={`text-base sm:text-lg ${loading ? 'animate-spin' : ''}`} />
+          <span>Atualizar</span>
+        </button>
       </motion.div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="bg-white rounded-xl p-6 shadow-sm border border-gray-100"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-600 text-sm font-medium">Total de Clientes</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{stats.totalClients}</p>
+            </div>
+            <div className="bg-blue-50 p-3 rounded-lg">
+              <MdPeople className="text-2xl text-blue-600" />
+            </div>
+          </div>
+        </motion.div>
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.1 }}
-          className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100"
+          className="bg-white rounded-xl p-6 shadow-sm border border-gray-100"
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-600 text-xs sm:text-sm font-medium">Total de Clientes</p>
-              <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1">{mockClients.length}</p>
+              <p className="text-gray-600 text-sm font-medium">Novos este Mês</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{stats.newClientsThisMonth}</p>
             </div>
-            <div className="bg-primary-light p-2 sm:p-3 rounded-lg">
-              <MdPeople className="text-lg sm:text-2xl text-white" />
+            <div className="bg-green-50 p-3 rounded-lg">
+              <MdTrendingUp className="text-2xl text-green-600" />
             </div>
           </div>
         </motion.div>
@@ -90,17 +194,15 @@ export default function AdminClients() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.2 }}
-          className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100"
+          className="bg-white rounded-xl p-6 shadow-sm border border-gray-100"
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-600 text-xs sm:text-sm font-medium">Pedidos Totais</p>
-              <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1">
-                {mockClients.reduce((acc, client) => acc + client.totalOrders, 0)}
-              </p>
+              <p className="text-gray-600 text-sm font-medium">Média Eventos/Cliente</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{stats.averageEventsPerClient}</p>
             </div>
-            <div className="bg-primary-light p-2 sm:p-3 rounded-lg">
-              <MdCalendarToday className="text-lg sm:text-2xl text-white" />
+            <div className="bg-purple-50 p-3 rounded-lg">
+              <MdEvent className="text-2xl text-purple-600" />
             </div>
           </div>
         </motion.div>
@@ -109,78 +211,121 @@ export default function AdminClients() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.3 }}
-          className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 sm:col-span-2 lg:col-span-1"
+          className="bg-white rounded-xl p-6 shadow-sm border border-gray-100"
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-600 text-xs sm:text-sm font-medium">Faturamento Total</p>
-              <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">
-                {formatCurrency(mockClients.reduce((acc, client) => acc + client.totalSpent, 0))}
-              </p>
+              <p className="text-gray-600 text-sm font-medium">Receita Total</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(stats.totalRevenue)}</p>
             </div>
-            <div className="bg-primary-light p-2 sm:p-3 rounded-lg">
-              <MdEmail className="text-lg sm:text-2xl text-white" />
+            <div className="bg-yellow-50 p-3 rounded-lg">
+              <MdAttachMoney className="text-2xl text-yellow-600" />
             </div>
           </div>
         </motion.div>
       </div>
 
-      {/* Clients Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-        {mockClients.map((client, index) => (
-          <motion.div
-            key={client.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.1 * index }}
-            className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary-light rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-white font-semibold text-sm sm:text-lg">
-                    {client.name.charAt(0)}
-                  </span>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-semibold text-gray-900 text-sm sm:text-base truncate">{client.name}</h3>
-                  <p className="text-xs sm:text-sm text-gray-500">ID: {client.id}</p>
-                </div>
-              </div>
-            </div>
+      {/* Search and Filters */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.4 }}
+        className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100"
+      >
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <SearchInput
+              placeholder="Buscar clientes por nome ou email..."
+              value={searchTerm}
+              onChange={setSearchTerm}
+            />
+          </div>
+        </div>
+      </motion.div>
 
-            <div className="space-y-2 sm:space-y-3">
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
-                <MdEmail className="text-base sm:text-lg flex-shrink-0" />
-                <span className="truncate">{client.email}</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
-                <MdPhone className="text-base sm:text-lg flex-shrink-0" />
-                <span>{client.phone}</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
-                <MdCalendarToday className="text-base sm:text-lg flex-shrink-0" />
-                <span>Desde {formatDate(client.createdAt)}</span>
-              </div>
-            </div>
+      {/* Clients Table */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.5 }}
+        className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+      >
+        <div className="p-4 sm:p-6 border-b border-gray-100">
+          <h2 className="text-lg sm:text-xl font-semibold text-title">
+            Lista de Clientes ({filteredClients.length})
+          </h2>
+        </div>
 
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <div className="grid grid-cols-2 gap-4 text-center">
-                <div>
-                  <p className="text-base sm:text-lg font-semibold text-gray-900">{client.totalOrders}</p>
-                  <p className="text-xs text-gray-500">Pedidos</p>
-                </div>
-                <div>
-                  <p className="text-sm sm:text-lg font-semibold text-primary">
-                    {formatCurrency(client.totalSpent)}
-                  </p>
-                  <p className="text-xs text-gray-500">Gasto Total</p>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+        {filteredClients.length === 0 ? (
+          <div className="p-8 text-center">
+            <MdPeople className="text-gray-400 text-4xl mx-auto mb-4" />
+            <p className="text-gray-500">
+              {searchTerm ? 'Nenhum cliente encontrado para sua busca' : 'Nenhum cliente cadastrado'}
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="text-left p-4 font-medium text-gray-600 text-sm">Cliente</th>
+                  <th className="text-left p-4 font-medium text-gray-600 text-sm hidden sm:table-cell">Email</th>
+                  <th className="text-left p-4 font-medium text-gray-600 text-sm hidden lg:table-cell">WhatsApp</th>
+                  <th className="text-left p-4 font-medium text-gray-600 text-sm hidden lg:table-cell">Data Cadastro</th>
+                  <th className="text-left p-4 font-medium text-gray-600 text-sm">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredClients.map((client, index) => (
+                  <motion.tr
+                    key={client.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2, delay: index * 0.05 }}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-r from-primary to-primary-dark rounded-full flex items-center justify-center text-white font-medium">
+                          {client.full_name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{client.full_name}</p>
+                          <p className="text-sm text-gray-500 sm:hidden">{client.email}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-4 hidden sm:table-cell">
+                      <div className="flex items-center gap-2">
+                        <MdEmail className="text-gray-400" />
+                        <span className="text-sm text-gray-600">{client.email}</span>
+                      </div>
+                    </td>
+                    <td className="p-4 hidden lg:table-cell">
+                      <div className="flex items-center gap-2">
+                        <MdPhone className="text-gray-400" />
+                        <span className="text-sm text-gray-600">
+                          {client.whatsapp_number || 'Não informado'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="p-4 hidden lg:table-cell">
+                      <span className="text-sm text-gray-600">
+                        {formatDate(client.created_at)}
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                        Ativo
+                      </span>
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </motion.div>
     </div>
   );
 } 
