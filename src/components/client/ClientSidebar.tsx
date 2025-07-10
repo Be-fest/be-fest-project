@@ -51,12 +51,6 @@ export function ClientSidebar({
       description: 'Gerencie eventos'
     },
     {
-      label: 'Perfil',
-      icon: MdPerson,
-      path: '/perfil',
-      description: 'Suas informações'
-    },
-    {
       label: 'Configurações',
       icon: MdSettings,
       path: '/perfil?tab=configuracoes',

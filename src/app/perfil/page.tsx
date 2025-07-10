@@ -598,33 +598,6 @@ const ConfiguracoesTab = () => {
         { label: 'Endereço', description: 'Local padrão para eventos' },
         { label: 'Senha', description: 'Alterar senha de acesso' }
       ]
-    },
-    {
-      title: 'Notificações',
-      icon: MdNotifications,
-      items: [
-        { label: 'Email', description: 'Notificações por email' },
-        { label: 'Push', description: 'Notificações no navegador' },
-        { label: 'SMS', description: 'Notificações por SMS' }
-      ]
-    },
-    {
-      title: 'Privacidade',
-      icon: MdPrivacyTip,
-      items: [
-        { label: 'Perfil Público', description: 'Visibilidade do seu perfil' },
-        { label: 'Dados Pessoais', description: 'Controle de dados' },
-        { label: 'Histórico', description: 'Gerenciar histórico de eventos' }
-      ]
-    },
-    {
-      title: 'Preferências',
-      icon: MdPalette,
-      items: [
-        { label: 'Tema', description: 'Aparência da interface' },
-        { label: 'Idioma', description: 'Idioma da plataforma' },
-        { label: 'Região', description: 'Localização e moeda' }
-      ]
     }
   ];
 
@@ -689,18 +662,6 @@ const ConfiguracoesTab = () => {
           Ações da Conta
         </h4>
         <div className="space-y-4">
-          <button className="w-full text-left p-4 rounded-xl hover:bg-gray-50 transition-colors duration-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-gray-900">Exportar Dados</p>
-                <p className="text-sm text-gray-600">Baixar uma cópia dos seus dados</p>
-              </div>
-              <div className="text-blue-600">
-                ↓
-              </div>
-            </div>
-          </button>
-          
           <button className="w-full text-left p-4 rounded-xl hover:bg-red-50 transition-colors duration-200">
             <div className="flex items-center justify-between">
               <div>
