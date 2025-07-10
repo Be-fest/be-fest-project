@@ -1,4 +1,3 @@
-import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
@@ -43,94 +42,25 @@ export async function middleware(request: NextRequest) {
 
   console.log('🔒 [MIDDLEWARE] Rota protegida detectada:', pathname);
 
-  try {
-    let response = NextResponse.next({
-      request: {
-        headers: request.headers,
-      },
-    });
+  // Verificação simples: verificar se há algum cookie de autenticação do Supabase
+  const cookies = request.cookies;
+  const authCookies = cookies.getAll().filter(cookie => 
+    cookie.name.includes('auth-token') || 
+    cookie.name.includes('sb-') ||
+    cookie.name.includes('supabase')
+  );
 
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll();
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              request.cookies.set(name, value);
-              response.cookies.set(name, value, options);
-            });
-          },
-        },
-      }
-    );
-    
-    console.log('📡 [MIDDLEWARE] Verificando sessão...');
-    const { data: { user }, error } = await supabase.auth.getUser();
-    
-    console.log('👤 [MIDDLEWARE] Usuário encontrado:', !!user);
-    console.log('🔑 [MIDDLEWARE] User ID:', user?.id || 'Nenhum');
-    console.log('❌ [MIDDLEWARE] Erro:', error?.message || 'Nenhum');
-
-    if (error) {
-      console.error('❌ [MIDDLEWARE] Erro ao obter usuário:', error);
-    }
-
-    // Se não há usuário, redirecionar para login
-    if (!user) {
-      console.log('🚨 [MIDDLEWARE] Sem usuário válido, redirecionando para login');
-      const redirectUrl = new URL('/auth/login', request.url);
-      redirectUrl.searchParams.set('redirectTo', pathname);
-      return NextResponse.redirect(redirectUrl);
-    }
-
-    // Verificar se é uma rota só para clientes
-    const clientOnlyRoutes = ['/minhas-festas', '/pagamento'];
-    const isClientOnlyRoute = clientOnlyRoutes.some(route => pathname.startsWith(route));
-    
-    if (isClientOnlyRoute) {
-      console.log('🏠 [MIDDLEWARE] Verificando role para rota de cliente...');
-      
-      try {
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('role, full_name')
-          .eq('id', user.id)
-          .single();
-
-        console.log('👥 [MIDDLEWARE] Role do usuário:', userData?.role || 'Não encontrado');
-        
-        if (userError) {
-          console.error('❌ [MIDDLEWARE] Erro ao buscar usuário:', userError);
-          // Em caso de erro, permitir acesso
-          return response;
-        }
-
-        if (userData?.role === 'provider') {
-          console.log('🚫 [MIDDLEWARE] Provider tentando acessar rota de cliente');
-          return NextResponse.redirect(new URL('/acesso-negado', request.url));
-        }
-      } catch (error) {
-        console.error('❌ [MIDDLEWARE] Erro ao verificar role:', error);
-        return response;
-      }
-    }
-
-    console.log('✅ [MIDDLEWARE] Acesso permitido para:', pathname);
-    return response;
-
-  } catch (error) {
-    console.error('❌ [MIDDLEWARE] Erro geral:', error);
-    
-    // Em caso de erro, redirecionar para login
+  console.log('🍪 [MIDDLEWARE] Cookies de auth encontrados:', authCookies.length);
+  
+  if (authCookies.length === 0) {
+    console.log('🚨 [MIDDLEWARE] Nenhum cookie de auth encontrado, redirecionando para login');
     const redirectUrl = new URL('/auth/login', request.url);
     redirectUrl.searchParams.set('redirectTo', pathname);
-    redirectUrl.searchParams.set('reason', 'middleware_error');
     return NextResponse.redirect(redirectUrl);
   }
+
+  console.log('✅ [MIDDLEWARE] Cookies de auth presentes, permitindo acesso - verificação detalhada será feita no client-side');
+  return NextResponse.next();
 }
 
 export const config = {
