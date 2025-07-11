@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Input, Button } from "@/components/ui";
-import { createClient } from "@supabase/supabase-js";
-import { Database } from "@/types/database";
-import { motion } from "framer-motion";
-import { MdVisibility, MdVisibilityOff, MdCheckCircle } from "react-icons/md";
+import { Suspense } from "react";
 
-export default function ResetPassword() {
+function ResetPasswordForm() {
+  const { useEffect, useState } = require("react");
+  const { useRouter, useSearchParams } = require("next/navigation");
+  const { Input, Button } = require("@/components/ui");
+  const { createClient } = require("@supabase/supabase-js");
+  const { Database } = require("@/types/database");
+  const { motion } = require("framer-motion");
+  const { MdVisibility, MdVisibilityOff, MdCheckCircle } = require("react-icons/md");
+  
   const searchParams = useSearchParams();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -174,5 +176,24 @@ export default function ResetPassword() {
         )}
       </motion.div>
     </div>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F71875] mx-auto mb-4"></div>
+        <p className="text-gray-600">Carregando...</p>
+      </div>
+    </div>
+  );
+}
+
+export default function ResetPassword() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <ResetPasswordForm />
+    </Suspense>
   );
 } 
