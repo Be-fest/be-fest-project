@@ -255,11 +255,19 @@ export async function updateGuestTierAction(formData: FormData): Promise<ActionR
     await verifyServiceOwnership(existingTier.service_id, user.id)
 
     const updateData: Partial<ServiceGuestTierUpdate> = {}
-    Object.keys(validatedData).forEach(key => {
-      if (key !== 'id' && validatedData[key as keyof typeof validatedData] !== undefined) {
-        updateData[key as keyof ServiceGuestTierUpdate] = validatedData[key as keyof typeof validatedData]
-      }
-    })
+    
+    if (validatedData.min_total_guests !== undefined) {
+      updateData.min_total_guests = validatedData.min_total_guests
+    }
+    if (validatedData.max_total_guests !== undefined) {
+      updateData.max_total_guests = validatedData.max_total_guests === null ? undefined : validatedData.max_total_guests
+    }
+    if (validatedData.base_price_per_adult !== undefined) {
+      updateData.base_price_per_adult = validatedData.base_price_per_adult
+    }
+    if (validatedData.tier_description !== undefined) {
+      updateData.tier_description = validatedData.tier_description === null ? undefined : validatedData.tier_description
+    }
 
     const { data: tier, error } = await supabase
       .from('service_guest_tiers')

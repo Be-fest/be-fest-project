@@ -312,13 +312,21 @@ export async function loginAction(formData: FormData): Promise<ActionResult> {
     // Revalidate cache
     revalidatePath('/', 'layout')
 
-    // Redirect based on user role
+    // Determine redirect URL based on user role
+    let redirectTo = '/dashboard'
     if (user.role === 'provider') {
-      redirect('/dashboard/prestador')
+      redirectTo = '/dashboard/prestador'
     } else if (user.role === 'admin') {
-      redirect('/admin')
-    } else {
-      redirect('/dashboard')
+      redirectTo = '/admin'
+    }
+
+    // Return success with redirect data instead of using redirect()
+    return { 
+      success: true, 
+      data: { 
+        redirectTo,
+        message: 'Login realizado com sucesso!' 
+      } 
     }
 
   } catch (error) {
@@ -350,8 +358,14 @@ export async function logoutAction(): Promise<ActionResult> {
     // Revalidate cache
     revalidatePath('/', 'layout')
 
-    // Redirect to home
-    redirect('/')
+    // Return success with redirect data instead of using redirect()
+    return { 
+      success: true, 
+      data: { 
+        redirectTo: '/',
+        message: 'Logout realizado com sucesso!' 
+      } 
+    }
 
   } catch (error) {
     console.error('Logout failed:', error)

@@ -88,13 +88,17 @@ function UserDropdown({ user, userType }: UserDropdownProps) {
 
   const handleLogout = async () => {
     try {
-      const supabase = createClient();
-      await supabase.auth.signOut();
+      // Fechar dropdown primeiro
       setIsDropdownOpen(false);
-      router.push('/auth/login'); // Redireciona para login
-      router.refresh(); // Garante que o estado do servidor seja atualizado
+      
+      // Usar função utilitária de logout
+      const { performLogout } = await import('@/lib/logout');
+      await performLogout('header_dropdown');
+      
     } catch (error) {
-      console.error('Erro ao fazer logout:', error);
+      console.error('Erro durante logout do header:', error);
+      // Mesmo com erro, forçar redirecionamento
+      window.location.href = '/auth/login?reason=general_error';
     }
   };
 

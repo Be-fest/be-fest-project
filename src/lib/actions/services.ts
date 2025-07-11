@@ -310,11 +310,31 @@ export async function updateServiceAction(formData: FormData): Promise<ActionRes
     }
 
     const updateData: Partial<ServiceUpdate> = {}
-    Object.keys(validatedData).forEach(key => {
-      if (key !== 'id' && validatedData[key as keyof typeof validatedData] !== undefined) {
-        updateData[key as keyof ServiceUpdate] = validatedData[key as keyof typeof validatedData]
-      }
-    })
+    
+    if (validatedData.name !== undefined) {
+      updateData.name = validatedData.name
+    }
+    if (validatedData.description !== undefined) {
+      updateData.description = validatedData.description === null ? undefined : validatedData.description
+    }
+    if (validatedData.category !== undefined) {
+      updateData.category = validatedData.category
+    }
+    if (validatedData.base_price !== undefined) {
+      updateData.base_price = validatedData.base_price
+    }
+    if (validatedData.min_guests !== undefined) {
+      updateData.min_guests = validatedData.min_guests
+    }
+    if (validatedData.max_guests !== undefined) {
+      updateData.max_guests = validatedData.max_guests === null ? undefined : validatedData.max_guests
+    }
+    if (validatedData.is_active !== undefined) {
+      updateData.is_active = validatedData.is_active
+    }
+    if (validatedData.status !== undefined) {
+      updateData.status = validatedData.status
+    }
 
     const { data: service, error } = await supabase
       .from('services')

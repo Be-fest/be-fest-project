@@ -24,6 +24,11 @@ export function StatusBadge({ status, size = 'md' }: StatusBadgeProps) {
       text: 'text-green-600',
       label: 'Confirmado'
     },
+    'concluido': {
+      bg: 'bg-emerald-50',
+      text: 'text-emerald-600',
+      label: 'Concluído'
+    },
     'cancelado': {
       bg: 'bg-red-50',
       text: 'text-red-600',

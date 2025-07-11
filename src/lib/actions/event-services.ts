@@ -363,7 +363,7 @@ export async function updateEventServiceAction(formData: FormData): Promise<Acti
     }
 
     revalidatePath('/minhas-festas')
-    revalidatePath(`/minhas-festas/${eventService.event_id}`)
+    revalidatePath(`/minhas-festas/${existingEventService.event_id}`)
     revalidatePath('/dashboard/prestador')
     
     return { success: true, data: eventService }
@@ -394,7 +394,7 @@ export async function updateEventServiceStatusAction(
     // Verificar se o event_service pertence ao prestador
     const { data: existingEventService } = await supabase
       .from('event_services')
-      .select('provider_id, booking_status')
+      .select('provider_id, booking_status, event_id')
       .eq('id', eventServiceId)
       .single()
 

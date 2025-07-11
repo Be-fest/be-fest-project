@@ -58,9 +58,15 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
     }
   ];
 
-  const handleLogout = () => {
-    // Implementar logout
-    window.location.href = '/';
+  const handleLogout = async () => {
+    try {
+      const { performLogout } = await import('@/lib/logout');
+      await performLogout('admin_sidebar');
+    } catch (error) {
+      console.error('Erro durante logout do admin sidebar:', error);
+      // Fallback
+      window.location.href = '/auth/login?reason=general_error';
+    }
   };
 
   const handleLinkClick = () => {

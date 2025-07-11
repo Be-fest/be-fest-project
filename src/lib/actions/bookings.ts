@@ -342,8 +342,7 @@ export async function updateBookingAction(formData: FormData): Promise<ActionRes
     // Validar transições de status
     const validTransitions: Record<string, string[]> = {
       'pending': ['confirmed', 'cancelled'],
-      'confirmed': ['paid', 'cancelled'],
-      'paid': ['completed', 'cancelled'],
+      'confirmed': ['completed', 'cancelled'],
       'completed': [],
       'cancelled': []
     }
@@ -358,11 +357,18 @@ export async function updateBookingAction(formData: FormData): Promise<ActionRes
     // Preparar dados de atualização
     const updateData: Partial<BookingUpdate> = {}
     
-    Object.keys(validatedData).forEach(key => {
-      if (key !== 'id' && validatedData[key as keyof typeof validatedData] !== undefined) {
-        updateData[key as keyof BookingUpdate] = validatedData[key as keyof typeof validatedData]
-      }
-    })
+    if (validatedData.status !== undefined) {
+      updateData.status = validatedData.status
+    }
+    if (validatedData.price !== undefined) {
+      updateData.price = validatedData.price
+    }
+    if (validatedData.guest_count !== undefined) {
+      updateData.guest_count = validatedData.guest_count
+    }
+    if (validatedData.notes !== undefined) {
+      updateData.notes = validatedData.notes === null ? undefined : validatedData.notes
+    }
 
     if (Object.keys(updateData).length === 0) {
       return { success: false, error: 'Nenhuma alteração foi feita' }
@@ -434,8 +440,7 @@ export async function updateBookingStatusAction(
     // Validar transições de status
     const validTransitions: Record<string, string[]> = {
       'pending': ['confirmed', 'cancelled'],
-      'confirmed': ['paid', 'cancelled'],
-      'paid': ['completed', 'cancelled'],
+      'confirmed': ['completed', 'cancelled'],
       'completed': [],
       'cancelled': []
     }
@@ -495,9 +500,9 @@ export async function deleteBookingAction(bookingId: string): Promise<ActionResu
       return { success: false, error: 'Apenas o cliente pode cancelar a reserva' }
     }
 
-    // Não permitir cancelamento de reservas já pagas ou completas
-    if (existingBooking.status === 'paid' || existingBooking.status === 'completed') {
-      return { success: false, error: 'Não é possível cancelar reservas já pagas ou completas' }
+    // Não permitir cancelamento de reservas já completas
+    if (existingBooking.status === 'completed') {
+      return { success: false, error: 'Não é possível cancelar reservas já completas' }
     }
 
     const { error } = await supabase

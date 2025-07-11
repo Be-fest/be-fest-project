@@ -15,9 +15,15 @@ export function ProviderLayout({ children }: ProviderLayoutProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
 
-  const handleLogout = () => {
-    // Implementar logout
-    router.push('/auth/login');
+  const handleLogout = async () => {
+    try {
+      const { performLogout } = await import('@/lib/logout');
+      await performLogout('provider_layout');
+    } catch (error) {
+      console.error('Erro durante logout do provider layout:', error);
+      // Fallback
+      window.location.href = '/auth/login?reason=general_error';
+    }
   };
 
   return (
