@@ -40,15 +40,15 @@ export function AboutUs() {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <h2 className="text-3xl md:text-4xl font-bold text-[#520029] mb-6">
+            <h2 className="text-3xl md:text-4xl font-bold text-[#520029] mb-6 font-poppins">
               Sobre a Be Fest
             </h2>
-            <p className="text-lg text-[#6E5963] leading-relaxed mb-6">
+            <p className="text-lg text-[#6E5963] leading-relaxed mb-6 font-poppins">
               Nascemos da paixão por conectar pessoas e criar momentos inesquecíveis. 
               A Be Fest é mais que uma plataforma - somos facilitadores de alegria, 
               unindo quem organiza festas com os melhores prestadores de serviços.
             </p>
-            <p className="text-lg text-[#6E5963] leading-relaxed mb-8">
+            <p className="text-lg text-[#6E5963] leading-relaxed mb-8 font-poppins">
               Acreditamos que toda celebração merece ser especial, e nossa tecnologia 
               torna isso possível de forma rápida, segura e descomplicada.
             </p>
@@ -64,10 +64,10 @@ export function AboutUs() {
                   transition={{ duration: 0.6, delay: index * 0.1 }}
                   className="text-center"
                 >
-                  <div className="text-2xl md:text-3xl font-bold text-[#FF0080] mb-2">
+                  <div className="text-2xl md:text-3xl font-bold text-[#FF0080] mb-2 font-poppins">
                     {stat.number}
                   </div>
-                  <div className="text-sm text-[#6E5963]">{stat.label}</div>
+                  <div className="text-sm text-[#6E5963] font-poppins">{stat.label}</div>
                 </motion.div>
               ))}
             </div>
@@ -81,7 +81,7 @@ export function AboutUs() {
             transition={{ duration: 0.6 }}
             className="space-y-6"
           >
-            <h3 className="text-2xl font-bold text-[#520029] mb-8">
+            <h3 className="text-2xl font-bold text-[#520029] mb-8 font-poppins">
               Nossos valores
             </h3>
             {values.map((value, index) => (
@@ -96,10 +96,10 @@ export function AboutUs() {
                   <value.icon className="text-xl text-white" />
                 </div>
                 <div>
-                  <h4 className="text-xl font-bold text-[#520029] mb-2">
+                  <h4 className="text-xl font-bold text-[#520029] mb-2 font-poppins">
                     {value.title}
                   </h4>
-                  <p className="text-[#6E5963] leading-relaxed">
+                  <p className="text-[#6E5963] leading-relaxed font-poppins">
                     {value.description}
                   </p>
                 </div>

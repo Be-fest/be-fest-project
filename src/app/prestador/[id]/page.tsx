@@ -1,211 +1,295 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { use, useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { ProviderServices } from '@/components/ProviderServices';
-import { ProviderBudget } from '@/components/ProviderBudget';
 import { motion } from 'framer-motion';
-import { MdStar, MdLocationOn } from 'react-icons/md';
-import { ServiceProvider, Service } from '@/types/database';
-import { api } from '@/services/api';
+import { MdStar, MdLocationOn, MdArrowBack, MdWarning } from 'react-icons/md';
+import { User, ServiceWithProvider } from '@/types/database';
+import { createClient } from '@/lib/supabase/client';
+import Link from 'next/link';
 
-export default function ProviderPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
-  const [activeTab, setActiveTab] = useState<'services' | 'budget'>('services');
-  const [provider, setProvider] = useState<ServiceProvider | null>(null);
-  const [services, setServices] = useState<Service[]>([]);
+interface PageProps {
+  params: Promise<{
+    id: string;
+  }>;
+}
+
+// Skeleton Components
+const ProviderSkeleton = () => (
+  <div className="bg-white rounded-2xl shadow-lg overflow-hidden animate-pulse">
+    {/* Header Skeleton */}
+    <div className="relative h-48 md:h-64 bg-gray-300">
+      <div className="absolute bottom-4 md:bottom-6 left-4 md:left-6 flex flex-col md:flex-row items-start md:items-end gap-4 md:gap-6">
+        <div className="w-16 h-16 md:w-24 md:h-24 rounded-xl bg-gray-400"></div>
+        <div className="space-y-2">
+          <div className="h-8 w-48 bg-gray-400 rounded"></div>
+          <div className="h-4 w-32 bg-gray-400 rounded"></div>
+        </div>
+      </div>
+    </div>
+    
+    {/* Content Skeleton */}
+    <div className="p-4 md:p-6 lg:p-8">
+      <div className="mb-6 md:mb-8">
+        <div className="h-6 w-24 bg-gray-300 rounded mb-4"></div>
+        <div className="h-4 w-full bg-gray-200 rounded mb-2"></div>
+        <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
+      </div>
+      
+      <div>
+        <div className="h-6 w-32 bg-gray-300 rounded mb-4"></div>
+        <div className="space-y-8">
+          {[1, 2].map((i) => (
+            <div key={i} className="bg-gray-50 rounded-xl overflow-hidden">
+              <div className="h-16 bg-gray-300"></div>
+              <div className="p-6 space-y-4">
+                {[1, 2, 3].map((j) => (
+                  <div key={j} className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg">
+                    <div className="w-20 h-20 rounded-lg bg-gray-300"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-5 w-32 bg-gray-300 rounded"></div>
+                      <div className="h-4 w-48 bg-gray-200 rounded"></div>
+                      <div className="flex items-center justify-between">
+                        <div className="h-6 w-20 bg-gray-300 rounded"></div>
+                        <div className="w-10 h-10 rounded-full bg-gray-300"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+// Converter dados reais para formato esperado pelo ProviderServices
+const convertToProviderData = (provider: User, services: ServiceWithProvider[]) => {
+  const providerName = provider.organization_name || provider.full_name || 'Prestador';
+  
+  // Agrupar serviços por categoria
+  const servicesByCategory = services.reduce((acc, service) => {
+    const category = service.category;
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push({
+      id: service.id, // Manter o ID real do serviço
+      name: service.name,
+      description: service.description || 'Serviço de qualidade para sua festa',
+      price: service.base_price,
+      image: service.images_urls?.[0] || '/images/placeholder-service.png',
+      providerId: service.provider_id // Adicionar providerId real
+    });
+    return acc;
+  }, {} as Record<string, any[]>);
+
+  // Converter para formato de categorias
+  const categorizedServices = Object.entries(servicesByCategory).map(([category, items], index) => ({
+    id: index + 1,
+    category,
+    items
+  }));
+  
+  return {
+    id: provider.id,
+    name: providerName,
+    description: provider.area_of_operation ? 
+      `Especializado em ${provider.area_of_operation}` : 
+      'Prestador de serviços para festas e eventos',
+    image: provider.logo_url || '/images/placeholder-provider.png',
+    rating: 4.8,
+    location: {
+      neighborhood: provider.area_of_operation || 'Região',
+      city: 'Cidade'
+    },
+    services: categorizedServices
+  };
+};
+
+export default function ProviderPage({ params }: PageProps) {
+  const id = use(params).id;
+  const [providerData, setProviderData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadProviderData = async () => {
-      try {        const [providerData, servicesData] = await Promise.all([
-          api.getServiceProviderById(id),
-          api.getServicesByProviderId(id)
-        ]);
+    const fetchProviderData = async () => {
+      try {
+        const supabase = createClient();
         
-        setProvider(providerData);
-        setServices(servicesData);
-      } catch (error) {
-        console.error('Erro ao carregar dados do prestador:', error);
+        // Buscar dados do prestador
+        const { data: provider, error: providerError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', id)
+          .eq('role', 'provider')
+          .single();
+
+        if (providerError || !provider) {
+          setError('Prestador não encontrado');
+          return;
+        }
+
+        // Buscar serviços do prestador
+        const { data: providerServices, error: servicesError } = await supabase
+          .from('services')
+          .select(`
+            *,
+            provider:users!services_provider_id_fkey (
+              id,
+              full_name,
+              organization_name,
+              logo_url,
+              area_of_operation
+            )
+          `)
+          .eq('provider_id', id)
+          .eq('is_active', true)
+          .eq('status', 'active');
+
+        if (servicesError) {
+          console.error('Error fetching services:', servicesError);
+        }
+
+        // Converter dados para formato esperado
+        const convertedData = convertToProviderData(provider, providerServices || []);
+        setProviderData(convertedData);
+
+      } catch (err) {
+        console.error('Error fetching provider data:', err);
+        setError('Erro ao carregar dados do prestador');
       } finally {
         setLoading(false);
       }
-    };    loadProviderData();
+    };
+
+    fetchProviderData();
   }, [id]);
 
   if (loading) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: '#FFF9F9' }}>
+      <>
         <Header />
-        <div className="bg-white shadow-sm pt-20">
-          <div className="container mx-auto px-4 md:px-6 py-8">
-            <div className="flex flex-col md:flex-row gap-6 items-start animate-pulse">
-              <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gray-200"></div>
-              <div className="flex-1 space-y-4">
-                <div className="h-8 bg-gray-200 rounded w-1/2"></div>
-                <div className="h-6 bg-gray-200 rounded w-1/3"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-                <div className="h-4 bg-gray-200 rounded w-full"></div>
-              </div>
+        <div className="pt-20 pb-8">
+          <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
+            {/* Botão Voltar Skeleton */}
+            <div className="mb-4 mt-8">
+              <div className="w-10 h-10 bg-gray-300 rounded-full animate-pulse"></div>
             </div>
+            
+            <ProviderSkeleton />
           </div>
         </div>
-      </div>
+      </>
     );
   }
 
-  if (!provider) {
+  if (error || !providerData) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: '#FFF9F9' }}>
-        <Header />
-        <div className="container mx-auto px-4 md:px-6 py-8 pt-20">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-[#520029] mb-4">
-              Prestador não encontrado
-            </h1>
-            <p className="text-[#6E5963]">
-              O prestador que você está procurando não existe ou não está mais disponível.
-            </p>
-          </div>
+      <div className="min-h-screen bg-[#FFF6FB] flex items-center justify-center px-4">
+        <div className="text-center">
+          <MdWarning className="text-red-500 text-4xl mx-auto mb-4" />
+          <h2 className="text-xl md:text-2xl font-bold text-[#520029] mb-4">
+            {error || 'Prestador não encontrado'}
+          </h2>
+          <Link
+            href="/servicos"
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors inline-flex items-center"
+          >
+            <MdArrowBack className="text-2xl text-[#F71875]" />
+          </Link>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#FFF9F9' }}>
+    <>
       <Header />
-      
-      {/* Provider Header */}
-      <div className="bg-white shadow-sm pt-20">
-        <div className="container mx-auto px-4 md:px-6 py-8">
-          <div className="flex flex-col md:flex-row gap-6 items-start">
-            {/* Provider Logo */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5 }}
-              className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden bg-white shadow-lg flex-shrink-0"
+      <div className="pt-20 pb-8">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
+          {/* Botão Voltar */}
+          <div className="mb-4 mt-8">
+            <Link
+              href="/servicos"
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors inline-block"
             >
-              <img 
-                src={provider.logo_url || '/placeholder-logo.png'} 
-                alt={provider.organization_name || provider.full_name || 'Prestador'}
-                className="w-full h-full object-cover"
+              <MdArrowBack className="text-2xl text-[#F71875]" />
+            </Link>
+          </div>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="bg-white rounded-2xl shadow-lg overflow-hidden"
+          >
+            {/* Provider Header */}
+            <div className="relative h-48 md:h-64 bg-gradient-to-r from-[#520029] to-[#FF0080]">
+              <div className="absolute inset-0 bg-black bg-opacity-20"></div>
+              <img
+                src={providerData.image}
+                alt={providerData.name}
+                className="w-full h-full object-cover mix-blend-overlay"
               />
-            </motion.div>
-
-            {/* Provider Info */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="flex-1"
-            >
-              <h1 className="text-3xl md:text-4xl font-bold text-[#520029] mb-2">
-                {provider.organization_name || provider.full_name || 'Nome não disponível'}
-              </h1>
-              <p className="text-lg text-[#6E5963] mb-4">
-                Prestador de Serviços
-              </p>
-              
-              {/* Rating - Placeholder até implementar sistema de avaliação */}
-              <div className="flex items-center gap-2 mb-4">
-                <div className="flex items-center gap-1">
-                  <MdStar className="text-yellow-400 text-xl" />
-                  <span className="font-semibold text-[#520029]">4.5</span>
-                  <span className="text-[#6E5963]">(Avaliações em breve)</span>
+              <div className="absolute bottom-4 md:bottom-6 left-4 md:left-6 flex flex-col md:flex-row items-start md:items-end gap-4 md:gap-6">
+                <div className="w-16 h-16 md:w-24 md:h-24 rounded-xl bg-white p-2 shadow-lg">
+                  <img
+                    src={providerData.image}
+                    alt={`${providerData.name} logo`}
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                </div>
+                <div className="text-white">
+                  <h1 className="text-2xl md:text-3xl font-bold mb-2">{providerData.name}</h1>
+                  <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 text-sm md:text-base">
+                    <div className="flex items-center gap-1">
+                      <MdStar className="text-yellow-400" />
+                      <span>{providerData.rating}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <MdLocationOn />
+                      <span>{providerData.location.neighborhood}, {providerData.location.city}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
+            </div>
 
-              {/* Location Info */}
-              <div className="flex items-center gap-1 text-sm text-[#6E5963] mb-4">
-                <MdLocationOn className="text-[#FF0080]" />
-                <span>{provider.area_of_operation || 'Área não informada'}</span>
+            {/* Provider Content */}
+            <div className="p-4 md:p-6 lg:p-8">
+              <div className="mb-6 md:mb-8">
+                <h2 className="text-xl md:text-2xl font-bold text-[#520029] mb-4">Sobre</h2>
+                <p className="text-gray-600 text-sm md:text-base">{providerData.description}</p>
               </div>
 
-              {/* Contact Info */}
-              {provider.whatsapp_number && (
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="text-sm text-[#6E5963]">
-                    WhatsApp: {provider.whatsapp_number}
-                  </span>
-                </div>
-              )}
-
-              <p className="text-[#6E5963] leading-relaxed">
-                {provider.organization_name 
-                  ? `${provider.organization_name} oferece serviços de qualidade para seu evento.`
-                  : 'Prestador de serviços qualificado para atender suas necessidades.'
-                }
-              </p>
-            </motion.div>
-          </div>
+              <div>
+                <h2 className="text-xl md:text-2xl font-bold text-[#520029] mb-4">Serviços</h2>
+                {providerData.services && providerData.services.length > 0 ? (
+                  <ProviderServices 
+                    services={providerData.services} 
+                    providerId={providerData.id} 
+                  />
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="text-gray-400 text-4xl mb-4">📋</div>
+                    <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                      Nenhum serviço disponível
+                    </h3>
+                    <p className="text-gray-500">
+                      Este prestador ainda não possui serviços cadastrados.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
         </div>
       </div>
-
-      {/* Navigation Tabs */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="flex">
-            <button
-              onClick={() => setActiveTab('services')}
-              className={`px-6 py-4 font-semibold border-b-2 transition-colors ${
-                activeTab === 'services'
-                  ? 'border-[#FF0080] text-[#FF0080]'
-                  : 'border-transparent text-[#6E5963] hover:text-[#520029]'
-              }`}
-            >
-              Serviços ({services.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('budget')}
-              className={`px-6 py-4 font-semibold border-b-2 transition-colors ${
-                activeTab === 'budget'
-                  ? 'border-[#FF0080] text-[#FF0080]'
-                  : 'border-transparent text-[#6E5963] hover:text-[#520029]'
-              }`}
-            >
-              Orçamento
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Tab Content */}
-      <div className="container mx-auto px-4 md:px-6 py-8">
-        {activeTab === 'services' && (
-          <>
-            {services.length > 0 ? (
-              <ProviderServices services={services} />
-            ) : (
-              <div className="text-center py-12">
-                <h3 className="text-xl font-semibold text-[#520029] mb-4">
-                  Nenhum serviço cadastrado
-                </h3>
-                <p className="text-[#6E5963]">
-                  Este prestador ainda não cadastrou seus serviços.
-                </p>
-              </div>
-            )}
-          </>
-        )}
-        {activeTab === 'budget' && (
-          <>
-            {services.length > 0 ? (
-              <ProviderBudget services={services} provider={provider} />
-            ) : (
-              <div className="text-center py-12">
-                <h3 className="text-xl font-semibold text-[#520029] mb-4">
-                  Orçamento indisponível
-                </h3>
-                <p className="text-[#6E5963]">
-                  Este prestador precisa cadastrar serviços para disponibilizar orçamentos.
-                </p>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </div>
+    </>
   );
 }

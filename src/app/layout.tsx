@@ -1,21 +1,29 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { Poppins, Roboto } from "next/font/google";
+import { CartProvider } from "@/contexts/CartContext";
+import { OffCanvasProvider } from "@/contexts/OffCanvasContext";
+import { SessionProvider } from "@/components/SessionProvider";
+import { GlobalToastProvider } from "@/contexts/GlobalToastContext";
+import { FloatingCart } from "@/components/FloatingCart";
+import { CartWrapper } from "@/components/CartWrapper";
+import { RoutesModal } from "@/components/ui";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const poppins = Poppins({
+  variable: "--font-poppins",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const roboto = Roboto({
+  variable: "--font-roboto",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "700", "900"],
 });
 
 export const metadata: Metadata = {
-  title: "BeFest - Sua festa perfeita",
-  description: "Plataforma para contratação de serviços para festas e eventos",
+  title: "Be Fest - Sua festa dos sonhos",
+  description: "Encontre os melhores prestadores para sua festa",
 };
 
 export default function RootLayout({
@@ -26,11 +34,21 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        cz-shortcut-listen="true"      >
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        className={`${poppins.variable} ${roboto.variable} antialiased font-poppins`}
+        cz-shortcut-listen="true"
+      >
+        <GlobalToastProvider>
+          <SessionProvider>
+            <CartProvider>
+              <OffCanvasProvider>
+                {children}
+                <FloatingCart />
+                <CartWrapper />
+                <RoutesModal />
+              </OffCanvasProvider>
+            </CartProvider>
+          </SessionProvider>
+        </GlobalToastProvider>
       </body>
     </html>
   );

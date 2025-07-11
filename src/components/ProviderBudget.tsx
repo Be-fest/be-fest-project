@@ -1,88 +1,94 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { MdCalendarToday, MdGroup, MdCheckCircle, MdCalculate, MdInfo } from 'react-icons/md';
-import { Service, ServiceProvider, ServiceCategoryEnum } from '@/types/database';
-import { api } from '@/services/api';
+import { MdCalendarToday, MdGroup, MdCheckCircle, MdCalculate, MdInfo, MdWarning } from 'react-icons/md';
+import { getServicesAction } from '@/lib/actions/services';
+import { ServiceWithProvider } from '@/types/database';
 
 interface ProviderBudgetProps {
-  services: Service[];
-  provider: ServiceProvider;
+  providerId: string;
 }
 
 interface BudgetItem {
-  service_id: string;
-  service_name: string;
-  price_per_guest: number;
-  category: ServiceCategoryEnum;
+  serviceId: string;
+  serviceName: string;
+  price: number;
 }
 
 interface FormData {
-  event_name: string;
-  event_date: string;
-  start_time: string;
-  location_address: string;
-  number_of_guests: number;
-  observations?: string;
-  age_breakdown: {
-    adults: number;
-    children_6_12: number;
-    children_0_5: number;
-  };
-  selected_services: BudgetItem[];
+  eventDate: string;
+  fullGuests: number;
+  halfGuests: number;
+  freeGuests: number; // Menores de 5 anos
+  selectedServices: BudgetItem[];
 }
 
-export function ProviderBudget({ services, provider }: ProviderBudgetProps) {
+export function ProviderBudget({ providerId }: ProviderBudgetProps) {
+  const [services, setServices] = useState<ServiceWithProvider[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
   const [formData, setFormData] = useState<FormData>({
-    event_name: 'Minha Festa',
-    event_date: '',
-    start_time: '18:00',
-    location_address: '',
-    number_of_guests: 0,
-    observations: '',
-    age_breakdown: {
-      adults: 0,
-      children_6_12: 0,
-      children_0_5: 0
-    },
-    selected_services: []
+    eventDate: '',
+    fullGuests: 0,
+    halfGuests: 0,
+    freeGuests: 0,
+    selectedServices: []
   });
 
   const [currentStep, setCurrentStep] = useState(1);
   const [showServiceDetails, setShowServiceDetails] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
-  // Agrupar serviços por categoria
-  const servicesByCategory = services.reduce((acc, service) => {
-    if (!acc[service.category]) {
-      acc[service.category] = [];
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const result = await getServicesAction({ provider_id: providerId, is_active: true });
+        
+        if (result.success && result.data) {
+          setServices(result.data);
+        } else {
+          setError(result.error || 'Erro ao carregar serviços do prestador');
+        }
+      } catch (err) {
+        setError('Erro ao carregar serviços');
+        console.error('Error fetching provider services:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (providerId) {
+      fetchServices();
     }
-    acc[service.category].push(service);
-    return acc;
-  }, {} as Record<ServiceCategoryEnum, Service[]>);
-  const handleServiceToggle = (service: Service) => {
-    const existingIndex = formData.selected_services.findIndex(
-      item => item.service_id === service.id
+  }, [providerId]);
+
+  const handleServiceToggle = (service: ServiceWithProvider) => {
+    const existingIndex = formData.selectedServices.findIndex(
+      item => item.serviceId === service.id
     );
 
     if (existingIndex >= 0) {
+      // Remove o serviço
       setFormData(prev => ({
         ...prev,
-        selected_services: prev.selected_services.filter(
-          item => item.service_id !== service.id
+        selectedServices: prev.selectedServices.filter(
+          item => item.serviceId !== service.id
         )
       }));
     } else {
+      // Adiciona o serviço
       setFormData(prev => ({
         ...prev,
-        selected_services: [
-          ...prev.selected_services,
+        selectedServices: [
+          ...prev.selectedServices,
           {
-            service_id: service.id,
-            service_name: service.name,
-            price_per_guest: service.price_per_guest || 0,
-            category: service.category
+            serviceId: service.id,
+            serviceName: service.name,
+            price: service.price_per_guest || 0
           }
         ]
       }));
@@ -90,18 +96,14 @@ export function ProviderBudget({ services, provider }: ProviderBudgetProps) {
   };
 
   const calculateTotal = () => {
-    return formData.selected_services.reduce((total, item) => {
-      return total + (item.price_per_guest * formData.number_of_guests);
+    return formData.selectedServices.reduce((total, item) => {
+      const guestMultiplier = formData.fullGuests + (formData.halfGuests * 0.5);
+      return total + (item.price * guestMultiplier);
     }, 0);
   };
 
-  const calculateBefestFee = () => {
-    const subtotal = calculateTotal();
-    return subtotal * 0.1; // 10% taxa da plataforma
-  };
-
   const isServiceSelected = (serviceId: string) => {
-    return formData.selected_services.some(item => item.service_id === serviceId);
+    return formData.selectedServices.some(item => item.serviceId === serviceId);
   };
 
   const showDetails = (serviceId: string) => {
@@ -111,37 +113,62 @@ export function ProviderBudget({ services, provider }: ProviderBudgetProps) {
   const hideDetails = () => {
     setShowServiceDetails(null);
   };
-  const handleSubmitBudget = async () => {
-    setLoading(true);
-    try {
-      const budgetData = {
-        event_name: formData.event_name,
-        event_date: formData.event_date,
-        start_time: formData.start_time,
-        location_address: formData.location_address,
-        number_of_guests: formData.number_of_guests,
-        observations: formData.observations,
-        selected_services: formData.selected_services.map(service => ({
-          service_id: service.service_id,
-          provider_id: provider.id,
-          price_per_guest: service.price_per_guest
-        }))
-      };
 
-      const result = await api.createBudgetRequest(budgetData);
-      
-      if (result.success) {
-        alert(result.message);
-      } else {
-        alert(result.message);
-      }
-      
-    } catch (error) {
-      console.error('Erro ao enviar solicitação:', error);
-      alert('Erro ao enviar solicitação. Tente novamente.');    } finally {
-      setLoading(false);
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-8">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF0080] mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando serviços...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-8">
+        <div className="text-center py-12">
+          <MdWarning className="text-red-500 text-4xl mx-auto mb-4" />
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-[#FF0080] text-white rounded-lg hover:bg-[#E6006F] transition-colors"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (services.length === 0) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-8">
+        <div className="text-center py-12">
+          <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <MdWarning className="text-gray-400 text-3xl" />
+          </div>
+          <h3 className="text-2xl font-bold text-gray-600 mb-4">
+            Nenhum serviço disponível
+          </h3>
+          <p className="text-gray-500 mb-6 max-w-md mx-auto">
+            Este prestador ainda não cadastrou serviços ou não há serviços ativos no momento.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Group services by category
+  const servicesByCategory = services.reduce((acc, service) => {
+    const category = service.category || 'Outros';
+    if (!acc[category]) {
+      acc[category] = [];
     }
-  };
+    acc[category].push(service);
+    return acc;
+  }, {} as Record<string, ServiceWithProvider[]>);
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -181,164 +208,69 @@ export function ProviderBudget({ services, provider }: ProviderBudgetProps) {
           <h2 className="text-2xl font-bold text-[#520029] mb-6 flex items-center gap-2">
             <MdCalendarToday className="text-[#FF0080]" />
             Informações do Evento
-          </h2>          <div className="grid md:grid-cols-2 gap-6">
-            {/* Nome do Evento */}
+          </h2>
+          
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Data da Festa */}
             <div className="md:col-span-2">
               <label className="block text-sm font-semibold text-[#520029] mb-2">
-                Nome do Evento
-              </label>
-              <input
-                type="text"
-                value={formData.event_name}
-                onChange={(e) => setFormData(prev => ({ ...prev, event_name: e.target.value }))}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:border-[#FF0080] focus:ring-2 focus:ring-[#FF0080]/20 outline-none transition-all"
-                placeholder="Ex: Aniversário da Maria"
-              />
-            </div>
-
-            {/* Data do Evento */}
-            <div>
-              <label className="block text-sm font-semibold text-[#520029] mb-2">
-                Data do Evento
+                Data da Festa
               </label>
               <input
                 type="date"
-                value={formData.event_date}
-                onChange={(e) => setFormData(prev => ({ ...prev, event_date: e.target.value }))}
+                value={formData.eventDate}
+                onChange={(e) => setFormData(prev => ({ ...prev, eventDate: e.target.value }))}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:border-[#FF0080] focus:ring-2 focus:ring-[#FF0080]/20 outline-none transition-all"
               />
             </div>
 
-            {/* Horário de Início */}
+            {/* Número de Convidados Integrais */}
             <div>
               <label className="block text-sm font-semibold text-[#520029] mb-2">
-                Horário de Início
+                Nº de Convidados (Integral)
               </label>
               <input
-                type="time"
-                value={formData.start_time}
-                onChange={(e) => setFormData(prev => ({ ...prev, start_time: e.target.value }))}
+                type="number"
+                value={formData.fullGuests}
+                onChange={(e) => setFormData(prev => ({ ...prev, fullGuests: parseInt(e.target.value) || 0 }))}
+                placeholder="Convidados integrais"
                 className="w-full p-3 border border-gray-300 rounded-lg focus:border-[#FF0080] focus:ring-2 focus:ring-[#FF0080]/20 outline-none transition-all"
               />
             </div>
 
-            {/* Local do Evento */}
+            {/* Número de Convidados Meia */}
+            <div>
+              <label className="block text-sm font-semibold text-[#520029] mb-2">
+                Nº de Convidados (Meia)
+              </label>
+              <input
+                type="number"
+                value={formData.halfGuests}
+                onChange={(e) => setFormData(prev => ({ ...prev, halfGuests: parseInt(e.target.value) || 0 }))}
+                placeholder="Convidados meia"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:border-[#FF0080] focus:ring-2 focus:ring-[#FF0080]/20 outline-none transition-all"
+              />
+            </div>
+
+            {/* Número de Convidados Free */}
             <div className="md:col-span-2">
               <label className="block text-sm font-semibold text-[#520029] mb-2">
-                Local do Evento
-              </label>
-              <input
-                type="text"
-                value={formData.location_address}
-                onChange={(e) => setFormData(prev => ({ ...prev, location_address: e.target.value }))}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:border-[#FF0080] focus:ring-2 focus:ring-[#FF0080]/20 outline-none transition-all"
-                placeholder="Endereço completo do evento"
-              />
-            </div>
-
-            {/* Número Total de Convidados */}
-            <div>
-              <label className="block text-sm font-semibold text-[#520029] mb-2">
-                Número Total de Convidados
+                Nº de Convidados (Free - menores de 5 anos)
               </label>
               <input
                 type="number"
-                value={formData.number_of_guests}
-                onChange={(e) => {
-                  const total = parseInt(e.target.value) || 0;
-                  setFormData(prev => ({ 
-                    ...prev, 
-                    number_of_guests: total,
-                    age_breakdown: {
-                      ...prev.age_breakdown,
-                      adults: total - prev.age_breakdown.children_6_12 - prev.age_breakdown.children_0_5
-                    }
-                  }));
-                }}
-                placeholder="Total de convidados"
-                min="1"
+                value={formData.freeGuests}
+                onChange={(e) => setFormData(prev => ({ ...prev, freeGuests: parseInt(e.target.value) || 0 }))}
+                placeholder="Convidados menores de 5 anos (gratuito)"
                 className="w-full p-3 border border-gray-300 rounded-lg focus:border-[#FF0080] focus:ring-2 focus:ring-[#FF0080]/20 outline-none transition-all"
               />
             </div>
+          </div>
 
-            {/* Quebra por idade */}
-            <div>
-              <label className="block text-sm font-semibold text-[#520029] mb-2">
-                Adultos
-              </label>
-              <input
-                type="number"
-                value={formData.age_breakdown.adults}
-                onChange={(e) => {
-                  const adults = parseInt(e.target.value) || 0;
-                  setFormData(prev => ({ 
-                    ...prev, 
-                    age_breakdown: { ...prev.age_breakdown, adults },
-                    number_of_guests: adults + prev.age_breakdown.children_6_12 + prev.age_breakdown.children_0_5
-                  }));
-                }}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:border-[#FF0080] focus:ring-2 focus:ring-[#FF0080]/20 outline-none transition-all"
-                min="0"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-[#520029] mb-2">
-                Crianças 6-12 anos (50% desconto)
-              </label>
-              <input
-                type="number"
-                value={formData.age_breakdown.children_6_12}
-                onChange={(e) => {
-                  const children = parseInt(e.target.value) || 0;
-                  setFormData(prev => ({ 
-                    ...prev, 
-                    age_breakdown: { ...prev.age_breakdown, children_6_12: children },
-                    number_of_guests: prev.age_breakdown.adults + children + prev.age_breakdown.children_0_5
-                  }));
-                }}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:border-[#FF0080] focus:ring-2 focus:ring-[#FF0080]/20 outline-none transition-all"
-                min="0"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-[#520029] mb-2">
-                Crianças 0-5 anos (gratuito)
-              </label>
-              <input
-                type="number"
-                value={formData.age_breakdown.children_0_5}
-                onChange={(e) => {
-                  const children = parseInt(e.target.value) || 0;
-                  setFormData(prev => ({ 
-                    ...prev, 
-                    age_breakdown: { ...prev.age_breakdown, children_0_5: children },
-                    number_of_guests: prev.age_breakdown.adults + prev.age_breakdown.children_6_12 + children
-                  }));
-                }}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:border-[#FF0080] focus:ring-2 focus:ring-[#FF0080]/20 outline-none transition-all"
-                min="0"
-              />
-            </div>
-
-            {/* Observações */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-[#520029] mb-2">
-                Observações (Opcional)
-              </label>
-              <textarea
-                value={formData.observations}
-                onChange={(e) => setFormData(prev => ({ ...prev, observations: e.target.value }))}
-                rows={3}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:border-[#FF0080] focus:ring-2 focus:ring-[#FF0080]/20 outline-none transition-all"
-                placeholder="Informações adicionais sobre o evento..."
-              />
-            </div>
-          </div>          <div className="flex justify-end mt-6">
+          <div className="flex justify-end mt-6">
             <button
               onClick={() => setCurrentStep(2)}
-              disabled={!formData.event_date || formData.number_of_guests === 0}
+              disabled={!formData.eventDate || formData.fullGuests === 0}
               className="bg-[#FF0080] text-white px-8 py-3 rounded-lg font-semibold hover:bg-[#E6006F] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
             >
               Próximo
@@ -357,11 +289,13 @@ export function ProviderBudget({ services, provider }: ProviderBudgetProps) {
           <h2 className="text-2xl font-bold text-[#520029] mb-6 flex items-center gap-2">
             <MdCheckCircle className="text-[#FF0080]" />
             Selecione os Serviços
-          </h2>          <div className="grid gap-4">
-            {Object.entries(servicesByCategory).map(([categoryName, categoryServices]) => (
-              <div key={categoryName} className="mb-6">
+          </h2>
+          
+          <div className="grid gap-4">
+            {Object.entries(servicesByCategory).map(([category, categoryServices]) => (
+              <div key={category} className="mb-6">
                 <h3 className="text-lg font-semibold text-[#520029] mb-4 bg-white p-3 rounded-lg border border-gray-200">
-                  {categoryName}
+                  {category}
                 </h3>
                 <div className="space-y-3">
                   {categoryServices.map((service) => {
@@ -382,8 +316,10 @@ export function ProviderBudget({ services, provider }: ProviderBudgetProps) {
                               onClick={() => handleServiceToggle(service)}
                             >
                               <h4 className="font-semibold text-[#520029]">{service.name}</h4>
-                              <p className="text-sm text-[#6E5963] mb-1">{service.description}</p>
-                              <p className="font-bold text-[#FF0080]">R$ {(service.price_per_guest || 0).toFixed(2)} por pessoa</p>
+                              <p className="text-sm text-[#6E5963] mb-1">{service.description || 'Serviço de qualidade'}</p>
+                              <p className="font-bold text-[#FF0080]">
+                                R$ {(service.price_per_guest || 0).toFixed(2)} por pessoa
+                              </p>
                             </div>
                             <div className="flex items-center gap-3">
                               <button
@@ -422,16 +358,23 @@ export function ProviderBudget({ services, provider }: ProviderBudgetProps) {
                               onClick={(e) => e.stopPropagation()}
                             >
                               <h3 className="text-xl font-bold text-[#520029] mb-4">{service.name}</h3>
-                              <p className="text-[#6E5963] mb-4">{service.description}</p>
+                              <p className="text-[#6E5963] mb-4">{service.description || 'Serviço de qualidade para sua festa'}</p>
                               <p className="font-semibold text-[#FF0080] mb-4">
                                 R$ {(service.price_per_guest || 0).toFixed(2)} por pessoa
                               </p>
                               
-                              {/* Aqui virão os detalhes do banco de dados futuramente */}
                               <div className="bg-white p-4 rounded-lg mb-4 border border-gray-200">
-                                <p className="text-sm text-[#6E5963]">
-                                  {service.description || "Detalhes específicos sobre este serviço estarão disponíveis em breve. Entre em contato para mais informações."}
-                                </p>
+                                <div className="text-sm text-[#6E5963] space-y-2">
+                                  <p><strong>Preço base:</strong> R$ {service.base_price.toFixed(2)}</p>
+                                  {service.min_guests && (
+                                    <p><strong>Mínimo de convidados:</strong> {service.min_guests}</p>
+                                  )}
+                                  {service.max_guests && (
+                                    <p><strong>Máximo de convidados:</strong> {service.max_guests}</p>
+                                  )}
+                                  <p><strong>Status:</strong> {service.status === 'active' ? 'Ativo' : 'Inativo'}</p>
+                                  <p><strong>Prestador:</strong> {service.provider?.organization_name || service.provider?.full_name || 'Não informado'}</p>
+                                </div>
                               </div>
                               
                               <button
@@ -457,9 +400,10 @@ export function ProviderBudget({ services, provider }: ProviderBudgetProps) {
               className="border-2 border-[#FF0080] text-[#FF0080] px-8 py-3 rounded-lg font-semibold hover:bg-[#FF0080] hover:text-white transition-all"
             >
               Voltar
-            </button>            <button
+            </button>
+            <button
               onClick={() => setCurrentStep(3)}
-              disabled={formData.selected_services.length === 0}
+              disabled={formData.selectedServices.length === 0}
               className="bg-[#FF0080] text-white px-8 py-3 rounded-lg font-semibold hover:bg-[#E6006F] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
             >
               Calcular Orçamento
@@ -478,57 +422,44 @@ export function ProviderBudget({ services, provider }: ProviderBudgetProps) {
           <h2 className="text-2xl font-bold text-[#520029] mb-6 flex items-center gap-2">
             <MdCalculate className="text-[#FF0080]" />
             Resumo do Orçamento
-          </h2>          {/* Event Summary */}
+          </h2>
+
+          {/* Event Summary */}
           <div className="bg-white p-6 rounded-lg mb-6 border border-gray-200">
             <h3 className="font-semibold text-[#520029] mb-4">Informações do Evento</h3>
             <div className="grid md:grid-cols-4 gap-4 text-sm">
               <div>
-                <span className="text-[#6E5963]">Nome:</span>
-                <p className="font-semibold">{formData.event_name}</p>
-              </div>
-              <div>
                 <span className="text-[#6E5963]">Data:</span>
-                <p className="font-semibold">{new Date(formData.event_date).toLocaleDateString('pt-BR')}</p>
+                <p className="font-semibold">{new Date(formData.eventDate).toLocaleDateString('pt-BR')}</p>
               </div>
               <div>
-                <span className="text-[#6E5963]">Horário:</span>
-                <p className="font-semibold">{formData.start_time}</p>
+                <span className="text-[#6E5963]">Convidados Integrais:</span>
+                <p className="font-semibold">{formData.fullGuests}</p>
               </div>
               <div>
-                <span className="text-[#6E5963]">Total de Convidados:</span>
-                <p className="font-semibold">{formData.number_of_guests}</p>
+                <span className="text-[#6E5963]">Convidados Meia:</span>
+                <p className="font-semibold">{formData.halfGuests}</p>
+              </div>
+              <div>
+                <span className="text-[#6E5963]">Convidados Free:</span>
+                <p className="font-semibold">{formData.freeGuests}</p>
               </div>
             </div>
-            <div className="mt-4">
-              <span className="text-[#6E5963]">Local:</span>
-              <p className="font-semibold">{formData.location_address}</p>
-            </div>
-            <div className="grid md:grid-cols-3 gap-4 text-sm mt-4">
-              <div>
-                <span className="text-[#6E5963]">Adultos:</span>
-                <p className="font-semibold">{formData.age_breakdown.adults}</p>
-              </div>
-              <div>
-                <span className="text-[#6E5963]">Crianças 6-12 anos:</span>
-                <p className="font-semibold">{formData.age_breakdown.children_6_12}</p>
-              </div>
-              <div>
-                <span className="text-[#6E5963]">Crianças 0-5 anos:</span>
-                <p className="font-semibold">{formData.age_breakdown.children_0_5}</p>
-              </div>
-            </div>
-          </div>{/* Selected Services */}
+          </div>
+
+          {/* Selected Services */}
           <div className="space-y-4 mb-6">
             <h3 className="font-semibold text-[#520029]">Serviços Selecionados</h3>
-            {formData.selected_services.map((item) => {
-              const serviceTotal = item.price_per_guest * formData.number_of_guests;
+            {formData.selectedServices.map((item) => {
+              const guestMultiplier = formData.fullGuests + (formData.halfGuests * 0.5);
+              const serviceTotal = item.price * guestMultiplier;
               
               return (
-                <div key={item.service_id} className="flex justify-between items-center p-4 border border-gray-200 rounded-lg">
+                <div key={item.serviceId} className="flex justify-between items-center p-4 border border-gray-200 rounded-lg">
                   <div>
-                    <h4 className="font-semibold">{item.service_name}</h4>
+                    <h4 className="font-semibold">{item.serviceName}</h4>
                     <p className="text-sm text-[#6E5963]">
-                      R$ {item.price_per_guest.toFixed(2)} × {formData.number_of_guests} convidados
+                      R$ {item.price.toFixed(2)} × {guestMultiplier} convidados
                     </p>
                   </div>
                   <div className="text-right">
@@ -538,44 +469,33 @@ export function ProviderBudget({ services, provider }: ProviderBudgetProps) {
               );
             })}
             
-            {/* Nota sobre quebra de idade */}
-            {(formData.age_breakdown.children_6_12 > 0 || formData.age_breakdown.children_0_5 > 0) && (
+            {/* Nota sobre convidados free */}
+            {formData.freeGuests > 0 && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-sm text-blue-800">
-                  <strong>Nota:</strong> Crianças de 6-12 anos pagam 50% do valor. 
-                  Crianças de 0-5 anos não são cobradas no orçamento.
+                  <strong>Nota:</strong> {formData.freeGuests} convidado(s) menor(es) de 5 anos não são cobrados no orçamento.
                 </p>
               </div>
             )}
-          </div>          {/* Total */}
+          </div>
+
+          {/* Total */}
           <div className="border-t border-gray-200 pt-6">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-lg font-semibold text-[#520029]">Subtotal:</span>
-              <span className="text-lg font-semibold text-[#520029]">
-                R$ {calculateTotal().toFixed(2)}
-              </span>
-            </div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-lg font-semibold text-[#520029]">Taxa BeFest (10%):</span>
-              <span className="text-lg font-semibold text-[#520029]">
-                R$ {calculateBefestFee().toFixed(2)}
-              </span>
-            </div>
             <div className="flex justify-between items-center mb-6">
               <span className="text-xl font-semibold text-[#520029]">Total Estimado:</span>
               <span className="text-3xl font-bold text-[#FF0080]">
-                R$ {(calculateTotal() + calculateBefestFee()).toFixed(2)}
+                R$ {calculateTotal().toFixed(2)}
               </span>
             </div>
 
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
               <p className="text-sm text-yellow-800">
-                <strong>Importante:</strong> Este é um orçamento estimado. O valor final pode variar 
-                de acordo com as especificações detalhadas do seu evento e disponibilidade do prestador.
+                <strong>Importante:</strong> Este é um orçamento estimado. O valor final pode variar conforme 
+                as especificações do evento e disponibilidade nas datas solicitadas.
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col md:flex-row gap-4">
               <button
                 onClick={() => setCurrentStep(2)}
                 className="border-2 border-[#FF0080] text-[#FF0080] px-8 py-3 rounded-lg font-semibold hover:bg-[#FF0080] hover:text-white transition-all"
@@ -585,11 +505,9 @@ export function ProviderBudget({ services, provider }: ProviderBudgetProps) {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={handleSubmitBudget}
-                disabled={loading}
-                className="bg-[#FF0080] text-white px-8 py-3 rounded-lg font-semibold hover:bg-[#E6006F] transition-colors flex-1 disabled:opacity-50"
+                className="bg-[#FF0080] text-white px-8 py-3 rounded-lg font-semibold hover:bg-[#E6006F] transition-colors flex-1"
               >
-                {loading ? 'Enviando...' : 'Enviar Solicitação'}
+                Enviar Solicitação
               </motion.button>
             </div>
           </div>
