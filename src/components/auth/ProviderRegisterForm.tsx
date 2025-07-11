@@ -3,12 +3,12 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { MdBusiness, MdEmail, MdLock, MdPhone, MdLocationOn, MdVisibility, MdVisibilityOff } from 'react-icons/md'
-import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
+import { registerProviderAction } from '@/lib/actions/auth'
 
 export function ProviderRegisterForm() {
-  const { registerProvider, loading } = useAuth()
   const router = useRouter()
+  const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     organizationName: '',
     cnpj: '',
@@ -33,17 +33,35 @@ export function ProviderRegisterForm() {
       return
     }
 
-    if (formData.password.length < 6) {
-      setError('A senha deve ter pelo menos 6 caracteres')
+    if (formData.password.length < 8) {
+      setError('A senha deve ter pelo menos 8 caracteres')
       return
     }
 
+    setLoading(true)
+    
     try {
-      await registerProvider(formData)
-      setSuccess('Conta de prestador criada com sucesso! Verifique seu e-mail para confirmar.')
-      setTimeout(() => router.push('/auth/login'), 2000)
+      const formDataObj = new FormData()
+      formDataObj.append('companyName', formData.organizationName)
+      formDataObj.append('cnpj', formData.cnpj)
+      formDataObj.append('email', formData.email)
+      formDataObj.append('password', formData.password)
+      formDataObj.append('confirmPassword', formData.confirmPassword)
+      formDataObj.append('phone', formData.whatsapp)
+      formDataObj.append('areaOfOperation', formData.areaOfOperation)
+      
+      const result = await registerProviderAction(formDataObj)
+      
+      if (result.success) {
+        setSuccess('Conta de prestador criada com sucesso!')
+        setTimeout(() => router.push('/auth/login'), 2000)
+      } else {
+        setError(result.error || 'Erro ao criar conta de prestador')
+      }
     } catch (err: any) {
-      setError(err.message || 'Erro ao criar conta de prestador')
+      setError('Erro ao criar conta de prestador')
+    } finally {
+      setLoading(false)
     }
   }
 

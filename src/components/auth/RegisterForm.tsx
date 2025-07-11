@@ -3,12 +3,12 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { MdPerson, MdEmail, MdLock, MdPhone, MdVisibility, MdVisibilityOff } from 'react-icons/md'
-import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
+import { registerClientAction } from '@/lib/actions/auth'
 
 export function RegisterForm() {
-  const { register, loading } = useAuth()
   const router = useRouter()
+  const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -31,17 +31,34 @@ export function RegisterForm() {
       return
     }
 
-    if (formData.password.length < 6) {
-      setError('A senha deve ter pelo menos 6 caracteres')
+    if (formData.password.length < 8) {
+      setError('A senha deve ter pelo menos 8 caracteres')
       return
     }
 
+    setLoading(true)
+    
     try {
-      await register(formData)
-      setSuccess('Conta criada com sucesso! Verifique seu e-mail para confirmar.')
-      setTimeout(() => router.push('/auth/login'), 2000)
+      const formDataObj = new FormData()
+      formDataObj.append('fullName', formData.fullName)
+      formDataObj.append('email', formData.email)
+      formDataObj.append('password', formData.password)
+      formDataObj.append('confirmPassword', formData.confirmPassword)
+      formDataObj.append('cpf', '000.000.000-00') // Campo obrigatório, usar valor padrão
+      formDataObj.append('phone', formData.whatsapp)
+      
+      const result = await registerClientAction(formDataObj)
+      
+      if (result.success) {
+        setSuccess('Conta criada com sucesso!')
+        setTimeout(() => router.push('/auth/login'), 2000)
+      } else {
+        setError(result.error || 'Erro ao criar conta')
+      }
     } catch (err: any) {
-      setError(err.message || 'Erro ao criar conta')
+      setError('Erro ao criar conta')
+    } finally {
+      setLoading(false)
     }
   }
 
