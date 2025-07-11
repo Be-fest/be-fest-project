@@ -1,16 +1,14 @@
 "use client";
 
-import { Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Input, Button } from "@/components/ui";
+import { createClient } from "@supabase/supabase-js";
+import { Database } from "@/types/database";
+import { motion } from "framer-motion";
+import { MdVisibility, MdVisibilityOff, MdCheckCircle } from "react-icons/md";
 
 function ResetPasswordForm() {
-  const { useEffect, useState } = require("react");
-  const { useRouter, useSearchParams } = require("next/navigation");
-  const { Input, Button } = require("@/components/ui");
-  const { createClient } = require("@supabase/supabase-js");
-  const { Database } = require("@/types/database");
-  const { motion } = require("framer-motion");
-  const { MdVisibility, MdVisibilityOff, MdCheckCircle } = require("react-icons/md");
-  
   const searchParams = useSearchParams();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
