@@ -25,7 +25,6 @@ function ResetPasswordForm() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  // On mount: if hash tokens present, set session
   useEffect(() => {
     const hash = window.location.hash.substring(1); // remove '#'
     const params = new URLSearchParams(hash);
