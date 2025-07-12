@@ -25,6 +25,7 @@ interface PartyConfigFormProps {
   };
 }
 
+// Schema de validação - removendo o campo budget
 const partySchema = z.object({
   title: z.string().min(3, 'Nome do evento deve ter pelo menos 3 caracteres'),
   description: z.string().optional(),
@@ -34,7 +35,6 @@ const partySchema = z.object({
   full_guests: z.number().min(0, 'Número de convidados inteira deve ser 0 ou maior'),
   half_guests: z.number().min(0, 'Número de convidados meia deve ser 0 ou maior'),
   free_guests: z.number().min(0, 'Número de convidados gratuitos deve ser 0 ou maior'),
-  budget: z.number().min(0, 'Orçamento não pode ser negativo').optional(),
 }).refine(data => {
   const eventDate = new Date(data.event_date);
   const today = new Date();
@@ -76,7 +76,6 @@ export function PartyConfigForm({ onComplete, initialData, eventId, pendingServi
       full_guests: 0,
       half_guests: 0,
       free_guests: 0,
-      budget: undefined,
     },
   });
 
@@ -101,7 +100,7 @@ export function PartyConfigForm({ onComplete, initialData, eventId, pendingServi
       formData.append('full_guests', data.full_guests.toString());
       formData.append('half_guests', data.half_guests.toString());
       formData.append('free_guests', data.free_guests.toString());
-      if (data.budget) formData.append('budget', data.budget.toString());
+      // Removendo o campo budget do formData
 
       // Usar action apropriada baseado no modo
       const result = eventId 
@@ -112,11 +111,11 @@ export function PartyConfigForm({ onComplete, initialData, eventId, pendingServi
         // Toast de sucesso
         const isEditing = !!eventId;
         toast.success(
-          isEditing ? 'Festa atualizada com sucesso!' : 'Festa criada com sucesso!',
           isEditing 
             ? `A festa "${data.title}" foi atualizada.`
             : `A festa "${data.title}" foi criada e você será redirecionado para gerenciá-la.`,
-          4000
+          undefined, // message (optional)
+          4000 // duration
         );
 
         // Save the party data for cart context (legacy compatibility)
@@ -363,42 +362,29 @@ export function PartyConfigForm({ onComplete, initialData, eventId, pendingServi
         )}
       </div>
 
-      {/* Orçamento */}
-      <div>
-        <label className="block text-sm font-semibold text-[#520029] mb-2">
-          <MdAttachMoney className="inline mr-1" />
-          Orçamento Estimado
-        </label>
-        <input
-          type="number"
-          step="0.01"
-          min="0"
-          {...register('budget', { 
-            valueAsNumber: true,
-            setValueAs: (value) => value === "" ? undefined : parseFloat(value)
-          })}
-          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none"
-          placeholder="R$ 0,00 (opcional)"
-          disabled={loading}
-        />
-        {errors.budget && (
-          <p className="text-red-500 text-sm mt-1">{errors.budget.message}</p>
-        )}
-      </div>
-
-      {/* Buttons */}
-      <div className="flex gap-4 pt-6 border-t border-gray-200">
+      {/* Botões */}
+      <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-gray-200">
         <button
           type="submit"
           disabled={loading}
-          className="flex-1 px-6 py-3 bg-gradient-to-r from-[#A502CA] to-[#8B0A9E] text-white rounded-lg hover:from-[#8B0A9E] hover:to-[#520029] transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 bg-gradient-to-r from-[#A502CA] to-[#8B0A9E] hover:from-[#8B0A9E] hover:to-[#6B0A7E] disabled:from-gray-400 disabled:to-gray-500 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"
         >
-                          {loading 
-                  ? (eventId ? 'Atualizando Festa...' : 'Criando Festa...') 
-                  : (eventId ? 'Atualizar Festa' : 'Criar Festa')
-                }
+          {loading ? (
+            <div className="flex items-center justify-center">
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+              {eventId ? 'Atualizando...' : 'Criando...'}
+            </div>
+          ) : (
+            eventId ? 'Atualizar Festa' : 'Criar Festa'
+          )}
         </button>
       </div>
+
+      {error && (
+        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-700 text-sm">{error}</p>
+        </div>
+      )}
     </form>
   );
 }

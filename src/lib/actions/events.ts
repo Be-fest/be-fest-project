@@ -311,12 +311,19 @@ export async function updateEventAction(formData: FormData): Promise<ActionResul
       half_guests: formData.get('half_guests') as string,
       free_guests: formData.get('free_guests') as string,
       budget: formData.get('budget') as string || null,
-      status: formData.get('status') as string
+      status: formData.get('status') as string || null, // Permitir null
     }
 
     console.log('📝 [UPDATE] Dados recebidos:', rawData);
 
-    const validatedData = updateEventSchema.parse(rawData)
+    // Remover campos null/undefined/empty para evitar validação desnecessária
+    const cleanedData = Object.fromEntries(
+      Object.entries(rawData).filter(([_, value]) => value !== null && value !== undefined && value !== '')
+    );
+
+    console.log('📝 [UPDATE] Dados limpos:', cleanedData);
+
+    const validatedData = updateEventSchema.parse(cleanedData)
     console.log('✅ [UPDATE] Dados validados:', validatedData);
     
     const supabase = await createServerClient()

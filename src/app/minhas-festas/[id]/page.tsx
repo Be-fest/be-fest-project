@@ -884,7 +884,6 @@ export default function PartyDetailsPage() {
                       full_guests: event.full_guests !== undefined ? event.full_guests : Math.floor((event.guest_count || 0) * 0.6), // Usar valor real ou estimativa
                       half_guests: event.half_guests !== undefined ? event.half_guests : Math.floor((event.guest_count || 0) * 0.3), // Usar valor real ou estimativa
                       free_guests: event.free_guests !== undefined ? event.free_guests : Math.floor((event.guest_count || 0) * 0.1), // Usar valor real ou estimativa
-                      budget: event.budget || undefined,
                     }}
                     onComplete={handleEditSuccess}
                   />
