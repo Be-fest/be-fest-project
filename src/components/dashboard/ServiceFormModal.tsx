@@ -63,8 +63,14 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
   });
 
   const [categories, setCategories] = useState<string[]>([
-    'Buffet', 'Decoração', 'Música', 'Fotografia', 'Bebidas', 
-    'Doces', 'Entretenimento', 'Segurança', 'Limpeza'
+    // Subcategorias de COMIDA E BEBIDA
+    'Buffet', 'Buffet de Pizzas', 'Churrasco', 'Confeitaria', 'Estações de Festa', 'Open-Bar', 'Chopp',
+    // Subcategorias de ENTRETENIMENTO  
+    'Música', 'DJ', 'Animação',
+    // Subcategorias de ESPAÇO
+    'Salão de Festas', 'Espaço ao Ar Livre', 'Casa de Eventos',
+    // Subcategorias de ORGANIZAÇÃO
+    'Decoração', 'Fotografia', 'Segurança', 'Limpeza'
   ]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -74,8 +80,14 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
     // Usando categorias hardcoded por enquanto
     const loadCategories = async () => {
       setCategories([
-        'Buffet', 'Decoração', 'Música', 'Fotografia', 'Bebidas', 
-        'Doces', 'Entretenimento', 'Segurança', 'Limpeza'
+        // Subcategorias de COMIDA E BEBIDA
+        'Buffet', 'Buffet de Pizzas', 'Churrasco', 'Confeitaria', 'Estações de Festa', 'Open-Bar', 'Chopp',
+        // Subcategorias de ENTRETENIMENTO  
+        'Música', 'DJ', 'Animação',
+        // Subcategorias de ESPAÇO
+        'Salão de Festas', 'Espaço ao Ar Livre', 'Casa de Eventos',
+        // Subcategorias de ORGANIZAÇÃO
+        'Decoração', 'Fotografia', 'Segurança', 'Limpeza'
       ]);
     };
     

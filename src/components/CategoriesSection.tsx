@@ -3,14 +3,10 @@
 import { motion } from 'framer-motion';
 
 const categories = [
-  { id: 'buffet', name: 'Buffet', emoji: '🍽️', color: '#FF6B6B' },
-  { id: 'pizza', name: 'Pizza', emoji: '🍕', color: '#4ECDC4' },
-  { id: 'churrasco', name: 'Churrasco', emoji: '🥩', color: '#45B7D1' },
-  { id: 'doces', name: 'Doces', emoji: '🧁', color: '#96CEB4' },
-  { id: 'hamburger', name: 'Hambúrguer', emoji: '🍔', color: '#FECA57' },
-  { id: 'bar', name: 'Bar', emoji: '🍸', color: '#FF9FF3' },
-  { id: 'adega', name: 'Adega', emoji: '🍷', color: '#54A0FF' },
-  { id: 'cerveja', name: 'Cerveja', emoji: '🍺', color: '#5F27CD' }
+  { id: 'comida-e-bebida', name: 'COMIDA E BEBIDA', emoji: '🍽️', color: '#FF6B6B' },
+  { id: 'entretenimento', name: 'ENTRETENIMENTO', emoji: '�', color: '#4ECDC4' },
+  { id: 'espaco', name: 'ESPAÇO', emoji: '🏛️', color: '#45B7D1' },
+  { id: 'organizacao', name: 'ORGANIZAÇÃO', emoji: '📋', color: '#96CEB4' }
 ];
 
 export function CategoriesSection() {

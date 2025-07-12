@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
+// Subcategorias de COMIDA E BEBIDA para exibir na home
 const categories = [
   {
     name: "Buffet",
@@ -13,46 +14,40 @@ const categories = [
     slug: "buffet"
   },
   {
-    name: "Pizzaria",
+    name: "Buffet de Pizzas",
     image: "/images/categories-images/Pizzaria.png",
     color: "#FFE4B5",
-    slug: "pizzaria"
+    slug: "buffet-de-pizzas"
   },
   {
-    name: "Churrascaria",
+    name: "Churrasco",
     image: "/images/categories-images/Churrascaria.png",
     color: "#F0E68C",
-    slug: "churrascaria"
+    slug: "churrasco"
   },
   {
-    name: "Doces",
+    name: "Confeitaria",
     image: "/images/categories-images/Doceria.png",
     color: "#DDA0DD",
-    slug: "doces"
+    slug: "confeitaria"
   },
   {
-    name: "Hamburgueria",
+    name: "Estações de Festa",
     image: "/images/categories-images/Hamburgueria.png",
     color: "#F0E68C",
-    slug: "hamburgueria"
+    slug: "estacoes-de-festa"
   },
   {
-    name: "Bar",
+    name: "Open-Bar",
     image: "/images/categories-images/Bar.png",
     color: "#98FB98",
-    slug: "bar"
+    slug: "open-bar"
   },
   {
-    name: "Adega",
-    image: "/images/categories-images/Adega.png",
-    color: "#DDA0DD",
-    slug: "adega"
-  },
-  {
-    name: "Cervejaria",
+    name: "Chopp",
     image: "/images/categories-images/cervejaria.png",
     color: "#F0E68C",
-    slug: "cervejaria"
+    slug: "chopp"
   }
 ];
 

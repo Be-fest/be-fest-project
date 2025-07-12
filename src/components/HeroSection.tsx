@@ -29,7 +29,7 @@ export function HeroSection() {
             whileTap={{ scale: 0.95 }}
           >
             <Link 
-              href="/categorias"
+              href="/servicos"
               className="inline-block bg-[#FF0080] text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-[#E6006F] transition-colors shadow-lg"
             >
               Faça Festa!

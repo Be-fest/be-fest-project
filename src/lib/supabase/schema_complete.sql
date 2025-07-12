@@ -267,14 +267,40 @@ CREATE POLICY "Providers can manage their own services" ON public.services
 
 -- Inserir categorias padrão
 INSERT INTO public.categories (name) VALUES
-    ('Buffet'),
-    ('Decoração'),
-    ('Fotografia'),
-    ('Música'),
-    ('Bebidas'),
-    ('Doces'),
-    ('Espaço'),
-    ('Outros');
+    ('COMIDA E BEBIDA'),
+    ('ENTRETENIMENTO'),
+    ('ESPAÇO'),
+    ('ORGANIZAÇÃO');
+
+-- Inserir subcategorias (assumindo que as categorias foram criadas na ordem acima)
+-- COMIDA E BEBIDA subcategorias
+INSERT INTO public.subcategories (category_id, name) VALUES
+    ((SELECT id FROM public.categories WHERE name = 'COMIDA E BEBIDA'), 'Buffet'),
+    ((SELECT id FROM public.categories WHERE name = 'COMIDA E BEBIDA'), 'Buffet de Pizzas'),
+    ((SELECT id FROM public.categories WHERE name = 'COMIDA E BEBIDA'), 'Churrasco'),
+    ((SELECT id FROM public.categories WHERE name = 'COMIDA E BEBIDA'), 'Confeitaria'),
+    ((SELECT id FROM public.categories WHERE name = 'COMIDA E BEBIDA'), 'Estações de Festa'),
+    ((SELECT id FROM public.categories WHERE name = 'COMIDA E BEBIDA'), 'Open-Bar'),
+    ((SELECT id FROM public.categories WHERE name = 'COMIDA E BEBIDA'), 'Chopp');
+
+-- ENTRETENIMENTO subcategorias  
+INSERT INTO public.subcategories (category_id, name) VALUES
+    ((SELECT id FROM public.categories WHERE name = 'ENTRETENIMENTO'), 'Música'),
+    ((SELECT id FROM public.categories WHERE name = 'ENTRETENIMENTO'), 'DJ'),
+    ((SELECT id FROM public.categories WHERE name = 'ENTRETENIMENTO'), 'Animação');
+
+-- ESPAÇO subcategorias
+INSERT INTO public.subcategories (category_id, name) VALUES
+    ((SELECT id FROM public.categories WHERE name = 'ESPAÇO'), 'Salão de Festas'),
+    ((SELECT id FROM public.categories WHERE name = 'ESPAÇO'), 'Espaço ao Ar Livre'),
+    ((SELECT id FROM public.categories WHERE name = 'ESPAÇO'), 'Casa de Eventos');
+
+-- ORGANIZAÇÃO subcategorias
+INSERT INTO public.subcategories (category_id, name) VALUES
+    ((SELECT id FROM public.categories WHERE name = 'ORGANIZAÇÃO'), 'Decoração'),
+    ((SELECT id FROM public.categories WHERE name = 'ORGANIZAÇÃO'), 'Fotografia'),
+    ((SELECT id FROM public.categories WHERE name = 'ORGANIZAÇÃO'), 'Segurança'),
+    ((SELECT id FROM public.categories WHERE name = 'ORGANIZAÇÃO'), 'Limpeza');
 
 -- Grant permissions
 GRANT USAGE ON SCHEMA public TO anon, authenticated;

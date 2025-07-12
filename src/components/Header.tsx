@@ -301,7 +301,7 @@ function HomeHeader() {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
             <Link 
-              href="/categorias"
+              href="/servicos"
               className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
             >
               Categorias
@@ -406,7 +406,7 @@ function HomeHeader() {
         >
           <nav className="px-6 py-4 space-y-4">
             <Link 
-              href="/categorias"
+              href="/servicos"
               className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
               onClick={() => setIsMenuOpen(false)}
             >

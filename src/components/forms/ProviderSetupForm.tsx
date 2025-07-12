@@ -5,17 +5,29 @@ import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 
 const categoryOptions = [
-  { value: '', label: 'Selecione uma categoria' },
+  { value: '', label: 'Selecione uma subcategoria' },
+  // COMIDA E BEBIDA
   { value: 'buffet', label: 'Buffet' },
-  { value: 'bar', label: 'Bar' },
-  { value: 'restaurant', label: 'Restaurant' },
-  { value: 'venue', label: 'Venue' },
-  { value: 'decoration', label: 'Decoration' },
-  { value: 'music', label: 'Music' },
-  { value: 'photography', label: 'Photography' },
-  { value: 'videography', label: 'Videography' },
-  { value: 'cake', label: 'Cake & Desserts' },
-  { value: 'other', label: 'Other' }
+  { value: 'buffet-de-pizzas', label: 'Buffet de Pizzas' },
+  { value: 'churrasco', label: 'Churrasco' },
+  { value: 'confeitaria', label: 'Confeitaria' },
+  { value: 'estacoes-de-festa', label: 'Estações de Festa' },
+  { value: 'open-bar', label: 'Open-Bar' },
+  { value: 'chopp', label: 'Chopp' },
+  // ENTRETENIMENTO
+  { value: 'musica', label: 'Música' },
+  { value: 'dj', label: 'DJ' },
+  { value: 'animacao', label: 'Animação' },
+  // ESPAÇO
+  { value: 'salao-de-festas', label: 'Salão de Festas' },
+  { value: 'espaco-ao-ar-livre', label: 'Espaço ao Ar Livre' },
+  { value: 'casa-de-eventos', label: 'Casa de Eventos' },
+  // ORGANIZAÇÃO
+  { value: 'decoracao', label: 'Decoração' },
+  { value: 'fotografia', label: 'Fotografia' },
+  { value: 'seguranca', label: 'Segurança' },
+  { value: 'limpeza', label: 'Limpeza' },
+  { value: 'other', label: 'Outro' }
 ]
 
 // Server Action para completar setup do provider
