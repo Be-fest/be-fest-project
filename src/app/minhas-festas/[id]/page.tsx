@@ -20,6 +20,9 @@ import {
   MdPerson,
   MdPersonOutline,
   MdFace,
+  MdPayment,
+  MdSearch,
+  MdWhatsapp,
 } from 'react-icons/md';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PartyConfigForm } from '@/components/PartyConfigForm';
@@ -36,10 +39,6 @@ export default function PartyDetailsPage() {
   const params = useParams();
   const eventId = params.id as string;
   
-  console.log('🎯 PartyDetailsPage renderizado!');
-  console.log('📋 params:', params);
-  console.log('🆔 eventId extraído:', eventId);
-
   const router = useRouter();
   const { setPartyData, setEventId } = useCart();
   
@@ -49,12 +48,23 @@ export default function PartyDetailsPage() {
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [serviceToCancel, setServiceToCancel] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  console.log('🎯 PartyDetailsPage renderizado!');
+  console.log('📋 params:', params);
+  console.log('🆔 eventId extraído:', eventId);
+  console.log('⚡ actionLoading:', actionLoading);
+  console.log('🔄 loading:', loading);
 
   // Carregar dados do evento
-  const loadEventData = async () => {
+  const loadEventData = async (isInitialLoad = false) => {
     try {
       console.log('🔄 Iniciando loadEventData para eventId:', eventId);
-      setLoading(true);
+      if (isInitialLoad) {
+        setLoading(true);
+      }
       setError(null);
 
       // Buscar dados do evento
@@ -91,8 +101,10 @@ export default function PartyDetailsPage() {
       console.error('❌ Erro em loadEventData:', error);
       setError('Erro inesperado ao carregar dados');
     } finally {
-      console.log('🏁 Finalizando loadEventData, setLoading(false)');
-      setLoading(false);
+      if (isInitialLoad) {
+        console.log('🏁 Finalizando loadEventData, setLoading(false)');
+        setLoading(false);
+      }
     }
   };
 
@@ -100,23 +112,34 @@ export default function PartyDetailsPage() {
     console.log('🔵 useEffect executado! eventId:', eventId);
     if (eventId) {
       console.log('🟢 eventId existe, chamando loadEventData');
-      loadEventData();
+      loadEventData(true);
     } else {
       console.log('🔴 eventId não existe');
+      setLoading(false);
     }
   }, [eventId]);
 
-  const handleEditSuccess = () => {
+  const handleEditSuccess = async () => {
     setEditModalOpen(false);
-    loadEventData(); // Recarregar dados
+    setActionLoading('edit');
+    try {
+      await loadEventData(); // Recarregar dados
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const handleDelete = async () => {
-    const result = await deleteEventAction(eventId);
-    if (result.success) {
-      router.push('/perfil?tab=minhas-festas');
-    } else {
-      alert(result.error || 'Erro ao excluir evento');
+    setActionLoading('delete');
+    try {
+      const result = await deleteEventAction(eventId);
+      if (result.success) {
+        router.push('/perfil?tab=minhas-festas');
+      } else {
+        alert(result.error || 'Erro ao excluir evento');
+      }
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -124,44 +147,88 @@ export default function PartyDetailsPage() {
 
   const handleRemoveService = async (eventServiceId: string) => {
     if (confirm('Tem certeza que deseja remover este serviço?')) {
-      const result = await deleteEventServiceAction(eventServiceId);
-      if (result.success) {
-        loadEventData(); // Recarregar dados
-      } else {
-        alert(result.error || 'Erro ao remover serviço');
+      setActionLoading('remove-service');
+      try {
+        const result = await deleteEventServiceAction(eventServiceId);
+        if (result.success) {
+          await loadEventData(); // Recarregar dados
+        } else {
+          alert(result.error || 'Erro ao remover serviço');
+        }
+      } finally {
+        setActionLoading(null);
       }
     }
   };
 
   const handleConfirmEvent = async () => {
-    const result = await updateEventStatusAction(eventId, 'published');
-    if (result.success) {
-      loadEventData(); // Recarregar dados
-    } else {
-      alert(result.error || 'Erro ao publicar evento');
+    setActionLoading('confirm-event');
+    try {
+      const result = await updateEventStatusAction(eventId, 'published');
+      if (result.success) {
+        await loadEventData(); // Recarregar dados
+      } else {
+        alert(result.error || 'Erro ao publicar evento');
+      }
+    } finally {
+      setActionLoading(null);
     }
   };
 
   const handleCreateBooking = async () => {
-    // Criar bookings para todos os serviços aprovados
-    const approvedServices = eventServices.filter(es => es.booking_status === 'approved');
-    
-    for (const eventService of approvedServices) {
-      const formData = new FormData();
-      formData.append('event_id', eventId);
-      formData.append('service_id', eventService.service_id);
-      formData.append('price', (eventService.total_estimated_price || 0).toString());
-      formData.append('guest_count', (event?.guest_count || 0).toString());
+    setActionLoading('create-booking');
+    try {
+      // Criar bookings para todos os serviços aprovados
+      const approvedServices = eventServices.filter(es => es.booking_status === 'approved');
       
-      const result = await createBookingAction(formData);
-      if (!result.success) {
-        alert(`Erro ao criar booking para ${eventService.service?.name}: ${result.error}`);
-        return;
+      for (const eventService of approvedServices) {
+        const formData = new FormData();
+        formData.append('event_id', eventId);
+        formData.append('service_id', eventService.service_id);
+        formData.append('price', (eventService.total_estimated_price || 0).toString());
+        formData.append('guest_count', (event?.guest_count || 0).toString());
+        
+        const result = await createBookingAction(formData);
+        if (!result.success) {
+          alert(`Erro ao criar booking para ${eventService.service?.name}: ${result.error}`);
+          return;
+        }
       }
+      
+      // Atualizar status para waiting_payment
+      await updateEventStatusAction(eventId, 'waiting_payment');
+      
+      alert('Bookings criados com sucesso!');
+      await loadEventData(); // Recarregar dados
+    } catch (error) {
+      console.error('Erro ao criar booking:', error);
+      alert('Erro ao criar booking. Tente novamente.');
+    } finally {
+      setActionLoading(null);
     }
-    
-    alert('Bookings criados com sucesso!');
-    loadEventData(); // Recarregar dados
+  };
+
+  const handlePayment = () => {
+    // Redirecionar para página de pagamento
+    router.push(`/pagamento?event_id=${eventId}`);
+  };
+
+  const handleFindAlternativeService = (serviceName: string) => {
+    // Redirecionar para serviços com filtro específico
+    router.push(`/servicos?category=${encodeURIComponent(serviceName)}`);
+  };
+
+  const handleCancelService = (serviceName: string) => {
+    setCancelModalOpen(true);
+    setServiceToCancel(serviceName);
+  };
+
+  const handleWhatsAppCancel = () => {
+    const message = `Olá! Gostaria de cancelar o serviço "${serviceToCancel}" da minha festa. Estou entrando em contato com mais de 48h de antecedência conforme solicitado.`;
+    const whatsappUrl = `https://wa.me/5511999999999?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+    setCancelModalOpen(false);
+    setServiceToCancel(null);
   };
 
   const handleAddServiceRedirect = () => {
@@ -241,8 +308,117 @@ export default function PartyDetailsPage() {
   if (loading) {
     return (
       <ClientLayout>
-        <div className="min-h-screen bg-[#FFF6FB] flex items-center justify-center">
-          <div className="w-8 h-8 border-2 border-[#F71875] border-t-transparent rounded-full animate-spin"></div>
+        <div className="min-h-screen bg-[#FFF6FB]">
+          {/* Header Skeleton */}
+          <div className="bg-white shadow-sm sticky top-0 z-10 animate-pulse">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="py-4 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
+                  <div>
+                    <div className="h-6 w-48 bg-gray-300 rounded mb-2"></div>
+                    <div className="h-4 w-32 bg-gray-200 rounded"></div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-9 w-20 bg-gray-300 rounded-lg"></div>
+                  <div className="h-9 w-20 bg-gray-300 rounded-lg"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Content Skeleton */}
+          <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Informações da Festa Skeleton */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Card Detalhes da Festa */}
+                <div className="bg-white rounded-xl shadow-sm p-6 animate-pulse">
+                  <div className="h-6 w-36 bg-gray-300 rounded mb-4"></div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="flex items-center gap-3">
+                        <div className="w-5 h-5 bg-gray-300 rounded"></div>
+                        <div>
+                          <div className="h-3 w-12 bg-gray-200 rounded mb-1"></div>
+                          <div className="h-4 w-24 bg-gray-300 rounded"></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="h-3 w-20 bg-gray-200 rounded mb-2"></div>
+                    <div className="h-4 w-full bg-gray-200 rounded mb-2"></div>
+                    <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
+                  </div>
+                </div>
+
+                {/* Card Serviços */}
+                <div className="bg-white rounded-xl shadow-sm p-6 animate-pulse">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="h-6 w-24 bg-gray-300 rounded"></div>
+                    <div className="h-9 w-36 bg-gray-300 rounded-lg"></div>
+                  </div>
+                  <div className="space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="h-5 w-40 bg-gray-300 rounded mb-2"></div>
+                            <div className="h-4 w-32 bg-gray-200 rounded mb-2"></div>
+                            <div className="h-6 w-24 bg-gray-300 rounded"></div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="h-6 w-20 bg-gray-300 rounded-full"></div>
+                            <div className="h-8 w-8 bg-gray-300 rounded"></div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Sidebar Skeleton */}
+              <div className="space-y-6">
+                {/* Status da Festa Skeleton */}
+                <div className="bg-white rounded-xl shadow-sm p-6 animate-pulse">
+                  <div className="h-6 w-28 bg-gray-300 rounded mb-4"></div>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="h-4 w-20 bg-gray-200 rounded"></div>
+                      <div className="h-6 w-20 bg-gray-300 rounded-full"></div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="h-4 w-16 bg-gray-200 rounded"></div>
+                      <div className="h-4 w-24 bg-gray-300 rounded"></div>
+                    </div>
+                  </div>
+                  <div className="h-10 w-full bg-gray-300 rounded-lg mt-4"></div>
+                </div>
+
+                {/* Resumo Financeiro Skeleton */}
+                <div className="bg-white rounded-xl shadow-sm p-6 animate-pulse">
+                  <div className="h-6 w-32 bg-gray-300 rounded mb-4"></div>
+                  <div className="space-y-3">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="flex justify-between">
+                        <div className="h-4 w-20 bg-gray-200 rounded"></div>
+                        <div className="h-4 w-16 bg-gray-300 rounded"></div>
+                      </div>
+                    ))}
+                    <div className="border-t border-gray-200 pt-3">
+                      <div className="flex justify-between">
+                        <div className="h-5 w-10 bg-gray-300 rounded"></div>
+                        <div className="h-5 w-20 bg-gray-300 rounded"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </ClientLayout>
     );
@@ -297,17 +473,28 @@ export default function PartyDetailsPage() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setEditModalOpen(true)}
-                  className="px-4 py-2 text-[#A502CA] border-2 border-[#A502CA] rounded-lg hover:bg-[#A502CA] hover:text-white transition-colors flex items-center gap-2"
+                  disabled={actionLoading !== null}
+                  className="px-4 py-2 text-[#A502CA] border-2 border-[#A502CA] rounded-lg hover:bg-[#A502CA] hover:text-white disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-300 transition-colors flex items-center gap-2"
                 >
                   <MdEdit />
                   Editar
                 </button>
                 <button
                   onClick={() => setDeleteModalOpen(true)}
-                  className="px-4 py-2 text-red-600 border-2 border-red-600 rounded-lg hover:bg-red-600 hover:text-white transition-colors flex items-center gap-2"
+                  disabled={actionLoading !== null}
+                  className="px-4 py-2 text-red-600 border-2 border-red-600 rounded-lg hover:bg-red-600 hover:text-white disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-300 transition-colors flex items-center gap-2"
                 >
-                  <MdDelete />
-                  Excluir
+                  {actionLoading === 'delete' ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                      Excluindo...
+                    </>
+                  ) : (
+                    <>
+                      <MdDelete />
+                      Excluir
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -375,7 +562,8 @@ export default function PartyDetailsPage() {
                   <h2 className="text-xl font-bold text-[#520029]">Serviços</h2>
                   <button
                     onClick={handleAddServiceRedirect}
-                    className="bg-[#F71875] hover:bg-[#E6006F] text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                    disabled={actionLoading !== null}
+                    className="bg-[#F71875] hover:bg-[#E6006F] disabled:bg-gray-400 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
                   >
                     <MdAdd />
                     Adicionar Serviço
@@ -422,11 +610,37 @@ export default function PartyDetailsPage() {
                             <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(eventService.booking_status)}`}>
                               {getStatusText(eventService.booking_status)}
                             </span>
+                            
+                            {eventService.booking_status === 'rejected' && (
+                              <button
+                                onClick={() => handleFindAlternativeService(eventService.service?.name || 'Serviço')}
+                                className="text-orange-500 hover:text-orange-700 transition-colors text-sm font-medium flex items-center gap-1"
+                              >
+                                <MdSearch />
+                                Procurar Outro
+                              </button>
+                            )}
+                            
+                            {eventService.booking_status === 'approved' && (
+                              <button
+                                onClick={() => handleCancelService(eventService.service?.name || 'Serviço')}
+                                className="text-red-500 hover:text-red-700 transition-colors text-sm font-medium flex items-center gap-1"
+                              >
+                                <MdWarning />
+                                Cancelar
+                              </button>
+                            )}
+                            
                             <button
                               onClick={() => handleRemoveService(eventService.id)}
-                              className="text-red-500 hover:text-red-700 transition-colors"
+                              disabled={actionLoading === 'remove-service'}
+                              className="text-red-500 hover:text-red-700 disabled:text-red-300 transition-colors"
                             >
-                              <MdClose />
+                              {actionLoading === 'remove-service' ? (
+                                <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                              ) : (
+                                <MdClose />
+                              )}
                             </button>
                           </div>
                         </div>
@@ -474,19 +688,58 @@ export default function PartyDetailsPage() {
                 {event.status === 'draft' && eventServices.length > 0 && (
                   <button
                     onClick={handleConfirmEvent}
-                    className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors"
+                    disabled={actionLoading === 'confirm-event'}
+                    className="w-full mt-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-2 rounded-lg transition-colors flex items-center justify-center"
                   >
-                    Publicar Festa
+                    {actionLoading === 'confirm-event' ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                        Publicando...
+                      </>
+                    ) : (
+                      'Publicar Festa'
+                    )}
                   </button>
                 )}
 
                 {allServicesConfirmed && event.status === 'published' && (
                   <button
                     onClick={handleCreateBooking}
-                    className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
+                    disabled={actionLoading === 'create-booking'}
+                    className="w-full mt-4 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
                   >
-                    <MdCheck />
-                    Finalizar Agendamento
+                    {actionLoading === 'create-booking' ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Finalizando...
+                      </>
+                    ) : (
+                      <>
+                        <MdCheck />
+                        Finalizar Agendamento
+                      </>
+                    )}
+                  </button>
+                )}
+
+                {event.status === 'waiting_payment' && (
+                  <button
+                    onClick={handlePayment}
+                    disabled={actionLoading !== null}
+                    className="w-full mt-4 bg-yellow-600 hover:bg-yellow-700 disabled:bg-yellow-400 text-white py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
+                  >
+                    <MdPayment />
+                    Fazer Pagamento
+                  </button>
+                )}
+
+                {event.status === 'completed' && (
+                  <button
+                    onClick={() => handleCancelService('Serviço')}
+                    className="w-full mt-4 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
+                  >
+                    <MdWarning />
+                    Cancelar Serviço
                   </button>
                 )}
               </div>
@@ -585,6 +838,73 @@ export default function PartyDetailsPage() {
           onConfirm={handleDelete}
           onCancel={() => setDeleteModalOpen(false)}
         />
+
+        {/* Modal Cancelamento de Serviço */}
+        <AnimatePresence>
+          {cancelModalOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-md"
+              >
+                <div className="bg-gradient-to-r from-red-500 to-red-600 p-6 rounded-t-2xl">
+                  <div className="flex items-center justify-between text-white">
+                    <div className="flex items-center gap-3">
+                      <MdWarning className="text-2xl" />
+                      <h2 className="text-xl font-bold">Cancelar Serviço</h2>
+                    </div>
+                    <button
+                      onClick={() => setCancelModalOpen(false)}
+                      className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition-colors"
+                    >
+                      <MdClose className="text-xl" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-6">
+                  <div className="mb-6">
+                    <p className="text-gray-700 mb-4">
+                      Para cancelar o serviço <strong>"{serviceToCancel}"</strong>, entre em contato com nosso suporte via WhatsApp.
+                    </p>
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                      <div className="flex items-center gap-2 text-yellow-700 mb-2">
+                        <MdWarning className="text-lg" />
+                        <span className="font-medium">Importante:</span>
+                      </div>
+                      <p className="text-yellow-700 text-sm">
+                        O cancelamento deve ser feito com pelo menos 48 horas de antecedência da data do evento.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setCancelModalOpen(false)}
+                      className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={handleWhatsAppCancel}
+                      className="flex-1 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                    >
+                      <MdWhatsapp className="text-lg" />
+                      Abrir WhatsApp
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </ClientLayout>
     </FastAuthGuard>

@@ -173,10 +173,13 @@ const DashboardTab = () => {
   if (loading) {
     return (
       <div className="space-y-8">
+        {/* Header Skeleton */}
         <div className="text-center space-y-4">
           <div className="h-8 w-48 bg-gray-300 rounded-lg animate-pulse mx-auto"></div>
           <div className="h-5 w-96 bg-gray-200 rounded animate-pulse mx-auto"></div>
         </div>
+
+        {/* Stats Cards Skeleton */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
@@ -189,6 +192,41 @@ const DashboardTab = () => {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Quick Links Skeleton */}
+        <div className="space-y-6">
+          <div className="h-6 w-32 bg-gray-300 rounded animate-pulse mx-auto"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
+                <div className="flex items-start gap-4">
+                  <div className="w-14 h-14 bg-gray-300 rounded-xl"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-5 w-28 bg-gray-300 rounded"></div>
+                    <div className="h-4 w-full bg-gray-200 rounded"></div>
+                  </div>
+                </div>
+                <div className="h-1 bg-gray-200 rounded-full mt-4"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Recent Activity Skeleton */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-pulse">
+          <div className="h-6 w-40 bg-gray-300 rounded mb-4"></div>
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                <div className="w-10 h-10 bg-gray-300 rounded-full"></div>
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-48 bg-gray-300 rounded"></div>
+                  <div className="h-3 w-20 bg-gray-200 rounded"></div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -506,18 +544,68 @@ const MinhasFestasTab = () => {
   if (loading) {
     return (
       <div className="space-y-8">
-        <div className="space-y-4">
-          <div className="h-8 w-64 bg-gray-300 rounded-lg animate-pulse"></div>
-          <div className="h-5 w-96 bg-gray-200 rounded animate-pulse"></div>
+        {/* Header Skeleton */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+          <div className="space-y-2">
+            <div className="h-8 w-48 bg-gray-300 rounded-lg animate-pulse"></div>
+            <div className="h-5 w-96 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+          <div className="h-12 w-32 bg-gray-300 rounded-xl animate-pulse"></div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
+
+        {/* Stats Cards Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map((i) => (
             <div key={i} className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gray-300 rounded-xl"></div>
+                <div className="w-14 h-14 bg-gray-300 rounded-xl"></div>
                 <div className="space-y-2">
                   <div className="h-6 w-16 bg-gray-300 rounded"></div>
                   <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Search and Filter Skeleton */}
+        <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 animate-pulse">
+          <div className="flex flex-col lg:flex-row gap-4">
+            <div className="flex-1 h-12 bg-gray-300 rounded-xl"></div>
+            <div className="flex items-center gap-3">
+              <div className="w-5 h-5 bg-gray-300 rounded"></div>
+              <div className="h-12 w-32 bg-gray-300 rounded-xl"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Events Cards Skeleton */}
+        <div className="grid gap-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100 animate-pulse">
+              <div className="h-56 bg-gray-300"></div>
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-5 h-5 bg-gray-300 rounded"></div>
+                    <div className="h-4 w-32 bg-gray-300 rounded"></div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-5 h-5 bg-gray-300 rounded"></div>
+                    <div className="h-4 w-20 bg-gray-300 rounded"></div>
+                  </div>
+                </div>
+                <div className="h-4 w-full bg-gray-200 rounded mb-2"></div>
+                <div className="h-4 w-3/4 bg-gray-200 rounded mb-6"></div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 bg-gray-300 rounded"></div>
+                    <div className="h-4 w-24 bg-gray-300 rounded"></div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-24 bg-gray-300 rounded-lg"></div>
+                    <div className="h-8 w-32 bg-gray-300 rounded-lg"></div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -749,6 +837,17 @@ Esta ação não pode ser desfeita. Apenas festas em rascunho ou canceladas pode
 
 // Componente Configurações
 const ConfiguracoesTab = () => {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Simular carregamento inicial
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   const settingsGroups = [
     {
       title: 'Conta',
@@ -760,6 +859,61 @@ const ConfiguracoesTab = () => {
       ]
     }
   ];
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        {/* Header Skeleton */}
+        <div className="text-center space-y-4">
+          <div className="h-8 w-48 bg-gray-300 rounded-lg animate-pulse mx-auto"></div>
+          <div className="h-5 w-96 bg-gray-200 rounded animate-pulse mx-auto"></div>
+        </div>
+
+        {/* Settings Groups Skeleton */}
+        <div className="space-y-6">
+          {[1, 2].map((i) => (
+            <div key={i} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-pulse">
+              <div className="p-6 bg-gray-50 border-b border-gray-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gray-300 rounded-xl"></div>
+                  <div className="h-6 w-24 bg-gray-300 rounded"></div>
+                </div>
+              </div>
+              <div className="divide-y divide-gray-100">
+                {[1, 2, 3].map((j) => (
+                  <div key={j} className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="h-5 w-40 bg-gray-300 rounded mb-2"></div>
+                        <div className="h-4 w-56 bg-gray-200 rounded"></div>
+                      </div>
+                      <div className="w-4 h-4 bg-gray-300 rounded"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Account Actions Skeleton */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-pulse">
+          <div className="h-6 w-32 bg-gray-300 rounded mb-4"></div>
+          <div className="space-y-4">
+            <div className="w-full p-4 rounded-xl bg-gray-50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="h-4 w-24 bg-gray-300 rounded mb-2"></div>
+                  <div className="h-3 w-48 bg-gray-200 rounded"></div>
+                </div>
+                <div className="w-6 h-6 bg-gray-300 rounded"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -859,12 +1013,46 @@ function ProfilePageContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FFF6FB] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-[#F71875] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando perfil...</p>
-        </div>
-      </div>
+      <ClientAuthGuard requiredRole="client">
+        <ClientLayout>
+          <div className="space-y-8">
+            {/* Tab Navigation Skeleton */}
+            <div className="border-b border-gray-200">
+              <nav className="flex space-x-8">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="py-4 px-1 animate-pulse">
+                    <div className="h-5 w-24 bg-gray-300 rounded"></div>
+                  </div>
+                ))}
+              </nav>
+            </div>
+
+            {/* Tab Content Skeleton */}
+            <div className="mt-8 space-y-8">
+              {/* Header Skeleton */}
+              <div className="text-center space-y-4">
+                <div className="h-8 w-48 bg-gray-300 rounded-lg animate-pulse mx-auto"></div>
+                <div className="h-5 w-96 bg-gray-200 rounded animate-pulse mx-auto"></div>
+              </div>
+
+              {/* Cards Skeleton */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-gray-300 rounded-xl"></div>
+                      <div className="space-y-2">
+                        <div className="h-6 w-16 bg-gray-300 rounded"></div>
+                        <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </ClientLayout>
+      </ClientAuthGuard>
     );
   }
 
@@ -923,7 +1111,48 @@ function ProfilePageContent() {
 
 export default function ProfilePage() {
   return (
-    <Suspense fallback={<div>Carregando...</div>}>
+    <Suspense fallback={
+      <ClientAuthGuard requiredRole="client">
+        <ClientLayout>
+          <div className="space-y-8">
+            {/* Tab Navigation Skeleton */}
+            <div className="border-b border-gray-200">
+              <nav className="flex space-x-8">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="py-4 px-1 animate-pulse">
+                    <div className="h-5 w-24 bg-gray-300 rounded"></div>
+                  </div>
+                ))}
+              </nav>
+            </div>
+
+            {/* Tab Content Skeleton */}
+            <div className="mt-8 space-y-8">
+              {/* Header Skeleton */}
+              <div className="text-center space-y-4">
+                <div className="h-8 w-48 bg-gray-300 rounded-lg animate-pulse mx-auto"></div>
+                <div className="h-5 w-96 bg-gray-200 rounded animate-pulse mx-auto"></div>
+              </div>
+
+              {/* Cards Skeleton */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-gray-300 rounded-xl"></div>
+                      <div className="space-y-2">
+                        <div className="h-6 w-16 bg-gray-300 rounded"></div>
+                        <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </ClientLayout>
+      </ClientAuthGuard>
+    }>
       <ProfilePageContent />
     </Suspense>
   );

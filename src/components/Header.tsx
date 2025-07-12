@@ -91,14 +91,30 @@ function UserDropdown({ user, userType }: UserDropdownProps) {
       // Fechar dropdown primeiro
       setIsDropdownOpen(false);
       
+      console.log('🔴 Iniciando logout do Header...');
+      
+      // Timeout de segurança
+      const timeoutId = setTimeout(() => {
+        console.warn('⚠️ Timeout de logout no header, forçando redirecionamento...');
+        window.location.href = '/auth/login?reason=header_timeout';
+      }, 8000);
+      
       // Usar função utilitária de logout
       const { performLogout } = await import('@/lib/logout');
       await performLogout('header_dropdown');
       
+      // Se chegou até aqui, forçar redirecionamento
+      clearTimeout(timeoutId);
+      setTimeout(() => {
+        window.location.href = '/auth/login?reason=header_manual';
+      }, 1000);
+      
     } catch (error) {
-      console.error('Erro durante logout do header:', error);
+      console.error('❌ Erro durante logout do header:', error);
       // Mesmo com erro, forçar redirecionamento
-      window.location.href = '/auth/login?reason=general_error';
+      setTimeout(() => {
+        window.location.href = '/auth/login?reason=header_error';
+      }, 500);
     }
   };
 
@@ -587,14 +603,6 @@ function ProviderHeader() {
               >
                 Como Funciona
               </ScrollLink>
-              <ScrollLink 
-                to="precos"
-                smooth={true} 
-                duration={500}
-                className="text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer font-poppins"
-              >
-                Preços
-              </ScrollLink>
             </>
           )}
         </nav>
@@ -686,15 +694,6 @@ function ProviderHeader() {
                 onClick={() => setIsMenuOpen(false)}
               >
                 Como Funciona
-              </ScrollLink>
-              <ScrollLink 
-                to="precos"
-                smooth={true} 
-                duration={500}
-                className="block text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Preços
               </ScrollLink>
               <div className="pt-4 border-t border-gray-200 space-y-2">
                 <Link 

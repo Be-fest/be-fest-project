@@ -32,7 +32,7 @@ export function ProviderCTA() {
             <div className="flex flex-col md:flex-row flex-wrap justify-center gap-3 md:gap-6 mb-8 md:mb-12">
               <div className="flex items-center justify-center md:justify-start gap-2 text-pink-100">
                 <MdTrendingUp className="text-[#FF0080] text-lg md:text-xl flex-shrink-0" />
-                <span className="text-sm md:text-base">Aumento médio de 250% na receita</span>
+                <span className="text-sm md:text-base">Aumento significativo na receita</span>
               </div>
               <div className="flex items-center justify-center md:justify-start gap-2 text-pink-100">
                 <MdSecurity className="text-[#FF0080] text-lg md:text-xl flex-shrink-0" />

@@ -7,6 +7,26 @@ export async function performLogout(reason: string = 'logout') {
   try {
     console.log('🔄 Iniciando processo de logout...');
     
+    // Desabilitar qualquer listener que possa interferir no redirecionamento
+    if (typeof window !== 'undefined') {
+      // Remover listeners de beforeunload
+      window.onbeforeunload = null;
+      
+      // Tentar parar a propagação de eventos que possam interferir
+      const originalPushState = window.history.pushState;
+      const originalReplaceState = window.history.replaceState;
+      
+      // Temporariamente desabilitar history API
+      window.history.pushState = () => {};
+      window.history.replaceState = () => {};
+      
+      // Restaurar após um tempo
+      setTimeout(() => {
+        window.history.pushState = originalPushState;
+        window.history.replaceState = originalReplaceState;
+      }, 5000);
+    }
+    
     const supabase = createClient();
     
     // 1. Fazer logout no Supabase
@@ -58,13 +78,38 @@ export async function performLogout(reason: string = 'logout') {
       });
     }
 
-    // 4. Redirecionamento
+    // 4. Redirecionamento forçado
     console.log('🔄 Redirecionando para login...');
     const redirectUrl = `/auth/login?reason=${encodeURIComponent(reason)}`;
     
-    // Usar window.location.href para forçar refresh completo
+    // Forçar redirecionamento de múltiplas formas para garantir que funcione
     if (typeof window !== 'undefined') {
-      window.location.href = redirectUrl;
+      console.log('🔄 Executando redirecionamento para:', redirectUrl);
+      
+      // Método 1: window.location.replace (não fica no histórico)
+      try {
+        window.location.replace(redirectUrl);
+      } catch (error) {
+        console.warn('Método 1 falhou, tentando método 2:', error);
+        
+        // Método 2: window.location.href
+        try {
+          window.location.href = redirectUrl;
+        } catch (error2) {
+          console.warn('Método 2 falhou, tentando método 3:', error2);
+          
+          // Método 3: Usar setTimeout para evitar interferências
+          setTimeout(() => {
+            try {
+              window.location.href = redirectUrl;
+            } catch (error3) {
+              console.error('Todos os métodos de redirecionamento falharam:', error3);
+              // Último recurso: recarregar a página
+              window.location.reload();
+            }
+          }, 100);
+        }
+      }
     }
     
     return { success: true };
@@ -108,4 +153,42 @@ export async function performLogoutWithFeedback(
     // Mesmo assim, tentar logout forçado
     return performLogout(reason);
   }
+}
+
+/**
+ * Função de logout de emergência - força redirecionamento imediatamente
+ * Use apenas quando outros métodos falharem
+ */
+export function emergencyLogout(reason: string = 'emergency') {
+  console.warn('🚨 Executando logout de emergência...');
+  
+  try {
+    // Limpar localStorage rapidamente
+    if (typeof window !== 'undefined') {
+      localStorage.clear();
+      sessionStorage.clear();
+    }
+    
+    // Limpar cookies básicos
+    if (typeof document !== 'undefined') {
+      document.cookie.split(";").forEach(function(c) { 
+        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+      });
+    }
+    
+    // Forçar redirecionamento imediato
+    const redirectUrl = `/auth/login?reason=${encodeURIComponent(reason)}`;
+    window.location.replace(redirectUrl);
+    
+  } catch (error) {
+    console.error('❌ Erro no logout de emergência:', error);
+    // Último recurso: recarregar página
+    window.location.reload();
+  }
+}
+
+// Expor função no window para debug
+if (typeof window !== 'undefined') {
+  (window as any).emergencyLogout = emergencyLogout;
+  console.log('🔧 Função de emergência disponível: window.emergencyLogout()');
 } 

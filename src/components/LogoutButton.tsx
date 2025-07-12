@@ -3,7 +3,7 @@
 import { MdExitToApp } from 'react-icons/md';
 import { useAuth } from '@/hooks/useAuth';
 import { useState } from 'react';
-import { performLogout } from '@/lib/logout';
+import { performLogout, emergencyLogout } from '@/lib/logout';
 
 export default function LogoutButton() {
   const { userData } = useAuth();
@@ -12,12 +12,33 @@ export default function LogoutButton() {
   const handleLogout = async () => {
     if (isLoggingOut) return; // Prevenir cliques múltiplos
     
+    console.log('🔴 Iniciando logout do LogoutButton...');
     setIsLoggingOut(true);
     
     try {
+      // Timeout de segurança - se não redirecionar em 10 segundos, usar logout de emergência
+      const timeoutId = setTimeout(() => {
+        console.warn('⚠️ Timeout de logout atingido, executando logout de emergência...');
+        emergencyLogout('timeout');
+      }, 10000);
+      
       await performLogout('logout_button');
+      
+      // Se chegou até aqui sem redirecionar, limpar timeout e tentar redirecionamento manual
+      clearTimeout(timeoutId);
+      console.warn('⚠️ Logout concluído mas ainda na página, forçando redirecionamento...');
+      
+      setTimeout(() => {
+        window.location.href = '/auth/login?reason=manual_redirect';
+      }, 1000);
+      
     } catch (error) {
-      console.error('Erro no LogoutButton:', error);
+      console.error('❌ Erro no LogoutButton:', error);
+      
+      // Em caso de erro, forçar redirecionamento
+      setTimeout(() => {
+        window.location.href = '/auth/login?reason=error_redirect';
+      }, 1000);
     } finally {
       // O setIsLoggingOut(false) pode não ser executado devido ao redirecionamento
       // mas mantemos por segurança

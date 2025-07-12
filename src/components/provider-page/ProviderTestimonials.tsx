@@ -8,25 +8,22 @@ const testimonials = [
     name: 'João Barreto',
     business: "Barreto's Buffet",
     rating: 5,
-    comment: 'Desde que entrei na Be Fest, minha receita aumentou 250%. A plataforma é intuitiva e o suporte é excepcional.',
-    image: '/images/testimonials/provider1.jpg',
-    growth: '+250% receita'
+    comment: 'Desde que entrei na Be Fest, minha receita aumentou muito. A plataforma é intuitiva e o suporte é excepcional.',
+    image: '/images/testimonials/provider1.jpg'
   },
   {
     name: 'Maria Santos',
     business: 'Decorações Elegante',
     rating: 5,
     comment: 'Melhor decisão que tomei para meu negócio. Agora tenho agenda cheia e clientes qualificados.',
-    image: '/images/testimonials/provider2.jpg',
-    growth: '+180% clientes'
+    image: '/images/testimonials/provider2.jpg'
   },
   {
     name: 'Carlos Silva',
     business: 'DJ Carlos Mix',
     rating: 5,
     comment: 'A Be Fest me conectou com clientes que jamais teria acesso. Recomendo para todos os prestadores.',
-    image: '/images/testimonials/provider3.jpg',
-    growth: '+320% eventos'
+    image: '/images/testimonials/provider3.jpg'
   }
 ];
 
@@ -84,12 +81,7 @@ export function ProviderTestimonials() {
                 </div>
               </div>
 
-              {/* Growth Badge */}
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <span className="inline-block bg-gradient-to-r from-[#A502CA] to-[#CD0067] text-white px-3 py-1 rounded-full text-sm font-medium">
-                  {testimonial.growth}
-                </span>
-              </div>
+
             </motion.div>
           ))}
         </div>

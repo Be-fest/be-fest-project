@@ -405,18 +405,18 @@ export function OffCanvasCart({ isOpen, onClose, showPartyConfig = false, pendin
                     <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                       <MdShoppingCart className="text-3xl text-gray-400" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      Carrinho vazio
+                    <h3 className="text-xl font-bold text-gray-900 mb-3">
+                      Sua Nova Festa Começa Aqui!
                     </h3>
-                    <p className="text-gray-500 text-sm mb-6 max-w-sm">
-                      Adicione serviços para começar a montar sua festa dos sonhos
+                    <p className="text-gray-600 text-sm mb-8 max-w-sm leading-relaxed">
+                      Configure sua festa e adicione serviços incríveis para criar o evento dos seus sonhos
                     </p>
                     {!partyData && (
                       <button
                         onClick={() => setIsConfiguring(true)}
-                        className="bg-gradient-to-r from-[#F71875] to-[#A502CA] hover:from-[#E6006F] hover:to-[#8B0A9E] text-white px-6 py-3 rounded-xl font-medium transition-all transform hover:scale-105"
+                        className="bg-gradient-to-r from-[#F71875] to-[#A502CA] hover:from-[#E6006F] hover:to-[#8B0A9E] text-white px-8 py-4 rounded-xl font-bold text-lg transition-all transform hover:scale-105 shadow-lg shadow-pink-500/25"
                       >
-                        Configurar Nova Festa
+                        🎉 Criar Nova Festa
                       </button>
                     )}
                   </div>

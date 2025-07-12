@@ -7,7 +7,7 @@ const benefits = [
   {
     icon: MdTrendingUp,
     title: 'Aumente sua Receita',
-    description: 'Conecte-se com mais clientes e aumente seus ganhos mensais em até 300%',
+    description: 'Conecte-se com mais clientes e aumente seus ganhos mensais',
     color: 'from-green-500 to-emerald-600'
   },
   {
@@ -30,8 +30,8 @@ const benefits = [
   },
   {
     icon: MdMoney,
-    title: 'Sem Taxa Inicial',
-    description: 'Comece grátis! Pague apenas quando fechar negócios pela plataforma',
+    title: 'Sem taxas',
+    description: 'Completamente Grátis! Você fechará suas festas sem pagar taxa nenhuma',
     color: 'from-pink-500 to-rose-600'
   },
   {

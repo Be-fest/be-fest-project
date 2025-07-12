@@ -3,7 +3,8 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Link as ScrollLink } from 'react-scroll';
-import { FaFacebookF, FaInstagram, FaTwitter } from 'react-icons/fa';
+import { FaFacebookF, FaInstagram } from 'react-icons/fa';
+import { FaXTwitter } from 'react-icons/fa6';
 import { MdEmail, MdPhone, MdLocationOn } from 'react-icons/md';
 
 export function Footer() {
@@ -37,7 +38,7 @@ export function Footer() {
                 whileHover={{ scale: 1.1 }}
                 className="w-10 h-10 bg-[#FF0080] rounded-full flex items-center justify-center cursor-pointer"
               >
-                <FaTwitter className="text-white text-sm" />
+                <FaXTwitter className="text-white text-sm" />
               </motion.div>
             </div>
           </div>          <div className="space-y-6">
@@ -72,19 +73,28 @@ export function Footer() {
                 <div className="w-5 h-5 bg-[#FF0080] rounded-full flex items-center justify-center">
                   <MdEmail className="text-white text-xs" />
                 </div>
-                <span>contato@befest.com.br</span>
+                <div>
+                  <div className="text-xs font-medium text-gray-500">E-mail</div>
+                  <span>contato@befest.com.br</span>
+                </div>
               </div>
               <div className="flex items-center space-x-3">
                 <div className="w-5 h-5 bg-[#FF0080] rounded-full flex items-center justify-center">
                   <MdPhone className="text-white text-xs" />
                 </div>
-                <span>(11) 9999-9999</span>
+                <div>
+                  <div className="text-xs font-medium text-gray-500">Número de Telefone</div>
+                  <span>(11) 9999-9999</span>
+                </div>
               </div>
               <div className="flex items-center space-x-3">
                 <div className="w-5 h-5 bg-[#FF0080] rounded-full flex items-center justify-center">
                   <MdLocationOn className="text-white text-xs" />
                 </div>
-                <span>São Paulo, SP</span>
+                <div>
+                  <div className="text-xs font-medium text-gray-500">Local</div>
+                  <span>São Paulo, SP</span>
+                </div>
               </div>
             </div>
             <div className="pt-4">
