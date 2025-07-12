@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  MdDashboard, 
-  MdBusinessCenter, 
-  MdPendingActions, 
-  MdCheckCircle, 
-  MdCancel, 
-  MdAttachMoney, 
+import {
+  MdDashboard,
+  MdBusinessCenter,
+  MdPendingActions,
+  MdCheckCircle,
+  MdCancel,
+  MdAttachMoney,
   MdTrendingUp,
   MdCalendarToday,
   MdEvent,
@@ -19,7 +19,8 @@ import {
   MdSettings,
   MdVisibility,
   MdArrowUpward,
-  MdArrowDownward
+  MdArrowDownward,
+  MdClose
 } from 'react-icons/md';
 import { ProviderLayout } from '@/components/dashboard/ProviderLayout';
 import { ServiceManagement } from '@/components/dashboard/ServiceManagement';
@@ -27,8 +28,10 @@ import { ProviderProfile } from '@/components/dashboard/ProviderProfile';
 import { AuthGuard } from '@/components/AuthGuard';
 import { getProviderEventsAction } from '@/lib/actions/events';
 import { getProviderServicesAction, getProviderStatsAction } from '@/lib/actions/services';
+import { updateEventServiceStatusAction, updateEventServiceAction } from '@/lib/actions/event-services';
 import { EventWithServices, Service } from '@/types/database';
 import { useAuth } from '@/hooks/useAuth';
+import { calculateAdvancedPrice, formatGuestsInfo } from '@/utils/formatters';
 
 export default function ProviderDashboard() {
   const { userData } = useAuth();
@@ -43,43 +46,44 @@ export default function ProviderDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'requests' | 'services' | 'profile'>('overview');
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  const loadData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [eventsResult, servicesResult, statsResult] = await Promise.all([
+        getProviderEventsAction(),
+        getProviderServicesAction(),
+        getProviderStatsAction()
+      ]);
+
+      if (eventsResult.success && eventsResult.data) {
+        setEvents(eventsResult.data);
+      } else if (eventsResult.error) {
+        console.error('Erro ao carregar eventos:', eventsResult.error);
+      }
+
+      if (servicesResult.success && servicesResult.data) {
+        setServices(servicesResult.data);
+      } else if (servicesResult.error) {
+        console.error('Erro ao carregar serviços:', servicesResult.error);
+      }
+
+      if (statsResult.success && statsResult.data) {
+        setProviderStats(statsResult.data);
+      } else if (statsResult.error) {
+        console.error('Erro ao carregar estatísticas:', statsResult.error);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+      setError('Erro ao carregar dados do dashboard');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const [eventsResult, servicesResult, statsResult] = await Promise.all([
-          getProviderEventsAction(),
-          getProviderServicesAction(),
-          getProviderStatsAction()
-        ]);
-
-        if (eventsResult.success && eventsResult.data) {
-          setEvents(eventsResult.data);
-        } else if (eventsResult.error) {
-          console.error('Erro ao carregar eventos:', eventsResult.error);
-        }
-
-        if (servicesResult.success && servicesResult.data) {
-          setServices(servicesResult.data);
-        } else if (servicesResult.error) {
-          console.error('Erro ao carregar serviços:', servicesResult.error);
-        }
-
-        if (statsResult.success && statsResult.data) {
-          setProviderStats(statsResult.data);
-        } else if (statsResult.error) {
-          console.error('Erro ao carregar estatísticas:', statsResult.error);
-        }
-      } catch (error) {
-        console.error('Erro ao carregar dados:', error);
-        setError('Erro ao carregar dados do dashboard');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadData();
   }, []);
 
@@ -95,9 +99,60 @@ export default function ProviderDashboard() {
     event.event_services?.some(service => service.booking_status === 'rejected')
   ).length;
 
+  const calculateEstimatedPriceForEvent = (service: any, event: any) => {
+    // Se tem dados detalhados de convidados, usar cálculo avançado
+    if (event?.full_guests !== undefined && event?.half_guests !== undefined && event?.free_guests !== undefined) {
+      return calculateAdvancedPrice(service, event.full_guests, event.half_guests, event.free_guests);
+    }
+    
+    // Fallback para cálculo tradicional
+    const guestCount = event?.guest_count || 0;
+    
+    // Se já tem preço total definido, usar ele
+    if (service.total_estimated_price && service.total_estimated_price > 0) {
+      return service.total_estimated_price;
+    }
+    
+    // Calcular preço baseado no serviço original
+    if (service.service?.price_per_guest && guestCount > 0) {
+      return service.service.price_per_guest * guestCount;
+    }
+    
+    if (service.service?.base_price && service.service.base_price > 0) {
+      return service.service.base_price;
+    }
+    
+    // Fallback para campos de booking
+    if (service.price_per_guest_at_booking && guestCount > 0) {
+      return service.price_per_guest_at_booking * guestCount;
+    }
+    
+    // Preços estimados baseados na categoria como fallback
+    const categoryPrices: Record<string, number> = {
+      'buffet': 45,
+      'bar': 25,
+      'decoracao': 15,
+      'som': 20,
+      'fotografia': 80,
+      'seguranca': 30,
+      'limpeza': 12,
+      'transporte': 35
+    };
+    
+    const category = service.service?.category?.toLowerCase();
+    if (category && categoryPrices[category] && guestCount > 0) {
+      return categoryPrices[category] * guestCount;
+    }
+    
+    // Preço base mínimo para qualquer serviço
+    return guestCount > 0 ? 30 * guestCount : 500;
+  };
+
   const totalRevenue = events.reduce((sum, event) => {
     return sum + (event.event_services?.reduce((eventSum, service) => {
-      return eventSum + (service.total_estimated_price || 0);
+      // Usar a função de cálculo mais precisa
+      const estimatedPrice = calculateEstimatedPriceForEvent(service, event);
+      return eventSum + estimatedPrice;
     }, 0) || 0);
   }, 0);
 
@@ -143,6 +198,105 @@ export default function ProviderDashboard() {
         return 'Aguardando Pagamento';
       default:
         return status;
+    }
+  };
+
+  const handleApproveService = async (eventServiceId: string, eventId: string, guestCount: number) => {
+    // Usar confirmação mais simples mas melhor formatada
+    const priceInput = window.prompt(
+      `💰 APROVAÇÃO DE SERVIÇO\n\n` +
+      `Digite o valor que será cobrado por este serviço:\n` +
+      `(Para ${guestCount} convidados)\n\n` +
+      `Exemplo: 1500.00 ou 1500,50`
+    );
+    
+    if (!priceInput) return;
+    
+    const numericPrice = parseFloat(priceInput.replace(',', '.'));
+    if (isNaN(numericPrice) || numericPrice <= 0) {
+      window.alert('❌ Preço inválido!\n\nDigite um valor numérico válido (ex: 1500.00)');
+      return;
+    }
+    
+    const notes = window.prompt(
+      `📝 OBSERVAÇÕES (OPCIONAL)\n\n` +
+      `Adicione observações sobre o serviço:\n` +
+      `- Detalhes do que está incluso\n` +
+      `- Condições especiais\n` +
+      `- Instruções para o cliente`
+    ) || '';
+    
+    // Confirmação final
+    const confirmation = window.confirm(
+      `✅ CONFIRMAR APROVAÇÃO\n\n` +
+      `Valor: R$ ${numericPrice.toFixed(2).replace('.', ',')}\n` +
+      `Observações: ${notes || '(nenhuma)'}\n\n` +
+      `Deseja aprovar este serviço?`
+    );
+    
+    if (!confirmation) return;
+    
+    setActionLoading(`approve-${eventServiceId}`);
+    try {
+      // Primeiro, atualizar o preço e observações
+      const formData = new FormData();
+      formData.append('id', eventServiceId);
+      formData.append('total_estimated_price', numericPrice.toString());
+      formData.append('provider_notes', notes);
+      
+      const updateResult = await updateEventServiceAction(formData);
+      if (!updateResult.success) {
+        window.alert(`❌ Erro ao atualizar preço:\n${updateResult.error}`);
+        return;
+      }
+      
+      // Depois, aprovar o serviço
+      const result = await updateEventServiceStatusAction(eventServiceId, 'approved', notes);
+      if (result.success) {
+        window.alert('✅ Serviço aprovado com sucesso!\n\nO cliente será notificado.');
+        await loadData(); // Recarregar dados
+      } else {
+        window.alert(`❌ Erro ao aprovar serviço:\n${result.error}`);
+      }
+    } catch (error) {
+      console.error('Erro ao aprovar serviço:', error);
+      window.alert('❌ Erro inesperado ao aprovar serviço.');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleRejectService = async (eventServiceId: string) => {
+    const notes = window.prompt(
+      `❌ REJEIÇÃO DE SERVIÇO\n\n` +
+      `Informe o motivo da rejeição:\n` +
+      `- Por que não pode aceitar?\n` +
+      `- Sugestões alternativas\n` +
+      `- Outras observações`
+    ) || '';
+    
+    const confirmation = window.confirm(
+      `❌ CONFIRMAR REJEIÇÃO\n\n` +
+      `Motivo: ${notes || '(não informado)'}\n\n` +
+      `Tem certeza que deseja rejeitar este serviço?`
+    );
+    
+    if (!confirmation) return;
+    
+    setActionLoading(`reject-${eventServiceId}`);
+    try {
+      const result = await updateEventServiceStatusAction(eventServiceId, 'rejected', notes);
+      if (result.success) {
+        window.alert('✅ Serviço rejeitado.\n\nO cliente será notificado.');
+        await loadData(); // Recarregar dados
+      } else {
+        window.alert(`❌ Erro ao rejeitar serviço:\n${result.error}`);
+      }
+    } catch (error) {
+      console.error('Erro ao rejeitar serviço:', error);
+      window.alert('❌ Erro inesperado ao rejeitar serviço.');
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -311,42 +465,70 @@ export default function ProviderDashboard() {
           </div>
         ) : (
           <div className="space-y-4">
-            {events.slice(0, 5).map((event, index) => (
-              <div key={event.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <MdEvent className="text-purple-600" />
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900">{event.title}</h4>
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <span className="flex items-center gap-1">
-                        <MdCalendarToday className="text-xs" />
-                        {formatDate(event.event_date)}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <MdLocationOn className="text-xs" />
-                        {event.location}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <MdPeople className="text-xs" />
-                        {event.guest_count} convidados
-                      </span>
+            {events.slice(0, 5).map((event, index) => {
+              const hasPendingServices = event.event_services?.some(s => s.booking_status === 'pending_provider_approval');
+              
+              return (
+                <div key={event.id} className="bg-gray-50 rounded-xl p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <MdEvent className="text-purple-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900">{event.title}</h4>
+                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                          <span className="flex items-center gap-1">
+                            <MdCalendarToday className="text-xs" />
+                            {formatDate(event.event_date)}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <MdLocationOn className="text-xs" />
+                            {event.location}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <MdPeople className="text-xs" />
+                            {event.full_guests !== undefined && event.half_guests !== undefined && event.free_guests !== undefined
+                              ? formatGuestsInfo(event.full_guests, event.half_guests, event.free_guests)
+                              : `${event.guest_count} convidados`
+                            }
+                          </span>
+                        </div>
+                      </div>
                     </div>
+                    
+                    {hasPendingServices && (
+                      <button
+                        onClick={() => setActiveTab('requests')}
+                        className="px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white text-xs rounded-lg font-medium transition-colors flex items-center gap-1"
+                      >
+                        <MdPendingActions className="text-sm" />
+                        Ação Necessária
+                      </button>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {event.event_services?.map((service, serviceIndex) => {
+                      const estimatedPrice = calculateEstimatedPriceForEvent(service, event);
+                      
+                      return (
+                        <div key={serviceIndex} className="flex items-center gap-2 text-xs">
+                          <span className={`px-2 py-1 rounded-full font-medium ${getStatusColor(service.booking_status)}`}>
+                            {service.service?.name || 'Serviço'} - {getStatusText(service.booking_status)}
+                          </span>
+                          {estimatedPrice > 0 && (
+                            <span className="text-gray-600">
+                              {formatCurrency(estimatedPrice)}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {event.event_services?.map((service, serviceIndex) => (
-                    <span
-                      key={serviceIndex}
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(service.booking_status)}`}
-                    >
-                      {getStatusText(service.booking_status)}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -388,41 +570,95 @@ export default function ProviderDashboard() {
                     </span>
                     <span className="flex items-center gap-1">
                       <MdPeople className="text-sm" />
-                      {event.guest_count} convidados
+                      {event.full_guests !== undefined && event.half_guests !== undefined && event.free_guests !== undefined
+                        ? formatGuestsInfo(event.full_guests, event.half_guests, event.free_guests)
+                        : `${event.guest_count} convidados`
+                      }
                     </span>
                   </div>
                 </div>
               </div>
 
-              {event.event_services?.map((service, serviceIndex) => (
-                <div key={serviceIndex} className="bg-gray-50 rounded-xl p-4 mb-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <h4 className="font-medium text-gray-900">Serviço Solicitado</h4>
-                      <p className="text-sm text-gray-600">
-                        Preço estimado: {formatCurrency(service.total_estimated_price || 0)}
-                      </p>
+              {event.event_services?.map((service, serviceIndex) => {
+                const estimatedPrice = calculateEstimatedPriceForEvent(service, event);
+                const isPending = service.booking_status === 'pending_provider_approval';
+                const isApproving = actionLoading === `approve-${service.id}`;
+                const isRejecting = actionLoading === `reject-${service.id}`;
+                
+                return (
+                  <div key={serviceIndex} className="bg-gray-50 rounded-xl p-4 mb-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="font-medium text-gray-900">{service.service?.name || 'Serviço Solicitado'}</h4>
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(service.booking_status)}`}>
+                            {getStatusText(service.booking_status)}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-1">
+                          <strong>Preço estimado:</strong> {formatCurrency(estimatedPrice)}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Categoria: {service.service?.category || 'Não especificada'}
+                        </p>
+                      </div>
+                      
+                      {isPending && (
+                        <div className="flex items-center gap-2 ml-4">
+                          <button
+                            onClick={() => handleApproveService(service.id, event.id, event.guest_count)}
+                            disabled={isApproving || isRejecting}
+                            className="px-6 py-3 bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white text-sm rounded-lg font-medium transition-colors flex items-center gap-2"
+                          >
+                            {isApproving ? (
+                              <>
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                Aprovando...
+                              </>
+                            ) : (
+                              <>
+                                <MdCheckCircle className="text-lg" />
+                                Aprovar
+                              </>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleRejectService(service.id)}
+                            disabled={isApproving || isRejecting}
+                            className="px-6 py-3 bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white text-sm rounded-lg font-medium transition-colors flex items-center gap-2"
+                          >
+                            {isRejecting ? (
+                              <>
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                Rejeitando...
+                              </>
+                            ) : (
+                              <>
+                                <MdClose className="text-lg" />
+                                Rejeitar
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      )}
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(service.booking_status)}`}>
-                      {getStatusText(service.booking_status)}
-                    </span>
+                    
+                    {service.client_notes && (
+                      <div className="mb-3">
+                        <p className="text-sm font-medium text-gray-700">Observações do Cliente:</p>
+                        <p className="text-sm text-gray-600">{service.client_notes}</p>
+                      </div>
+                    )}
+                    
+                    {service.provider_notes && (
+                      <div className="mb-3">
+                        <p className="text-sm font-medium text-gray-700">Suas Observações:</p>
+                        <p className="text-sm text-gray-600">{service.provider_notes}</p>
+                      </div>
+                    )}
                   </div>
-                  
-                  {service.client_notes && (
-                    <div className="mb-3">
-                      <p className="text-sm font-medium text-gray-700">Observações do Cliente:</p>
-                      <p className="text-sm text-gray-600">{service.client_notes}</p>
-                    </div>
-                  )}
-                  
-                  {service.provider_notes && (
-                    <div className="mb-3">
-                      <p className="text-sm font-medium text-gray-700">Suas Observações:</p>
-                      <p className="text-sm text-gray-600">{service.provider_notes}</p>
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           ))}
         </div>

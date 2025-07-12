@@ -13,6 +13,9 @@ const createEventSchema = z.object({
   start_time: z.string().optional().nullable(),
   location: z.string().max(200, 'Localização deve ter no máximo 200 caracteres').optional().nullable(),
   guest_count: z.coerce.number().min(1, 'Número de convidados deve ser maior que 0').optional(),
+  full_guests: z.coerce.number().min(0, 'Número de convidados integrais deve ser 0 ou maior').optional(),
+  half_guests: z.coerce.number().min(0, 'Número de convidados meia deve ser 0 ou maior').optional(),
+  free_guests: z.coerce.number().min(0, 'Número de convidados gratuitos deve ser 0 ou maior').optional(),
   budget: z.coerce.number().min(0, 'Orçamento deve ser maior ou igual a 0').optional().nullable()
 })
 
@@ -24,6 +27,9 @@ const updateEventSchema = z.object({
   start_time: z.string().optional().nullable(),
   location: z.string().max(200, 'Localização deve ter no máximo 200 caracteres').optional().nullable(),
   guest_count: z.coerce.number().min(1, 'Número de convidados deve ser maior que 0').optional(),
+  full_guests: z.coerce.number().min(0, 'Número de convidados integrais deve ser 0 ou maior').optional(),
+  half_guests: z.coerce.number().min(0, 'Número de convidados meia deve ser 0 ou maior').optional(),
+  free_guests: z.coerce.number().min(0, 'Número de convidados gratuitos deve ser 0 ou maior').optional(),
   budget: z.coerce.number().min(0, 'Orçamento deve ser maior ou igual a 0').optional().nullable(),
   status: z.enum(['draft', 'published', 'completed', 'cancelled']).optional()
 })
@@ -221,6 +227,9 @@ export async function createEventAction(formData: FormData): Promise<ActionResul
       start_time: formData.get('start_time') as string || null,
       location: formData.get('location') as string || null,
       guest_count: formData.get('guest_count') as string || '0',
+      full_guests: formData.get('full_guests') as string || '0',
+      half_guests: formData.get('half_guests') as string || '0',
+      free_guests: formData.get('free_guests') as string || '0',
       budget: formData.get('budget') as string || null
     }
 
@@ -298,6 +307,9 @@ export async function updateEventAction(formData: FormData): Promise<ActionResul
       start_time: formData.get('start_time') as string || null,
       location: formData.get('location') as string || null,
       guest_count: formData.get('guest_count') as string,
+      full_guests: formData.get('full_guests') as string,
+      half_guests: formData.get('half_guests') as string,
+      free_guests: formData.get('free_guests') as string,
       budget: formData.get('budget') as string || null,
       status: formData.get('status') as string
     }

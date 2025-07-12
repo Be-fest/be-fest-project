@@ -122,6 +122,9 @@ export interface Database {
           start_time: string | null
           location: string | null
           guest_count: number
+          full_guests: number
+          half_guests: number
+          free_guests: number
           budget: number | null
           status: EventStatus
           created_at: string
@@ -136,6 +139,9 @@ export interface Database {
           start_time?: string | null
           location?: string | null
           guest_count?: number
+          full_guests?: number
+          half_guests?: number
+          free_guests?: number
           budget?: number | null
           status?: EventStatus
           created_at?: string
@@ -150,6 +156,9 @@ export interface Database {
           start_time?: string | null
           location?: string | null
           guest_count?: number
+          full_guests?: number
+          half_guests?: number
+          free_guests?: number
           budget?: number | null
           status?: EventStatus
           created_at?: string

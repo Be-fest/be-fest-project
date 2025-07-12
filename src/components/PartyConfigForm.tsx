@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { MdCalendarToday, MdLocationOn, MdGroup, MdAccessTime, MdAttachMoney } from 'react-icons/md';
 import { useCart } from '@/contexts/CartContext';
-import { createEventAction } from '@/lib/actions/events';
+import { createEventAction, updateEventAction } from '@/lib/actions/events';
 import { useRouter } from 'next/navigation';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
 import { calculateGuestCount } from '@/utils/formatters';
@@ -14,6 +14,7 @@ import { calculateGuestCount } from '@/utils/formatters';
 interface PartyConfigFormProps {
   onComplete: () => void;
   initialData?: PartyFormData;
+  eventId?: string; // Se fornecido, modo edição
   pendingService?: {
     serviceId: string;
     serviceName: string;
@@ -52,7 +53,7 @@ const partySchema = z.object({
 
 type PartyFormData = z.infer<typeof partySchema>;
 
-export function PartyConfigForm({ onComplete, initialData, pendingService }: PartyConfigFormProps) {
+export function PartyConfigForm({ onComplete, initialData, eventId, pendingService }: PartyConfigFormProps) {
   const { setPartyData, addToCart } = useCart();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,21 +86,36 @@ export function PartyConfigForm({ onComplete, initialData, pendingService }: Par
 
     try {
       const formData = new FormData();
+      
+      // Se for edição, incluir o ID
+      if (eventId) {
+        formData.append('id', eventId);
+      }
+      
       formData.append('title', data.title);
       if (data.description) formData.append('description', data.description);
       formData.append('event_date', data.event_date);
       if (data.start_time) formData.append('start_time', data.start_time);
       if (data.location) formData.append('location', data.location);
       formData.append('guest_count', calculateGuestCount(data.full_guests, data.half_guests, data.free_guests).toString());
+      formData.append('full_guests', data.full_guests.toString());
+      formData.append('half_guests', data.half_guests.toString());
+      formData.append('free_guests', data.free_guests.toString());
       if (data.budget) formData.append('budget', data.budget.toString());
 
-      const result = await createEventAction(formData);
+      // Usar action apropriada baseado no modo
+      const result = eventId 
+        ? await updateEventAction(formData)
+        : await createEventAction(formData);
 
       if (result.success && result.data) {
         // Toast de sucesso
+        const isEditing = !!eventId;
         toast.success(
-          'Festa criada com sucesso!',
-          `A festa "${data.title}" foi criada e você será redirecionado para gerenciá-la.`,
+          isEditing ? 'Festa atualizada com sucesso!' : 'Festa criada com sucesso!',
+          isEditing 
+            ? `A festa "${data.title}" foi atualizada.`
+            : `A festa "${data.title}" foi criada e você será redirecionado para gerenciá-la.`,
           4000
         );
 
@@ -114,8 +130,8 @@ export function PartyConfigForm({ onComplete, initialData, pendingService }: Par
           freeGuests: data.free_guests,
         });
 
-        // If there's a pending service, add it to the cart
-        if (pendingService) {
+        // If there's a pending service, add it to the cart (só para criação)
+        if (pendingService && !eventId) {
           addToCart({
             name: pendingService.serviceName,
             serviceName: pendingService.serviceName,
@@ -136,22 +152,28 @@ export function PartyConfigForm({ onComplete, initialData, pendingService }: Par
           );
         }
 
-        // Redirecionar para a página da festa criada após um delay
-        setTimeout(() => {
-          router.push(`/minhas-festas/${result.data!.id}`);
+        // Redirecionar ou simplesmente completar
+        if (eventId) {
+          // Para edição, só chamar onComplete
           onComplete();
-        }, 1000);
+        } else {
+          // Para criação, redirecionar após delay
+          setTimeout(() => {
+            router.push(`/minhas-festas/${result.data!.id}`);
+            onComplete();
+          }, 1000);
+        }
       } else {
-        const errorMessage = result.error || 'Erro ao criar evento';
+        const errorMessage = result.error || (eventId ? 'Erro ao atualizar evento' : 'Erro ao criar evento');
         setError(errorMessage);
         toast.error(
-          'Erro ao criar festa',
+          eventId ? 'Erro ao atualizar festa' : 'Erro ao criar festa',
           errorMessage,
           5000
         );
       }
     } catch (error) {
-      const errorMessage = 'Erro inesperado ao criar evento';
+      const errorMessage = eventId ? 'Erro inesperado ao atualizar evento' : 'Erro inesperado ao criar evento';
       setError(errorMessage);
       toast.error(
         'Erro inesperado',
@@ -371,7 +393,10 @@ export function PartyConfigForm({ onComplete, initialData, pendingService }: Par
           disabled={loading}
           className="flex-1 px-6 py-3 bg-gradient-to-r from-[#A502CA] to-[#8B0A9E] text-white rounded-lg hover:from-[#8B0A9E] hover:to-[#520029] transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? 'Criando Festa...' : 'Criar Festa'}
+                          {loading 
+                  ? (eventId ? 'Atualizando Festa...' : 'Criando Festa...') 
+                  : (eventId ? 'Atualizar Festa' : 'Criar Festa')
+                }
         </button>
       </div>
     </form>

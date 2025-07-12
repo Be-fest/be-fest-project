@@ -34,6 +34,7 @@ import { Event, EventWithServices, EventServiceWithDetails } from '@/types/datab
 import { ClientLayout } from '@/components/client/ClientLayout';
 import { FastAuthGuard } from '@/components/FastAuthGuard';
 import { useCart } from '@/contexts/CartContext';
+import { calculateAdvancedPrice, formatGuestsInfo } from '@/utils/formatters';
 
 export default function PartyDetailsPage() {
   const params = useParams();
@@ -52,69 +53,50 @@ export default function PartyDetailsPage() {
   const [serviceToCancel, setServiceToCancel] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  console.log('🎯 PartyDetailsPage renderizado!');
-  console.log('📋 params:', params);
-  console.log('🆔 eventId extraído:', eventId);
-  console.log('⚡ actionLoading:', actionLoading);
-  console.log('🔄 loading:', loading);
+
 
   // Carregar dados do evento
   const loadEventData = async (isInitialLoad = false) => {
     try {
-      console.log('🔄 Iniciando loadEventData para eventId:', eventId);
       if (isInitialLoad) {
         setLoading(true);
       }
       setError(null);
 
       // Buscar dados do evento
-      console.log('📞 Chamando getEventByIdAction...');
       const eventResult = await getEventByIdAction(eventId);
-      console.log('✅ getEventByIdAction resultado:', eventResult);
       
       if (!eventResult.success) {
-        console.error('❌ Erro ao buscar evento:', eventResult.error);
         setError(eventResult.error || 'Erro ao carregar evento');
         return;
       }
 
       setEvent(eventResult.data || null);
-      console.log('✅ Event setado:', eventResult.data?.title);
 
       // Buscar serviços do evento
-      console.log('📞 Chamando getEventServicesAction...');
       const servicesResult = await getEventServicesAction({ event_id: eventId });
-      console.log('✅ getEventServicesAction resultado:', servicesResult);
       
       if (!servicesResult.success) {
-        console.error('❌ Erro ao buscar serviços:', servicesResult.error);
         setError(servicesResult.error || 'Erro ao carregar serviços');
         return;
       }
 
       setEventServices(servicesResult.data || []);
-      console.log('✅ EventServices setado:', servicesResult.data?.length, 'serviços');
-
-      console.log('✅ loadEventData concluído com sucesso');
 
     } catch (error) {
-      console.error('❌ Erro em loadEventData:', error);
+      console.error('Erro em loadEventData:', error);
       setError('Erro inesperado ao carregar dados');
     } finally {
       if (isInitialLoad) {
-        console.log('🏁 Finalizando loadEventData, setLoading(false)');
         setLoading(false);
       }
     }
   };
 
   useEffect(() => {
-    console.log('🔵 useEffect executado! eventId:', eventId);
     if (eventId) {
-      console.log('🟢 eventId existe, chamando loadEventData');
       loadEventData(true);
     } else {
-      console.log('🔴 eventId não existe');
       setLoading(false);
     }
   }, [eventId]);
@@ -299,7 +281,15 @@ export default function PartyDetailsPage() {
   const getTotalPrice = () => {
     return eventServices
       .filter(es => es.booking_status === 'approved')
-      .reduce((total, es) => total + (es.total_estimated_price || 0), 0);
+      .reduce((total, es) => {
+        if (event && event.full_guests !== undefined && event.half_guests !== undefined && event.free_guests !== undefined) {
+          // Usar cálculo avançado se disponível
+          return total + calculateAdvancedPrice(es, event.full_guests, event.half_guests, event.free_guests);
+        } else {
+          // Fallback para cálculo tradicional
+          return total + (es.total_estimated_price || 0);
+        }
+      }, 0);
   };
 
   const allServicesConfirmed = eventServices.length > 0 && 
@@ -543,7 +533,21 @@ export default function PartyDetailsPage() {
                     <MdPeople className="text-[#F71875] text-xl" />
                     <div>
                       <p className="text-sm text-gray-500">Convidados</p>
-                      <p className="font-medium">{event.guest_count} pessoas</p>
+                      <p className="font-medium">
+                        {event.full_guests !== undefined && event.half_guests !== undefined && event.free_guests !== undefined
+                          ? formatGuestsInfo(event.full_guests, event.half_guests, event.free_guests)
+                          : (() => {
+                              // Mostrar distribuição estimada se não há dados específicos
+                              const totalGuests = event.guest_count || 0;
+                              const estimatedFull = Math.floor(totalGuests * 0.6); // 60% integral
+                              const estimatedHalf = Math.floor(totalGuests * 0.3); // 30% meia
+                              const estimatedFree = totalGuests - estimatedFull - estimatedHalf; // resto gratuito
+                              return totalGuests > 0 
+                                ? formatGuestsInfo(estimatedFull, estimatedHalf, estimatedFree)
+                                : '0 convidados';
+                            })()
+                        }
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -595,11 +599,31 @@ export default function PartyDetailsPage() {
                                                          <p className="text-sm text-gray-500">
                                {eventService.service?.provider?.organization_name || eventService.service?.provider?.full_name || 'Prestador'}
                              </p>
-                            {eventService.total_estimated_price && (
-                              <p className="text-lg font-bold text-[#F71875] mt-2">
-                                {formatCurrency(eventService.total_estimated_price)}
-                              </p>
-                            )}
+                            {(() => {
+                              // Calcular preço considerando dados disponíveis
+                              const calculatedPrice = (() => {
+                                if (event && event.full_guests !== undefined && event.half_guests !== undefined && event.free_guests !== undefined) {
+                                  // Usar dados detalhados se disponíveis
+                                  return calculateAdvancedPrice(eventService, event.full_guests, event.half_guests, event.free_guests);
+                                } else if (eventService.total_estimated_price && eventService.total_estimated_price > 0) {
+                                  // Usar preço já estimado
+                                  return eventService.total_estimated_price;
+                                } else {
+                                  // Fallback: assumir distribuição típica baseada no guest_count
+                                  const totalGuests = event.guest_count || 0;
+                                  const estimatedFull = Math.floor(totalGuests * 0.6); // 60% integral
+                                  const estimatedHalf = Math.floor(totalGuests * 0.3); // 30% meia
+                                  const estimatedFree = totalGuests - estimatedFull - estimatedHalf; // resto gratuito
+                                  return calculateAdvancedPrice(eventService, estimatedFull, estimatedHalf, estimatedFree);
+                                }
+                              })();
+                              
+                              return calculatedPrice > 0 ? (
+                                <p className="text-lg font-bold text-[#F71875] mt-2">
+                                  {formatCurrency(calculatedPrice)}
+                                </p>
+                              ) : null;
+                            })()}
                             {eventService.client_notes && (
                               <p className="text-sm text-gray-600 mt-2">
                                 <strong>Observações:</strong> {eventService.client_notes}
@@ -749,23 +773,65 @@ export default function PartyDetailsPage() {
                 <div className="bg-white rounded-xl shadow-sm p-6">
                   <h3 className="font-bold text-[#520029] mb-4">Resumo Financeiro</h3>
                   <div className="space-y-3">
-                    {eventServices
-                      .filter(es => es.booking_status === 'approved' && es.total_estimated_price)
-                      .map((eventService) => (
-                        <div key={eventService.id} className="flex justify-between text-sm">
-                          <span className="text-gray-600">
-                            {eventService.service?.name || 'Serviço'}
-                          </span>
-                          <span className="font-medium">
-                            {formatCurrency(eventService.total_estimated_price || 0)}
-                          </span>
-                        </div>
-                      ))}
+                    {eventServices.map((eventService) => {
+                        // Calcular preço considerando dados disponíveis
+                        const calculatedPrice = (() => {
+                          if (event && event.full_guests !== undefined && event.half_guests !== undefined && event.free_guests !== undefined) {
+                            // Usar dados detalhados se disponíveis
+                            return calculateAdvancedPrice(eventService, event.full_guests, event.half_guests, event.free_guests);
+                          } else if (eventService.total_estimated_price && eventService.total_estimated_price > 0) {
+                            // Usar preço já estimado
+                            return eventService.total_estimated_price;
+                          } else {
+                            // Fallback: assumir distribuição típica baseada no guest_count
+                            const totalGuests = event.guest_count || 0;
+                            const estimatedFull = Math.floor(totalGuests * 0.6); // 60% integral
+                            const estimatedHalf = Math.floor(totalGuests * 0.3); // 30% meia
+                            const estimatedFree = totalGuests - estimatedFull - estimatedHalf; // resto gratuito
+                            return calculateAdvancedPrice(eventService, estimatedFull, estimatedHalf, estimatedFree);
+                          }
+                        })();
+                        
+                        return (
+                          <div key={eventService.id} className="flex justify-between text-sm">
+                            <span className="text-gray-600">
+                              {eventService.service?.name || 'Serviço'}
+                              {eventService.booking_status !== 'approved' && (
+                                <span className="text-xs text-orange-600 ml-1">
+                                  ({getStatusText(eventService.booking_status)})
+                                </span>
+                              )}
+                            </span>
+                            <span className="font-medium">
+                              {formatCurrency(calculatedPrice)}
+                            </span>
+                          </div>
+                        );
+                      })}
                     <div className="border-t border-gray-200 pt-3">
                       <div className="flex justify-between font-bold text-lg">
                         <span>Total</span>
                         <span className="text-[#F71875]">
-                          {formatCurrency(getTotalPrice())}
+                          {formatCurrency(eventServices.reduce((total, es) => {
+                            // Calcular preço considerando dados disponíveis
+                            const calculatedPrice = (() => {
+                              if (event && event.full_guests !== undefined && event.half_guests !== undefined && event.free_guests !== undefined) {
+                                // Usar dados detalhados se disponíveis
+                                return calculateAdvancedPrice(es, event.full_guests, event.half_guests, event.free_guests);
+                              } else if (es.total_estimated_price && es.total_estimated_price > 0) {
+                                // Usar preço já estimado
+                                return es.total_estimated_price;
+                              } else {
+                                // Fallback: assumir distribuição típica baseada no guest_count
+                                const totalGuests = event.guest_count || 0;
+                                const estimatedFull = Math.floor(totalGuests * 0.6); // 60% integral
+                                const estimatedHalf = Math.floor(totalGuests * 0.3); // 30% meia
+                                const estimatedFree = totalGuests - estimatedFull - estimatedHalf; // resto gratuito
+                                return calculateAdvancedPrice(es, estimatedFull, estimatedHalf, estimatedFree);
+                              }
+                            })();
+                            return total + calculatedPrice;
+                          }, 0))}
                         </span>
                       </div>
                     </div>
@@ -806,20 +872,23 @@ export default function PartyDetailsPage() {
                   </div>
                 </div>
 
-                <PartyConfigForm
-                  initialData={{
-                    title: event.title,
-                    description: event.description || '',
-                    event_date: event.event_date,
-                    start_time: event.start_time || '',
-                    location: event.location || '',
-                    full_guests: Math.floor((event.guest_count || 0) * 0.6), // Estimativa
-                    half_guests: Math.floor((event.guest_count || 0) * 0.3), // Estimativa
-                    free_guests: Math.floor((event.guest_count || 0) * 0.1), // Estimativa
-                    budget: event.budget || undefined,
-                  }}
-                  onComplete={handleEditSuccess}
-                />
+                {event && (
+                  <PartyConfigForm
+                    eventId={event.id} // Passar ID para modo edição
+                    initialData={{
+                      title: event.title,
+                      description: event.description || '',
+                      event_date: event.event_date,
+                      start_time: event.start_time || '',
+                      location: event.location || '',
+                      full_guests: event.full_guests !== undefined ? event.full_guests : Math.floor((event.guest_count || 0) * 0.6), // Usar valor real ou estimativa
+                      half_guests: event.half_guests !== undefined ? event.half_guests : Math.floor((event.guest_count || 0) * 0.3), // Usar valor real ou estimativa
+                      free_guests: event.free_guests !== undefined ? event.free_guests : Math.floor((event.guest_count || 0) * 0.1), // Usar valor real ou estimativa
+                      budget: event.budget || undefined,
+                    }}
+                    onComplete={handleEditSuccess}
+                  />
+                )}
               </motion.div>
             </motion.div>
           )}
