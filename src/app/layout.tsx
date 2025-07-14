@@ -1,11 +1,7 @@
 import type { Metadata } from "next";
 import { Poppins, Roboto } from "next/font/google";
-import { CartProvider } from "@/contexts/CartContext";
-import { OffCanvasProvider } from "@/contexts/OffCanvasContext";
 import { SessionProvider } from "@/components/SessionProvider";
 import { GlobalToastProvider } from "@/contexts/GlobalToastContext";
-import { FloatingCart } from "@/components/FloatingCart";
-import { CartWrapper } from "@/components/CartWrapper";
 import { RoutesModal } from "@/components/ui";
 import "./globals.css";
 
@@ -39,14 +35,8 @@ export default function RootLayout({
       >
         <GlobalToastProvider>
           <SessionProvider>
-            <CartProvider>
-              <OffCanvasProvider>
-                {children}
-                <FloatingCart />
-                <CartWrapper />
-                <RoutesModal />
-              </OffCanvasProvider>
-            </CartProvider>
+            {children}
+            <RoutesModal />
           </SessionProvider>
         </GlobalToastProvider>
       </body>

@@ -3,14 +3,12 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { MdArrowBack, MdSearch, MdStar, MdLocationOn, MdWarning, MdTune, MdEvent } from 'react-icons/md';
+import { MdArrowBack, MdSearch, MdStar, MdLocationOn, MdWarning, MdTune } from 'react-icons/md';
 import { Categories } from '@/components/Categories';
 import { getPublicServicesAction } from '@/lib/actions/services';
 import { ServiceWithProvider } from '@/types/database';
 import { Header } from '@/components/Header';
-import { ProvidersGrid } from '@/components/ProvidersGrid';
 import { ServicesSkeleton } from '@/components/ui';
-import { useCart } from '@/contexts/CartContext';
 
 // Skeleton Components para a página de serviços
 const SearchSkeleton = () => (
@@ -36,6 +34,133 @@ const SearchSkeleton = () => (
   </div>
 );
 
+// Interface para prestadores agrupados
+interface GroupedProvider {
+  id: string;
+  name: string;
+  services: ServiceWithProvider[];
+  minPrice: number;
+  serviceCount: number;
+}
+
+// Componente para exibir os prestadores agrupados
+const ProvidersGrid = ({ services }: { services: ServiceWithProvider[] }) => {
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(price);
+  };
+
+  // Agrupar serviços por prestador
+  const groupedProviders = services.reduce((acc, service) => {
+    const providerId = service.provider_id;
+    const providerName = service.provider?.organization_name || service.provider?.full_name || 'Prestador';
+    
+    if (!acc[providerId]) {
+      acc[providerId] = {
+        id: providerId,
+        name: providerName,
+        services: [],
+        minPrice: Infinity,
+        serviceCount: 0,
+        provider: service.provider
+      };
+    }
+    
+    acc[providerId].services.push(service);
+    acc[providerId].serviceCount++;
+    
+    // Calcular o menor preço considerando base_price e price_per_guest
+    const servicePrice = service.base_price || 0;
+    const pricePerGuest = service.price_per_guest || 0;
+    
+    // Usar o menor entre base_price e price_per_guest (se existir)
+    let minServicePrice = servicePrice;
+    if (pricePerGuest > 0 && pricePerGuest < minServicePrice) {
+      minServicePrice = pricePerGuest;
+    }
+    
+    if (minServicePrice < acc[providerId].minPrice) {
+      acc[providerId].minPrice = minServicePrice;
+    }
+    
+    return acc;
+  }, {} as Record<string, GroupedProvider & { provider: any }>);
+
+  // Converter para array
+  const providers = Object.values(groupedProviders);
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {providers.map((provider) => (
+        <motion.div
+          key={provider.id}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
+        >
+          {/* Imagem do prestador */}
+          <div className="h-48 bg-gray-200 overflow-hidden">
+            <img
+              src={provider.provider?.logo_url || provider.services[0]?.images_urls?.[0] || '/placeholder-provider.jpg'}
+              alt={provider.name}
+              className="w-full h-full object-cover"
+            />
+          </div>
+
+          {/* Conteúdo do card */}
+          <div className="p-6">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex-1">
+                <h3 className="text-xl font-bold text-gray-900 mb-1">{provider.name}</h3>
+                <p className="text-gray-600 text-sm">
+                  {provider.serviceCount} serviço{provider.serviceCount > 1 ? 's' : ''} disponível{provider.serviceCount > 1 ? 'is' : ''}
+                </p>
+              </div>
+              <div className="flex items-center text-yellow-500">
+                <MdStar className="text-lg mr-1" />
+                <span className="text-sm font-medium text-gray-700">
+                  5.0
+                </span>
+              </div>
+            </div>
+
+            {/* Mostrar algumas categorias */}
+            <div className="mb-4">
+              {provider.services.slice(0, 3).map((service, index) => (
+                <span key={index} className="inline-block bg-[#FF0080] text-white px-3 py-1 rounded-full text-xs font-medium mr-2 mb-2">
+                  {service.category}
+                </span>
+              ))}
+            </div>
+
+            {/* Preço e localização */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-[#FF0080] font-bold text-lg">
+                A partir de {formatPrice(provider.minPrice)}
+              </div>
+              <div className="flex items-center text-gray-500 text-sm">
+                <MdLocationOn className="mr-1" />
+                <span>{provider.provider?.area_of_operation || 'São Paulo'}</span>
+              </div>
+            </div>
+
+            {/* Botão de ação */}
+            <Link
+              href={`/prestador/${provider.id}`}
+              className="w-full bg-[#FF0080] hover:bg-[#E6006F] text-white py-3 px-4 rounded-lg transition-colors duration-200 font-medium text-center block"
+            >
+              Ver Prestador
+            </Link>
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  );
+};
+
 export default function ServicesPage() {
   const [services, setServices] = useState<ServiceWithProvider[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,7 +169,6 @@ export default function ServicesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
-  const { partyData, eventId } = useCart();
 
   // Debounce search query
   useEffect(() => {
@@ -89,10 +213,6 @@ export default function ServicesPage() {
     setSelectedCategory(category === selectedCategory ? undefined : category);
   };
 
-  const handleProviderClick = (providerId: string) => {
-    window.location.href = `/prestador/${providerId}`;
-  };
-
   const clearFilters = () => {
     setSelectedCategory(undefined);
     setSearchQuery('');
@@ -130,26 +250,11 @@ export default function ServicesPage() {
             className="mb-8"
           >
             <h1 className="text-3xl md:text-4xl font-bold text-[#520029] mb-4">
-              Encontre Prestadores
+              Serviços Disponíveis
             </h1>
             <p className="text-[#6E5963] text-lg">
-              Descubra os melhores prestadores para sua festa
+              Descubra os melhores serviços para sua festa
             </p>
-            
-            {/* Banner informativo quando vem de uma festa específica */}
-            {partyData && eventId && (
-              <div className="mt-6 bg-gradient-to-r from-[#F71875] to-[#A502CA] rounded-lg p-4 text-white">
-                <div className="flex items-center gap-3">
-                  <MdEvent className="text-2xl flex-shrink-0" />
-                  <div>
-                    <h3 className="font-bold text-lg">Adicionando serviços para: {partyData.eventName}</h3>
-                    <p className="text-pink-100 text-sm">
-                      Data: {new Date(partyData.eventDate).toLocaleDateString('pt-BR')} • {partyData.fullGuests + partyData.halfGuests + partyData.freeGuests} convidados
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
           </motion.div>
 
           {/* Search and Filters */}
@@ -164,10 +269,10 @@ export default function ServicesPage() {
                 <MdSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
                 <input
                   type="text"
-                  placeholder="Buscar prestadores..."
+                  placeholder="Buscar serviços..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full md:w-48 pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F71875] focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F71875] focus:border-transparent"
                 />
               </div>
               <select
@@ -203,7 +308,7 @@ export default function ServicesPage() {
 
           {/* Active Filters */}
           {(selectedCategory || searchQuery || locationFilter) && (
-            <div className="bg-white border-b border-gray-200">
+            <div className="bg-white border-b border-gray-200 mb-8">
               <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-3">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm text-gray-600">Filtros ativos:</span>
@@ -296,10 +401,7 @@ export default function ServicesPage() {
             )}
 
             {!loading && !error && services.length > 0 && (
-              <ProvidersGrid 
-                selectedCategory={selectedCategory}
-                searchQuery={searchQuery}
-              />
+              <ServicesGrid services={services} />
             )}
           </motion.div>
         </div>

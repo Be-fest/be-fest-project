@@ -6,7 +6,6 @@ import { Link as ScrollLink } from 'react-scroll';
 import { Logo } from '@/components/ui';
 import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { useOffCanvas } from '@/contexts/OffCanvasContext';
 import { createClient } from '@/lib/supabase/client';
 import LogoutButton from './LogoutButton';
 import { 
@@ -237,7 +236,6 @@ export function Header() {
 function HomeHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showProviderNotice, setShowProviderNotice] = useState(true);
-  const { isCartOpen, openOffCanvas } = useOffCanvas();
   const [user, setUser] = useState<any>(null);
   const [userType, setUserType] = useState<'client' | 'service_provider' | null>(null);
   const [loading, setLoading] = useState(true);
@@ -300,14 +298,8 @@ function HomeHeader() {
         )}
       </AnimatePresence>
       
-      {isCartOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-40" />
-      )}
-      
       <header 
-        className={`w-full bg-white shadow-sm py-4 px-6 fixed ${userType === 'service_provider' && showProviderNotice ? 'top-12' : 'top-0'} z-40 transition-all duration-300 ${
-          isCartOpen ? 'opacity-90' : ''
-        }`}
+        className={`w-full bg-white shadow-sm py-4 px-6 fixed ${userType === 'service_provider' && showProviderNotice ? 'top-12' : 'top-0'} z-40 transition-all duration-300`}
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center">
@@ -351,15 +343,13 @@ function HomeHeader() {
               </>
             ) : (
               <>
-                <button 
-                  onClick={() => {
-                    openOffCanvas();
-                    setIsMenuOpen(false);
-                  }}
+                <Link 
+                  href="/minhas-festas"
+                  onClick={() => setIsMenuOpen(false)}
                   className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
                 >
                   New Fest
-                </button>
+                </Link>
                 <ScrollLink 
                   to="contatos" 
                   smooth={true} 
@@ -473,15 +463,13 @@ function HomeHeader() {
               </>
             ) : (
               <>
-                <button 
-                  onClick={() => {
-                    openOffCanvas();
-                    setIsMenuOpen(false);
-                  }}
+                <Link 
+                  href="/minhas-festas"
+                  onClick={() => setIsMenuOpen(false)}
                   className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
                 >
                   New Fest
-                </button>
+                </Link>
                 <ScrollLink 
                   to="contatos" 
                   smooth={true} 

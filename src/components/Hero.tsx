@@ -4,11 +4,9 @@ import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { Button } from "./ui";
 import { Header } from "./Header";
-import { useOffCanvas } from "@/contexts/OffCanvasContext";
 import { createClient } from "@/lib/supabase/client";
 
 export function Hero() {
-  const { openOffCanvas } = useOffCanvas();
   const [userType, setUserType] = useState<'client' | 'service_provider' | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
@@ -81,16 +79,7 @@ export function Hero() {
               transition={{ duration: 0.6, delay: 0.3 }}
               className="w-full lg:w-auto"
             >
-              <Button
-                onClick={openOffCanvas}
-                style={{
-                  background:
-                    "linear-gradient(180deg, #FF0080 0%, #CD0067 100%)",
-                }}
-                className="w-full md:w-auto text-white px-8 md:px-12 py-3 md:py-4 text-base md:text-lg font-poppins rounded-lg hover:opacity-90 transition-all duration-300"
-              >
-                New Fest
-              </Button>
+              
             </motion.div>
           </motion.div>
 

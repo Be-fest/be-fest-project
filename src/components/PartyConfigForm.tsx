@@ -4,8 +4,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { MdCalendarToday, MdLocationOn, MdGroup, MdAccessTime, MdAttachMoney } from 'react-icons/md';
-import { useCart } from '@/contexts/CartContext';
+import { MdCalendarToday, MdLocationOn, MdGroup, MdAccessTime } from 'react-icons/md';
 import { createEventAction, updateEventAction } from '@/lib/actions/events';
 import { useRouter } from 'next/navigation';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
@@ -14,18 +13,9 @@ import { calculateGuestCount } from '@/utils/formatters';
 interface PartyConfigFormProps {
   onComplete: () => void;
   initialData?: PartyFormData;
-  eventId?: string; // Se fornecido, modo edição
-  pendingService?: {
-    serviceId: string;
-    serviceName: string;
-    providerName: string;
-    providerId: string;
-    price: number;
-    image: string;
-  };
+  eventId?: string;
 }
 
-// Schema de validação - removendo o campo budget
 const partySchema = z.object({
   title: z.string().min(3, 'Nome do evento deve ter pelo menos 3 caracteres'),
   description: z.string().optional(),
@@ -53,8 +43,7 @@ const partySchema = z.object({
 
 type PartyFormData = z.infer<typeof partySchema>;
 
-export function PartyConfigForm({ onComplete, initialData, eventId, pendingService }: PartyConfigFormProps) {
-  const { setPartyData, addToCart } = useCart();
+export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfigFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -100,7 +89,6 @@ export function PartyConfigForm({ onComplete, initialData, eventId, pendingServi
       formData.append('full_guests', data.full_guests.toString());
       formData.append('half_guests', data.half_guests.toString());
       formData.append('free_guests', data.free_guests.toString());
-      // Removendo o campo budget do formData
 
       // Usar action apropriada baseado no modo
       const result = eventId 
@@ -117,39 +105,6 @@ export function PartyConfigForm({ onComplete, initialData, eventId, pendingServi
           undefined, // message (optional)
           4000 // duration
         );
-
-        // Save the party data for cart context (legacy compatibility)
-        setPartyData({
-          eventName: data.title,
-          eventDate: data.event_date,
-          startTime: data.start_time || '',
-          location: data.location || '',
-          fullGuests: data.full_guests,
-          halfGuests: data.half_guests,
-          freeGuests: data.free_guests,
-        });
-
-        // If there's a pending service, add it to the cart (só para criação)
-        if (pendingService && !eventId) {
-          addToCart({
-            name: pendingService.serviceName,
-            serviceName: pendingService.serviceName,
-            serviceId: pendingService.serviceId,
-            price: pendingService.price,
-            quantity: 1,
-            providerId: pendingService.providerId,
-            providerName: pendingService.providerName,
-            category: 'service',
-            image: pendingService.image
-          });
-
-          // Toast para serviço adicionado
-          toast.info(
-            'Serviço adicionado!',
-            `${pendingService.serviceName} foi adicionado à sua festa.`,
-            3000
-          );
-        }
 
         // Redirecionar ou simplesmente completar
         if (eventId) {

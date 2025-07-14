@@ -2,8 +2,6 @@
 
 import { useState } from 'react';
 import { Hero } from '@/components/Hero';
-import { Categories } from '@/components/Categories';
-import { ProvidersGrid } from '@/components/ProvidersGrid';
 import { HowItWorks } from '@/components/HowItWorks';
 import { Stats } from '@/components/Stats';
 import { Testimonials } from '@/components/Testimonials';
@@ -22,12 +20,6 @@ export default function Home() {
   return (
     <main className="min-h-screen">
       <Hero />
-      <div id="categorias">
-        <Categories onCategorySelect={handleCategorySelect} />
-      </div>
-      <div id="prestadores">
-        <ProvidersGrid selectedCategory={selectedCategory} />
-      </div>
       <div id="como-funciona">
         <HowItWorks />
       </div>

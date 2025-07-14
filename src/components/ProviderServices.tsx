@@ -3,8 +3,6 @@
 import { motion } from 'framer-motion';
 import { MdAdd } from 'react-icons/md';
 import { ShareButton } from './ShareButton';
-import { useCart } from '@/contexts/CartContext';
-import { useOffCanvas } from '@/contexts/OffCanvasContext';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
 
 interface ServiceItem {
@@ -28,35 +26,15 @@ interface ProviderServicesProps {
 }
 
 export function ProviderServices({ services, providerId }: ProviderServicesProps) {
-  const { addToCart, partyData } = useCart();
-  const { openOffCanvas } = useOffCanvas();
   const toast = useToastGlobal();
 
   const handleAddToCart = (item: ServiceItem, categoryName: string) => {
-    const serviceData = {
-      serviceId: item.id, // Usar o ID real do serviço
-      name: item.name,
-      serviceName: item.name,
-      price: item.price,
-      quantity: 1,
-      providerId: item.providerId || providerId || '1', // Usar providerId do item ou da prop
-      providerName: categoryName,
-      category: 'service',
-      image: item.image
-    };
-
-    // Sempre adicionar ao carrinho primeiro
-    addToCart(serviceData);
-
     // Mostrar toast de sucesso
     toast.success(
-      'Serviço adicionado!',
-      `${item.name} foi adicionado ao seu carrinho.`,
+      'Interesse registrado!',
+      `Interesse em ${item.name} foi registrado. Entre em contato com o prestador para mais detalhes.`,
       3000
     );
-
-    // Sempre abrir o offcanvas para mostrar o carrinho
-    openOffCanvas();
   };
   return (
     <div className="space-y-8">
@@ -134,7 +112,7 @@ export function ProviderServices({ services, providerId }: ProviderServicesProps
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => openOffCanvas()}
+            onClick={() => toast.info('Redirecionando...', 'Você será redirecionado para criar sua festa.', 2000)}
             className="bg-white text-[#FF0080] px-8 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors duration-300"
           >
             New Fest
