@@ -17,6 +17,22 @@ EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
+-- Adicionar o status 'waiting_payment' ao enum event_status se não existir
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_enum 
+        WHERE enumlabel = 'waiting_payment' 
+        AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'event_status')
+    ) THEN
+        ALTER TYPE event_status ADD VALUE 'waiting_payment' BEFORE 'cancelled';
+        RAISE NOTICE 'Adicionado status waiting_payment ao enum event_status';
+    END IF;
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE NOTICE 'Erro ao adicionar waiting_payment ao enum: %', SQLERRM;
+END $$;
+
 DO $$ BEGIN
     CREATE TYPE service_status AS ENUM ('active', 'inactive');
 EXCEPTION
@@ -24,9 +40,36 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
-    CREATE TYPE booking_status AS ENUM ('pending', 'accepted', 'rejected', 'cancelled', 'completed');
+    CREATE TYPE booking_status AS ENUM ('pending', 'waiting_payment', 'confirmed', 'rejected', 'cancelled', 'completed');
 EXCEPTION
     WHEN duplicate_object THEN null;
+END $$;
+
+-- Adicionar novos status ao enum booking_status se não existirem
+DO $$ 
+BEGIN
+    -- Adicionar waiting_payment se não existir
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_enum 
+        WHERE enumlabel = 'waiting_payment' 
+        AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'booking_status')
+    ) THEN
+        ALTER TYPE booking_status ADD VALUE 'waiting_payment' BEFORE 'rejected';
+        RAISE NOTICE 'Adicionado status waiting_payment ao enum booking_status';
+    END IF;
+    
+    -- Adicionar confirmed se não existir
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_enum 
+        WHERE enumlabel = 'confirmed' 
+        AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'booking_status')
+    ) THEN
+        ALTER TYPE booking_status ADD VALUE 'confirmed' BEFORE 'rejected';
+        RAISE NOTICE 'Adicionado status confirmed ao enum booking_status';
+    END IF;
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE NOTICE 'Erro ao adicionar novos status ao enum booking_status: %', SQLERRM;
 END $$;
 
 DO $$ BEGIN
@@ -250,3 +293,34 @@ GRANT USAGE ON SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated;
+
+-- 10. Adicionar constraint única para prevenir serviços duplicados
+DO $$ 
+BEGIN
+    -- Adicionar constraint única para prevenir duplicação de serviços
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conname = 'event_services_unique_service_per_event' 
+        AND conrelid = 'public.event_services'::regclass
+    ) THEN
+        -- Primeiro, limpar possíveis duplicatas existentes
+        WITH duplicates AS (
+            SELECT id, ROW_NUMBER() OVER (
+                PARTITION BY event_id, service_id, provider_id 
+                ORDER BY created_at ASC
+            ) as rn
+            FROM public.event_services
+        )
+        DELETE FROM public.event_services 
+        WHERE id IN (
+            SELECT id FROM duplicates WHERE rn > 1
+        );
+        
+        -- Então adicionar a constraint única
+        ALTER TABLE public.event_services 
+        ADD CONSTRAINT event_services_unique_service_per_event 
+        UNIQUE (event_id, service_id, provider_id);
+        
+        RAISE NOTICE 'Constraint única adicionada para event_services';
+    END IF;
+END $$;

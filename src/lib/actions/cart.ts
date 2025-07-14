@@ -193,31 +193,16 @@ export async function addServiceToCartAction(serviceData: {
     // Verificar se o serviço já foi adicionado ao evento (incluindo provider_id)
     const { data: existingService } = await supabase
       .from('event_services')
-      .select('id, quantity')
+      .select('id, quantity, client_notes')
       .eq('event_id', validatedData.event_id)
       .eq('service_id', validatedData.service_id)
       .eq('provider_id', validatedData.provider_id)
       .single()
 
     if (existingService) {
-      console.log('Serviço já existe, atualizando observações apenas:', existingService.id);
-      // Atualizar observações se já existe
-      const { data: updatedService, error } = await supabase
-        .from('event_services')
-        .update({ 
-          client_notes: validatedData.client_notes,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', existingService.id)
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Error updating event service:', error)
-        return { success: false, error: 'Erro ao atualizar serviço' }
-      }
-
-      return { success: true, data: updatedService }
+      console.log('✅ Serviço já existe, retornando existente:', existingService.id);
+      // Retornar o serviço existente sem modificar nada
+      return { success: true, data: existingService }
     }
 
     // Buscar dados do serviço para calcular preços
@@ -231,7 +216,7 @@ export async function addServiceToCartAction(serviceData: {
       return { success: false, error: 'Serviço não encontrado' }
     }
 
-    console.log('Criando novo event_service:', {
+    console.log('🆕 Criando novo event_service:', {
       event_id: validatedData.event_id,
       service_id: validatedData.service_id,
       provider_id: validatedData.provider_id
@@ -252,10 +237,11 @@ export async function addServiceToCartAction(serviceData: {
       .single()
 
     if (error) {
-      console.error('Error creating event service:', error)
+      console.error('❌ Error creating event service:', error)
       
-      // Se o erro for de duplicação, tentar buscar o serviço existente
+      // Se o erro for de duplicação devido à constraint única
       if (error.code === '23505') { // Unique constraint violation
+        console.log('🔄 Constraint única violada, buscando serviço existente...');
         const { data: existingService } = await supabase
           .from('event_services')
           .select('*')
@@ -265,7 +251,7 @@ export async function addServiceToCartAction(serviceData: {
           .single()
 
         if (existingService) {
-          console.log('Serviço já existe após erro de duplicação:', existingService.id);
+          console.log('✅ Serviço encontrado após violação de constraint:', existingService.id);
           return { success: true, data: existingService }
         }
       }
@@ -273,7 +259,7 @@ export async function addServiceToCartAction(serviceData: {
       return { success: false, error: 'Erro ao adicionar serviço' }
     }
 
-    console.log('Event service criado com sucesso:', eventService.id);
+    console.log('✅ Event service criado com sucesso:', eventService.id);
     revalidatePath('/perfil')
     revalidatePath(`/minhas-festas/${validatedData.event_id}`)
     return { success: true, data: eventService }

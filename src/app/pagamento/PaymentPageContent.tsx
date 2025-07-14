@@ -15,6 +15,7 @@ export function PaymentPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const eventId = searchParams.get('event_id');
+  const servicesParam = searchParams.get('services'); // Lista de IDs de serviços separados por vírgula
 
   const [event, setEvent] = useState<Event | null>(null);
   const [eventServices, setEventServices] = useState<EventServiceWithDetails[]>([]);
@@ -50,9 +51,18 @@ export function PaymentPageContent() {
         return;
       }
 
-      const approvedServices = (servicesResult.data || []).filter(
+      let approvedServices = (servicesResult.data || []).filter(
         service => service.booking_status === 'approved'
       );
+
+      // Se foi especificado serviços específicos, filtrar apenas esses
+      if (servicesParam) {
+        const selectedServiceIds = servicesParam.split(',').map(id => id.trim());
+        approvedServices = approvedServices.filter(service => 
+          selectedServiceIds.includes(service.id)
+        );
+      }
+      
       setEventServices(approvedServices);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
@@ -178,7 +188,7 @@ export function PaymentPageContent() {
               </Link>
               <h1 className="text-3xl font-bold text-[#520029] mb-2">Pagamento</h1>
               <p className="text-gray-600">
-                Finalize o pagamento para confirmar os serviços da festa <strong>{event.title}</strong>
+                Finalize o pagamento para confirmar {servicesParam ? 'os serviços selecionados' : 'todos os serviços'} da festa <strong>{event.title}</strong>
               </p>
             </div>
 
@@ -204,7 +214,14 @@ export function PaymentPageContent() {
 
               {/* Services List */}
               <div className="border-t pt-4">
-                <h3 className="font-semibold text-gray-900 mb-3">Serviços Contratados</h3>
+                <h3 className="font-semibold text-gray-900 mb-3">
+                  {servicesParam ? 'Serviços Selecionados para Pagamento' : 'Serviços Contratados'}
+                  {servicesParam && eventServices.length > 0 && (
+                    <span className="text-sm font-normal text-gray-500 ml-2">
+                      ({eventServices.length} {eventServices.length === 1 ? 'serviço' : 'serviços'})
+                    </span>
+                  )}
+                </h3>
                 <div className="space-y-3">
                   {eventServices.map((service, index) => (
                     <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">

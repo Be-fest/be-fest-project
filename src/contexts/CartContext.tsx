@@ -151,9 +151,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     
     try {
+      // Filtrar duplicados antes de sincronizar
+      const uniqueCartItems = cartItems.filter((item, index, array) => {
+        return array.findIndex(
+          i => i.serviceId === item.serviceId && i.providerId === item.providerId
+        ) === index;
+      });
+
+      console.log('Filtrando duplicados antes da sincronização:', {
+        original: cartItems.length,
+        filtered: uniqueCartItems.length,
+        removed: cartItems.length - uniqueCartItems.length
+      });
+
       const result = await syncCartWithDatabaseAction({
         partyData,
-        cartItems: cartItems.map(item => ({
+        cartItems: uniqueCartItems.map(item => ({
           id: item.id,
           serviceId: item.serviceId,
           serviceName: item.serviceName,
@@ -221,7 +234,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     scheduleSync();
   }, [partyData, cartItems, user, userData, authLoading, scheduleSync]);
 
-  // Sincronização por intervalo (5 minutos) - apenas para clientes
+  // Sincronização por intervalo (10 minutos) - apenas para clientes
   useEffect(() => {
     if (!user || authLoading) return;
     if (userData?.role === 'provider') return; // Não sincronizar para prestadores
@@ -231,13 +244,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
       clearInterval(intervalRef.current);
     }
 
-    // Configurar sincronização por intervalo
-    intervalRef.current = setInterval(() => {
-      if (partyData && cartItems.length > 0) {
-        console.log('Sincronização por intervalo (5 min)');
-        syncWithDatabase(false);
-      }
-    }, 5 * 60 * 1000); // 5 minutos
+    // Só configurar sincronização se houver dados e não estiver sincronizando
+    if (partyData && cartItems.length > 0 && !syncInProgressRef.current) {
+      // Configurar sincronização por intervalo (menos frequente)
+      intervalRef.current = setInterval(() => {
+        if (partyData && cartItems.length > 0 && !syncInProgressRef.current) {
+          console.log('🕐 Sincronização automática por intervalo (10 min)');
+          syncWithDatabase(false);
+        }
+      }, 10 * 60 * 1000); // 10 minutos (aumentado para reduzir duplicações)
+    }
 
     // Cleanup
     return () => {

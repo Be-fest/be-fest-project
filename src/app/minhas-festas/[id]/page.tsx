@@ -29,7 +29,6 @@ import { PartyConfigForm } from '@/components/PartyConfigForm';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { getEventByIdAction, updateEventStatusAction, deleteEventAction } from '@/lib/actions/events';
 import { getEventServicesAction, deleteEventServiceAction } from '@/lib/actions/event-services';
-import { createBookingAction } from '@/lib/actions/bookings';
 import { Event, EventWithServices, EventServiceWithDetails } from '@/types/database';
 import { ClientLayout } from '@/components/client/ClientLayout';
 import { FastAuthGuard } from '@/components/FastAuthGuard';
@@ -52,6 +51,8 @@ export default function PartyDetailsPage() {
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [serviceToCancel, setServiceToCancel] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [selectedServicesForPayment, setSelectedServicesForPayment] = useState<Set<string>>(new Set());
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
 
 
@@ -160,31 +161,27 @@ export default function PartyDetailsPage() {
   const handleCreateBooking = async () => {
     setActionLoading('create-booking');
     try {
-      // Criar bookings para todos os serviços aprovados
-      const approvedServices = eventServices.filter(es => es.booking_status === 'approved');
+      // Verificar se todos os serviços estão aguardando pagamento
+      const nonWaitingPaymentServices = eventServices.filter(es => es.booking_status !== 'waiting_payment');
       
-      for (const eventService of approvedServices) {
-        const formData = new FormData();
-        formData.append('event_id', eventId);
-        formData.append('service_id', eventService.service_id);
-        formData.append('price', (eventService.total_estimated_price || 0).toString());
-        formData.append('guest_count', (event?.guest_count || 0).toString());
-        
-        const result = await createBookingAction(formData);
-        if (!result.success) {
-          alert(`Erro ao criar booking para ${eventService.service?.name}: ${result.error}`);
-          return;
-        }
+      if (nonWaitingPaymentServices.length > 0) {
+        const nonWaitingPaymentNames = nonWaitingPaymentServices.map(es => es.service?.name || 'Serviço sem nome').join(', ');
+        alert(`Não é possível finalizar o agendamento. Os seguintes serviços ainda não estão aguardando pagamento: ${nonWaitingPaymentNames}. Todos os serviços devem ter status "Aguardando pagamento" para finalizar o agendamento.`);
+        return;
       }
+
+      // Atualizar status para waiting_payment - todos os serviços já estão aguardando pagamento
+      const result = await updateEventStatusAction(eventId, 'waiting_payment');
       
-      // Atualizar status para waiting_payment
-      await updateEventStatusAction(eventId, 'waiting_payment');
-      
-      alert('Bookings criados com sucesso!');
-      await loadEventData(); // Recarregar dados
+      if (result.success) {
+        await loadEventData(); // Recarregar dados
+        alert('Agendamento finalizado! Agora você pode proceder com o pagamento dos serviços.');
+      } else {
+        alert(result.error || 'Erro ao finalizar agendamento');
+      }
     } catch (error) {
-      console.error('Erro ao criar booking:', error);
-      alert('Erro ao criar booking. Tente novamente.');
+      console.error('Erro ao finalizar agendamento:', error);
+      alert('Erro ao finalizar agendamento. Tente novamente.');
     } finally {
       setActionLoading(null);
     }
@@ -193,6 +190,37 @@ export default function PartyDetailsPage() {
   const handlePayment = () => {
     // Redirecionar para página de pagamento
     router.push(`/pagamento?event_id=${eventId}`);
+  };
+
+  const handlePaymentForServices = (serviceIds: string[]) => {
+    // Redirecionar para página de pagamento com serviços específicos
+    const serviceParam = serviceIds.join(',');
+    router.push(`/pagamento?event_id=${eventId}&services=${serviceParam}`);
+  };
+
+  const toggleServiceForPayment = (serviceId: string) => {
+    const newSelected = new Set(selectedServicesForPayment);
+    if (newSelected.has(serviceId)) {
+      newSelected.delete(serviceId);
+    } else {
+      newSelected.add(serviceId);
+    }
+    setSelectedServicesForPayment(newSelected);
+  };
+
+  const selectAllApprovedServices = () => {
+    const approvedServiceIds = eventServices
+      .filter(es => es.booking_status === 'waiting_payment')
+      .map(es => es.id);
+    setSelectedServicesForPayment(new Set(approvedServiceIds));
+  };
+
+  const clearPaymentSelection = () => {
+    setSelectedServicesForPayment(new Set());
+  };
+
+  const getApprovedServices = () => {
+    return eventServices.filter(es => es.booking_status === 'waiting_payment');
   };
 
   const handleFindAlternativeService = (serviceName: string) => {
@@ -239,14 +267,14 @@ export default function PartyDetailsPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'approved':
+      case 'waiting_payment':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'confirmed':
         return 'bg-green-100 text-green-800';
       case 'pending_provider_approval':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-blue-100 text-blue-800';
       case 'rejected':
         return 'bg-red-100 text-red-800';
-      case 'pending_payment':
-        return 'bg-blue-100 text-blue-800';
       case 'cancelled':
         return 'bg-gray-100 text-gray-800';
       default:
@@ -256,14 +284,14 @@ export default function PartyDetailsPage() {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'approved':
+      case 'waiting_payment':
+        return 'Aguardando pagamento';
+      case 'confirmed':
         return 'Confirmado';
       case 'pending_provider_approval':
         return 'Aguardando aprovação de disponibilidade do prestador';
       case 'rejected':
         return 'Rejeitado - Procurar outro serviço';
-      case 'pending_payment':
-        return 'Aguardando pagamento';
       case 'cancelled':
         return 'Cancelado';
       default:
@@ -280,7 +308,7 @@ export default function PartyDetailsPage() {
 
   const getTotalPrice = () => {
     return eventServices
-      .filter(es => es.booking_status === 'approved')
+      .filter(es => es.booking_status === 'waiting_payment')
       .reduce((total, es) => {
         if (event && event.full_guests !== undefined && event.half_guests !== undefined && event.free_guests !== undefined) {
           // Usar cálculo avançado se disponível
@@ -293,7 +321,7 @@ export default function PartyDetailsPage() {
   };
 
   const allServicesConfirmed = eventServices.length > 0 && 
-    eventServices.every(es => es.booking_status === 'approved');
+    eventServices.every(es => es.booking_status === 'waiting_payment');
 
   if (loading) {
     return (
@@ -574,6 +602,57 @@ export default function PartyDetailsPage() {
                   </button>
                 </div>
 
+                {/* Controles de pagamento quando status é waiting_payment */}
+                {event.status === 'waiting_payment' && getApprovedServices().length > 0 && (
+                  <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <h3 className="font-semibold text-yellow-800 mb-3">💳 Pagamento dos Serviços</h3>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-4">
+                        <span className="text-sm font-medium text-yellow-700">
+                          {selectedServicesForPayment.size} de {getApprovedServices().length} serviços selecionados
+                        </span>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={selectAllApprovedServices}
+                            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                          >
+                            Selecionar todos
+                          </button>
+                          <span className="text-gray-300">|</span>
+                          <button
+                            onClick={clearPaymentSelection}
+                            className="text-sm text-gray-600 hover:text-gray-700 font-medium"
+                          >
+                            Limpar seleção
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {selectedServicesForPayment.size > 0 && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handlePaymentForServices(Array.from(selectedServicesForPayment))}
+                            disabled={actionLoading !== null}
+                            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors disabled:opacity-50"
+                          >
+                            Pagar {selectedServicesForPayment.size} serviço(s)
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handlePaymentForServices(getApprovedServices().map(s => s.id))}
+                        disabled={actionLoading !== null}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors disabled:opacity-50"
+                      >
+                        Pagar Todos os Serviços
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {eventServices.length === 0 ? (
                   <div className="text-center py-12">
                     <MdShoppingCart className="text-6xl text-gray-300 mx-auto mb-4" />
@@ -589,87 +668,120 @@ export default function PartyDetailsPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {eventServices.map((eventService) => (
-                      <div key={eventService.id} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-gray-900">
-                              {eventService.service?.name || 'Serviço'}
-                            </h3>
-                                                         <p className="text-sm text-gray-500">
-                               {eventService.service?.provider?.organization_name || eventService.service?.provider?.full_name || 'Prestador'}
-                             </p>
-                            {(() => {
-                              // Calcular preço considerando dados disponíveis
-                              const calculatedPrice = (() => {
-                                if (event && event.full_guests !== undefined && event.half_guests !== undefined && event.free_guests !== undefined) {
-                                  // Usar dados detalhados se disponíveis
-                                  return calculateAdvancedPrice(eventService, event.full_guests, event.half_guests, event.free_guests);
-                                } else if (eventService.total_estimated_price && eventService.total_estimated_price > 0) {
-                                  // Usar preço já estimado
-                                  return eventService.total_estimated_price;
-                                } else {
-                                  // Fallback: assumir distribuição típica baseada no guest_count
-                                  const totalGuests = event.guest_count || 0;
-                                  const estimatedFull = Math.floor(totalGuests * 0.6); // 60% integral
-                                  const estimatedHalf = Math.floor(totalGuests * 0.3); // 30% meia
-                                  const estimatedFree = totalGuests - estimatedFull - estimatedHalf; // resto gratuito
-                                  return calculateAdvancedPrice(eventService, estimatedFull, estimatedHalf, estimatedFree);
-                                }
-                              })();
-                              
-                              return calculatedPrice > 0 ? (
-                                <p className="text-lg font-bold text-[#F71875] mt-2">
-                                  {formatCurrency(calculatedPrice)}
-                                </p>
-                              ) : null;
-                            })()}
-                            {eventService.client_notes && (
-                              <p className="text-sm text-gray-600 mt-2">
-                                <strong>Observações:</strong> {eventService.client_notes}
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(eventService.booking_status)}`}>
-                              {getStatusText(eventService.booking_status)}
-                            </span>
-                            
-                            {eventService.booking_status === 'rejected' && (
-                              <button
-                                onClick={() => handleFindAlternativeService(eventService.service?.name || 'Serviço')}
-                                className="text-orange-500 hover:text-orange-700 transition-colors text-sm font-medium flex items-center gap-1"
-                              >
-                                <MdSearch />
-                                Procurar Outro
-                              </button>
-                            )}
-                            
-                            {eventService.booking_status === 'approved' && (
-                              <button
-                                onClick={() => handleCancelService(eventService.service?.name || 'Serviço')}
-                                className="text-red-500 hover:text-red-700 transition-colors text-sm font-medium flex items-center gap-1"
-                              >
-                                <MdWarning />
-                                Cancelar
-                              </button>
-                            )}
-                            
-                            <button
-                              onClick={() => handleRemoveService(eventService.id)}
-                              disabled={actionLoading === 'remove-service'}
-                              className="text-red-500 hover:text-red-700 disabled:text-red-300 transition-colors"
-                            >
-                              {actionLoading === 'remove-service' ? (
-                                <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
-                              ) : (
-                                <MdClose />
+                    {eventServices.map((eventService) => {
+                      const isWaitingPayment = eventService.booking_status === 'waiting_payment';
+                      const isSelected = selectedServicesForPayment.has(eventService.id);
+                      const showPaymentControls = event.status === 'waiting_payment' && isWaitingPayment;
+                      
+                      return (
+                        <div key={eventService.id} className="border border-gray-200 rounded-lg p-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-start gap-3 flex-1">
+                              {/* Checkbox para seleção de pagamento */}
+                              {showPaymentControls && (
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => toggleServiceForPayment(eventService.id)}
+                                  className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                />
                               )}
-                            </button>
+                              
+                              <div className="flex-1">
+                                <h3 className="font-semibold text-gray-900">
+                                  {eventService.service?.name || 'Serviço'}
+                                </h3>
+                                <p className="text-sm text-gray-500">
+                                  {eventService.service?.provider?.organization_name || eventService.service?.provider?.full_name || 'Prestador'}
+                                </p>
+                                {(() => {
+                                  // Calcular preço considerando dados disponíveis
+                                  const calculatedPrice = (() => {
+                                    if (event && event.full_guests !== undefined && event.half_guests !== undefined && event.free_guests !== undefined) {
+                                      // Usar dados detalhados se disponíveis
+                                      return calculateAdvancedPrice(eventService, event.full_guests, event.half_guests, event.free_guests);
+                                    } else if (eventService.total_estimated_price && eventService.total_estimated_price > 0) {
+                                      // Usar preço já estimado
+                                      return eventService.total_estimated_price;
+                                    } else {
+                                      // Fallback: assumir distribuição típica baseada no guest_count
+                                      const totalGuests = event.guest_count || 0;
+                                      const estimatedFull = Math.floor(totalGuests * 0.6); // 60% integral
+                                      const estimatedHalf = Math.floor(totalGuests * 0.3); // 30% meia
+                                      const estimatedFree = totalGuests - estimatedFull - estimatedHalf; // resto gratuito
+                                      return calculateAdvancedPrice(eventService, estimatedFull, estimatedHalf, estimatedFree);
+                                    }
+                                  })();
+                                  
+                                  return calculatedPrice > 0 ? (
+                                    <p className="text-lg font-bold text-[#F71875] mt-2">
+                                      {formatCurrency(calculatedPrice)}
+                                    </p>
+                                  ) : null;
+                                })()}
+                                {eventService.client_notes && (
+                                  <p className="text-sm text-gray-600 mt-2">
+                                    <strong>Observações:</strong> {eventService.client_notes}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(eventService.booking_status)}`}>
+                                {getStatusText(eventService.booking_status)}
+                              </span>
+                              
+                              {/* Botão de pagamento individual para serviços aprovados em waiting_payment */}
+                              {showPaymentControls && (
+                                <button
+                                  onClick={() => handlePaymentForServices([eventService.id])}
+                                  disabled={actionLoading !== null}
+                                  className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg font-medium text-xs transition-colors disabled:opacity-50 flex items-center gap-1"
+                                >
+                                  <MdPayment className="text-sm" />
+                                  Pagar
+                                </button>
+                              )}
+                              
+                              {eventService.booking_status === 'rejected' && (
+                                <button
+                                  onClick={() => handleFindAlternativeService(eventService.service?.name || 'Serviço')}
+                                  className="text-orange-500 hover:text-orange-700 transition-colors text-sm font-medium flex items-center gap-1"
+                                >
+                                  <MdSearch />
+                                  Procurar Outro
+                                </button>
+                              )}
+                              
+                              {eventService.booking_status === 'waiting_payment' && event.status !== 'waiting_payment' && (
+                                <button
+                                  onClick={() => handleCancelService(eventService.service?.name || 'Serviço')}
+                                  className="text-red-500 hover:text-red-700 transition-colors text-sm font-medium flex items-center gap-1"
+                                >
+                                  <MdWarning />
+                                  Cancelar
+                                </button>
+                              )}
+                              
+                              {/* Só permite remover serviços se não estão aguardando pagamento ou confirmados */}
+                              {eventService.booking_status !== 'waiting_payment' && eventService.booking_status !== 'confirmed' && event.status !== 'waiting_payment' && (
+                                <button
+                                  onClick={() => handleRemoveService(eventService.id)}
+                                  disabled={actionLoading === 'remove-service'}
+                                  className="text-red-500 hover:text-red-700 disabled:text-red-300 transition-colors"
+                                >
+                                  {actionLoading === 'remove-service' ? (
+                                    <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                                  ) : (
+                                    <MdClose />
+                                  )}
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -703,7 +815,7 @@ export default function PartyDetailsPage() {
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Serviços:</span>
                       <span className="text-sm font-medium">
-                        {eventServices.filter(es => es.booking_status === 'approved').length} de {eventServices.length} confirmados
+                        {eventServices.filter(es => es.booking_status === 'waiting_payment').length} de {eventServices.length} aguardando pagamento
                       </span>
                     </div>
                   )}
@@ -796,7 +908,7 @@ export default function PartyDetailsPage() {
                           <div key={eventService.id} className="flex justify-between text-sm">
                             <span className="text-gray-600">
                               {eventService.service?.name || 'Serviço'}
-                              {eventService.booking_status !== 'approved' && (
+                              {eventService.booking_status !== 'confirmed' && (
                                 <span className="text-xs text-orange-600 ml-1">
                                   ({getStatusText(eventService.booking_status)})
                                 </span>

@@ -16,7 +16,7 @@ const createBookingSchema = z.object({
 
 const updateBookingSchema = z.object({
   id: z.string().uuid('ID inválido'),
-  status: z.enum(['pending', 'confirmed', 'paid', 'completed', 'cancelled']).optional(),
+  status: z.enum(['pending', 'waiting_payment', 'confirmed', 'paid', 'completed', 'cancelled']).optional(),
   price: z.coerce.number().min(0, 'Preço deve ser maior ou igual a 0').optional(),
   guest_count: z.coerce.number().min(1, 'Número de convidados deve ser maior que 0').optional(),
   notes: z.string().max(500, 'Notas devem ter no máximo 500 caracteres').optional().nullable()
@@ -241,11 +241,11 @@ export async function createBookingAction(formData: FormData): Promise<ActionRes
       .select('id, booking_status')
       .eq('event_id', validatedData.event_id)
       .eq('service_id', validatedData.service_id)
-      .eq('booking_status', 'approved')
+      .eq('booking_status', 'confirmed')
       .single()
 
     if (!eventService) {
-      return { success: false, error: 'Serviço deve estar aprovado antes de criar uma reserva' }
+      return { success: false, error: 'Serviço deve estar confirmado antes de criar uma reserva' }
     }
 
     // Verificar se já não existe uma reserva para este serviço no evento
@@ -341,7 +341,8 @@ export async function updateBookingAction(formData: FormData): Promise<ActionRes
 
     // Validar transições de status
     const validTransitions: Record<string, string[]> = {
-      'pending': ['confirmed', 'cancelled'],
+      'pending': ['waiting_payment', 'cancelled'],
+      'waiting_payment': ['confirmed', 'cancelled'],
       'confirmed': ['completed', 'cancelled'],
       'completed': [],
       'cancelled': []
@@ -439,7 +440,8 @@ export async function updateBookingStatusAction(
 
     // Validar transições de status
     const validTransitions: Record<string, string[]> = {
-      'pending': ['confirmed', 'cancelled'],
+      'pending': ['waiting_payment', 'cancelled'],
+      'waiting_payment': ['confirmed', 'cancelled'],
       'confirmed': ['completed', 'cancelled'],
       'completed': [],
       'cancelled': []
@@ -546,11 +548,11 @@ export async function createBookingFromEventServiceAction(eventServiceId: string
         service:services (id)
       `)
       .eq('id', eventServiceId)
-      .eq('booking_status', 'approved')
+      .eq('booking_status', 'confirmed')
       .single()
 
     if (!eventService) {
-      return { success: false, error: 'Orçamento aprovado não encontrado' }
+      return { success: false, error: 'Orçamento confirmado não encontrado' }
     }
 
     // Verificar se o usuário é o cliente do evento

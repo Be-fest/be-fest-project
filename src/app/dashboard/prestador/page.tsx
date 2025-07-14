@@ -26,7 +26,7 @@ import { ProviderLayout } from '@/components/dashboard/ProviderLayout';
 import { ServiceManagement } from '@/components/dashboard/ServiceManagement';
 import { ProviderProfile } from '@/components/dashboard/ProviderProfile';
 import { AuthGuard } from '@/components/AuthGuard';
-import { getProviderEventsAction } from '@/lib/actions/events';
+import { getProviderEventsAction, updateEventStatusAction } from '@/lib/actions/events';
 import { getProviderServicesAction, getProviderStatsAction } from '@/lib/actions/services';
 import { updateEventServiceStatusAction, updateEventServiceAction } from '@/lib/actions/event-services';
 import { EventWithServices, Service } from '@/types/database';
@@ -47,6 +47,14 @@ export default function ProviderDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'requests' | 'services' | 'profile'>('overview');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [selectedServices, setSelectedServices] = useState<Set<string>>(new Set());
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<{
+    type: 'approve' | 'reject';
+    serviceId?: string;
+    serviceIds?: string[];
+    serviceName?: string;
+  } | null>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -90,10 +98,10 @@ export default function ProviderDashboard() {
   // Estatísticas baseadas nos dados reais
   const totalRequests = events.length;
   const pendingRequests = events.filter(event => 
-    event.event_services?.some(service => service.booking_status === 'pending_provider_approval')
+    event.event_services?.some(service => service.booking_status === 'pending')
   ).length;
   const approvedRequests = events.filter(event => 
-    event.event_services?.some(service => service.booking_status === 'approved')
+    event.event_services?.some(service => service.booking_status === 'waiting_payment')
   ).length;
   const rejectedRequests = events.filter(event => 
     event.event_services?.some(service => service.booking_status === 'rejected')
@@ -174,13 +182,20 @@ export default function ProviderDashboard() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending_provider_approval':
+      case 'pending':
         return 'bg-yellow-100 text-yellow-800';
-      case 'approved':
+      case 'waiting_payment':
+        return 'bg-blue-100 text-blue-800';
+      case 'confirmed':
+        return 'bg-green-100 text-green-800';
+      case 'approved': // Para compatibilidade com código antigo
         return 'bg-green-100 text-green-800';
       case 'rejected':
         return 'bg-red-100 text-red-800';
-      case 'pending_payment':
-        return 'bg-blue-100 text-blue-800';
+      case 'cancelled':
+        return 'bg-gray-100 text-gray-800';
+      case 'completed':
+        return 'bg-purple-100 text-purple-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -189,114 +204,171 @@ export default function ProviderDashboard() {
   const getStatusText = (status: string) => {
     switch (status) {
       case 'pending_provider_approval':
+      case 'pending':
         return 'Aguardando Aprovação';
-      case 'approved':
+      case 'waiting_payment':
+        return 'Aguardando Pagamento';
+      case 'confirmed':
+        return 'Confirmado';
+      case 'approved': // Para compatibilidade com código antigo
         return 'Aprovado';
       case 'rejected':
         return 'Rejeitado';
-      case 'pending_payment':
-        return 'Aguardando Pagamento';
+      case 'cancelled':
+        return 'Cancelado';
+      case 'completed':
+        return 'Concluído';
       default:
         return status;
     }
   };
 
-  const handleApproveService = async (eventServiceId: string, eventId: string, guestCount: number) => {
-    // Usar confirmação mais simples mas melhor formatada
-    const priceInput = window.prompt(
-      `💰 APROVAÇÃO DE SERVIÇO\n\n` +
-      `Digite o valor que será cobrado por este serviço:\n` +
-      `(Para ${guestCount} convidados)\n\n` +
-      `Exemplo: 1500.00 ou 1500,50`
-    );
+  const handleApproveService = async (eventServiceId: string, serviceName?: string) => {
+    setConfirmAction({
+      type: 'approve',
+      serviceId: eventServiceId,
+      serviceName: serviceName || 'este serviço'
+    });
+    setShowConfirmModal(true);
+  };
+
+  const handleRejectService = async (eventServiceId: string, serviceName?: string) => {
+    setConfirmAction({
+      type: 'reject',
+      serviceId: eventServiceId,
+      serviceName: serviceName || 'este serviço'
+    });
+    setShowConfirmModal(true);
+  };
+
+  const handleBulkApprove = async () => {
+    if (selectedServices.size === 0) return;
     
-    if (!priceInput) return;
+    setConfirmAction({
+      type: 'approve',
+      serviceIds: Array.from(selectedServices)
+    });
+    setShowConfirmModal(true);
+  };
+
+  const handleBulkReject = async () => {
+    if (selectedServices.size === 0) return;
     
-    const numericPrice = parseFloat(priceInput.replace(',', '.'));
-    if (isNaN(numericPrice) || numericPrice <= 0) {
-      window.alert('❌ Preço inválido!\n\nDigite um valor numérico válido (ex: 1500.00)');
-      return;
+    setConfirmAction({
+      type: 'reject',
+      serviceIds: Array.from(selectedServices)
+    });
+    setShowConfirmModal(true);
+  };
+
+  const toggleServiceSelection = (serviceId: string) => {
+    const newSelected = new Set(selectedServices);
+    if (newSelected.has(serviceId)) {
+      newSelected.delete(serviceId);
+    } else {
+      newSelected.add(serviceId);
     }
-    
-    const notes = window.prompt(
-      `📝 OBSERVAÇÕES (OPCIONAL)\n\n` +
-      `Adicione observações sobre o serviço:\n` +
-      `- Detalhes do que está incluso\n` +
-      `- Condições especiais\n` +
-      `- Instruções para o cliente`
-    ) || '';
-    
-    // Confirmação final
-    const confirmation = window.confirm(
-      `✅ CONFIRMAR APROVAÇÃO\n\n` +
-      `Valor: R$ ${numericPrice.toFixed(2).replace('.', ',')}\n` +
-      `Observações: ${notes || '(nenhuma)'}\n\n` +
-      `Deseja aprovar este serviço?`
+    setSelectedServices(newSelected);
+  };
+
+  const selectAllPendingServices = () => {
+    const pendingServiceIds = events.flatMap(event => 
+      event.event_services?.filter(service => 
+        service.booking_status === 'pending'
+      ).map(service => service.id) || []
     );
+    setSelectedServices(new Set(pendingServiceIds));
+  };
+
+  const clearSelection = () => {
+    setSelectedServices(new Set());
+  };
+
+  const executeAction = async () => {
+    if (!confirmAction) return;
+
+    const { type, serviceId, serviceIds } = confirmAction;
+    const idsToProcess = serviceIds || (serviceId ? [serviceId] : []);
     
-    if (!confirmation) return;
+    if (idsToProcess.length === 0) return;
+
+    setActionLoading('bulk-action');
     
-    setActionLoading(`approve-${eventServiceId}`);
     try {
-      // Primeiro, atualizar o preço e observações
-      const formData = new FormData();
-      formData.append('id', eventServiceId);
-      formData.append('total_estimated_price', numericPrice.toString());
-      formData.append('provider_notes', notes);
-      
-      const updateResult = await updateEventServiceAction(formData);
-      if (!updateResult.success) {
-        window.alert(`❌ Erro ao atualizar preço:\n${updateResult.error}`);
-        return;
-      }
-      
-      // Depois, aprovar o serviço
-      const result = await updateEventServiceStatusAction(eventServiceId, 'approved', notes);
-      if (result.success) {
-        window.alert('✅ Serviço aprovado com sucesso!\n\nO cliente será notificado.');
+      const results = await Promise.all(
+        idsToProcess.map(async (id) => {
+          if (type === 'approve') {
+            // Para aprovação, muda o status para waiting_payment
+            return await updateEventServiceStatusAction(id, 'waiting_payment', '');
+          } else {
+            // Para rejeição
+            return await updateEventServiceStatusAction(id, 'rejected', 'Serviço rejeitado');
+          }
+        })
+      );
+
+      const successCount = results.filter(r => r.success).length;
+      const failCount = results.length - successCount;
+
+      if (successCount > 0) {
         await loadData(); // Recarregar dados
+        clearSelection(); // Limpar seleção
+        
+        // Se aprovamos serviços, verificar se todos os serviços de eventos específicos foram aprovados
+        // para automaticamente mudar o status do evento para waiting_payment
+        if (type === 'approve') {
+          await checkAndUpdateEventStatuses();
+        }
+      }
+
+      // Mostrar resultado
+      if (failCount === 0) {
+        // Todos bem sucedidos
+        const message = type === 'approve' 
+          ? `${successCount} serviço(s) aprovado(s) com sucesso!`
+          : `${successCount} serviço(s) rejeitado(s) com sucesso!`;
+        // Você pode implementar um toast aqui
+        console.log(message);
       } else {
-        window.alert(`❌ Erro ao aprovar serviço:\n${result.error}`);
+        // Alguns falharam
+        const message = `${successCount} serviço(s) processado(s) com sucesso, ${failCount} falharam.`;
+        console.log(message);
       }
     } catch (error) {
-      console.error('Erro ao aprovar serviço:', error);
-      window.alert('❌ Erro inesperado ao aprovar serviço.');
+      console.error('Erro ao processar ação:', error);
     } finally {
       setActionLoading(null);
+      setShowConfirmModal(false);
+      setConfirmAction(null);
     }
   };
 
-  const handleRejectService = async (eventServiceId: string) => {
-    const notes = window.prompt(
-      `❌ REJEIÇÃO DE SERVIÇO\n\n` +
-      `Informe o motivo da rejeição:\n` +
-      `- Por que não pode aceitar?\n` +
-      `- Sugestões alternativas\n` +
-      `- Outras observações`
-    ) || '';
-    
-    const confirmation = window.confirm(
-      `❌ CONFIRMAR REJEIÇÃO\n\n` +
-      `Motivo: ${notes || '(não informado)'}\n\n` +
-      `Tem certeza que deseja rejeitar este serviço?`
-    );
-    
-    if (!confirmation) return;
-    
-    setActionLoading(`reject-${eventServiceId}`);
+  // Função para verificar e atualizar status dos eventos automaticamente
+  const checkAndUpdateEventStatuses = async () => {
     try {
-      const result = await updateEventServiceStatusAction(eventServiceId, 'rejected', notes);
-      if (result.success) {
-        window.alert('✅ Serviço rejeitado.\n\nO cliente será notificado.');
-        await loadData(); // Recarregar dados
-      } else {
-        window.alert(`❌ Erro ao rejeitar serviço:\n${result.error}`);
+      // Recarregar eventos para ter dados atualizados
+      const eventsResult = await getProviderEventsAction();
+      if (!eventsResult.success || !eventsResult.data) return;
+
+      const updatedEvents = eventsResult.data;
+
+      // Verificar cada evento para ver se todos os serviços foram aprovados (waiting_payment)
+      for (const event of updatedEvents) {
+        if (event.status === 'published' && event.event_services && event.event_services.length > 0) {
+          // Verificar se TODOS os serviços do evento estão em waiting_payment
+          const allEventServicesWaitingPayment = event.event_services.every(service => 
+            service.booking_status === 'waiting_payment'
+          );
+
+          if (allEventServicesWaitingPayment) {
+            // Todos os serviços do evento estão aguardando pagamento
+            console.log(`Todos serviços do evento ${event.id} estão aguardando pagamento, mantendo status waiting_payment no evento`);
+            await updateEventStatusAction(event.id, 'waiting_payment');
+          }
+        }
       }
     } catch (error) {
-      console.error('Erro ao rejeitar serviço:', error);
-      window.alert('❌ Erro inesperado ao rejeitar serviço.');
-    } finally {
-      setActionLoading(null);
+      console.error('Erro ao verificar status dos eventos:', error);
     }
   };
 
@@ -466,7 +538,7 @@ export default function ProviderDashboard() {
         ) : (
           <div className="space-y-4">
             {events.slice(0, 5).map((event, index) => {
-              const hasPendingServices = event.event_services?.some(s => s.booking_status === 'pending_provider_approval');
+              const hasPendingServices = event.event_services?.some(s => s.booking_status === 'pending');
               
               return (
                 <div key={event.id} className="bg-gray-50 rounded-xl p-4">
@@ -535,136 +607,205 @@ export default function ProviderDashboard() {
     </div>
   );
 
-  const renderRequests = () => (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Solicitações de Serviços</h2>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-600">Total: {totalRequests}</span>
-        </div>
-      </div>
+  const renderRequests = () => {
+    const pendingServices = events.flatMap(event => 
+      event.event_services?.filter(service => 
+        service.booking_status === 'pending'
+      ) || []
+    );
 
-      {events.length === 0 ? (
-        <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-gray-100">
-          <MdNotifications className="text-gray-400 text-6xl mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-gray-900 mb-2">Nenhuma solicitação encontrada</h3>
-          <p className="text-gray-600">
-            Quando clientes solicitarem seus serviços, elas aparecerão aqui.
-          </p>
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-gray-900">Solicitações de Serviços</h2>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">Total: {totalRequests}</span>
+          </div>
         </div>
-      ) : (
-        <div className="space-y-4">
-          {events.map((event) => (
-            <div key={event.id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{event.title}</h3>
-                  <div className="flex items-center gap-6 text-gray-600">
-                    <span className="flex items-center gap-1">
-                      <MdCalendarToday className="text-sm" />
-                      {formatDate(event.event_date)}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <MdLocationOn className="text-sm" />
-                      {event.location}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <MdPeople className="text-sm" />
-                      {event.full_guests !== undefined && event.half_guests !== undefined && event.free_guests !== undefined
-                        ? formatGuestsInfo(event.full_guests, event.half_guests, event.free_guests)
-                        : `${event.guest_count} convidados`
-                      }
-                    </span>
-                  </div>
+
+        {/* Controles de seleção em lote */}
+        {pendingServices.length > 0 && (
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-medium text-gray-700">
+                  {selectedServices.size} de {pendingServices.length} serviços selecionados
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={selectAllPendingServices}
+                    className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+                  >
+                    Selecionar todos pendentes
+                  </button>
+                  <span className="text-gray-300">|</span>
+                  <button
+                    onClick={clearSelection}
+                    className="text-sm text-gray-600 hover:text-gray-700 font-medium"
+                  >
+                    Limpar seleção
+                  </button>
                 </div>
               </div>
+              
+              {selectedServices.size > 0 && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleBulkApprove}
+                    disabled={actionLoading === 'bulk-action'}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors disabled:opacity-50"
+                  >
+                    {actionLoading === 'bulk-action' ? 'Processando...' : `Aprovar ${selectedServices.size}`}
+                  </button>
+                  <button
+                    onClick={handleBulkReject}
+                    disabled={actionLoading === 'bulk-action'}
+                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors disabled:opacity-50"
+                  >
+                    Rejeitar {selectedServices.size}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
-              {event.event_services?.map((service, serviceIndex) => {
-                const estimatedPrice = calculateEstimatedPriceForEvent(service, event);
-                const isPending = service.booking_status === 'pending_provider_approval';
-                const isApproving = actionLoading === `approve-${service.id}`;
-                const isRejecting = actionLoading === `reject-${service.id}`;
-                
-                return (
-                  <div key={serviceIndex} className="bg-gray-50 rounded-xl p-4 mb-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h4 className="font-medium text-gray-900">{service.service?.name || 'Serviço Solicitado'}</h4>
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(service.booking_status)}`}>
-                            {getStatusText(service.booking_status)}
-                          </span>
+        {events.length === 0 ? (
+          <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-gray-100">
+            <MdNotifications className="text-gray-400 text-6xl mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Nenhuma solicitação encontrada</h3>
+            <p className="text-gray-600">
+              Quando clientes solicitarem seus serviços, elas aparecerão aqui.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {events.map((event) => (
+              <div key={event.id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">{event.title}</h3>
+                    <div className="flex items-center gap-6 text-gray-600">
+                      <span className="flex items-center gap-1">
+                        <MdCalendarToday className="text-sm" />
+                        {formatDate(event.event_date)}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <MdLocationOn className="text-sm" />
+                        {event.location}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <MdPeople className="text-sm" />
+                        {event.full_guests !== undefined && event.half_guests !== undefined && event.free_guests !== undefined
+                          ? formatGuestsInfo(event.full_guests, event.half_guests, event.free_guests)
+                          : `${event.guest_count} convidados`
+                        }
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {event.event_services?.map((service, serviceIndex) => {
+                  const estimatedPrice = calculateEstimatedPriceForEvent(service, event);
+                  const isPending = service.booking_status === 'pending';
+                  const isSelected = selectedServices.has(service.id);
+                  const isApproving = actionLoading === `approve-${service.id}`;
+                  const isRejecting = actionLoading === `reject-${service.id}`;
+                  
+                  return (
+                    <div key={serviceIndex} className="bg-gray-50 rounded-xl p-4 mb-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-start gap-3">
+                          {/* Checkbox para seleção */}
+                          {isPending && (
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleServiceSelection(service.id)}
+                              className="mt-1 w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                            />
+                          )}
+                          
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h4 className="font-medium text-gray-900">{service.service?.name || 'Serviço Solicitado'}</h4>
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(service.booking_status)}`}>
+                                {getStatusText(service.booking_status)}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-1">
+                              <strong>Preço estimado:</strong> {formatCurrency(estimatedPrice)}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              Categoria: {service.service?.category || 'Não especificada'}
+                            </p>
+                          </div>
                         </div>
-                        <p className="text-sm text-gray-600 mb-1">
-                          <strong>Preço estimado:</strong> {formatCurrency(estimatedPrice)}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          Categoria: {service.service?.category || 'Não especificada'}
-                        </p>
+                        
+                        {/* Botões de ação individual */}
+                        {isPending && (
+                          <div className="flex items-center gap-2 ml-4">
+                            <button
+                              onClick={() => handleApproveService(service.id, service.service?.name)}
+                              disabled={isApproving || actionLoading === 'bulk-action'}
+                              className="px-6 py-3 bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white text-sm rounded-lg font-medium transition-colors flex items-center gap-2"
+                            >
+                              {isApproving ? (
+                                <>
+                                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                  Aprovando...
+                                </>
+                              ) : (
+                                <>
+                                  <MdCheckCircle className="text-lg" />
+                                  Aprovar
+                                </>
+                              )}
+                            </button>
+                            <button
+                              onClick={() => handleRejectService(service.id, service.service?.name)}
+                              disabled={isApproving || isRejecting || actionLoading === 'bulk-action'}
+                              className="px-6 py-3 bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white text-sm rounded-lg font-medium transition-colors flex items-center gap-2"
+                            >
+                              {isRejecting ? (
+                                <>
+                                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                  Rejeitando...
+                                </>
+                              ) : (
+                                <>
+                                  <MdClose className="text-lg" />
+                                  Rejeitar
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        )}
                       </div>
                       
-                      {isPending && (
-                        <div className="flex items-center gap-2 ml-4">
-                          <button
-                            onClick={() => handleApproveService(service.id, event.id, event.guest_count)}
-                            disabled={isApproving || isRejecting}
-                            className="px-6 py-3 bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white text-sm rounded-lg font-medium transition-colors flex items-center gap-2"
-                          >
-                            {isApproving ? (
-                              <>
-                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                Aprovando...
-                              </>
-                            ) : (
-                              <>
-                                <MdCheckCircle className="text-lg" />
-                                Aprovar
-                              </>
-                            )}
-                          </button>
-                          <button
-                            onClick={() => handleRejectService(service.id)}
-                            disabled={isApproving || isRejecting}
-                            className="px-6 py-3 bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white text-sm rounded-lg font-medium transition-colors flex items-center gap-2"
-                          >
-                            {isRejecting ? (
-                              <>
-                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                Rejeitando...
-                              </>
-                            ) : (
-                              <>
-                                <MdClose className="text-lg" />
-                                Rejeitar
-                              </>
-                            )}
-                          </button>
+                      {service.client_notes && (
+                        <div className="mb-3">
+                          <p className="text-sm font-medium text-gray-700">Observações do Cliente:</p>
+                          <p className="text-sm text-gray-600 bg-blue-50 p-2 rounded">{service.client_notes}</p>
+                        </div>
+                      )}
+                      
+                      {service.provider_notes && (
+                        <div className="mb-3">
+                          <p className="text-sm font-medium text-gray-700">Suas Observações:</p>
+                          <p className="text-sm text-gray-600 bg-gray-100 p-2 rounded">{service.provider_notes}</p>
                         </div>
                       )}
                     </div>
-                    
-                    {service.client_notes && (
-                      <div className="mb-3">
-                        <p className="text-sm font-medium text-gray-700">Observações do Cliente:</p>
-                        <p className="text-sm text-gray-600">{service.client_notes}</p>
-                      </div>
-                    )}
-                    
-                    {service.provider_notes && (
-                      <div className="mb-3">
-                        <p className="text-sm font-medium text-gray-700">Suas Observações:</p>
-                        <p className="text-sm text-gray-600">{service.provider_notes}</p>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   if (loading) {
     return (
@@ -837,6 +978,74 @@ export default function ProviderDashboard() {
             {renderContent()}
           </div>
         </div>
+
+        {/* Modal de Confirmação */}
+        {showConfirmModal && confirmAction && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+              <div className="text-center mb-6">
+                <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
+                  confirmAction.type === 'approve' ? 'bg-green-100' : 'bg-red-100'
+                }`}>
+                  {confirmAction.type === 'approve' ? (
+                    <MdCheckCircle className={`text-3xl text-green-600`} />
+                  ) : (
+                    <MdClose className={`text-3xl text-red-600`} />
+                  )}
+                </div>
+                
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  {confirmAction.type === 'approve' ? 'Confirmar Aprovação' : 'Confirmar Rejeição'}
+                </h3>
+                
+                <p className="text-gray-600">
+                  {confirmAction.serviceIds ? (
+                    `Tem certeza que deseja ${confirmAction.type === 'approve' ? 'aprovar' : 'rejeitar'} ${confirmAction.serviceIds.length} serviços?`
+                  ) : (
+                    `Tem certeza que deseja ${confirmAction.type === 'approve' ? 'aprovar' : 'rejeitar'} ${confirmAction.serviceName || 'este serviço'}?`
+                  )}
+                </p>
+                
+                {confirmAction.type === 'approve' && (
+                  <p className="text-sm text-gray-500 mt-2">
+                    O(s) serviço(s) será(ão) aprovado(s) com o preço já definido.
+                  </p>
+                )}
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowConfirmModal(false);
+                    setConfirmAction(null);
+                  }}
+                  disabled={actionLoading === 'bulk-action'}
+                  className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={executeAction}
+                  disabled={actionLoading === 'bulk-action'}
+                  className={`flex-1 px-4 py-3 text-white rounded-lg font-medium transition-colors disabled:opacity-50 ${
+                    confirmAction.type === 'approve' 
+                      ? 'bg-green-600 hover:bg-green-700' 
+                      : 'bg-red-600 hover:bg-red-700'
+                  }`}
+                >
+                  {actionLoading === 'bulk-action' ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Processando...
+                    </div>
+                  ) : (
+                    confirmAction.type === 'approve' ? 'Aprovar' : 'Rejeitar'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </ProviderLayout>
     </AuthGuard>
   );

@@ -19,7 +19,7 @@ const updateEventServiceSchema = z.object({
   total_estimated_price: z.coerce.number().min(0, 'Preço total deve ser maior ou igual a 0').optional().nullable(),
   provider_notes: z.string().max(500, 'Notas do prestador devem ter no máximo 500 caracteres').optional().nullable(),
   client_notes: z.string().max(500, 'Notas do cliente devem ter no máximo 500 caracteres').optional().nullable(),
-  booking_status: z.enum(['pending_provider_approval', 'approved', 'rejected', 'cancelled']).optional()
+  booking_status: z.enum(['pending', 'waiting_payment', 'confirmed', 'rejected', 'cancelled']).optional()
 })
 
 // Result types
@@ -244,7 +244,7 @@ export async function createEventServiceAction(formData: FormData): Promise<Acti
     const eventServiceData: EventServiceInsert = {
       ...validatedData,
       provider_id: service.provider_id,
-      booking_status: 'pending_provider_approval'
+      booking_status: 'pending'
     }
 
     const { data: eventService, error } = await supabase
@@ -404,8 +404,9 @@ export async function updateEventServiceStatusAction(
 
     // Validar transições de status
     const validTransitions: Record<string, string[]> = {
-      'pending_provider_approval': ['approved', 'rejected'],
-      'approved': ['cancelled'],
+      'pending': ['waiting_payment', 'rejected'],
+      'waiting_payment': ['confirmed'],
+      'confirmed': ['cancelled'],
       'rejected': [],
       'cancelled': []
     }
@@ -473,9 +474,9 @@ export async function deleteEventServiceAction(eventServiceId: string): Promise<
       return { success: false, error: 'Apenas o cliente pode cancelar a solicitação' }
     }
 
-    // Não permitir cancelamento de orçamentos já aprovados
-    if (existingEventService.booking_status === 'approved') {
-      return { success: false, error: 'Não é possível cancelar orçamentos já aprovados' }
+    // Não permitir cancelamento de orçamentos já confirmados
+    if (existingEventService.booking_status === 'confirmed') {
+      return { success: false, error: 'Não é possível cancelar orçamentos já confirmados' }
     }
 
     const { error } = await supabase
