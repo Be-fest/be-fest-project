@@ -98,7 +98,7 @@ export default function ProviderDashboard() {
   // Estatísticas baseadas nos dados reais
   const totalRequests = events.length;
   const pendingRequests = events.filter(event => 
-    event.event_services?.some(service => service.booking_status === 'pending')
+    event.event_services?.some(service => service.booking_status === 'pending_provider_approval')
   ).length;
   const approvedRequests = events.filter(event => 
     event.event_services?.some(service => service.booking_status === 'waiting_payment')
@@ -182,7 +182,6 @@ export default function ProviderDashboard() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending_provider_approval':
-      case 'pending':
         return 'bg-yellow-100 text-yellow-800';
       case 'waiting_payment':
         return 'bg-blue-100 text-blue-800';
@@ -204,7 +203,6 @@ export default function ProviderDashboard() {
   const getStatusText = (status: string) => {
     switch (status) {
       case 'pending_provider_approval':
-      case 'pending':
         return 'Aguardando Aprovação';
       case 'waiting_payment':
         return 'Aguardando Pagamento';
@@ -274,7 +272,7 @@ export default function ProviderDashboard() {
   const selectAllPendingServices = () => {
     const pendingServiceIds = events.flatMap(event => 
       event.event_services?.filter(service => 
-        service.booking_status === 'pending'
+        service.booking_status === 'pending_provider_approval'
       ).map(service => service.id) || []
     );
     setSelectedServices(new Set(pendingServiceIds));
@@ -538,7 +536,7 @@ export default function ProviderDashboard() {
         ) : (
           <div className="space-y-4">
             {events.slice(0, 5).map((event, index) => {
-              const hasPendingServices = event.event_services?.some(s => s.booking_status === 'pending');
+              const hasPendingServices = event.event_services?.some(s => s.booking_status === 'pending_provider_approval');
               
               return (
                 <div key={event.id} className="bg-gray-50 rounded-xl p-4">
@@ -610,7 +608,7 @@ export default function ProviderDashboard() {
   const renderRequests = () => {
     const pendingServices = events.flatMap(event => 
       event.event_services?.filter(service => 
-        service.booking_status === 'pending'
+        service.booking_status === 'pending_provider_approval'
       ) || []
     );
 
@@ -707,7 +705,7 @@ export default function ProviderDashboard() {
 
                 {event.event_services?.map((service, serviceIndex) => {
                   const estimatedPrice = calculateEstimatedPriceForEvent(service, event);
-                  const isPending = service.booking_status === 'pending';
+                  const isPending = service.booking_status === 'pending_provider_approval';
                   const isSelected = selectedServices.has(service.id);
                   const isApproving = actionLoading === `approve-${service.id}`;
                   const isRejecting = actionLoading === `reject-${service.id}`;
