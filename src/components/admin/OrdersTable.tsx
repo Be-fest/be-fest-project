@@ -42,10 +42,12 @@ export function OrdersTable() {
     switch (status) {
       case 'pending':
         return 'solicitacao_enviada';
+      case 'waiting_payment':
+        return 'aguardando_pagamento';
       case 'confirmed':
         return 'confirmado';
       case 'paid':
-        return 'aguardando_pagamento';
+        return 'confirmado';
       case 'completed':
         return 'concluido';
       case 'cancelled':

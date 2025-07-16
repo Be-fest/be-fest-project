@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { MdClose, MdAttachMoney, MdGroup, MdAdd, MdEdit, MdRemove } from 'react-icons/md';
+import { MdClose, MdAttachMoney, MdGroup, MdAdd, MdEdit, MdRemove, MdCloudUpload, MdImage } from 'react-icons/md';
 import { Input, Button, Select, TipTapEditor } from '@/components/ui';
-import { createServiceAction, updateServiceAction } from '@/lib/actions/services';
+import { createServiceAction, updateServiceAction, uploadServiceImageAction, deleteServiceImageAction } from '@/lib/actions/services';
 import { Service } from '@/types/database';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
 
 interface ServiceFormModalProps {
@@ -74,6 +74,9 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
   ]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Carregar categorias do banco
   useEffect(() => {
@@ -254,21 +257,58 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
     setFormData(prev => ({ ...prev, pricing_rules: newRules }));
   };
 
-  const handleImageUrlAdd = () => {
-    const url = prompt('Digite a URL da imagem:');
-    if (url && url.trim()) {
-      setFormData(prev => ({
-        ...prev,
-        images_urls: [...prev.images_urls, url.trim()]
-      }));
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      
+      const result = await uploadServiceImageAction(formData);
+      
+      if (result.success && result.data) {
+        setFormData(prev => ({
+          ...prev,
+          images_urls: [...prev.images_urls, result.data as string]
+        }));
+        
+        toast.success('Imagem adicionada!', 'Upload realizado com sucesso.', 3000);
+      } else {
+        toast.error('Erro no upload', result.error || 'Falha ao fazer upload da imagem', 5000);
+      }
+    } catch (error) {
+      toast.error('Erro no upload', 'Erro inesperado ao fazer upload da imagem', 5000);
+    } finally {
+      setUploadingImage(false);
+      // Limpar o input file
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
-  const handleImageUrlRemove = (index: number) => {
+  const handleImageRemove = async (index: number) => {
+    const imageUrl = formData.images_urls[index];
+    
+    try {
+      // Tentar deletar a imagem do storage se ela for do nosso bucket
+      if (imageUrl.includes('supabase')) {
+        await deleteServiceImageAction(imageUrl);
+      }
+    } catch (error) {
+      console.error('Erro ao deletar imagem do storage:', error);
+    }
+    
+    // Remover da lista local
     setFormData(prev => ({
       ...prev,
       images_urls: prev.images_urls.filter((_, i) => i !== index)
     }));
+    
+    toast.success('Imagem removida!', 'A imagem foi removida com sucesso.', 3000);
   };
 
   if (!isOpen) return null;
@@ -473,45 +513,68 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
             </div>
           </div>
 
-          {/* URLs de Imagens */}
+          {/* Upload de Imagens */}
           <div>
             <label className="block text-sm font-medium text-[#520029] mb-2">
               Imagens do Serviço
             </label>
-            <div className="space-y-2">
-              {formData.images_urls.map((url, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <input
-                    type="url"
-                    value={url}
-                    onChange={(e) => {
-                      const newUrls = [...formData.images_urls];
-                      newUrls[index] = e.target.value;
-                      handleInputChange('images_urls', newUrls);
-                    }}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A502CA]"
-                    placeholder="https://exemplo.com/imagem.jpg"
-                    disabled={loading}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleImageUrlRemove(index)}
-                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                    disabled={loading}
-                  >
-                    <MdRemove className="text-lg" />
-                  </button>
-                </div>
-              ))}
+            
+            {/* Preview das imagens existentes */}
+            {formData.images_urls.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                {formData.images_urls.map((url, index) => (
+                  <div key={index} className="relative group">
+                    <img
+                      src={url}
+                      alt={`Imagem ${index + 1}`}
+                      className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleImageRemove(index)}
+                      className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      disabled={loading || uploadingImage}
+                    >
+                      <MdRemove className="text-sm" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Botão de upload */}
+            <div className="flex items-center gap-4">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                onChange={handleImageUpload}
+                className="hidden"
+                disabled={loading || uploadingImage}
+              />
+              
               <button
                 type="button"
-                onClick={handleImageUrlAdd}
-                className="flex items-center gap-2 px-3 py-2 text-[#A502CA] hover:bg-purple-50 rounded-lg transition-colors"
-                disabled={loading}
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-2 px-4 py-2 border-2 border-dashed border-[#A502CA] text-[#A502CA] rounded-lg hover:bg-purple-50 transition-colors disabled:opacity-50"
+                disabled={loading || uploadingImage}
               >
-                <MdAdd className="text-lg" />
-                Adicionar Imagem
+                {uploadingImage ? (
+                  <>
+                    <div className="animate-spin w-4 h-4 border-2 border-[#A502CA] border-t-transparent rounded-full"></div>
+                    Fazendo upload...
+                  </>
+                ) : (
+                  <>
+                    <MdCloudUpload className="text-lg" />
+                    Adicionar Imagem
+                  </>
+                )}
               </button>
+              
+              <span className="text-xs text-gray-500">
+                JPEG, PNG ou WebP • Máx. 5MB
+              </span>
             </div>
           </div>
 
@@ -544,7 +607,7 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
             <button
               type="submit"
               className="px-6 py-2 bg-[#A502CA] text-white rounded-lg hover:bg-[#8B02A8] transition-colors disabled:opacity-50"
-              disabled={loading}
+              disabled={loading || uploadingImage}
             >
               {loading ? 'Salvando...' : (service ? 'Atualizar' : 'Criar Serviço')}
             </button>

@@ -193,7 +193,7 @@ export async function addServiceToCartAction(serviceData: {
     // Verificar se o serviço já foi adicionado ao evento (incluindo provider_id)
     const { data: existingService } = await supabase
       .from('event_services')
-      .select('id, quantity, client_notes')
+      .select('*')
       .eq('event_id', validatedData.event_id)
       .eq('service_id', validatedData.service_id)
       .eq('provider_id', validatedData.provider_id)

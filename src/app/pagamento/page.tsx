@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AuthLayout } from '@/components/AuthLayout';
@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { PaymentForm } from '@/components/forms/PaymentForm';
 import { getEventByIdAction } from '@/lib/actions/events';
 import { updateEventServiceStatusAction } from '@/lib/actions/event-services';
-import { EventWithServices, EventService as DBEventService } from '@/types/database';
+import { EventWithServices, EventService } from '@/types/database';
 import { calculateAdvancedPrice, formatGuestsInfo } from '@/utils/formatters';
 import { 
   MdPayment, 
@@ -22,25 +22,15 @@ import {
   MdError
 } from 'react-icons/md';
 
-interface EventService {
-  id: string;
-  service?: {
-    name: string;
-    category: string;
-  };
-  booking_status: string;
-  total_estimated_price?: number | null;
-  price_per_guest_at_booking?: number | null;
-}
-
-export default function PaymentPage() {
+// Componente que usa useSearchParams precisa estar em Suspense
+function PaymentPageContent() {
   const { userData } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [eventData, setEventData] = useState<EventWithServices | null>(null);
-  const [servicesToPay, setServicesToPay] = useState<DBEventService[]>([]);
+  const [servicesToPay, setServicesToPay] = useState<EventService[]>([]);
   const [totalAmount, setTotalAmount] = useState(0);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
 
@@ -63,30 +53,48 @@ export default function PaymentPage() {
       const result = await getEventByIdAction(eventId!);
       
       if (!result.success || !result.data) {
-        setError(result.error || 'Evento não encontrado');
+        setError('Evento não encontrado');
         return;
       }
 
-      const event = result.data;
-      setEventData(event);
+      setEventData(result.data);
 
-      // Filtrar serviços que devem ser pagos
-      const servicesToPayFiltered = event.event_services?.filter(service => 
-        service.booking_status === 'waiting_payment' && 
-        (serviceIds.length === 0 || serviceIds.includes(service.id))
-      ) || [];
-
-      setServicesToPay(servicesToPayFiltered);
-
-      // Calcular total usando a mesma lógica da página de eventos
-      const total = servicesToPayFiltered.reduce((sum, service) => {
-        if (event.full_guests !== undefined && event.half_guests !== undefined && event.free_guests !== undefined) {
-          return sum + calculateAdvancedPrice(service, event.full_guests, event.half_guests, event.free_guests);
-        } else {
-          return sum + (service.total_estimated_price || 0);
-        }
-      }, 0);
+      // Filtrar serviços que precisam de pagamento
+      const services = result.data.event_services || [];
       
+      let servicesToPayFilter: EventService[] = [];
+      
+      if (serviceIds.length > 0) {
+        // Se IDs específicos foram fornecidos, filtrar apenas esses
+        servicesToPayFilter = services.filter((service) => 
+          serviceIds.includes(service.id) && 
+          service.booking_status === 'waiting_payment'
+        );
+      } else {
+        // Caso contrário, todos os serviços aguardando pagamento
+        servicesToPayFilter = services.filter((service) => 
+          service.booking_status === 'waiting_payment'
+        );
+      }
+
+      if (servicesToPayFilter.length === 0) {
+        setError('Nenhum serviço encontrado para pagamento');
+        return;
+      }
+
+      setServicesToPay(servicesToPayFilter);
+
+      // Calcular total
+      const total = servicesToPayFilter.reduce((sum: number, service: EventService) => {
+        const eventData = result.data!;
+        
+        // Usar preço já definido no booking ou preço por convidado
+        const servicePrice = service.total_estimated_price || 
+          ((service.price_per_guest_at_booking || 0) * (eventData.guest_count || 0));
+        
+        return sum + servicePrice;
+      }, 0);
+
       setTotalAmount(total);
 
     } catch (error) {
@@ -97,243 +105,223 @@ export default function PaymentPage() {
     }
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
+  const handlePaymentSuccess = async () => {
+    // Atualizar status dos serviços para 'confirmed'
+    try {
+      for (const service of servicesToPay) {
+        await updateEventServiceStatusAction(service.id, 'confirmed', 'Pagamento confirmado');
+      }
+      
+      setPaymentSuccess(true);
+      
+      // Redirecionar após 3 segundos
+      setTimeout(() => {
+        router.push(`/minhas-festas/${eventId}`);
+      }, 3000);
+      
+    } catch (error) {
+      console.error('Erro ao atualizar status dos serviços:', error);
+    }
   };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
-      day: '2-digit',
+      weekday: 'long',
+      year: 'numeric',
       month: 'long',
-      year: 'numeric'
+      day: 'numeric'
     });
   };
 
-  const formatGuestsInfo = (full: number, half: number, free: number) => {
-    const parts = [];
-    if (full > 0) parts.push(`${full} inteiras`);
-    if (half > 0) parts.push(`${half} meias`);
-    if (free > 0) parts.push(`${free} cortesias`);
-    return parts.join(', ');
-  };
-
-  const handlePaymentSuccess = async () => {
-    try {
-      // Atualizar status dos serviços para 'confirmed'
-      const updatePromises = servicesToPay.map(service => 
-        updateEventServiceStatusAction(service.id, 'confirmed', 'Pagamento confirmado')
-      );
-      
-      await Promise.all(updatePromises);
-      
-      setPaymentSuccess(true);
-      
-      // Redirecionar para a página de sucesso após 3 segundos
-      setTimeout(() => {
-        router.push(`/minhas-festas/${eventId}?payment=success`);
-      }, 3000);
-    } catch (error) {
-      console.error('Erro ao confirmar pagamento:', error);
-      setError('Erro ao processar pagamento. Tente novamente.');
-    }
-  };
-
-  const handleGoBack = () => {
-    router.push(`/minhas-festas/${eventId}`);
-  };
-
-  if (error) {
+  if (loading) {
     return (
-      <AuthLayout>
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
         <div className="text-center">
-          <MdError className="text-4xl text-red-500 mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-gray-900 mb-2">
-            Erro ao carregar pagamento
-          </h1>
-          <p className="text-gray-600 mb-6">
-            {error}
-          </p>
-          <button
-            onClick={handleGoBack}
-            className="flex items-center gap-2 mx-auto px-4 py-2 text-purple-600 hover:text-purple-700 font-medium"
-          >
-            <MdArrowBack />
-            Voltar ao evento
-          </button>
+          <div className="animate-spin w-12 h-12 border-4 border-[#A502CA] border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando dados de pagamento...</p>
         </div>
-      </AuthLayout>
+      </div>
     );
   }
 
-  if (loading) {
+  if (error) {
     return (
-      <AuthLayout>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando dados de pagamento...</p>
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <MdError className="text-red-500 text-6xl mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Erro no Pagamento</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <button
+            onClick={() => router.push('/minhas-festas')}
+            className="bg-[#A502CA] text-white px-6 py-3 rounded-lg hover:bg-[#8B0A9E] transition-colors"
+          >
+            Voltar para Minhas Festas
+          </button>
         </div>
-      </AuthLayout>
+      </div>
     );
   }
 
   if (paymentSuccess) {
     return (
-      <AuthLayout>
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center"
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.5 }}
+          className="text-center max-w-md mx-auto p-8"
         >
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <MdCheckCircle className="text-3xl text-green-600" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            Pagamento Realizado com Sucesso!
-          </h1>
+          <MdCheckCircle className="text-green-500 text-8xl mx-auto mb-6" />
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">Pagamento Realizado!</h2>
           <p className="text-gray-600 mb-6">
-            Seus serviços foram confirmados e você receberá um email com os detalhes.
+            Seu pagamento foi processado com sucesso. Você será redirecionado em instantes.
           </p>
-          <div className="text-sm text-gray-500">
-            Redirecionando em alguns segundos...
+          <div className="animate-pulse">
+            <div className="w-8 h-8 bg-[#A502CA] rounded-full mx-auto"></div>
           </div>
         </motion.div>
-      </AuthLayout>
-    );
-  }
-
-  if (!eventData || servicesToPay.length === 0) {
-    return (
-      <AuthLayout>
-        <div className="text-center">
-          <MdPayment className="text-4xl text-gray-400 mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-gray-900 mb-2">
-            Nenhum serviço para pagamento
-          </h1>
-          <p className="text-gray-600 mb-6">
-            Não há serviços aguardando pagamento para este evento.
-          </p>
-          <button
-            onClick={handleGoBack}
-            className="flex items-center gap-2 mx-auto px-4 py-2 text-purple-600 hover:text-purple-700 font-medium"
-          >
-            <MdArrowBack />
-            Voltar ao evento
-          </button>
-        </div>
-      </AuthLayout>
+      </div>
     );
   }
 
   return (
-    <AuthLayout>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md mx-auto"
-      >
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50">
+      <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <MdPayment className="text-3xl text-purple-600" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Finalizar Pagamento
-          </h1>
-          <p className="text-gray-600">
-            Complete o pagamento dos serviços selecionados
-          </p>
-        </div>
-
-        {/* Event Summary */}
-        <div className="bg-gray-50 rounded-xl p-4 mb-6">
-          <div className="flex items-center gap-3 mb-3">
-            <MdEvent className="text-purple-600" />
-            <h3 className="font-medium text-gray-900">{eventData.title}</h3>
-          </div>
-          <div className="space-y-2 text-sm text-gray-600">
-            <div className="flex items-center gap-2">
-              <MdCalendarToday className="text-xs" />
-              <span>{formatDate(eventData.event_date)}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <MdLocationOn className="text-xs" />
-              <span>{eventData.location}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <MdPeople className="text-xs" />
-              <span>
-                {eventData.full_guests !== undefined 
-                  ? formatGuestsInfo(eventData.full_guests, eventData.half_guests!, eventData.free_guests!)
-                  : `${eventData.guest_count} convidados`
-                }
-              </span>
-            </div>
+        <div className="flex items-center gap-4 mb-8">
+          <button
+            onClick={() => router.push(`/minhas-festas/${eventId}`)}
+            className="p-2 hover:bg-white/50 rounded-full transition-colors"
+          >
+            <MdArrowBack className="text-2xl text-[#A502CA]" />
+          </button>
+          <div>
+            <h1 className="text-3xl font-bold text-[#520029] flex items-center gap-3">
+              <MdPayment className="text-[#A502CA]" />
+              Finalizar Pagamento
+            </h1>
+            <p className="text-gray-600 mt-2">
+              Complete o pagamento dos serviços selecionados
+            </p>
           </div>
         </div>
 
-        {/* Services to Pay */}
-        <div className="mb-6">
-          <h3 className="font-medium text-gray-900 mb-3">Serviços a pagar:</h3>
-          <div className="space-y-3">
-            {servicesToPay.map((service) => (
-              <div key={service.id} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg">
-                <div>
-                  <p className="font-medium text-gray-900">
-                    Serviço Solicitado
-                  </p>
-                  <p className="text-sm text-gray-500 capitalize">
-                    Categoria do Serviço
-                  </p>
+        <div className="grid lg:grid-cols-2 gap-8">
+          {/* Resumo do Evento */}
+          <div className="space-y-6">
+            {/* Info do Evento */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-xl font-semibold text-[#520029] mb-4 flex items-center gap-2">
+                <MdEvent className="text-[#A502CA]" />
+                Detalhes do Evento
+              </h3>
+              
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 text-gray-700">
+                  <MdCalendarToday className="text-[#A502CA]" />
+                  <span className="font-medium">Data:</span>
+                  <span>{formatDate(eventData?.event_date || '')}</span>
                 </div>
-                <div className="text-right">
-                  <p className="font-medium text-gray-900">
-                    {(() => {
-                      if (eventData && eventData.full_guests !== undefined && eventData.half_guests !== undefined && eventData.free_guests !== undefined) {
-                        return formatCurrency(calculateAdvancedPrice(service, eventData.full_guests, eventData.half_guests, eventData.free_guests));
-                      } else {
-                        return formatCurrency(service.total_estimated_price || 0);
-                      }
-                    })()}
-                  </p>
+                
+                {eventData?.location && (
+                  <div className="flex items-center gap-3 text-gray-700">
+                    <MdLocationOn className="text-[#A502CA]" />
+                    <span className="font-medium">Local:</span>
+                    <span>{eventData.location}</span>
+                  </div>
+                )}
+                
+                <div className="flex items-center gap-3 text-gray-700">
+                  <MdPeople className="text-[#A502CA]" />
+                  <span className="font-medium">Convidados:</span>
+                  <span>{formatGuestsInfo(eventData?.full_guests || 0, eventData?.half_guests || 0, eventData?.free_guests || 0)}</span>
                 </div>
               </div>
-            ))}
+            </div>
+
+            {/* Serviços a Pagar */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-xl font-semibold text-[#520029] mb-4">
+                Serviços Selecionados
+              </h3>
+              
+              <div className="space-y-4">
+                {servicesToPay.map((service: EventService, index: number) => {
+                                    const servicePrice = service.total_estimated_price || 
+                    ((service.price_per_guest_at_booking || 0) * (eventData?.guest_count || 0));
+
+                  return (
+                    <div key={index} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-medium text-gray-900">
+                          Serviço Solicitado
+                        </h4>
+                        <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                          Categoria
+                        </span>
+                      </div>
+                      
+                      <div className="text-sm text-gray-600 space-y-1">
+                        <div>Preço por convidado: R$ {(service.price_per_guest_at_booking || 0).toFixed(2)}</div>
+                        <div>Total: <span className="font-semibold text-[#A502CA]">R$ {servicePrice.toFixed(2)}</span></div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Total */}
+              <div className="border-t border-gray-200 mt-6 pt-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-semibold text-gray-900">Total a Pagar:</span>
+                  <span className="text-2xl font-bold text-[#A502CA]">
+                    R$ {totalAmount.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Formulário de Pagamento */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 className="text-xl font-semibold text-[#520029] mb-6 flex items-center gap-2">
+              <MdAttachMoney className="text-[#A502CA]" />
+              Dados do Pagamento
+            </h3>
+            
+            <PaymentForm
+              services={servicesToPay.map(service => ({
+                name: 'Serviço Solicitado',
+                provider: 'Prestador de Serviço'
+              }))}
+              totalValue={totalAmount}
+              onSubmit={handlePaymentSuccess}
+            />
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
 
-        {/* Total */}
-        <div className="bg-purple-50 rounded-xl p-4 mb-6">
-          <div className="flex items-center justify-between">
-            <span className="text-lg font-medium text-gray-900">Total:</span>
-            <span className="text-2xl font-bold text-purple-600">
-              {formatCurrency(totalAmount)}
-            </span>
-          </div>
-        </div>
+// Loading fallback para Suspense
+function PaymentLoading() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin w-12 h-12 border-4 border-[#A502CA] border-t-transparent rounded-full mx-auto mb-4"></div>
+        <p className="text-gray-600">Carregando página de pagamento...</p>
+      </div>
+    </div>
+  );
+}
 
-        {/* Payment Form */}
-        <PaymentForm
-          services={servicesToPay.map(service => ({
-            name: 'Serviço Solicitado',
-            provider: 'Prestador de Serviço'
-          }))}
-          totalValue={totalAmount}
-          onSubmit={handlePaymentSuccess}
-        />
-
-        {/* Back Button */}
-        <div className="mt-6 text-center">
-          <button
-            onClick={handleGoBack}
-            className="text-gray-600 hover:text-gray-700 text-sm font-medium"
-          >
-            ← Voltar ao evento
-          </button>
-        </div>
-      </motion.div>
+export default function PaymentPage() {
+  return (
+    <AuthLayout>
+      <Suspense fallback={<PaymentLoading />}>
+        <PaymentPageContent />
+      </Suspense>
     </AuthLayout>
   );
 }

@@ -401,7 +401,7 @@ export default function ServicesPage() {
             )}
 
             {!loading && !error && services.length > 0 && (
-              <ServicesGrid services={services} />
+              <ProvidersGrid services={services} />
             )}
           </motion.div>
         </div>

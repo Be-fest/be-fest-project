@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface ImageCache {
   [url: string]: {
@@ -13,15 +13,15 @@ const globalImageCache: ImageCache = {};
 
 export function useImagePreloader(imageSrc: string, fallbackSrc?: string) {
   const [imageState, setImageState] = useState(() => {
-    // Verificar cache primeiro
+    // Verificar se a imagem já está no cache
     if (globalImageCache[imageSrc]) {
+      const cached = globalImageCache[imageSrc];
       return {
-        src: globalImageCache[imageSrc].error && fallbackSrc ? fallbackSrc : imageSrc,
-        loaded: globalImageCache[imageSrc].loaded,
-        error: globalImageCache[imageSrc].error,
+        src: cached.error && fallbackSrc ? fallbackSrc : imageSrc,
+        loaded: cached.loaded,
+        error: cached.error,
       };
     }
-    
     return {
       src: imageSrc,
       loaded: false,
@@ -29,71 +29,61 @@ export function useImagePreloader(imageSrc: string, fallbackSrc?: string) {
     };
   });
 
-  const loadImageRef = useRef<(src: string) => void>();
+  const loadImage = useCallback((src: string) => {
+    // Se já está no cache, usar resultado do cache
+    if (globalImageCache[src]) {
+      setImageState({
+        src: globalImageCache[src].error && fallbackSrc ? fallbackSrc : src,
+        loaded: globalImageCache[src].loaded,
+        error: globalImageCache[src].error,
+      });
+      return;
+    }
 
-  useEffect(() => {
-    loadImageRef.current = (src: string) => {
-      // Se já está no cache, usar resultado do cache
-      if (globalImageCache[src]) {
-        setImageState({
-          src: globalImageCache[src].error && fallbackSrc ? fallbackSrc : src,
-          loaded: globalImageCache[src].loaded,
-          error: globalImageCache[src].error,
-        });
-        return;
-      }
+    // Se não está no cache, carregar a imagem
+    const img = new Image();
+    
+    img.onload = () => {
+      globalImageCache[src] = {
+        loaded: true,
+        error: false,
+        element: img,
+      };
+      
+      setImageState({
+        src,
+        loaded: true,
+        error: false,
+      });
+    };
 
-      // Inicializar entrada no cache
+    img.onerror = () => {
       globalImageCache[src] = {
         loaded: false,
-        error: false,
+        error: true,
+        element: img,
       };
 
-      const img = new Image();
-      globalImageCache[src].element = img;
-
-      img.onload = () => {
-        globalImageCache[src] = {
-          loaded: true,
-          error: false,
-          element: img,
-        };
-        
+      // Se há fallback, tentar carregar o fallback
+      if (fallbackSrc && src !== fallbackSrc) {
+        loadImage(fallbackSrc);
+      } else {
         setImageState({
-          src,
-          loaded: true,
-          error: false,
-        });
-      };
-
-      img.onerror = () => {
-        globalImageCache[src] = {
+          src: fallbackSrc || src,
           loaded: false,
           error: true,
-          element: img,
-        };
-
-        // Se há fallback, tentar carregar o fallback
-        if (fallbackSrc && src !== fallbackSrc) {
-          loadImageRef.current?.(fallbackSrc);
-        } else {
-          setImageState({
-            src: fallbackSrc || src,
-            loaded: false,
-            error: true,
-          });
-        }
-      };
-
-      img.src = src;
+        });
+      }
     };
+
+    img.src = src;
   }, [fallbackSrc]);
 
   useEffect(() => {
     if (imageSrc) {
-      loadImageRef.current?.(imageSrc);
+      loadImage(imageSrc);
     }
-  }, [imageSrc]);
+  }, [imageSrc, loadImage]);
 
   return imageState;
 }

@@ -598,3 +598,97 @@ export async function getProviderStatsAction(): Promise<ActionResult<{
     }
   }
 } 
+
+// Upload de imagem para o Supabase Storage
+export async function uploadServiceImageAction(formData: FormData): Promise<ActionResult<string>> {
+  try {
+    const user = await getCurrentUser()
+    const file = formData.get('image') as File
+    
+    if (!file) {
+      return { success: false, error: 'Nenhum arquivo selecionado' }
+    }
+
+    // Validar tipo de arquivo
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      return { success: false, error: 'Tipo de arquivo não permitido. Use JPEG, PNG ou WebP.' }
+    }
+
+    // Validar tamanho (max 5MB)
+    const maxSize = 5 * 1024 * 1024 // 5MB
+    if (file.size > maxSize) {
+      return { success: false, error: 'Arquivo muito grande. Tamanho máximo: 5MB' }
+    }
+
+    const supabase = await createServerClient()
+
+    // Gerar nome único para o arquivo
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
+
+    // Upload para o bucket 'be-fest-images'
+    const { data, error } = await supabase.storage
+      .from('be-fest-images')
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: false
+      })
+
+    if (error) {
+      console.error('Erro no upload:', error)
+      return { success: false, error: 'Erro ao fazer upload da imagem' }
+    }
+
+    // Obter URL pública da imagem
+    const { data: { publicUrl } } = supabase.storage
+      .from('be-fest-images')
+      .getPublicUrl(fileName)
+
+    return { 
+      success: true, 
+      data: publicUrl 
+    }
+
+  } catch (error) {
+    console.error('Erro no upload de imagem:', error)
+    return { success: false, error: 'Erro inesperado ao fazer upload' }
+  }
+}
+
+// Deletar imagem do Supabase Storage
+export async function deleteServiceImageAction(imageUrl: string): Promise<ActionResult> {
+  try {
+    const user = await getCurrentUser()
+    const supabase = await createServerClient()
+
+    // Extrair o path do arquivo da URL do Supabase Storage
+    // URL format: https://xxx.supabase.co/storage/v1/object/public/be-fest-images/userId/filename
+    const urlParts = imageUrl.split('/be-fest-images/')
+    if (urlParts.length < 2) {
+      return { success: false, error: 'URL de imagem inválida' }
+    }
+    
+    const fileName = urlParts[1] // userId/filename.ext
+    
+    // Verificar se o arquivo pertence ao usuário
+    if (!fileName.startsWith(`${user.id}/`)) {
+      return { success: false, error: 'Acesso negado para deletar esta imagem' }
+    }
+
+    const { error } = await supabase.storage
+      .from('be-fest-images')
+      .remove([fileName])
+
+    if (error) {
+      console.error('Erro ao deletar imagem:', error)
+      return { success: false, error: 'Erro ao deletar imagem' }
+    }
+
+    return { success: true }
+
+  } catch (error) {
+    console.error('Erro ao deletar imagem:', error)
+    return { success: false, error: 'Erro inesperado ao deletar imagem' }
+  }
+} 
