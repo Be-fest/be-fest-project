@@ -101,7 +101,7 @@ const convertToProviderData = (provider: User, services: ServiceWithProvider[]) 
     description: provider.area_of_operation ? 
       `Especializado em ${provider.area_of_operation}` : 
       'Prestador de serviços para festas e eventos',
-    image: provider.logo_url || '/images/placeholder-provider.png',
+    image: (provider as any).profile_image || provider.logo_url || '/be-fest-provider-logo.png',
     rating: 4.8,
     location: {
       neighborhood: provider.area_of_operation || 'Região',

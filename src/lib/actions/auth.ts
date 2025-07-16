@@ -582,4 +582,222 @@ export async function deleteAccountAction(): Promise<ActionResult> {
       error: error instanceof Error ? error.message : 'Ocorreu um erro ao deletar a conta' 
     }
   }
+}
+
+// Upload de imagem de perfil para o Supabase Storage
+export async function uploadProfileImageAction(formData: FormData): Promise<ActionResult<string>> {
+  try {
+    const user = await getCurrentUser()
+    
+    if (!user) {
+      return { success: false, error: 'Usuário não autenticado' }
+    }
+    
+    const file = formData.get('image') as File
+    
+    if (!file) {
+      return { success: false, error: 'Nenhum arquivo selecionado' }
+    }
+
+    // Validar tipo de arquivo
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      return { success: false, error: 'Tipo de arquivo não permitido. Use JPEG, PNG ou WebP.' }
+    }
+
+    // Validar tamanho (max 5MB)
+    const maxSize = 5 * 1024 * 1024 // 5MB
+    if (file.size > maxSize) {
+      return { success: false, error: 'Arquivo muito grande. Tamanho máximo: 5MB' }
+    }
+
+    const supabase = await createServerClient()
+
+    // Gerar nome único para o arquivo de perfil
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${user.id}/profiles/profile-${Date.now()}.${fileExt}`
+
+    // Upload para o bucket 'be-fest-images'
+    const { data, error } = await supabase.storage
+      .from('be-fest-images')
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: false
+      })
+
+    if (error) {
+      console.error('Erro no upload do perfil:', error)
+      return { success: false, error: 'Erro ao fazer upload da imagem de perfil' }
+    }
+
+    // Obter URL pública da imagem
+    const { data: { publicUrl } } = supabase.storage
+      .from('be-fest-images')
+      .getPublicUrl(fileName)
+
+    return { 
+      success: true, 
+      data: publicUrl 
+    }
+  } catch (error) {
+    console.error('Profile image upload failed:', error)
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Erro inesperado no upload da imagem' 
+    }
+  }
+}
+
+// Deletar imagem de perfil do storage
+export async function deleteProfileImageAction(imageUrl: string): Promise<ActionResult<void>> {
+  try {
+    const user = await getCurrentUser()
+    
+    if (!user) {
+      return { success: false, error: 'Usuário não autenticado' }
+    }
+    
+    const supabase = await createServerClient()
+
+    // Extrair o caminho do arquivo da URL
+    const url = new URL(imageUrl)
+    const pathParts = url.pathname.split('/')
+    const fileName = pathParts[pathParts.length - 1]
+    const filePath = `${user.id}/profiles/${fileName}`
+
+    const { error } = await supabase.storage
+      .from('be-fest-images')
+      .remove([filePath])
+
+    if (error) {
+      console.error('Erro ao deletar imagem de perfil:', error)
+      return { success: false, error: 'Erro ao deletar imagem de perfil' }
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error('Profile image deletion failed:', error)
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Erro inesperado ao deletar imagem' 
+    }
+  }
+}
+
+// Esquema para atualização de perfil do prestador
+const updateProviderProfileSchema = z.object({
+  organization_name: z.string().min(1, 'Nome da empresa é obrigatório').optional(),
+  full_name: z.string().min(1, 'Nome é obrigatório').optional(),
+  whatsapp_number: z.string().min(8, 'Telefone deve ter pelo menos 8 dígitos').optional(),
+  area_of_operation: z.string().min(1, 'Área de atuação é obrigatória').optional(),
+  cnpj: z.string().min(11, 'CNPJ deve ter pelo menos 11 dígitos').optional(),
+  profile_image: z.string().url('URL da imagem inválida').optional().or(z.literal(''))
+})
+
+// Atualizar perfil completo do prestador
+export async function updateProviderProfileAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const user = await getCurrentUser()
+    
+    if (!user) {
+      return { success: false, error: 'Usuário não autenticado' }
+    }
+    
+    // Extrair dados do FormData e filtrar campos vazios
+    const rawData: Record<string, string | undefined> = {}
+    
+    const fields = [
+      'organization_name',
+      'full_name', 
+      'whatsapp_number',
+      'area_of_operation',
+      'cnpj',
+      'profile_image'
+    ]
+    
+    fields.forEach(field => {
+      const value = formData.get(field) as string
+      if (value && value.trim() !== '') {
+        rawData[field] = value.trim()
+      }
+    })
+
+    console.log('Dados extraídos do FormData:', rawData)
+
+    const validatedData = updateProviderProfileSchema.parse(rawData)
+    const supabase = await createServerClient()
+
+    // Verificar se o usuário é um prestador
+    const { data: userData } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (!userData || userData.role !== 'provider') {
+      return { success: false, error: 'Apenas prestadores podem atualizar este perfil' }
+    }
+
+    // Construir objeto de atualização apenas com campos fornecidos
+    const updateData: any = {
+      updated_at: new Date().toISOString()
+    }
+
+    if (validatedData.organization_name) {
+      updateData.organization_name = validatedData.organization_name
+    }
+
+    if (validatedData.full_name) {
+      updateData.full_name = validatedData.full_name
+    }
+
+    if (validatedData.whatsapp_number) {
+      updateData.whatsapp_number = removeMask(validatedData.whatsapp_number)
+    }
+
+    if (validatedData.area_of_operation) {
+      updateData.area_of_operation = validatedData.area_of_operation
+    }
+
+    if (validatedData.cnpj) {
+      updateData.cnpj = removeMask(validatedData.cnpj)
+    }
+
+    if (validatedData.profile_image) {
+      updateData.profile_image = validatedData.profile_image
+    }
+
+    console.log('Dados para atualização:', updateData)
+
+    const { error } = await supabase
+      .from('users')
+      .update(updateData)
+      .eq('id', user.id)
+
+    if (error) {
+      console.error('Error updating provider profile:', error)
+      return { success: false, error: 'Erro ao atualizar perfil do prestador' }
+    }
+
+    // Revalidate profile data
+    revalidatePath('/dashboard/prestador')
+
+    return { 
+      success: true, 
+      data: { message: 'Perfil atualizado com sucesso!' } 
+    }
+
+  } catch (error) {
+    console.error('Provider profile update failed:', error)
+    
+    if (error instanceof z.ZodError) {
+      const firstError = error.errors[0]
+      return { success: false, error: firstError.message }
+    }
+    
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Ocorreu um erro ao atualizar o perfil do prestador' 
+    }
+  }
 } 

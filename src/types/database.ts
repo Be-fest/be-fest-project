@@ -30,6 +30,7 @@ export interface Database {
           cpf: string | null
           whatsapp_number: string | null
           logo_url: string | null
+          profile_image: string | null
           area_of_operation: string | null
           coordenates: Json | null
           created_at: string
@@ -45,6 +46,7 @@ export interface Database {
           cpf?: string | null
           whatsapp_number?: string | null
           logo_url?: string | null
+          profile_image?: string | null
           area_of_operation?: string | null
           coordenates?: Json | null
           created_at?: string
@@ -60,6 +62,7 @@ export interface Database {
           cpf?: string | null
           whatsapp_number?: string | null
           logo_url?: string | null
+          profile_image?: string | null
           area_of_operation?: string | null
           coordenates?: Json | null
           created_at?: string
@@ -459,11 +462,11 @@ export type BookingUpdate = Database['public']['Tables']['bookings']['Update']
 
 // Extended types with relationships
 export type ServiceWithProvider = Service & {
-  provider: Pick<User, 'id' | 'full_name' | 'organization_name' | 'logo_url' | 'area_of_operation'>
+  provider: Pick<User, 'id' | 'full_name' | 'organization_name' | 'logo_url' | 'profile_image' | 'area_of_operation'>
 }
 
 export type ServiceWithDetails = Service & {
-  provider: Pick<User, 'id' | 'full_name' | 'organization_name' | 'logo_url' | 'area_of_operation'>
+  provider: Pick<User, 'id' | 'full_name' | 'organization_name' | 'logo_url' | 'profile_image' | 'area_of_operation'>
   guest_tiers: ServiceGuestTier[]
   age_pricing_rules: ServiceAgePricingRule[]
   date_surcharges: ServiceDateSurcharge[]

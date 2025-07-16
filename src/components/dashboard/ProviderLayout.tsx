@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { MdMenu, MdClose, MdLogout, MdHome, MdPerson } from 'react-icons/md';
-import { Logo } from '@/components/ui/Logo';
+import { ProviderLogo } from '@/components/ui/ProviderLogo';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ProviderLayoutProps {
   children: React.ReactNode;
@@ -14,6 +15,7 @@ interface ProviderLayoutProps {
 export function ProviderLayout({ children }: ProviderLayoutProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
+  const { userData } = useAuth();
 
   const handleLogout = async () => {
     try {
@@ -34,7 +36,12 @@ export function ProviderLayout({ children }: ProviderLayoutProps) {
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <Link href="/dashboard/prestador">
-                <Logo width={40} height={40} />
+                <ProviderLogo 
+                  width={40} 
+                  height={40} 
+                  providerImage={(userData as any)?.profile_image ? (userData as any).profile_image : undefined}
+                  providerName={userData?.organization_name || userData?.full_name || undefined}
+                />
               </Link>
               <span className="ml-3 text-lg font-semibold text-[#520029]">
                 Dashboard do Prestador
@@ -52,11 +59,19 @@ export function ProviderLayout({ children }: ProviderLayoutProps) {
               </Link>
               
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-[#A502CA] rounded-full flex items-center justify-center">
-                  <MdPerson className="text-white" />
-                </div>
+                {(userData as any)?.profile_image ? (
+                  <img
+                    src={(userData as any).profile_image}
+                    alt="Logo da empresa"
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-8 h-8 bg-[#A502CA] rounded-full flex items-center justify-center">
+                    <MdPerson className="text-white" />
+                  </div>
+                )}
                 <span className="text-sm font-medium text-gray-700">
-                  Barreto's Buffet
+                  {userData?.organization_name || userData?.full_name || 'Prestador'}
                 </span>
               </div>
 

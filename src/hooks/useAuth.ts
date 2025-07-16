@@ -12,6 +12,7 @@ interface UserData {
   full_name: string | null;
   email: string | null;
   organization_name: string | null;
+  profile_image: string | null;
 }
 
 // Função para verificar se o erro é de JWT expirado
@@ -92,7 +93,7 @@ export function useAuth() {
     try {
       const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('id, role, full_name, email, organization_name')
+        .select('id, role, full_name, email, organization_name, profile_image')
         .eq('id', userId)
         .single();
 
@@ -210,7 +211,7 @@ export function useAuth() {
     try {
       const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('id, role, full_name, email, organization_name')
+        .select('id, role, full_name, email, organization_name, profile_image')
         .eq('id', user.id)
         .single();
 

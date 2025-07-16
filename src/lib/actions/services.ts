@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createServerClient } from '@/lib/supabase/server'
-import { Service, ServiceInsert, ServiceUpdate, ServiceWithProvider, ServiceWithDetails } from '@/types/database'
+import { Service, ServiceInsert, ServiceUpdate, ServiceWithProvider, ServiceWithDetails, Subcategory } from '@/types/database'
 
 // Validation schemas
 const createServiceSchema = z.object({
@@ -73,6 +73,7 @@ export async function getServicesAction(filters?: {
           full_name,
           organization_name,
           logo_url,
+          profile_image,
           area_of_operation
         )
       `)
@@ -129,6 +130,7 @@ export async function getServiceByIdAction(serviceId: string): Promise<ActionRes
           full_name,
           organization_name,
           logo_url,
+          profile_image,
           area_of_operation
         ),
         guest_tiers:service_guest_tiers (*),
@@ -493,6 +495,7 @@ export async function getPublicServicesAction(filters?: {
           full_name,
           organization_name,
           logo_url,
+          profile_image,
           area_of_operation
         )
       `)
@@ -690,5 +693,30 @@ export async function deleteServiceImageAction(imageUrl: string): Promise<Action
   } catch (error) {
     console.error('Erro ao deletar imagem:', error)
     return { success: false, error: 'Erro inesperado ao deletar imagem' }
+  }
+} 
+
+// Buscar subcategorias do banco de dados
+export async function getSubcategoriesAction(): Promise<ActionResult<Subcategory[]>> {
+  try {
+    const supabase = await createServerClient()
+
+    const { data: subcategories, error } = await supabase
+      .from('subcategories')
+      .select('id, name, category_id, icon_url, created_at, updated_at')
+      .order('name')
+
+    if (error) {
+      console.error('Error fetching subcategories:', error)
+      return { success: false, error: 'Erro ao carregar subcategorias' }
+    }
+
+    return { success: true, data: subcategories || [] }
+  } catch (error) {
+    console.error('Subcategories fetch failed:', error)
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Erro inesperado ao carregar subcategorias' 
+    }
   }
 } 

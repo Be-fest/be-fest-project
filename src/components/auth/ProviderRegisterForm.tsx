@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { MdBusiness, MdEmail, MdLock, MdPhone, MdLocationOn, MdVisibility, MdVisibilityOff } from 'react-icons/md'
 import { useRouter } from 'next/navigation'
 import { registerProviderAction } from '@/lib/actions/auth'
+import AreaOfOperationSelect from '@/components/ui/AreaOfOperationSelect'
 
 export function ProviderRegisterForm() {
   const router = useRouter()
@@ -182,14 +183,13 @@ export function ProviderRegisterForm() {
           Área de Atuação (Opcional)
         </label>
         <div className="relative">
-          <MdLocationOn className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6E5963] text-xl" />
-          <input
-            type="text"
-            name="areaOfOperation"
+          <MdLocationOn className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6E5963] text-xl z-10" />
+          <AreaOfOperationSelect
             value={formData.areaOfOperation}
-            onChange={handleChange}
-            className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:border-[#FF0080] focus:ring-2 focus:ring-[#FF0080]/20 outline-none transition-all"
-            placeholder="Ex: São Paulo - Zona Sul"
+            onChange={(value) => setFormData(prev => ({ ...prev, areaOfOperation: value }))}
+            name="areaOfOperation"
+            placeholder="Selecione a área de atuação"
+            className="pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:border-[#FF0080] focus:ring-2 focus:ring-[#FF0080]/20 outline-none transition-all"
           />
         </div>
       </div>

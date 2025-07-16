@@ -1,11 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { MdEdit, MdSave, MdCancel, MdCloudUpload, MdWarning } from 'react-icons/md';
+import { MdEdit, MdSave, MdCancel, MdCloudUpload, MdWarning, MdRemove, MdImage } from 'react-icons/md';
 import { createClient } from '@/lib/supabase/client';
 import { getProviderStatsAction } from '@/lib/actions/services';
+import { uploadProfileImageAction, deleteProfileImageAction, updateProviderProfileAction } from '@/lib/actions/auth';
 import { User } from '@/types/database';
+import { ProviderProfileSkeleton } from '@/components/ui';
+import { useToastGlobal } from '@/contexts/GlobalToastContext';
+import { invalidateServiceImagesCache } from '@/hooks/useImagePreloader';
+import AreaOfOperationSelect from '@/components/ui/AreaOfOperationSelect';
 
 interface ProviderStats {
   totalEvents: number;
@@ -27,6 +32,9 @@ export function ProviderProfile() {
   const [statsLoading, setStatsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const toast = useToastGlobal();
   
   const [formData, setFormData] = useState({
     organization_name: '',
@@ -35,6 +43,7 @@ export function ProviderProfile() {
     whatsapp_number: '',
     area_of_operation: '',
     cnpj: '',
+    profile_image: '',
   });
 
   useEffect(() => {
@@ -68,6 +77,7 @@ export function ProviderProfile() {
           whatsapp_number: userData.whatsapp_number || '',
           area_of_operation: userData.area_of_operation || '',
           cnpj: userData.cnpj || '',
+          profile_image: userData.profile_image || '',
         });
       } catch (err) {
         setError('Erro ao carregar perfil');
@@ -83,61 +93,153 @@ export function ProviderProfile() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        setStatsLoading(true);
         const result = await getProviderStatsAction();
-        
         if (result.success && result.data) {
           setStats(result.data);
-        } else {
-          console.error('Erro ao carregar estatísticas:', result.error);
         }
       } catch (err) {
-        console.error('Error loading provider stats:', err);
+        console.error('Error loading stats:', err);
       } finally {
         setStatsLoading(false);
       }
     };
 
-    // Só buscar estatísticas se o usuário estiver carregado
-    if (!loading && user) {
+    if (user) {
       fetchStats();
     }
-  }, [loading, user]);
+  }, [user]);
 
-  const handleSave = async () => {
-    if (!user) return;
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
     
     try {
-      setSaving(true);
-      const supabase = createClient();
+      const formData = new FormData();
+      formData.append('image', file);
       
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({
-          organization_name: formData.organization_name,
-          full_name: formData.full_name,
-          whatsapp_number: formData.whatsapp_number,
-          area_of_operation: formData.area_of_operation,
-          cnpj: formData.cnpj,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
-
-      if (updateError) {
-        throw updateError;
+      const result = await uploadProfileImageAction(formData);
+      
+      if (result.success && result.data) {
+        setFormData(prev => ({
+          ...prev,
+          profile_image: result.data as string
+        }));
+        
+        // Invalidar cache para mostrar a nova imagem imediatamente
+        invalidateServiceImagesCache();
+        
+        toast.success('Imagem atualizada!', 'Foto de perfil atualizada com sucesso.', 3000);
+      } else {
+        toast.error('Erro no upload', result.error || 'Falha ao fazer upload da imagem', 5000);
       }
+    } catch (error) {
+      toast.error('Erro no upload', 'Erro inesperado ao fazer upload da imagem', 5000);
+    } finally {
+      setUploadingImage(false);
+      // Limpar o input file
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
 
-      // Update local state
-      setUser(prev => prev ? {
-        ...prev,
-        ...formData,
-        updated_at: new Date().toISOString()
-      } : null);
+  const handleImageRemove = async () => {
+    if (!formData.profile_image) return;
+    
+    try {
+      // Tentar deletar a imagem do storage se ela for do nosso bucket
+      if (formData.profile_image.includes('supabase')) {
+        await deleteProfileImageAction(formData.profile_image);
+      }
+    } catch (error) {
+      console.error('Erro ao deletar imagem do storage:', error);
+    }
+    
+    // Remover da lista local
+    setFormData(prev => ({
+      ...prev,
+      profile_image: ''
+    }));
+    
+    toast.success('Imagem removida!', 'A imagem foi removida com sucesso.', 3000);
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    
+    try {
+      const formDataToSend = new FormData();
       
-      setIsEditing(false);
-    } catch (err) {
-      console.error('Error saving profile:', err);
-      alert('Erro ao salvar perfil. Tente novamente.');
+      // Validar campos obrigatórios antes de enviar
+      const requiredFields = {
+        organization_name: 'Nome da empresa é obrigatório',
+        full_name: 'Nome do proprietário é obrigatório',
+        whatsapp_number: 'WhatsApp é obrigatório',
+        area_of_operation: 'Área de atuação é obrigatória',
+        cnpj: 'CNPJ é obrigatório'
+      };
+
+      const errors: string[] = [];
+      
+      Object.entries(requiredFields).forEach(([field, errorMessage]) => {
+        const value = formData[field as keyof typeof formData];
+        if (!value || value.trim() === '') {
+          errors.push(errorMessage);
+        }
+      });
+
+      if (errors.length > 0) {
+        toast.error('Campos obrigatórios', errors.join(', '), 5000);
+        return;
+      }
+      
+      // Adicionar apenas campos preenchidos
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value && value.trim() !== '' && key !== 'email') {
+          formDataToSend.append(key, value.trim());
+        }
+      });
+      
+      console.log('Enviando dados:', Object.fromEntries(formDataToSend.entries()));
+      
+      const result = await updateProviderProfileAction(formDataToSend);
+      
+      if (result.success) {
+        toast.success('Perfil atualizado!', 'Suas informações foram salvas com sucesso.', 4000);
+        setIsEditing(false);
+        
+        // Atualizar dados do usuário local
+        const supabase = createClient();
+        const { data: updatedUser } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', user?.id)
+          .single();
+          
+        if (updatedUser) {
+          setUser(updatedUser);
+          setFormData({
+            organization_name: updatedUser.organization_name || '',
+            full_name: updatedUser.full_name || '',
+            email: updatedUser.email || '',
+            whatsapp_number: updatedUser.whatsapp_number || '',
+            area_of_operation: updatedUser.area_of_operation || '',
+            cnpj: updatedUser.cnpj || '',
+            profile_image: updatedUser.profile_image || '',
+          });
+        }
+      } else {
+        toast.error('Erro ao salvar', result.error || 'Não foi possível salvar as alterações', 5000);
+      }
+    } catch (error) {
+      console.error('Erro ao salvar perfil:', error);
+      toast.error('Erro inesperado', 'Ocorreu um erro ao salvar o perfil', 5000);
     } finally {
       setSaving(false);
     }
@@ -152,35 +254,22 @@ export function ProviderProfile() {
         whatsapp_number: user.whatsapp_number || '',
         area_of_operation: user.area_of_operation || '',
         cnpj: user.cnpj || '',
+        profile_image: user.profile_image || '',
       });
     }
     setIsEditing(false);
   };
 
   if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF0080] mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando perfil...</p>
-        </div>
-      </div>
-    );
+    return <ProviderProfileSkeleton />;
   }
 
-  if (error) {
+  if (error || !user) {
     return (
-      <div className="space-y-6">
-        <div className="text-center py-12">
-          <MdWarning className="text-red-500 text-4xl mx-auto mb-4" />
-          <p className="text-red-600 mb-4">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-[#FF0080] text-white rounded-lg hover:bg-[#E6006F] transition-colors"
-          >
-            Tentar novamente
-          </button>
-        </div>
+      <div className="flex flex-col items-center justify-center py-12">
+        <MdWarning className="text-red-500 text-4xl mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Erro ao carregar perfil</h3>
+        <p className="text-gray-600">{error || 'Não foi possível carregar as informações do perfil'}</p>
       </div>
     );
   }
@@ -229,72 +318,112 @@ export function ProviderProfile() {
         animate={{ opacity: 1, y: 0 }}
         className="bg-white rounded-lg shadow-sm p-6"
       >
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Logo Upload */}
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-[#520029] mb-2">
-              Logo da Empresa
-            </label>
-            <div className="flex items-center gap-4">
-              <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
-                {user?.logo_url ? (
-                  <img
-                    src={user.logo_url}
-                    alt="Logo"
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-[#FF0080] to-[#E6006F] rounded-lg flex items-center justify-center text-white font-bold text-xl">
-                    {(formData.organization_name || formData.full_name || 'P').charAt(0)}
-                  </div>
-                )}
-              </div>
+        {/* Logo da Empresa */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-[#520029] mb-3">
+            Logo da Empresa
+          </label>
+          
+          <div className="flex items-center gap-4">
+            {/* Preview da imagem */}
+            <div className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50 overflow-hidden">
+              {formData.profile_image ? (
+                <img
+                  src={formData.profile_image}
+                  alt="Logo da empresa"
+                  className="w-full h-full object-cover rounded-lg"
+                />
+              ) : (
+                <div className="text-center">
+                  <MdImage className="text-gray-400 text-2xl mx-auto mb-1" />
+                  <span className="text-xs text-gray-500">Logo</span>
+                </div>
+              )}
+            </div>
+
+            {/* Botões de ação */}
+            <div className="flex gap-2">
               {isEditing && (
-                <button className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
-                  <MdCloudUpload />
-                  Alterar Logo
-                </button>
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    disabled={uploadingImage}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingImage}
+                    className="flex items-center gap-2 px-4 py-2 bg-[#A502CA] text-white rounded-lg font-medium hover:bg-[#8B0A9E] transition-colors disabled:opacity-50"
+                  >
+                    <MdCloudUpload className="text-lg" />
+                    {uploadingImage ? 'Enviando...' : 'Alterar Logo'}
+                  </button>
+                  {formData.profile_image && (
+                    <button
+                      type="button"
+                      onClick={handleImageRemove}
+                      disabled={uploadingImage}
+                      className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+                    >
+                      <MdRemove className="text-lg" />
+                      Remover
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>
+          
+          {isEditing && (
+            <p className="text-xs text-gray-500 mt-2">
+              Formatos aceitos: JPEG, PNG, WebP. Tamanho máximo: 5MB.
+            </p>
+          )}
+        </div>
 
-          {/* Nome da Organização */}
+        {/* Campos do formulário */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Nome da Empresa */}
           <div>
             <label className="block text-sm font-medium text-[#520029] mb-2">
-              Nome da Empresa
+              Nome da Empresa *
             </label>
             {isEditing ? (
               <input
                 type="text"
                 value={formData.organization_name}
-                onChange={(e) => setFormData({...formData, organization_name: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A502CA]"
+                onChange={(e) => handleInputChange('organization_name', e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A502CA] focus:border-transparent"
                 placeholder="Nome da sua empresa"
               />
             ) : (
-              <p className="text-gray-800 bg-gray-50 px-3 py-2 rounded-lg">
-                {formData.organization_name || 'Não informado'}
-              </p>
+              <div className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
+                <span className="text-gray-900">{formData.organization_name || 'Não informado'}</span>
+              </div>
             )}
           </div>
 
           {/* Nome do Proprietário */}
           <div>
             <label className="block text-sm font-medium text-[#520029] mb-2">
-              Nome do Proprietário
+              Nome do Proprietário *
             </label>
             {isEditing ? (
               <input
                 type="text"
                 value={formData.full_name}
-                onChange={(e) => setFormData({...formData, full_name: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A502CA]"
+                onChange={(e) => handleInputChange('full_name', e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A502CA] focus:border-transparent"
                 placeholder="Seu nome completo"
               />
             ) : (
-              <p className="text-gray-800 bg-gray-50 px-3 py-2 rounded-lg">
-                {formData.full_name || 'Não informado'}
-              </p>
+              <div className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
+                <span className="text-gray-900">{formData.full_name || 'Não informado'}</span>
+              </div>
             )}
           </div>
 
@@ -303,77 +432,76 @@ export function ProviderProfile() {
             <label className="block text-sm font-medium text-[#520029] mb-2">
               Email
             </label>
-            <p className="text-gray-800 bg-gray-50 px-3 py-2 rounded-lg">
-              {formData.email || 'Não informado'}
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
-              O email não pode ser alterado aqui
-            </p>
+            <div className="px-4 py-3 bg-gray-100 rounded-lg border border-gray-200">
+              <span className="text-gray-500">{formData.email}</span>
+              <p className="text-xs text-gray-400 mt-1">O email não pode ser alterado aqui</p>
+            </div>
           </div>
 
           {/* WhatsApp */}
           <div>
             <label className="block text-sm font-medium text-[#520029] mb-2">
-              WhatsApp
+              WhatsApp *
             </label>
             {isEditing ? (
               <input
-                type="text"
+                type="tel"
                 value={formData.whatsapp_number}
-                onChange={(e) => setFormData({...formData, whatsapp_number: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A502CA]"
+                onChange={(e) => handleInputChange('whatsapp_number', e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A502CA] focus:border-transparent"
                 placeholder="(11) 99999-9999"
               />
             ) : (
-              <p className="text-gray-800 bg-gray-50 px-3 py-2 rounded-lg">
-                {formData.whatsapp_number || 'Não informado'}
-              </p>
+              <div className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
+                <span className="text-gray-900">{formData.whatsapp_number || 'Não informado'}</span>
+              </div>
             )}
           </div>
 
           {/* CNPJ */}
           <div>
             <label className="block text-sm font-medium text-[#520029] mb-2">
-              CNPJ
+              CNPJ *
             </label>
             {isEditing ? (
               <input
                 type="text"
                 value={formData.cnpj}
-                onChange={(e) => setFormData({...formData, cnpj: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A502CA]"
+                onChange={(e) => handleInputChange('cnpj', e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A502CA] focus:border-transparent"
                 placeholder="00.000.000/0000-00"
               />
             ) : (
-              <p className="text-gray-800 bg-gray-50 px-3 py-2 rounded-lg">
-                {formData.cnpj || 'Não informado'}
-              </p>
+              <div className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
+                <span className="text-gray-900">{formData.cnpj || 'Não informado'}</span>
+              </div>
             )}
           </div>
 
           {/* Área de Atuação */}
           <div>
             <label className="block text-sm font-medium text-[#520029] mb-2">
-              Área de Atuação
+              Área de Atuação *
             </label>
             {isEditing ? (
-              <input
-                type="text"
+              <AreaOfOperationSelect
                 value={formData.area_of_operation}
-                onChange={(e) => setFormData({...formData, area_of_operation: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A502CA]"
-                placeholder="Ex: Buffet, Decoração, Música"
+                onChange={(value) => handleInputChange('area_of_operation', value)}
+                name="area_of_operation"
+                required
+                placeholder="Selecione a área de atuação"
+                className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A502CA] focus:border-transparent"
               />
             ) : (
-              <p className="text-gray-800 bg-gray-50 px-3 py-2 rounded-lg">
-                {formData.area_of_operation || 'Não informado'}
-              </p>
+              <div className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
+                <span className="text-gray-900">{formData.area_of_operation || 'Não informado'}</span>
+              </div>
             )}
           </div>
         </div>
       </motion.div>
 
-      {/* Statistics Card */}
+      {/* Estatísticas do Perfil */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

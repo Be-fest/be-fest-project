@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { MdVisibility, MdVisibilityOff } from 'react-icons/md';
 import Image from 'next/image';
 import { registerProviderAction } from '@/lib/actions/auth';
+import AreaOfOperationSelect from '@/components/ui/AreaOfOperationSelect';
 
 interface ServiceProviderFormProps {
   userType: 'client' | 'service_provider';
@@ -202,12 +203,13 @@ export function ServiceProviderForm({ userType, onUserTypeChange }: ServiceProvi
           }}
         />
 
-        <Input
-          type="text"
+        <AreaOfOperationSelect
+          value=""
+          onChange={() => {}} // FormData handles the value
           name="areaOfOperation"
-          placeholder="Área de atuação (ex: Buffet, Decoração, Som)"
           required
-          disabled={isPending}
+          placeholder="Selecione a área de atuação"
+          className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
         />
 
         <Button

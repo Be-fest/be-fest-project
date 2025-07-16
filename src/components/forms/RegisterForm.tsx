@@ -8,6 +8,7 @@ import { MdVisibility, MdVisibilityOff } from 'react-icons/md';
 import Image from 'next/image';
 import { registerClientAction, registerProviderAction } from '@/lib/actions/auth';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
+import AreaOfOperationSelect from '@/components/ui/AreaOfOperationSelect';
 
 interface RegisterFormProps {
   userType: 'client' | 'service_provider';
@@ -270,12 +271,13 @@ export const RegisterForm = ({ userType, onUserTypeChange }: RegisterFormProps) 
               }}
             />
             
-            <Input
-              type="text"
+            <AreaOfOperationSelect
+              value=""
+              onChange={() => {}} // FormData handles the value
               name="areaOfOperation"
-              placeholder="Área de Atuação (ex: Buffet, Decoração, etc.)"
               required
-              disabled={isPending}
+              placeholder="Selecione a área de atuação"
+              className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
             />
           </>
         ) : (

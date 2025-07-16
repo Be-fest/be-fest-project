@@ -104,7 +104,7 @@ const ProvidersGrid = ({ services }: { services: ServiceWithProvider[] }) => {
           {/* Imagem do prestador */}
           <div className="h-48 bg-gray-200 overflow-hidden">
             <img
-              src={provider.provider?.logo_url || provider.services[0]?.images_urls?.[0] || '/placeholder-provider.jpg'}
+              src={(provider.provider as any)?.profile_image || provider.provider?.logo_url || provider.services[0]?.images_urls?.[0] || '/be-fest-provider-logo.png'}
               alt={provider.name}
               className="w-full h-full object-cover"
             />

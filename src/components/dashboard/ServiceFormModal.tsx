@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { MdClose, MdAttachMoney, MdGroup, MdAdd, MdEdit, MdRemove, MdCloudUpload, MdImage } from 'react-icons/md';
 import { Input, Button, Select, TipTapEditor } from '@/components/ui';
 import { createServiceAction, updateServiceAction, uploadServiceImageAction, deleteServiceImageAction } from '@/lib/actions/services';
+import { invalidateServiceImagesCache } from '@/hooks/useImagePreloader';
 import { Service } from '@/types/database';
 import { useEffect, useRef } from 'react';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
@@ -274,6 +275,9 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
           ...prev,
           images_urls: [...prev.images_urls, result.data as string]
         }));
+        
+        // Invalidar cache para mostrar a nova imagem imediatamente
+        invalidateServiceImagesCache();
         
         toast.success('Imagem adicionada!', 'Upload realizado com sucesso.', 3000);
       } else {

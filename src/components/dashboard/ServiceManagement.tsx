@@ -8,7 +8,7 @@ import { getProviderServicesAction, toggleServiceStatusAction, deleteServiceActi
 import { Service } from '@/types/database';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
 import { SafeHTML } from '@/components/ui';
-import { useServiceImage } from '@/hooks/useImagePreloader';
+import { useServiceImage, invalidateServiceImagesCache } from '@/hooks/useImagePreloader';
 
 export function ServiceManagement() {
   const [services, setServices] = useState<Service[]>([]);
@@ -20,6 +20,7 @@ export function ServiceManagement() {
   // Carregar serviços do prestador
   const loadServices = async () => {
     setLoading(true);
+    invalidateServiceImagesCache(); // Limpar cache de imagens antes de carregar
     const result = await getProviderServicesAction();
     if (result.success && result.data) {
       setServices(result.data);
@@ -105,6 +106,7 @@ export function ServiceManagement() {
 
   const handleServiceSubmit = () => {
     setIsModalOpen(false);
+    invalidateServiceImagesCache(); // Limpar cache de imagens antes de recarregar
     loadServices(); // Recarregar lista após criar/editar
     
     // Toast será mostrado pelo modal

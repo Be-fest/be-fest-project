@@ -297,7 +297,7 @@ export default function ProviderDashboard() {
         idsToProcess.map(async (id) => {
           if (type === 'approve') {
             // Para aprovação, muda o status para waiting_payment
-            return await updateEventServiceStatusAction(id, 'waiting_payment', '');
+            return await updateEventServiceStatusAction(id, 'waiting_payment');
           } else {
             // Para rejeição
             return await updateEventServiceStatusAction(id, 'rejected', 'Serviço rejeitado');
@@ -378,8 +378,8 @@ export default function ProviderDashboard() {
       color: 'bg-blue-500',
       bgColor: 'bg-blue-50',
       textColor: 'text-blue-600',
-      change: '+12%',
-      changeType: 'increase'
+      change: '',
+      changeType: 'neutral'
     },
     {
       title: 'Pendentes',
@@ -388,8 +388,8 @@ export default function ProviderDashboard() {
       color: 'bg-yellow-500',
       bgColor: 'bg-yellow-50',
       textColor: 'text-yellow-600',
-      change: '+3%',
-      changeType: 'increase'
+      change: '',
+      changeType: 'neutral'
     },
     {
       title: 'Aprovadas',
@@ -398,8 +398,8 @@ export default function ProviderDashboard() {
       color: 'bg-green-500',
       bgColor: 'bg-green-50',
       textColor: 'text-green-600',
-      change: '+8%',
-      changeType: 'increase'
+      change: '',
+      changeType: 'neutral'
     },
     {
       title: 'Serviços Ativos',
@@ -408,7 +408,7 @@ export default function ProviderDashboard() {
       color: 'bg-purple-500',
       bgColor: 'bg-purple-50',
       textColor: 'text-purple-600',
-      change: '0%',
+      change: '',
       changeType: 'neutral'
     }
   ];
@@ -421,8 +421,8 @@ export default function ProviderDashboard() {
       color: 'bg-green-500',
       bgColor: 'bg-green-50',
       textColor: 'text-green-600',
-      change: totalRevenue > 0 ? '+' + Math.round((totalRevenue / 10000) * 100) / 100 + '%' : '0%',
-      changeType: totalRevenue > 0 ? 'increase' : 'neutral'
+      change: '',
+      changeType: 'neutral'
     },
     {
       title: 'Eventos Realizados',
@@ -431,8 +431,8 @@ export default function ProviderDashboard() {
       color: 'bg-blue-500',
       bgColor: 'bg-blue-50',
       textColor: 'text-blue-600',
-      change: providerStats.totalEvents > 0 ? '+' + providerStats.totalEvents : '0',
-      changeType: providerStats.totalEvents > 0 ? 'increase' : 'neutral'
+      change: '',
+      changeType: 'neutral'
     }
   ];
 

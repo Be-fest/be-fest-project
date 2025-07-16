@@ -11,64 +11,39 @@ export function ProviderStats({ onQuickAction }: ProviderStatsProps) {
   const stats = [
     {
       title: 'Eventos este mês',
-      value: '24',
-      change: '+12%',
-      changeType: 'positive',
+      value: '0',
+      change: '',
+      changeType: 'neutral',
       icon: MdEvent,
       color: 'bg-blue-500'
     },
     {
       title: 'Receita total',
-      value: 'R$ 18.420',
-      change: '+8%',
-      changeType: 'positive',
+      value: 'R$ 0,00',
+      change: '',
+      changeType: 'neutral',
       icon: MdAttachMoney,
       color: 'bg-green-500'
     },
     {
       title: 'Avaliação média',
-      value: '4.8',
-      change: '+0.2',
-      changeType: 'positive',
+      value: '-',
+      change: '',
+      changeType: 'neutral',
       icon: MdStar,
       color: 'bg-yellow-500'
     },
     {
       title: 'Taxa de conversão',
-      value: '68%',
-      change: '+5%',
-      changeType: 'positive',
+      value: '-',
+      change: '',
+      changeType: 'neutral',
       icon: MdTrendingUp,
       color: 'bg-purple-500'
     }
   ];
 
-  const recentOrders = [
-    {
-      id: 1,
-      client: 'Maria Silva',
-      event: 'Aniversário 15 anos',
-      date: '2024-02-15',
-      value: 'R$ 2.400',
-      status: 'confirmed'
-    },
-    {
-      id: 2,
-      client: 'João Santos',
-      event: 'Casamento',
-      date: '2024-02-20',
-      value: 'R$ 5.200',
-      status: 'pending'
-    },
-    {
-      id: 3,
-      client: 'Ana Costa',
-      event: 'Festa Corporativa',
-      date: '2024-02-25',
-      value: 'R$ 3.800',
-      status: 'confirmed'
-    }
-  ];
+  const recentOrders: any[] = [];
 
   const quickActions = [
     {
@@ -141,25 +116,32 @@ export function ProviderStats({ onQuickAction }: ProviderStatsProps) {
         >
           <h2 className="text-lg font-semibold text-[#520029] mb-4">Pedidos Recentes</h2>
           <div className="space-y-4">
-            {recentOrders.map((order) => (
-              <div key={order.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <h4 className="font-medium text-[#520029]">{order.client}</h4>
-                  <p className="text-sm text-gray-600">{order.event}</p>
-                  <p className="text-xs text-gray-500">{new Date(order.date).toLocaleDateString('pt-BR')}</p>
+            {recentOrders.length > 0 ? (
+              recentOrders.map((order) => (
+                <div key={order.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <h4 className="font-medium text-[#520029]">{order.client}</h4>
+                    <p className="text-sm text-gray-600">{order.event}</p>
+                    <p className="text-xs text-gray-500">{new Date(order.date).toLocaleDateString('pt-BR')}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-[#A502CA]">{order.value}</p>
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      order.status === 'confirmed' 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {order.status === 'confirmed' ? 'Confirmado' : 'Pendente'}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-semibold text-[#A502CA]">{order.value}</p>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    order.status === 'confirmed' 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {order.status === 'confirmed' ? 'Confirmado' : 'Pendente'}
-                  </span>
-                </div>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500">Nenhum pedido recente encontrado</p>
+                <p className="text-sm text-gray-400 mt-1">Os pedidos aparecerão aqui assim que você começar a receber solicitações</p>
               </div>
-            ))}
+            )}
           </div>
         </motion.div>
 

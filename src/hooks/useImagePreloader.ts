@@ -11,6 +11,26 @@ interface ImageCache {
 // Cache global para compartilhar entre todas as instâncias do hook
 const globalImageCache: ImageCache = {};
 
+// Função para limpar cache específico ou todo o cache
+export function clearImageCache(url?: string) {
+  if (url) {
+    delete globalImageCache[url];
+  } else {
+    Object.keys(globalImageCache).forEach(key => {
+      delete globalImageCache[key];
+    });
+  }
+}
+
+// Função para invalidar cache de imagens de serviços
+export function invalidateServiceImagesCache() {
+  Object.keys(globalImageCache).forEach(key => {
+    if (key.includes('supabase') || key.includes('be-fest-images')) {
+      delete globalImageCache[key];
+    }
+  });
+}
+
 export function useImagePreloader(imageSrc: string, fallbackSrc?: string) {
   const [imageState, setImageState] = useState(() => {
     // Verificar se a imagem já está no cache

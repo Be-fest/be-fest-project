@@ -8,6 +8,7 @@ export * from './ForgotPasswordModal';
 export { ServicesSkeleton } from './ServicesSkeleton';
 export { CategoriesSkeleton } from './CategoriesSkeleton';
 export { DashboardSkeleton } from './DashboardSkeleton';
+export { ProviderProfileSkeleton } from './ProviderProfileSkeleton';
 export * from './AuthLoadingSpinner';
 export * from './SimpleToast';
 export { TipTapEditor } from './TipTapEditor';

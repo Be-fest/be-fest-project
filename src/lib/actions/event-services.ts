@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createServerClient } from '@/lib/supabase/server'
-import { EventService, EventServiceInsert, EventServiceUpdate, EventServiceWithDetails } from '@/types/database'
+import { EventService, EventServiceInsert, EventServiceUpdate, EventServiceWithDetails, EventServiceStatus } from '@/types/database'
 
 // Validation schemas
 const createEventServiceSchema = z.object({
@@ -384,7 +384,7 @@ export async function updateEventServiceAction(formData: FormData): Promise<Acti
 
 export async function updateEventServiceStatusAction(
   eventServiceId: string, 
-  status: string, 
+  status: EventServiceStatus, 
   providerNotes?: string
 ): Promise<ActionResult<EventService>> {
   try {
@@ -417,7 +417,7 @@ export async function updateEventServiceStatusAction(
     }
 
     const updateData: Partial<EventServiceUpdate> = {
-      booking_status: status as any
+      booking_status: status
     }
 
     if (providerNotes) {
