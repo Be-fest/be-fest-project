@@ -8,7 +8,7 @@ import { Service, ServiceInsert, ServiceUpdate, ServiceWithProvider, ServiceWith
 // Validation schemas
 const createServiceSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres').max(100, 'Nome deve ter no máximo 100 caracteres'),
-  description: z.string().max(1000, 'Descrição deve ter no máximo 1000 caracteres').optional(),
+  description: z.string().optional(),
   category: z.string().min(1, 'Categoria é obrigatória'),
   base_price: z.coerce.number().min(0, 'Preço base deve ser maior ou igual a 0'),
   price_per_guest: z.coerce.number().min(0, 'Preço por convidado deve ser maior ou igual a 0').optional().nullable(),
@@ -20,7 +20,7 @@ const createServiceSchema = z.object({
 const updateServiceSchema = z.object({
   id: z.string().uuid('ID inválido'),
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres').max(100, 'Nome deve ter no máximo 100 caracteres').optional(),
-  description: z.string().max(1000, 'Descrição deve ter no máximo 1000 caracteres').optional().nullable(),
+  description: z.string().optional().nullable(),
   category: z.string().min(1, 'Categoria é obrigatória').optional(),
   base_price: z.coerce.number().min(0, 'Preço base deve ser maior ou igual a 0').optional(),
   price_per_guest: z.coerce.number().min(0, 'Preço por convidado deve ser maior ou igual a 0').optional().nullable(),
@@ -291,11 +291,18 @@ export async function updateServiceAction(formData: FormData): Promise<ActionRes
       min_guests: formData.get('min_guests') as string,
       max_guests: formData.get('max_guests') as string || null,
       images_urls: formData.getAll('images_urls').filter(url => url) as string[],
-      status: formData.get('status') as string,
+      status: (formData.get('status') as string) || undefined,
       is_active: formData.get('is_active') === 'true'
     }
 
-    const validatedData = updateServiceSchema.parse(rawData)
+    // Filtrar campos undefined/null/empty para evitar validação desnecessária
+    const cleanedData = Object.fromEntries(
+      Object.entries(rawData).filter(([key, value]) => 
+        value !== undefined && value !== null && value !== ''
+      )
+    );
+    
+    const validatedData = updateServiceSchema.parse(cleanedData)
     const supabase = await createServerClient()
 
     // Verificar se o serviço pertence ao usuário

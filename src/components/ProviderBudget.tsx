@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { MdCalendarToday, MdGroup, MdCheckCircle, MdCalculate, MdInfo, MdWarning } from 'react-icons/md';
 import { getServicesAction } from '@/lib/actions/services';
 import { ServiceWithProvider } from '@/types/database';
+import { SafeHTML } from '@/components/ui';
 
 interface ProviderBudgetProps {
   providerId: string;
@@ -316,7 +317,13 @@ export function ProviderBudget({ providerId }: ProviderBudgetProps) {
                               onClick={() => handleServiceToggle(service)}
                             >
                               <h4 className="font-semibold text-[#520029]">{service.name}</h4>
-                              <p className="text-sm text-[#6E5963] mb-1">{service.description || 'Serviço de qualidade'}</p>
+                              <div className="text-sm text-[#6E5963] mb-1">
+                                <SafeHTML
+                                  html={service.description || ''}
+                                  className="text-gray-600 text-sm"
+                                  fallback="Sem descrição"
+                                />
+                              </div>
                               <p className="font-bold text-[#FF0080]">
                                 R$ {(service.price_per_guest || 0).toFixed(2)} por pessoa
                               </p>
@@ -358,7 +365,13 @@ export function ProviderBudget({ providerId }: ProviderBudgetProps) {
                               onClick={(e) => e.stopPropagation()}
                             >
                               <h3 className="text-xl font-bold text-[#520029] mb-4">{service.name}</h3>
-                              <p className="text-[#6E5963] mb-4">{service.description || 'Serviço de qualidade para sua festa'}</p>
+                              <div className="text-[#6E5963] mb-4">
+                                <SafeHTML
+                                  html={service.description || ''}
+                                  className="text-gray-600 text-sm"
+                                  fallback="Sem descrição"
+                                />
+                              </div>
                               <p className="font-semibold text-[#FF0080] mb-4">
                                 R$ {(service.price_per_guest || 0).toFixed(2)} por pessoa
                               </p>

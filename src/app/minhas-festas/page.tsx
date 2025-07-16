@@ -195,7 +195,7 @@ export default function MinhasFestasPage() {
   const getNextAction = (event: Event) => {
     const services = eventServices[event.id] || [];
     const hasServices = services.length > 0;
-    const allServicesApproved = hasServices && services.every(s => s.booking_status === 'approved');
+    const allServicesApproved = hasServices && services.every(s => s.booking_status === 'confirmed');
     const hasRejectedServices = services.some(s => s.booking_status === 'rejected');
     const hasPendingServices = services.some(s => s.booking_status === 'pending_provider_approval');
 

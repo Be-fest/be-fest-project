@@ -7,6 +7,8 @@ import { ServiceFormModal } from './ServiceFormModal';
 import { getProviderServicesAction, toggleServiceStatusAction, deleteServiceAction } from '@/lib/actions/services';
 import { Service } from '@/types/database';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
+import { SafeHTML } from '@/components/ui';
+import { useServiceImage } from '@/hooks/useImagePreloader';
 
 export function ServiceManagement() {
   const [services, setServices] = useState<Service[]>([]);
@@ -173,14 +175,10 @@ export function ServiceManagement() {
             >
               {/* Service Image */}
               <div className="h-48 bg-gray-200 relative">
-                <img
-                  src={service.images_urls?.[0] || '/images/placeholder-service.png'}
+                <ServiceImage 
+                  src={service.images_urls?.[0]} 
                   alt={service.name}
                   className="w-full h-full object-cover"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = '/images/placeholder-service.png';
-                  }}
                 />
                 <div className="absolute top-3 right-3">
                   <span
@@ -214,9 +212,13 @@ export function ServiceManagement() {
                 <h3 className="font-semibold text-lg text-[#520029] mb-2 line-clamp-1">
                   {service.name}
                 </h3>
-                <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                  {service.description || 'Sem descrição'}
-                </p>
+                <div className="text-gray-600 text-sm mb-4 line-clamp-2">
+                  <SafeHTML
+                    html={service.description || ''}
+                    className="text-gray-600 text-sm"
+                    fallback="Sem descrição"
+                  />
+                </div>
                 
                 <div className="space-y-2 mb-5">
                   <div className="flex items-center justify-between">
@@ -284,5 +286,19 @@ export function ServiceManagement() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+// Componente para gerenciar imagens de serviço
+function ServiceImage({ src, alt, className }: { src?: string; alt: string; className: string }) {
+  const imageState = useServiceImage(src);
+  
+  return (
+    <img
+      src={imageState.src}
+      alt={alt}
+      className={className}
+      loading="lazy"
+    />
   );
 }

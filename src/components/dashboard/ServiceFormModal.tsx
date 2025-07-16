@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { MdClose, MdCloudUpload, MdAdd, MdRemove } from 'react-icons/md';
+import { MdClose, MdAttachMoney, MdGroup, MdAdd, MdEdit, MdRemove } from 'react-icons/md';
+import { Input, Button, Select, TipTapEditor } from '@/components/ui';
 import { createServiceAction, updateServiceAction } from '@/lib/actions/services';
 import { Service } from '@/types/database';
 import { useEffect } from 'react';
@@ -30,7 +31,6 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
     name: service?.name || '',
     description: service?.description || '',
     category: service?.category || '',
-    base_price: service?.base_price?.toString() || '',
     price_per_guest: service?.price_per_guest?.toString() || '',
     min_guests: service?.min_guests?.toString() || '0',
     max_guests: service?.max_guests?.toString() || '',
@@ -103,7 +103,6 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
         name: service?.name || '',
         description: service?.description || '',
         category: service?.category || '',
-        base_price: service?.base_price?.toString() || '',
         price_per_guest: service?.price_per_guest?.toString() || '',
         min_guests: service?.min_guests?.toString() || '0',
         max_guests: service?.max_guests?.toString() || '',
@@ -144,11 +143,8 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
     
     if (!formData.name.trim()) newErrors.name = 'Nome é obrigatório';
     if (!formData.category) newErrors.category = 'Categoria é obrigatória';
-    if (!formData.base_price) newErrors.base_price = 'Preço base é obrigatório';
-    if (parseFloat(formData.base_price) < 0) newErrors.base_price = 'Preço base deve ser maior ou igual a 0';
-    if (formData.price_per_guest && parseFloat(formData.price_per_guest) < 0) {
-      newErrors.price_per_guest = 'Preço por convidado deve ser maior ou igual a 0';
-    }
+    if (!formData.price_per_guest) newErrors.price_per_guest = 'Preço por convidado é obrigatório';
+    if (parseFloat(formData.price_per_guest) < 0) newErrors.price_per_guest = 'Preço por convidado deve ser maior ou igual a 0';
     if (formData.min_guests && parseInt(formData.min_guests) < 0) {
       newErrors.min_guests = 'Número mínimo de convidados deve ser maior ou igual a 0';
     }
@@ -177,7 +173,8 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
       formDataToSend.append('name', formData.name.trim());
       formDataToSend.append('description', formData.description.trim());
       formDataToSend.append('category', formData.category);
-      formDataToSend.append('base_price', formData.base_price);
+      // Usar price_per_guest como base_price para compatibilidade com o backend
+      formDataToSend.append('base_price', formData.price_per_guest || '0');
       
       if (formData.price_per_guest) {
         formDataToSend.append('price_per_guest', formData.price_per_guest);
@@ -194,6 +191,11 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
       });
       
       formDataToSend.append('is_active', formData.is_active.toString());
+      
+      // Adicionar status apenas para atualização (serviços existentes)
+      if (service) {
+        formDataToSend.append('status', service.status || 'active');
+      }
       
       // Adicionar regras de pricing por idade
       formDataToSend.append('pricing_rules', JSON.stringify(formData.pricing_rules));
@@ -343,58 +345,36 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
 
           {/* Descrição */}
           <div>
-            <label className="block text-sm font-medium text-[#520029] mb-2">
-              Descrição
+            <label className="block text-sm font-semibold text-[#520029] mb-2">
+              Descrição do Serviço
             </label>
-            <textarea
+            <TipTapEditor
               value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-              rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A502CA]"
-              placeholder="Descreva seu serviço detalhadamente..."
+              onChange={(value: string) => handleInputChange('description', value)}
+              placeholder="Descreva detalhadamente seu serviço, incluindo o que está incluso, diferenciais, etc."
               disabled={loading}
+              minHeight="150px"
             />
           </div>
 
-          {/* Preços */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-[#520029] mb-2">
-                Preço Base (R$) *
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.base_price}
-                onChange={(e) => handleInputChange('base_price', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A502CA] ${
-                  errors.base_price ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="0.00"
-                disabled={loading}
-              />
-              {errors.base_price && <p className="text-red-500 text-xs mt-1">{errors.base_price}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-[#520029] mb-2">
-                Preço por Convidado (R$)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.price_per_guest}
-                onChange={(e) => handleInputChange('price_per_guest', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A502CA] ${
-                  errors.price_per_guest ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="0.00"
-                disabled={loading}
-              />
-              {errors.price_per_guest && <p className="text-red-500 text-xs mt-1">{errors.price_per_guest}</p>}
-            </div>
+          {/* Preço */}
+          <div>
+            <label className="block text-sm font-medium text-[#520029] mb-2">
+              Preço por Convidado (R$) *
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={formData.price_per_guest}
+              onChange={(e) => handleInputChange('price_per_guest', e.target.value)}
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A502CA] ${
+                errors.price_per_guest ? 'border-red-500' : 'border-gray-300'
+              }`}
+              placeholder="0.00"
+              disabled={loading}
+            />
+            {errors.price_per_guest && <p className="text-red-500 text-xs mt-1">{errors.price_per_guest}</p>}
           </div>
 
           {/* Regras de Preços por Idade */}
@@ -405,20 +385,7 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
             <div className="space-y-4">
               {formData.pricing_rules.map((rule, index) => (
                 <div key={index} className="border border-gray-200 rounded-lg p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">
-                        Descrição
-                      </label>
-                      <input
-                        type="text"
-                        value={rule.rule_description}
-                        onChange={(e) => handlePricingRuleChange(index, 'rule_description', e.target.value)}
-                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                        placeholder="Ex: Preço Inteira"
-                        disabled={loading}
-                      />
-                    </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-xs font-medium text-gray-600 mb-1">
                         Idade Mín. (anos)

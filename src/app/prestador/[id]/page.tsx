@@ -8,6 +8,7 @@ import { MdStar, MdLocationOn, MdArrowBack, MdWarning } from 'react-icons/md';
 import { User, ServiceWithProvider } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
+import { useServiceImage } from '@/hooks/useImagePreloader';
 
 interface PageProps {
   params: Promise<{
@@ -81,7 +82,7 @@ const convertToProviderData = (provider: User, services: ServiceWithProvider[]) 
       name: service.name,
       description: service.description || 'Serviço de qualidade para sua festa',
       price: service.base_price,
-      image: service.images_urls?.[0] || '/images/placeholder-service.png',
+      image: service.images_urls?.[0],
       providerId: service.provider_id // Adicionar providerId real
     });
     return acc;
@@ -109,6 +110,20 @@ const convertToProviderData = (provider: User, services: ServiceWithProvider[]) 
     services: categorizedServices
   };
 };
+
+// Componente para imagem de serviço
+function ServiceImage({ src, alt, className }: { src?: string; alt: string; className: string }) {
+  const imageState = useServiceImage(src);
+  
+  return (
+    <img
+      src={imageState.src}
+      alt={alt}
+      className={className}
+      loading="lazy"
+    />
+  );
+}
 
 export default function ProviderPage({ params }: PageProps) {
   const id = use(params).id;
