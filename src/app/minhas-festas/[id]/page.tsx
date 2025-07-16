@@ -153,8 +153,8 @@ export default function PartyDetailsPage() {
   const handleSelectAllServices = (checked: boolean) => {
     setSelectAllServices(checked);
     if (checked) {
-      const approvedServices = eventServices.filter(service => service.booking_status === 'waiting_payment');
-      setSelectedServicesForPayment(new Set(approvedServices.map(s => s.id)));
+      const servicesWaitingPayment = eventServices.filter(service => service.booking_status === 'waiting_payment');
+      setSelectedServicesForPayment(new Set(servicesWaitingPayment.map(s => s.id)));
     } else {
       setSelectedServicesForPayment(new Set());
     }
@@ -169,8 +169,8 @@ export default function PartyDetailsPage() {
     }
     setSelectedServicesForPayment(newSelected);
     
-    const approvedServices = eventServices.filter(service => service.booking_status === 'waiting_payment');
-    setSelectAllServices(newSelected.size === approvedServices.length);
+    const servicesWaitingPayment = eventServices.filter(service => service.booking_status === 'waiting_payment');
+    setSelectAllServices(newSelected.size === servicesWaitingPayment.length);
   };
 
   const handleConfirmScheduling = async () => {
@@ -203,15 +203,16 @@ export default function PartyDetailsPage() {
 
   const getServiceStatusBadge = (booking_status: string) => {
     const statusConfig = {
-      pending: { label: 'Pendente', color: 'bg-yellow-100 text-yellow-700' },
-      waiting_payment: { label: 'Aguardando Pagamento', color: 'bg-orange-100 text-orange-700' },
-      confirmed: { label: 'Confirmado', color: 'bg-blue-100 text-blue-700' },
-      rejected: { label: 'Rejeitado', color: 'bg-red-100 text-red-700' },
-      cancelled: { label: 'Cancelado', color: 'bg-gray-100 text-gray-700' },
-    }[booking_status] || { label: 'Desconhecido', color: 'bg-gray-100 text-gray-700' };
+      pending_provider_approval: { label: 'Aguardando Aprovação do Prestador', color: 'bg-yellow-100 text-yellow-700', icon: MdSchedule },
+      waiting_payment: { label: 'Aguardando Pagamento', color: 'bg-orange-100 text-orange-700', icon: MdPayment },
+      confirmed: { label: 'Confirmado', color: 'bg-green-100 text-green-700', icon: MdCheckCircle },
+      rejected: { label: 'Rejeitado', color: 'bg-red-100 text-red-700', icon: MdClose },
+      cancelled: { label: 'Cancelado', color: 'bg-gray-100 text-gray-700', icon: MdClose },
+    }[booking_status] || { label: 'Desconhecido', color: 'bg-gray-100 text-gray-700', icon: MdWarning };
 
     return (
       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusConfig.color}`}>
+        <statusConfig.icon className="w-3 h-3 mr-1" />
         {statusConfig.label}
       </span>
     );
@@ -220,9 +221,9 @@ export default function PartyDetailsPage() {
   const getActionButtons = () => {
     if (!event) return null;
 
-    const approvedServices = eventServices.filter(service => service.booking_status === 'waiting_payment');
+    const servicesWaitingPayment = eventServices.filter(service => service.booking_status === 'waiting_payment');
     const confirmedServices = eventServices.filter(service => service.booking_status === 'confirmed');
-    const allServicesPaid = approvedServices.length > 0 && confirmedServices.length === approvedServices.length;
+    const allServicesPaid = servicesWaitingPayment.length > 0 && confirmedServices.length === servicesWaitingPayment.length;
 
     switch (event.status) {
       case 'draft':
@@ -249,7 +250,7 @@ export default function PartyDetailsPage() {
         );
 
       case 'waiting_payment':
-        if (approvedServices.length > 0) {
+        if (servicesWaitingPayment.length > 0) {
           return (
             <>
               {allServicesPaid ? (
@@ -492,57 +493,106 @@ export default function PartyDetailsPage() {
                 {eventServices.map((service) => (
                   <div
                     key={service.id}
-                    className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+                    className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
                   >
-                    {/* Checkbox para seleção de pagamento */}
-                    {service.booking_status === 'waiting_payment' && event.status === 'waiting_payment' && (
-                      <input
-                        type="checkbox"
-                        checked={selectedServicesForPayment.has(service.id)}
-                        onChange={(e) => handleServiceSelect(service.id, e.target.checked)}
-                        className="w-4 h-4 text-[#A502CA] rounded focus:ring-[#A502CA]"
-                      />
-                    )}
-                    
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h4 className="font-medium text-gray-900">{service.service.name}</h4>
-                          <p className="text-sm text-gray-600">
-                            por {service.provider.full_name || service.provider.organization_name}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {getServiceStatusBadge(service.booking_status)}
-                          <span className="font-medium text-gray-900">
-                            {formatPrice(calculateAdvancedPrice(service.service, event.full_guests, event.half_guests, event.free_guests))}
-                          </span>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-4 flex-1">
+                        {/* Checkbox para seleção de pagamento */}
+                        {service.booking_status === 'waiting_payment' && event.status === 'waiting_payment' && (
+                          <input
+                            type="checkbox"
+                            checked={selectedServicesForPayment.has(service.id)}
+                            onChange={(e) => handleServiceSelect(service.id, e.target.checked)}
+                            className="w-4 h-4 text-[#A502CA] rounded focus:ring-[#A502CA] mt-1"
+                          />
+                        )}
+                        
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h4 className="font-medium text-gray-900">{service.service.name}</h4>
+                              <p className="text-sm text-gray-600 mb-2">
+                                por {service.provider.full_name || service.provider.organization_name}
+                              </p>
+                              {getServiceStatusBadge(service.booking_status)}
+                            </div>
+                            <div className="text-right">
+                              <span className="font-medium text-gray-900 text-lg">
+                                {formatPrice(calculateAdvancedPrice(service.service, event.full_guests, event.half_guests, event.free_guests))}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          {/* Ações específicas por status */}
+                          <div className="mt-3 flex items-center gap-3">
+                            {service.booking_status === 'waiting_payment' && (
+                              <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => router.push(`/pagamento?eventId=${eventId}&services=${service.id}`)}
+                                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 text-sm"
+                              >
+                                <MdPayment className="text-lg" />
+                                Pagar Agora
+                              </motion.button>
+                            )}
+
+                            {service.booking_status === 'confirmed' && (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setServiceToCancel(service.id);
+                                    setCancelModalOpen(true);
+                                  }}
+                                  className="px-4 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg text-sm font-medium transition-colors"
+                                >
+                                  Cancelar Serviço
+                                </button>
+                                <a
+                                  href={`https://wa.me/5511999999999?text=Olá! Gostaria de falar sobre o serviço ${service.service.name} para minha festa.`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1 px-4 py-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg text-sm font-medium transition-colors"
+                                >
+                                  <MdWhatsapp className="text-lg" />
+                                  WhatsApp
+                                </a>
+                              </>
+                            )}
+
+                            {service.booking_status === 'rejected' && (
+                              <Link
+                                href="/servicos"
+                                className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
+                              >
+                                <MdSearch className="text-lg" />
+                                Procurar Outro Serviço
+                              </Link>
+                            )}
+
+                            {service.booking_status === 'pending_provider_approval' && (
+                              <div className="flex items-center gap-3">
+                                <div className="text-sm text-gray-500 italic">
+                                  Aguardando resposta do prestador...
+                                </div>
+                                <Link
+                                  href="/servicos"
+                                  className="flex items-center gap-1 px-3 py-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg text-sm font-medium transition-colors"
+                                >
+                                  <MdSearch className="text-base" />
+                                  Buscar Alternativo
+                                </Link>
+                              </div>
+                            )}
+
+                            {service.booking_status === 'cancelled' && (
+                              <div className="text-sm text-gray-500 italic">
+                                Serviço cancelado
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      
-                      {service.booking_status === 'confirmed' && (
-                        <div className="mt-3 flex items-center gap-2">
-                          <button
-                            onClick={() => {
-                              setServiceToCancel(service.id);
-                              setCancelModalOpen(true);
-                            }}
-                            className="text-red-600 hover:text-red-800 text-sm font-medium"
-                          >
-                            Cancelar Serviço
-                          </button>
-                          <span className="text-gray-400">•</span>
-                          <a
-                            href={`https://wa.me/5511999999999?text=Olá! Gostaria de falar sobre o serviço ${service.service.name} para minha festa.`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-green-600 hover:text-green-800 text-sm font-medium"
-                          >
-                            <MdWhatsapp className="text-lg" />
-                            WhatsApp
-                          </a>
-                        </div>
-                      )}
                     </div>
                   </div>
                 ))}
