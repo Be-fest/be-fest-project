@@ -9,6 +9,7 @@ import { getPublicServicesAction } from '@/lib/actions/services';
 import { ServiceWithProvider } from '@/types/database';
 import { Header } from '@/components/Header';
 import { ServicesSkeleton } from '@/components/ui';
+import { SafeHTML } from '@/components/ui/SafeHTML';
 
 // Skeleton Components para a página de serviços
 const SearchSkeleton = () => (
@@ -34,17 +35,8 @@ const SearchSkeleton = () => (
   </div>
 );
 
-// Interface para prestadores agrupados
-interface GroupedProvider {
-  id: string;
-  name: string;
-  services: ServiceWithProvider[];
-  minPrice: number;
-  serviceCount: number;
-}
-
-// Componente para exibir os prestadores agrupados
-const ProvidersGrid = ({ services }: { services: ServiceWithProvider[] }) => {
+// Componente para exibir os serviços individuais
+const ServicesGrid = ({ services }: { services: ServiceWithProvider[] }) => {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -52,60 +44,38 @@ const ProvidersGrid = ({ services }: { services: ServiceWithProvider[] }) => {
     }).format(price);
   };
 
-  // Agrupar serviços por prestador
-  const groupedProviders = services.reduce((acc, service) => {
-    const providerId = service.provider_id;
-    const providerName = service.provider?.organization_name || service.provider?.full_name || 'Prestador';
-    
-    if (!acc[providerId]) {
-      acc[providerId] = {
-        id: providerId,
-        name: providerName,
-        services: [],
-        minPrice: Infinity,
-        serviceCount: 0,
-        provider: service.provider
-      };
+  const getServicePrice = (service: ServiceWithProvider) => {
+    if (service.base_price && service.base_price > 0) {
+      return service.base_price;
     }
-    
-    acc[providerId].services.push(service);
-    acc[providerId].serviceCount++;
-    
-    // Calcular o menor preço considerando base_price e price_per_guest
-    const servicePrice = service.base_price || 0;
-    const pricePerGuest = service.price_per_guest || 0;
-    
-    // Usar o menor entre base_price e price_per_guest (se existir)
-    let minServicePrice = servicePrice;
-    if (pricePerGuest > 0 && pricePerGuest < minServicePrice) {
-      minServicePrice = pricePerGuest;
-    }
-    
-    if (minServicePrice < acc[providerId].minPrice) {
-      acc[providerId].minPrice = minServicePrice;
-    }
-    
-    return acc;
-  }, {} as Record<string, GroupedProvider & { provider: any }>);
+    return service.price_per_guest || 0;
+  };
 
-  // Converter para array
-  const providers = Object.values(groupedProviders);
+  const getPriceLabel = (service: ServiceWithProvider) => {
+    if (service.base_price && service.base_price > 0) {
+      return formatPrice(service.base_price);
+    }
+    if (service.price_per_guest && service.price_per_guest > 0) {
+      return `${formatPrice(service.price_per_guest)} por pessoa`;
+    }
+    return 'Preço sob consulta';
+  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {providers.map((provider) => (
+      {services.map((service) => (
         <motion.div
-          key={provider.id}
+          key={service.id}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
         >
-          {/* Imagem do prestador */}
+          {/* Imagem do serviço */}
           <div className="h-48 bg-gray-200 overflow-hidden">
             <img
-              src={(provider.provider as any)?.profile_image || provider.provider?.logo_url || provider.services[0]?.images_urls?.[0] || '/be-fest-provider-logo.png'}
-              alt={provider.name}
+              src={service.images_urls?.[0] || service.provider?.profile_image || service.provider?.logo_url || '/be-fest-provider-logo.png'}
+              alt={service.name}
               className="w-full h-full object-cover"
             />
           </div>
@@ -114,9 +84,9 @@ const ProvidersGrid = ({ services }: { services: ServiceWithProvider[] }) => {
           <div className="p-6">
             <div className="flex items-start justify-between mb-3">
               <div className="flex-1">
-                <h3 className="text-xl font-bold text-gray-900 mb-1">{provider.name}</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-1">{service.name}</h3>
                 <p className="text-gray-600 text-sm">
-                  {provider.serviceCount} serviço{provider.serviceCount > 1 ? 's' : ''} disponível{provider.serviceCount > 1 ? 'is' : ''}
+                  por {service.provider?.organization_name || service.provider?.full_name || 'Prestador'}
                 </p>
               </div>
               <div className="flex items-center text-yellow-500">
@@ -127,32 +97,40 @@ const ProvidersGrid = ({ services }: { services: ServiceWithProvider[] }) => {
               </div>
             </div>
 
-            {/* Mostrar algumas categorias */}
+            {/* Categoria */}
             <div className="mb-4">
-              {provider.services.slice(0, 3).map((service, index) => (
-                <span key={index} className="inline-block bg-[#FF0080] text-white px-3 py-1 rounded-full text-xs font-medium mr-2 mb-2">
-                  {service.category}
-                </span>
-              ))}
+              <span className="inline-block bg-[#FF0080] text-white px-3 py-1 rounded-full text-xs font-medium">
+                {service.category}
+              </span>
             </div>
+
+            {/* Descrição */}
+            {service.description && (
+              <div className="text-gray-600 text-sm mb-4 overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                <SafeHTML 
+                  html={service.description} 
+                  fallback="Sem descrição disponível"
+                />
+              </div>
+            )}
 
             {/* Preço e localização */}
             <div className="flex items-center justify-between mb-4">
               <div className="text-[#FF0080] font-bold text-lg">
-                A partir de {formatPrice(provider.minPrice)}
+                {getPriceLabel(service)}
               </div>
               <div className="flex items-center text-gray-500 text-sm">
                 <MdLocationOn className="mr-1" />
-                <span>{provider.provider?.area_of_operation || 'São Paulo'}</span>
+                <span>{service.provider?.area_of_operation || 'São Paulo'}</span>
               </div>
             </div>
 
             {/* Botão de ação */}
             <Link
-              href={`/prestador/${provider.id}`}
+              href={`/prestador/${service.provider_id}?service=${service.id}`}
               className="w-full bg-[#FF0080] hover:bg-[#E6006F] text-white py-3 px-4 rounded-lg transition-colors duration-200 font-medium text-center block"
             >
-              Ver Prestador
+              Ver Cardápio
             </Link>
           </div>
         </motion.div>
@@ -401,7 +379,7 @@ export default function ServicesPage() {
             )}
 
             {!loading && !error && services.length > 0 && (
-              <ProvidersGrid services={services} />
+              <ServicesGrid services={services} />
             )}
           </motion.div>
         </div>
