@@ -39,11 +39,9 @@ export function ProviderLayout({ children }: ProviderLayoutProps) {
                 <ProviderLogo 
                   width={40} 
                   height={40} 
-                  providerImage={(userData as any)?.profile_image ? (userData as any).profile_image : undefined}
-                  providerName={userData?.organization_name || userData?.full_name || undefined}
                 />
               </Link>
-              <span className="ml-3 text-lg font-semibold text-[#520029]">
+              <span className="ml-3 text-lg font-semibold text-purple-900">
                 Dashboard do Prestador
               </span>
             </div>
