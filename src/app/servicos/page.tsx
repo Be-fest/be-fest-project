@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { MdArrowBack, MdSearch, MdStar, MdLocationOn, MdWarning, MdTune } from 'react-icons/md';
+import { MdArrowBack, MdSearch, MdStar, MdLocationOn, MdWarning, MdTune, MdClose } from 'react-icons/md';
 import { Categories } from '@/components/Categories';
 import { getPublicServicesAction } from '@/lib/actions/services';
 import { ServiceWithProvider } from '@/types/database';
@@ -36,7 +37,10 @@ const SearchSkeleton = () => (
 );
 
 // Componente para exibir os serviços individuais
-const ServicesGrid = ({ services }: { services: ServiceWithProvider[] }) => {
+const ServicesGrid = ({ services, selectedParty }: { 
+  services: ServiceWithProvider[];
+  selectedParty: { id: string; name: string } | null;
+}) => {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -127,7 +131,10 @@ const ServicesGrid = ({ services }: { services: ServiceWithProvider[] }) => {
 
             {/* Botão de ação */}
             <Link
-              href={`/prestador/${service.provider_id}?service=${service.id}`}
+              href={selectedParty 
+                ? `/servicos/${service.id}?partyId=${selectedParty.id}&partyName=${encodeURIComponent(selectedParty.name)}`
+                : `/servicos/${service.id}`
+              }
               className="w-full bg-[#FF0080] hover:bg-[#E6006F] text-white py-3 px-4 rounded-lg transition-colors duration-200 font-medium text-center block"
             >
               Ver Cardápio
@@ -140,6 +147,7 @@ const ServicesGrid = ({ services }: { services: ServiceWithProvider[] }) => {
 };
 
 export default function ServicesPage() {
+  const searchParams = useSearchParams();
   const [services, setServices] = useState<ServiceWithProvider[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -147,6 +155,19 @@ export default function ServicesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
+  const [selectedParty, setSelectedParty] = useState<{ id: string; name: string } | null>(null);
+
+  // Detectar se estamos adicionando serviços para uma festa
+  useEffect(() => {
+    const partyId = searchParams.get('partyId');
+    const partyName = searchParams.get('partyName');
+    
+    if (partyId && partyName) {
+      setSelectedParty({ id: partyId, name: decodeURIComponent(partyName) });
+    } else {
+      setSelectedParty(null);
+    }
+  }, [searchParams]);
 
   // Debounce search query
   useEffect(() => {
@@ -234,6 +255,45 @@ export default function ServicesPage() {
               Descubra os melhores serviços para sua festa
             </p>
           </motion.div>
+
+          {/* Card de Adicionando Serviços */}
+          {selectedParty && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="bg-gradient-to-r from-[#FF0080] to-[#E6006F] rounded-xl p-6 mb-8 text-white relative overflow-hidden"
+            >
+              {/* Background pattern */}
+              <div className="absolute inset-0 opacity-10">
+                <div className="absolute transform rotate-45 -top-4 -right-4 w-16 h-16 bg-white rounded-lg"></div>
+                <div className="absolute transform rotate-12 top-8 right-8 w-8 h-8 bg-white rounded"></div>
+                <div className="absolute transform -rotate-12 bottom-4 right-12 w-12 h-12 bg-white rounded-full"></div>
+              </div>
+              
+              <div className="relative flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl md:text-2xl font-bold mb-2">
+                    🎉 Adicionando Serviços para Festa
+                  </h2>
+                  <p className="text-lg font-medium opacity-90">
+                    {selectedParty.name}
+                  </p>
+                  <p className="text-sm opacity-75 mt-1">
+                    Selecione os serviços que deseja adicionar à sua festa
+                  </p>
+                </div>
+                
+                <button
+                  onClick={() => setSelectedParty(null)}
+                  className="bg-black/20 hover:bg-black/30 p-2 rounded-full transition-colors"
+                  title="Fechar"
+                >
+                  <MdClose className="text-xl" />
+                </button>
+              </div>
+            </motion.div>
+          )}
 
           {/* Search and Filters */}
           <motion.div
@@ -379,7 +439,7 @@ export default function ServicesPage() {
             )}
 
             {!loading && !error && services.length > 0 && (
-              <ServicesGrid services={services} />
+              <ServicesGrid services={services} selectedParty={selectedParty} />
             )}
           </motion.div>
         </div>

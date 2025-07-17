@@ -477,16 +477,16 @@ export default function PartyDetailsPage() {
 
           {/* Services */}
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Serviços</h3>
-              <Link
-                href="/servicos"
-                className="flex items-center gap-2 px-4 py-2 bg-[#A502CA] text-white rounded-lg hover:bg-[#8B0A9E] transition-colors"
-              >
-                <MdAdd className="text-lg" />
-                Adicionar Serviço
-              </Link>
-            </div>
+                      <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Serviços</h3>
+            <Link
+              href={`/servicos?partyId=${eventId}&partyName=${encodeURIComponent(event.title)}`}
+              className="flex items-center gap-2 px-4 py-2 bg-[#A502CA] text-white rounded-lg hover:bg-[#8B0A9E] transition-colors"
+            >
+              <MdAdd className="text-lg" />
+              Adicionar Serviço
+            </Link>
+          </div>
             
             {eventServices.length > 0 ? (
               <div className="space-y-4">
