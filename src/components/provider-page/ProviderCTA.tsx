@@ -21,28 +21,12 @@ export function ProviderCTA() {
             transition={{ duration: 0.8 }}
           >
             <h2 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-white mb-4 md:mb-6">
-              Pronto para Transformar Seu Negócio?
+              Cadastre seu Negócio
             </h2>
             
             <p className="text-base md:text-lg lg:text-xl text-pink-100 mb-6 md:mb-8 max-w-2xl mx-auto">
-              Junte-se a milhares de prestadores que já estão crescendo conosco
+              Disponibilize seus serviços na plataforma
             </p>
-
-            {/* Quick Benefits */}
-            <div className="flex flex-col md:flex-row flex-wrap justify-center gap-3 md:gap-6 mb-8 md:mb-12">
-              <div className="flex items-center justify-center md:justify-start gap-2 text-pink-100">
-                <MdTrendingUp className="text-[#FF0080] text-lg md:text-xl flex-shrink-0" />
-                <span className="text-sm md:text-base">Aumento significativo na receita</span>
-              </div>
-              <div className="flex items-center justify-center md:justify-start gap-2 text-pink-100">
-                <MdSecurity className="text-[#FF0080] text-lg md:text-xl flex-shrink-0" />
-                <span className="text-sm md:text-base">100% seguro e confiável</span>
-              </div>
-              <div className="flex items-center justify-center md:justify-start gap-2 text-pink-100">
-                <MdSupport className="text-[#FF0080] text-lg md:text-xl flex-shrink-0" />
-                <span className="text-sm md:text-base">Suporte dedicado 24/7</span>
-              </div>
-            </div>
 
             {/* CTA Buttons */}
             <div className="flex flex-col md:flex-row gap-3 md:gap-4 justify-center">

@@ -73,7 +73,7 @@ export function CTA() {
             Pronto para começar?
           </h2>
           <p className="text-xl text-pink-100 mb-8 max-w-2xl mx-auto leading-relaxed">
-            Junte-se a milhares de pessoas que já organizaram eventos incríveis com a Be Fest. 
+            Organize eventos incríveis com a Be Fest. 
             Sua festa dos sonhos está a um clique de distância!
           </p>
 
@@ -103,39 +103,7 @@ export function CTA() {
             </motion.div>
           </div>
 
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.1 }}            >
-              <MdCelebration className="text-4xl mb-2 mx-auto text-white" />
-              <div className="text-2xl font-bold mb-1">10K+</div>
-              <div className="text-pink-100">Eventos realizados</div>
-            </motion.div>
-            
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-            >
-              <MdStar className="text-4xl mb-2 mx-auto text-white" />
-              <div className="text-2xl font-bold mb-1">4.9/5</div>
-              <div className="text-pink-100">Avaliação média</div>
-            </motion.div>
-            
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-            >
-              <MdRocket className="text-4xl mb-2 mx-auto text-white" />
-              <div className="text-2xl font-bold mb-1">24h</div>
-              <div className="text-pink-100">Resposta média</div>
-            </motion.div>
-          </div>
+
         </motion.div>
       </div>
     </section>

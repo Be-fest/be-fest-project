@@ -4,12 +4,7 @@ import { motion } from 'framer-motion';
 import { MdHandshake, MdFavorite } from 'react-icons/md';
 import { IoMdBulb } from "react-icons/io";
 
-const stats = [
-  { number: '10K+', label: 'Festas realizadas' },
-  { number: '500+', label: 'Fornecedores parceiros' },
-  { number: '50+', label: 'Cidades atendidas' },
-  { number: '98%', label: 'Clientes satisfeitos' }
-];
+
 
 const values = [
   {    icon: IoMdBulb,
@@ -52,25 +47,6 @@ export function AboutUs() {
               Acreditamos que toda celebração merece ser especial, e nossa tecnologia 
               torna isso possível de forma rápida, segura e descomplicada.
             </p>
-
-            {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {stats.map((stat, index) => (
-                <motion.div
-                  key={stat.label}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  className="text-center"
-                >
-                  <div className="text-2xl md:text-3xl font-bold text-[#FF0080] mb-2 font-poppins">
-                    {stat.number}
-                  </div>
-                  <div className="text-sm text-[#6E5963] font-poppins">{stat.label}</div>
-                </motion.div>
-              ))}
-            </div>
           </motion.div>
 
           {/* Values */}

@@ -23,7 +23,7 @@ const faqs = [
 	},
 	{
 		question: 'E se algo der errado no dia da festa?',
-		answer: 'Temos um suporte dedicado para emergências no dia do evento. Nossa equipe está disponível 24h para resolver qualquer imprevisto e garantir que sua festa seja um sucesso.'
+		answer: 'Temos um canal de suporte para ajudar com questões durante o evento. Nossa equipe trabalha para resolver imprevistos e garantir que sua festa seja um sucesso.'
 	}
 ];
 

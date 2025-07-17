@@ -18,8 +18,7 @@ import {
   MdKeyboardArrowDown,
   MdLogout,
   MdMenu,
-  MdClose,
-  MdInfo
+  MdClose
 } from 'react-icons/md';
 
 // Componente UserDropdown
@@ -28,46 +27,7 @@ interface UserDropdownProps {
   userType: 'client' | 'service_provider' | null;
 }
 
-// Componente ProviderNotice integrado
-function ProviderNotice({ userName, onClose }: { userName?: string; onClose: () => void }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: -50 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -50 }}
-      className="bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2 px-4 relative z-50"
-    >
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <MdInfo className="text-white text-lg flex-shrink-0" />
-          <div className="text-sm">
-            <span className="font-medium">Olá, {userName}!</span>
-            <span className="ml-2">
-              Você está navegando como prestador. Esta é a visão do cliente da plataforma.
-            </span>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Link
-            href="/dashboard/prestador"
-            className="flex items-center gap-1 bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg text-sm font-medium transition-all"
-          >
-            <MdDashboard className="text-sm" />
-            Meu Dashboard
-          </Link>
-          
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-white/20 rounded-lg transition-all"
-          >
-            <MdClose className="text-white text-lg" />
-          </button>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
+
 
 function UserDropdown({ user, userType }: UserDropdownProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -235,71 +195,100 @@ export function Header() {
 
 function HomeHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [showProviderNotice, setShowProviderNotice] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [userType, setUserType] = useState<'client' | 'service_provider' | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true);
   const supabase = createClient();
 
   useEffect(() => {
+    let mounted = true;
+
+    // Timeout de segurança: após 500ms, parar o loading mesmo sem resposta
+    const timeoutId = setTimeout(() => {
+      if (mounted) {
+        setLoading(false);
+        setInitialLoad(false);
+      }
+    }, 500);
+
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUser(user);
-        // Buscar o tipo do usuário da tabela users
-        const { data: userData } = await supabase
-          .from('users')
-          .select('role, full_name')
-          .eq('id', user.id)
-          .single();
+      try {
+        // Primeiro, verificar se há sessão ativa (mais rápido)
+        const { data: { session } } = await supabase.auth.getSession();
         
-        if (userData) {
-          setUserType(userData.role === 'provider' ? 'service_provider' : 'client');
+        if (session?.user && mounted) {
+          setUser(session.user);
+          setLoading(false); // Mostrar o usuário imediatamente
+          clearTimeout(timeoutId); // Cancelar timeout se sucesso
+          
+          // Buscar tipo do usuário em background (não bloqueia a UI)
+          const { data: userData } = await supabase
+            .from('users')
+            .select('role, full_name')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (userData && mounted) {
+            setUserType(userData.role === 'provider' ? 'service_provider' : 'client');
+          }
+        } else if (mounted) {
+          setUser(null);
+          setUserType(null);
+          setLoading(false);
+          clearTimeout(timeoutId);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar usuário:', error);
+        if (mounted) {
+          setLoading(false);
+          clearTimeout(timeoutId);
+        }
+      } finally {
+        if (mounted) {
+          setInitialLoad(false);
         }
       }
-      setLoading(false);
     };
 
     getUser();
 
-    // Listen for auth changes
+    // Listen for auth changes (otimizado)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+      
       if (session?.user) {
         setUser(session.user);
-        // Buscar dados atualizados do usuário
+        setLoading(false);
+        
+        // Buscar dados em background
         const { data: userData } = await supabase
           .from('users')
           .select('role, full_name')
           .eq('id', session.user.id)
           .single();
         
-        if (userData) {
+        if (userData && mounted) {
           setUserType(userData.role === 'provider' ? 'service_provider' : 'client');
         }
       } else {
         setUser(null);
         setUserType(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
-  }, [supabase]);
+    return () => {
+      mounted = false;
+      clearTimeout(timeoutId);
+      subscription.unsubscribe();
+    };
+  }, []);
 
   return (
     <>
-      {/* Provider Notice - Fixo no topo */}
-      <AnimatePresence>
-        {userType === 'service_provider' && showProviderNotice && (
-          <ProviderNotice 
-            userName={user?.user_metadata?.full_name || user?.email?.split('@')[0]} 
-            onClose={() => setShowProviderNotice(false)}
-          />
-        )}
-      </AnimatePresence>
-      
       <header 
-        className={`w-full bg-white shadow-sm py-4 px-6 fixed ${userType === 'service_provider' && showProviderNotice ? 'top-12' : 'top-0'} z-40 transition-all duration-300`}
+        className="w-full bg-white shadow-sm py-4 px-6 fixed top-0 z-40 transition-all duration-300"
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center">
@@ -370,8 +359,12 @@ function HomeHeader() {
 
           {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            {loading ? (
-              <div className="w-20 h-8 bg-gray-200 animate-pulse rounded"></div>
+            {loading && initialLoad ? (
+              // Skeleton apenas no carregamento inicial e por pouco tempo
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-gray-200 animate-pulse rounded-full"></div>
+                <div className="w-16 h-4 bg-gray-200 animate-pulse rounded"></div>
+              </div>
             ) : user ? (
               <UserDropdown user={user} userType={userType} />
             ) : (

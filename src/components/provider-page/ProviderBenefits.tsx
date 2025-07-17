@@ -5,40 +5,22 @@ import { MdTrendingUp, MdSecurity, MdSupport, MdVisibility, MdMoney, MdSchedule 
 
 const benefits = [
   {
-    icon: MdTrendingUp,
-    title: 'Aumente sua Receita',
-    description: 'Conecte-se com mais clientes e aumente seus ganhos mensais',
-    color: 'from-green-500 to-emerald-600'
-  },
-  {
     icon: MdVisibility,
-    title: 'Maior Visibilidade',
-    description: 'Apareça para milhares de clientes que procuram seus serviços na sua região',
+    title: 'Visibilidade Online',
+    description: 'Seu negócio disponível para clientes na região',
     color: 'from-blue-500 to-cyan-600'
   },
   {
-    icon: MdSecurity,
-    title: 'Pagamento Garantido',
-    description: 'Sistema seguro de pagamentos com proteção total para prestadores',
-    color: 'from-purple-500 to-violet-600'
+    icon: MdSchedule,
+    title: 'Gestão Simples',
+    description: 'Dashboard para gerenciar seus serviços e agenda',
+    color: 'from-indigo-500 to-purple-600'
   },
   {
     icon: MdSupport,
-    title: 'Suporte Dedicado',
-    description: 'Equipe especializada para ajudar você a crescer e resolver qualquer dúvida',
+    title: 'Suporte Técnico',
+    description: 'Equipe de suporte para dúvidas sobre a plataforma',
     color: 'from-orange-500 to-red-600'
-  },
-  {
-    icon: MdMoney,
-    title: 'Sem taxas',
-    description: 'Completamente Grátis! Você fechará suas festas sem pagar taxa nenhuma',
-    color: 'from-pink-500 to-rose-600'
-  },
-  {
-    icon: MdSchedule,
-    title: 'Gestão Completa',
-    description: 'Dashboard intuitivo para gerenciar agenda, clientes e pagamentos',
-    color: 'from-indigo-500 to-purple-600'
   }
 ];
 

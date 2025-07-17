@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -52,12 +52,18 @@ export default function PartyDetailsPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [selectedServicesForPayment, setSelectedServicesForPayment] = useState<Set<string>>(new Set());
   const [selectAllServices, setSelectAllServices] = useState(false);
+  const [lastFetchTime, setLastFetchTime] = useState(0);
 
-  useEffect(() => {
-    fetchEventData();
-  }, [eventId]);
-
-  const fetchEventData = async () => {
+  // Função otimizada para buscar dados do evento com debounce e prevenção de chamadas simultâneas
+  const fetchEventData = useCallback(async () => {
+    // Evitar múltiplas chamadas simultâneas
+    if (loading) return;
+    
+    // Debounce: não fazer fetch se a última chamada foi há menos de 1 segundo
+    const now = Date.now();
+    if (now - lastFetchTime < 1000) return;
+    setLastFetchTime(now);
+    
     try {
       setLoading(true);
       setError(null);
@@ -84,7 +90,11 @@ export default function PartyDetailsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [eventId, loading, lastFetchTime]);
+
+  useEffect(() => {
+    fetchEventData();
+  }, [fetchEventData]);
 
   const handleUpdateStatus = async (newStatus: string) => {
     setActionLoading('status');
@@ -92,7 +102,10 @@ export default function PartyDetailsPage() {
       const result = await updateEventStatusAction(eventId, newStatus);
       if (result.success) {
         setEvent((prev) => prev ? { ...prev, status: newStatus as any } : null);
-        fetchEventData();
+        // Só refetch se necessário (quando o status muda fundamentalmente a estrutura)
+        if (newStatus === 'completed' || newStatus === 'cancelled') {
+          fetchEventData();
+        }
       } else {
         setError(result.error || 'Erro ao atualizar status');
       }
@@ -646,7 +659,7 @@ export default function PartyDetailsPage() {
                     }}
                     onComplete={() => {
                       setEditModalOpen(false);
-                      fetchEventData();
+                      // Remover fetchEventData desnecessário - dados já atualizados via form
                     }}
                   />
                 </div>
