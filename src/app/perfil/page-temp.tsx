@@ -302,7 +302,7 @@ const MinhasFestasTab = () => {
   const [isNewPartyModalOpen, setNewPartyModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
-  const { showToast } = useToast();
+  const { toast } = useToast();
 
   useEffect(() => {
     const loadEvents = async () => {
@@ -321,10 +321,17 @@ const MinhasFestasTab = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const handleCreatePartySuccess = (newEvent: Event) => {
-    setEvents(prev => [...prev, newEvent]);
+  const handleCreatePartySuccess = () => {
     setNewPartyModalOpen(false);
-    showToast('Festa criada com sucesso!', 'success');
+    toast.success('Festa criada com sucesso!');
+    // Reload events to get the latest data
+    const loadEvents = async () => {
+      const result = await getClientEventsAction();
+      if (result.success && result.data) {
+        setEvents(result.data);
+      }
+    };
+    loadEvents();
   };
 
   const handleDeleteEvent = (event: Event) => {
@@ -338,9 +345,9 @@ const MinhasFestasTab = () => {
     const result = await deleteEventAction(eventToDelete.id);
     if (result.success) {
       setEvents(prev => prev.filter(e => e.id !== eventToDelete.id));
-      showToast('Festa excluída com sucesso!', 'success');
+      toast.success('Festa excluída com sucesso!');
     } else {
-      showToast('Erro ao excluir festa', 'error');
+      toast.error('Erro ao excluir festa');
     }
     setDeleteModalOpen(false);
     setEventToDelete(null);
@@ -433,7 +440,7 @@ const MinhasFestasTab = () => {
           </div>
           <div className="sm:w-48">
             <select
-              value={statusFilter}
+              value={statusFilter || 'all'}
               onChange={(e) => setStatusFilter(e.target.value as 'all' | EventStatus)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
@@ -647,11 +654,11 @@ const ConfiguracoesTab = () => {
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center">
             <span className="text-white text-xl font-bold">
-              {userData?.name?.charAt(0).toUpperCase() || 'U'}
+              {userData?.full_name?.charAt(0).toUpperCase() || 'U'}
             </span>
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">{userData?.name}</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{userData?.full_name}</h3>
             <p className="text-gray-600">{userData?.email}</p>
           </div>
         </div>
@@ -667,24 +674,24 @@ const ConfiguracoesTab = () => {
                 key={item.title}
                 onClick={item.action}
                 className={`w-full flex items-center gap-4 p-4 rounded-lg transition-colors ${
-                  item.danger 
+                  'danger' in item && item.danger
                     ? 'hover:bg-red-50 border border-red-200' 
                     : 'hover:bg-gray-50 border border-gray-200'
                 }`}
               >
                 <div className={`p-2 rounded-lg ${
-                  item.danger ? 'bg-red-100' : 'bg-gray-100'
+                  'danger' in item && item.danger ? 'bg-red-100' : 'bg-gray-100'
                 }`}>
                   <item.icon className={`text-xl ${
-                    item.danger ? 'text-red-600' : 'text-gray-600'
+                    'danger' in item && item.danger ? 'text-red-600' : 'text-gray-600'
                   }`} />
                 </div>
                 <div className="flex-1 text-left">
                   <h3 className={`font-medium ${
-                    item.danger ? 'text-red-900' : 'text-gray-900'
+                    'danger' in item && item.danger ? 'text-red-900' : 'text-gray-900'
                   }`}>{item.title}</h3>
                   <p className={`text-sm ${
-                    item.danger ? 'text-red-600' : 'text-gray-600'
+                    'danger' in item && item.danger ? 'text-red-600' : 'text-gray-600'
                   }`}>{item.description}</p>
                 </div>
                 <div className="text-gray-400">
@@ -700,6 +707,7 @@ const ConfiguracoesTab = () => {
       <EditProfileModal
         isOpen={modals.editProfile}
         onClose={() => closeModal('editProfile')}
+        userData={userData || {}}
       />
       <ChangePasswordModal
         isOpen={modals.changePassword}

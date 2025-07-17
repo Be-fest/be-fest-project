@@ -54,7 +54,7 @@ export default function PartyDetailsPage() {
   
   const [event, setEvent] = useState<EventWithServices | null>(null);
   const [eventServices, setEventServices] = useState<EventServiceWithDetails[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -89,13 +89,19 @@ export default function PartyDetailsPage() {
     try {
       const result = await getEventServicesAction({ event_id: eventId });
       if (result.success && result.data && isMountedRef.current) {
-        console.log('✅ [PartyDetailsPage] Services refreshed successfully:', result.data.length);
-        setEventServices(result.data);
-        
-        // Clear the "added" query parameter from the URL without page reload
-        if (justAddedService && typeof window !== 'undefined') {
-          const newUrl = window.location.pathname;
-          window.history.replaceState({ path: newUrl }, '', newUrl);
+        // Type guard to ensure we're working with an array
+        if (Array.isArray(result.data)) {
+          console.log('✅ [PartyDetailsPage] Services refreshed successfully:', result.data.length);
+          setEventServices(result.data);
+          
+          // Clear the "added" query parameter from the URL without page reload
+          if (justAddedService && typeof window !== 'undefined') {
+            const newUrl = window.location.pathname;
+            window.history.replaceState({ path: newUrl }, '', newUrl);
+          }
+        } else {
+          console.error('❌ [PartyDetailsPage] Unexpected services data format:', result.data);
+          setEventServices([]);
         }
       }
     } catch (err) {
@@ -119,7 +125,7 @@ export default function PartyDetailsPage() {
     
     console.log('⏳ [PartyDetailsPage] Starting data fetch');
     isLoadingRef.current = true;
-    setLoading(false);
+    setLoading(true);
     setError(null);
     
     try {
@@ -148,19 +154,32 @@ export default function PartyDetailsPage() {
       
       if (eventResult.success && eventResult.data) {
         console.log('📅 [PartyDetailsPage] Event data received');
-        setEvent(eventResult.data);
+        
+        // Type checking to ensure we're setting the correct type
+        if (!Array.isArray(eventResult.data)) {
+          setEvent(eventResult.data as EventWithServices);
+        } else {
+          console.error('❌ [PartyDetailsPage] Unexpected data format:', eventResult.data);
+          setError('Formato de dados inesperado do evento');
+        }
       } else {
         console.error('❌ [PartyDetailsPage] Failed to load event:', eventResult.error);
         setError(eventResult.error || 'Erro ao carregar dados do evento');
       }
       
       if (servicesResult.success && servicesResult.data) {
-        console.log('🛠️ [PartyDetailsPage] Services data received:', servicesResult.data.length);
-        setEventServices(servicesResult.data);
-        
-        // If we just added a service and got results, show a success toast
-        if (justAddedService && servicesResult.data.length > 0) {
-          toast.success('Serviço adicionado', 'O serviço foi adicionado com sucesso à sua festa.');
+        // Type guard to ensure we're working with an array
+        if (Array.isArray(servicesResult.data)) {
+          console.log('🛠️ [PartyDetailsPage] Services data received:', servicesResult.data.length);
+          setEventServices(servicesResult.data);
+          
+          // If we just added a service and got results, show a success toast
+          if (justAddedService && servicesResult.data.length > 0) {
+            toast.success('Serviço adicionado', 'O serviço foi adicionado com sucesso à sua festa.');
+          }
+        } else {
+          console.error('❌ [PartyDetailsPage] Unexpected services data format:', servicesResult.data);
+          setEventServices([]);
         }
       } else {
         console.error('❌ [PartyDetailsPage] Failed to load services:', servicesResult.error);
@@ -193,27 +212,16 @@ export default function PartyDetailsPage() {
     
     if (eventId) {
       console.log('🔍 [PartyDetailsPage] Valid eventId, calling fetchEventData');
-      
-      // Add a small delay to prevent potential race conditions with router
-      const timeoutId = setTimeout(() => {
-        if (isMountedRef.current) {
-          fetchEventData();
-        }
-      }, 10);
-      
-      return () => {
-        // Clear timeout and mark component as unmounted on cleanup
-        clearTimeout(timeoutId);
-        console.log('♻️ [PartyDetailsPage] Component cleanup');
-        isMountedRef.current = false;
-      };
+      fetchEventData();
     } else {
       console.warn('⚠️ [PartyDetailsPage] No eventId available');
-      return () => {
-        console.log('♻️ [PartyDetailsPage] Component cleanup (no eventId)');
-        isMountedRef.current = false;
-      };
+      setLoading(false);
     }
+    
+    return () => {
+      console.log('♻️ [PartyDetailsPage] Component cleanup');
+      isMountedRef.current = false;
+    };
   }, [eventId]);
 
   // Handle navigation to add services
@@ -339,9 +347,11 @@ export default function PartyDetailsPage() {
       cancelled: { label: 'Cancelada', color: 'bg-red-100 text-red-700', icon: MdClose },
     }[status] || { label: 'Desconhecido', color: 'bg-gray-100 text-gray-700', icon: MdWarning };
 
+    const IconComponent = statusConfig.icon;
+
     return (
       <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusConfig.color}`}>
-        <statusConfig.icon className="w-4 h-4 mr-1" />
+        <IconComponent className="w-4 h-4 mr-1" />
         {statusConfig.label}
       </span>
     );
@@ -356,9 +366,11 @@ export default function PartyDetailsPage() {
       cancelled: { label: 'Cancelado', color: 'bg-gray-100 text-gray-700', icon: MdClose },
     }[booking_status] || { label: 'Desconhecido', color: 'bg-gray-100 text-gray-700', icon: MdWarning };
 
+    const IconComponent = statusConfig.icon;
+
     return (
       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusConfig.color}`}>
-        <statusConfig.icon className="w-3 h-3 mr-1" />
+        <IconComponent className="w-3 h-3 mr-1" />
         {statusConfig.label}
       </span>
     );
@@ -475,6 +487,44 @@ export default function PartyDetailsPage() {
     hasEvent: !!event, 
     loading
   });
+  
+  // Show loading state
+  if (loading) {
+    console.log('⏳ [PartyDetailsPage] Rendering loading state');
+    return (
+      <FastAuthGuard requiredRole="client">
+        <ClientLayout>
+          <div className="max-w-4xl mx-auto space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Link
+                  href="/minhas-festas"
+                  className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
+                >
+                  <MdArrowBack className="text-xl" />
+                  Voltar
+                </Link>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Carregando...</h1>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <div className="animate-pulse">
+                <div className="h-6 bg-gray-300 rounded mb-4 w-1/3"></div>
+                <div className="space-y-3">
+                  <div className="h-4 bg-gray-300 rounded w-1/2"></div>
+                  <div className="h-4 bg-gray-300 rounded w-2/3"></div>
+                  <div className="h-4 bg-gray-300 rounded w-1/4"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ClientLayout>
+      </FastAuthGuard>
+    );
+  }
   
   // Render states - keep simple, avoid spinners/loading indicators
   if (error) {
@@ -606,7 +656,13 @@ export default function PartyDetailsPage() {
                   <MdPeople className="text-[#A502CA] text-xl" />
                   <div>
                     <p className="text-sm text-gray-600">Convidados</p>
-                    <p className="font-medium">{formatGuestsInfo(event.full_guests, event.half_guests, event.free_guests)}</p>
+                    <p className="font-medium">
+                      {formatGuestsInfo(
+                        event.full_guests || 0, 
+                        event.half_guests || 0, 
+                        event.free_guests || 0
+                      )}
+                    </p>
                   </div>
                 </div>
                 {event.description && (
@@ -656,112 +712,129 @@ export default function PartyDetailsPage() {
             
             {eventServices.length > 0 ? (
               <div className="space-y-4">
-                {eventServices.map((service) => (
-                  <div
-                    key={service.id}
-                    className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-4 flex-1">
-                        {/* Checkbox para seleção de pagamento */}
-                        {service.booking_status === 'waiting_payment' && event.status === 'waiting_payment' && (
-                          <input
-                            type="checkbox"
-                            checked={selectedServicesForPayment.has(service.id)}
-                            onChange={(e) => handleServiceSelect(service.id, e.target.checked)}
-                            className="w-4 h-4 text-[#A502CA] rounded focus:ring-[#A502CA] mt-1"
-                          />
-                        )}
-                        
-                        <div className="flex-1">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <h4 className="font-medium text-gray-900">{service.service?.name || 'Serviço'}</h4>
-                              <p className="text-sm text-gray-600 mb-2">
-                                por {service.provider?.full_name || service.provider?.organization_name || 'Prestador'}
-                              </p>
-                              {getServiceStatusBadge(service.booking_status)}
-                            </div>
-                            <div className="text-right">
-                              <span className="font-medium text-gray-900 text-lg">
-                                {service.service ? formatPrice(calculateAdvancedPrice(service.service, event.full_guests, event.half_guests, event.free_guests)) : 'R$ 0,00'}
-                              </span>
-                            </div>
-                          </div>
+                {eventServices.map((service) => {
+                  // Safety check to ensure service exists
+                  if (!service || !service.id) {
+                    return null;
+                  }
+                  
+                  return (
+                    <div
+                      key={service.id}
+                      className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-4 flex-1">
+                          {/* Checkbox para seleção de pagamento */}
+                          {service.booking_status === 'waiting_payment' && event.status === 'waiting_payment' && (
+                            <input
+                              type="checkbox"
+                              checked={selectedServicesForPayment.has(service.id)}
+                              onChange={(e) => handleServiceSelect(service.id, e.target.checked)}
+                              className="w-4 h-4 text-[#A502CA] rounded focus:ring-[#A502CA] mt-1"
+                            />
+                          )}
                           
-                          {/* Ações específicas por status */}
-                          <div className="mt-3 flex items-center gap-3">
-                            {service.booking_status === 'waiting_payment' && (
-                              <motion.button
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={() => router.push(`/pagamento?eventId=${eventId}&services=${service.id}`)}
-                                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 text-sm"
-                              >
-                                <MdPayment className="text-lg" />
-                                Pagar Agora
-                              </motion.button>
-                            )}
-
-                            {service.booking_status === 'confirmed' && (
-                              <>
-                                <button
-                                  onClick={() => {
-                                    setServiceToCancel(service.id);
-                                    setCancelModalOpen(true);
-                                  }}
-                                  className="px-4 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg text-sm font-medium transition-colors"
+                          <div className="flex-1">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <h4 className="font-medium text-gray-900">{service.service?.name || 'Serviço'}</h4>
+                                <p className="text-sm text-gray-600 mb-2">
+                                  por {service.provider?.full_name || service.provider?.organization_name || 'Prestador'}
+                                </p>
+                                {getServiceStatusBadge(service.booking_status)}
+                              </div>
+                              <div className="text-right">
+                                <span className="font-medium text-gray-900 text-lg">
+                                  {service.service ? 
+                                    formatPrice(
+                                      calculateAdvancedPrice(
+                                        service.service, 
+                                        event.full_guests || 0, 
+                                        event.half_guests || 0, 
+                                        event.free_guests || 0
+                                      )
+                                    ) : 
+                                    'R$ 0,00'
+                                  }
+                                </span>
+                              </div>
+                            </div>
+                            
+                            {/* Ações específicas por status */}
+                            <div className="mt-3 flex items-center gap-3">
+                              {service.booking_status === 'waiting_payment' && (
+                                <motion.button
+                                  whileHover={{ scale: 1.02 }}
+                                  whileTap={{ scale: 0.98 }}
+                                  onClick={() => router.push(`/pagamento?eventId=${eventId}&services=${service.id}`)}
+                                  className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 text-sm"
                                 >
-                                  Cancelar Serviço
-                                </button>
-                                <a
-                                  href={`https://wa.me/5511999999999?text=Olá! Gostaria de falar sobre o serviço ${service.service?.name || ''} para minha festa.`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center gap-1 px-4 py-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg text-sm font-medium transition-colors"
-                                >
-                                  <MdWhatsapp className="text-lg" />
-                                  WhatsApp
-                                </a>
-                              </>
-                            )}
+                                  <MdPayment className="text-lg" />
+                                  Pagar Agora
+                                </motion.button>
+                              )}
 
-                            {service.booking_status === 'rejected' && (
-                              <Link
-                                href="/servicos"
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
-                              >
-                                <MdSearch className="text-lg" />
-                                Procurar Outro Serviço
-                              </Link>
-                            )}
+                              {service.booking_status === 'confirmed' && (
+                                <>
+                                  <button
+                                    onClick={() => {
+                                      setServiceToCancel(service.id);
+                                      setCancelModalOpen(true);
+                                    }}
+                                    className="px-4 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg text-sm font-medium transition-colors"
+                                  >
+                                    Cancelar Serviço
+                                  </button>
+                                  <a
+                                    href={`https://wa.me/5511999999999?text=Olá! Gostaria de falar sobre o serviço ${service.service?.name || ''} para minha festa.`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1 px-4 py-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg text-sm font-medium transition-colors"
+                                  >
+                                    <MdWhatsapp className="text-lg" />
+                                    WhatsApp
+                                  </a>
+                                </>
+                              )}
 
-                            {service.booking_status === 'pending_provider_approval' && (
-                              <div className="flex items-center gap-3">
-                                <div className="text-sm text-gray-500 italic">
-                                  Aguardando resposta do prestador...
-                                </div>
+                              {service.booking_status === 'rejected' && (
                                 <Link
                                   href="/servicos"
-                                  className="flex items-center gap-1 px-3 py-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg text-sm font-medium transition-colors"
+                                  className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
                                 >
-                                  <MdSearch className="text-base" />
-                                  Buscar Alternativo
+                                  <MdSearch className="text-lg" />
+                                  Procurar Outro Serviço
                                 </Link>
-                              </div>
-                            )}
+                              )}
 
-                            {service.booking_status === 'cancelled' && (
-                              <div className="text-sm text-gray-500 italic">
-                                Serviço cancelado
-                              </div>
-                            )}
+                              {service.booking_status === 'pending_provider_approval' && (
+                                <div className="flex items-center gap-3">
+                                  <div className="text-sm text-gray-500 italic">
+                                    Aguardando resposta do prestador...
+                                  </div>
+                                  <Link
+                                    href="/servicos"
+                                    className="flex items-center gap-1 px-3 py-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg text-sm font-medium transition-colors"
+                                  >
+                                    <MdSearch className="text-base" />
+                                    Buscar Alternativo
+                                  </Link>
+                                </div>
+                              )}
+
+                              {service.booking_status === 'cancelled' && (
+                                <div className="text-sm text-gray-500 italic">
+                                  Serviço cancelado
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500">

@@ -873,7 +873,11 @@ function ProfilePageContent() {
       case 'dashboard':
         return <DashboardTab />;
       case 'minhas-festas':
-        return <MinhasFestasTab />;
+        return (
+          <Suspense fallback={<div>Loading...</div>}>
+            <MinhasFestasTab />
+          </Suspense>
+        );
       case 'configuracoes':
         return <ConfiguracoesTab />;
       default:
@@ -922,6 +926,9 @@ function ProfilePageContent() {
 }
 
 export default function ProfilePage() {
-  // Directly render content instead of using Suspense with a loading fallback
-  return <ProfilePageContent />;
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ProfilePageContent />
+    </Suspense>
+  );
 }
