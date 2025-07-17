@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
@@ -23,56 +23,88 @@ export function ClientAuthGuard({
   const [loading, setLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const router = useRouter();
-  const supabase = createClient();
+  
+  // Criar cliente uma única vez
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
+  
+  // Flag para evitar setState após unmount
+  const mountedRef = useRef(true);
 
   useEffect(() => {
-    let isMounted = true;
-
+    console.log('🔄 ClientAuthGuard useEffect executado');
+    
     const checkAuth = async () => {
+      console.log('🔍 Iniciando checkAuth...');
+      
       try {
+        console.log('📡 Buscando sessão...');
         const { data: { session }, error } = await supabase.auth.getSession();
         
-        if (!isMounted) return;
+        console.log('📋 Resultado da sessão:', { session: !!session, error });
+        
+        if (!mountedRef.current) {
+          console.log('❌ Componente não montado, abortando');
+          return;
+        }
         
         if (error || !session?.user) {
-          if (isMounted) {
-            router.push(`${redirectTo}?redirectTo=${window.location.pathname}`);
+          console.log('🚫 Erro ou sem sessão, redirecionando...');
+          if (mountedRef.current) {
+            router.push(`${redirectTo}?redirectTo=${encodeURIComponent(window.location.pathname)}`);
           }
           return;
         }
 
+        console.log('✅ Usuário autenticado:', session.user.id);
         setUser(session.user);
 
-        // Buscar dados do usuário apenas se necessário para verificação de role
-        if (requiredRole) {
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('role')
-            .eq('id', session.user.id)
-            .single();
-
-          if (!isMounted) return;
-
-          const userActualRole = userData?.role || 'client';
-          setUserRole(userActualRole);
-
-          // Verificar se o usuário tem o papel necessário
-          if (requiredRole && userActualRole !== requiredRole) {
-            if (isMounted) {
-              router.push('/acesso-negado');
-            }
-            return;
-          }
+        // Se não há role obrigatório, autorizar diretamente
+        if (!requiredRole) {
+          console.log('✅ Sem role obrigatório, autorizando diretamente');
+          setIsAuthorized(true);
+          return;
         }
 
+        // Buscar dados do usuário apenas se necessário para verificação de role
+        console.log('👤 Buscando dados do usuário para verificar role...');
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+
+        console.log('📊 Resultado dos dados do usuário:', { userData, userError });
+
+        if (!mountedRef.current) {
+          console.log('❌ Componente não montado após busca, abortando');
+          return;
+        }
+
+        const userActualRole = userData?.role || 'client';
+        console.log('🎭 Role do usuário:', userActualRole);
+        setUserRole(userActualRole);
+
+        // Verificar se o usuário tem o papel necessário
+        if (userActualRole !== requiredRole) {
+          console.log('🚫 Role não autorizado:', { required: requiredRole, actual: userActualRole });
+          if (mountedRef.current) {
+            router.push('/acesso-negado');
+          }
+          return;
+        }
+
+        console.log('✅ Usuário autorizado!');
         setIsAuthorized(true);
 
       } catch (error) {
-        if (isMounted) {
-          router.push(`${redirectTo}?redirectTo=${window.location.pathname}&reason=auth_error`);
+        if (mountedRef.current) {
+          console.error('💥 Erro na verificação de autenticação:', error);
+          router.push(`${redirectTo}?redirectTo=${encodeURIComponent(window.location.pathname)}&reason=auth_error`);
         }
       } finally {
-        if (isMounted) {
+        if (mountedRef.current) {
+          console.log('🏁 Finalizando loading...');
           setLoading(false);
         }
       }
@@ -81,16 +113,24 @@ export function ClientAuthGuard({
     checkAuth();
 
     // Escutar mudanças na autenticação
+    console.log('👂 Configurando listener de auth state...');
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (!isMounted) return;
+        console.log('🔄 Auth state change:', event, !!session);
+        
+        if (!mountedRef.current) {
+          console.log('❌ Componente não montado no auth change');
+          return;
+        }
         
         if (event === 'SIGNED_OUT' || !session) {
+          console.log('🚪 Usuário deslogado');
           setUser(null);
           setUserRole(null);
           setIsAuthorized(false);
           router.push(`${redirectTo}?reason=signed_out`);
         } else if (event === 'SIGNED_IN' && session) {
+          console.log('🚪 Usuário logado, recarregando verificação...');
           // Recarregar a verificação
           checkAuth();
         }
@@ -98,13 +138,26 @@ export function ClientAuthGuard({
     );
 
     return () => {
-      isMounted = false;
+      console.log('🧹 Limpando ClientAuthGuard...');
+      mountedRef.current = false;
       subscription.unsubscribe();
     };
-  }, [router, redirectTo, requiredRole, supabase]);
+  }, []); // ✅ Dependências vazias para evitar re-renders
+
+  // Cleanup no unmount
+  useEffect(() => {
+    console.log('🎬 ClientAuthGuard montado');
+    return () => {
+      console.log('🎬 ClientAuthGuard desmontado');
+      mountedRef.current = false;
+    };
+  }, []);
+
+  console.log('🎨 Renderizando ClientAuthGuard:', { loading, user: !!user, userRole, isAuthorized });
 
   // Loading state
   if (loading) {
+    console.log('⏳ Mostrando loading...');
     if (fallback) {
       return <>{fallback}</>;
     }
@@ -118,9 +171,11 @@ export function ClientAuthGuard({
 
   // Not authorized
   if (!isAuthorized) {
+    console.log('🚫 Não autorizado, não renderizando...');
     return null; // O redirecionamento já foi feito
   }
 
   // Authorized
+  console.log('✅ Renderizando children');
   return <>{children}</>;
-} 
+}
