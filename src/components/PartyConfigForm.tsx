@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -43,20 +43,48 @@ const partySchema = z.object({
 
 type PartyFormData = z.infer<typeof partySchema>;
 
+// Chave do localStorage para dados do formulário
+const FORM_STORAGE_KEY = 'party-form-draft';
+
+// Função para salvar dados no localStorage
+const saveFormData = (data: Partial<PartyFormData>) => {
+  try {
+    localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(data));
+  } catch (error) {
+    console.warn('Erro ao salvar dados do formulário:', error);
+  }
+};
+
+// Função para carregar dados do localStorage
+const loadFormData = (): Partial<PartyFormData> | null => {
+  try {
+    const stored = localStorage.getItem(FORM_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : null;
+  } catch (error) {
+    console.warn('Erro ao carregar dados do formulário:', error);
+    return null;
+  }
+};
+
+// Função para limpar dados do localStorage
+const clearFormData = () => {
+  try {
+    localStorage.removeItem(FORM_STORAGE_KEY);
+  } catch (error) {
+    console.warn('Erro ao limpar dados do formulário:', error);
+  }
+};
+
 export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfigFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const router = useRouter();
   const toast = useToastGlobal();
   
-  const {
-    register,
-    handleSubmit,
-    watch,
-    formState: { errors },
-  } = useForm<PartyFormData>({
-    resolver: zodResolver(partySchema),
-    defaultValues: initialData || {
+  // Carregar dados salvos do localStorage se não houver initialData e não for edição
+  const getDefaultValues = (): PartyFormData => {
+    const defaultValues: PartyFormData = {
       title: '',
       description: '',
       event_date: '',
@@ -65,8 +93,113 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
       full_guests: 0,
       half_guests: 0,
       free_guests: 0,
-    },
+    };
+
+    // Se for edição, use initialData
+    if (eventId && initialData) {
+      return { ...defaultValues, ...initialData };
+    }
+
+    // Se não for edição, tente carregar do localStorage
+    if (!eventId) {
+      const savedData = loadFormData();
+      if (savedData) {
+        return { ...defaultValues, ...savedData };
+      }
+    }
+
+    return initialData || defaultValues;
+  };
+  
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+    reset,
+  } = useForm<PartyFormData>({
+    resolver: zodResolver(partySchema),
+    defaultValues: getDefaultValues(),
   });
+
+  // Observar mudanças no formulário para auto-salvar
+  const watchedValues = watch();
+
+  // Effect para auto-salvar dados no localStorage (apenas para criação)
+  useEffect(() => {
+    if (!eventId && !loading) {
+      // Verificar se há mudanças nos dados
+      const defaultValues = {
+        title: '',
+        description: '',
+        event_date: '',
+        start_time: '',
+        location: '',
+        full_guests: 0,
+        half_guests: 0,
+        free_guests: 0,
+      };
+
+      const hasChanges = Object.keys(watchedValues).some(key => {
+        const currentValue = watchedValues[key as keyof PartyFormData];
+        const defaultValue = defaultValues[key as keyof PartyFormData];
+        return currentValue !== defaultValue && currentValue !== '' && currentValue !== 0;
+      });
+
+      setHasUnsavedChanges(hasChanges);
+
+      // Auto-salvar apenas se houver mudanças
+      if (hasChanges) {
+        const timeoutId = setTimeout(() => {
+          saveFormData(watchedValues);
+        }, 1000); // Auto-salvar após 1 segundo de inatividade
+
+        return () => clearTimeout(timeoutId);
+      }
+    }
+  }, [watchedValues, eventId, loading]);
+
+  // Função para limpar dados salvos ao completar com sucesso
+  const handleFormSuccess = () => {
+    if (!eventId) {
+      clearFormData();
+    }
+    setHasUnsavedChanges(false);
+    onComplete();
+  };
+
+  // Função para limpar dados salvos manualmente
+  const handleClearSavedData = () => {
+    clearFormData();
+    reset({
+      title: '',
+      description: '',
+      event_date: '',
+      start_time: '',
+      location: '',
+      full_guests: 0,
+      half_guests: 0,
+      free_guests: 0,
+    });
+    setHasUnsavedChanges(false);
+    toast.success('Dados salvos foram limpos');
+  };
+
+  // Mostrar notificação se dados foram recuperados
+  useEffect(() => {
+    if (!eventId && !initialData) {
+      const savedData = loadFormData();
+      if (savedData && Object.keys(savedData).length > 0) {
+        const hasValidData = Object.values(savedData).some(value => 
+          value !== '' && value !== 0 && value !== null && value !== undefined
+        );
+        
+        if (hasValidData) {
+          toast.success('Dados anteriores foram recuperados', 'Seus dados salvos foram restaurados automaticamente');
+        }
+      }
+    }
+  }, [eventId, initialData, toast]);
 
   const onSubmit = async (data: PartyFormData) => {
     setLoading(true);
@@ -108,13 +241,13 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
 
         // Redirecionar ou simplesmente completar
         if (eventId) {
-          // Para edição, só chamar onComplete
-          onComplete();
+          // Para edição, só chamar handleFormSuccess
+          handleFormSuccess();
         } else {
           // Para criação, redirecionar após delay
           setTimeout(() => {
             router.push(`/minhas-festas/${result.data!.id}`);
-            onComplete();
+            handleFormSuccess();
           }, 1000);
         }
       } else {
@@ -146,6 +279,29 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
+      {/* Indicador de auto-salvamento para criação */}
+      {!eventId && hasUnsavedChanges && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <p className="text-blue-700 text-sm flex items-center">
+            <span className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></span>
+            Dados salvos automaticamente
+          </p>
+        </div>
+      )}
+
+      {/* Botão para limpar dados salvos (apenas para criação) */}
+      {!eventId && hasUnsavedChanges && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={handleClearSavedData}
+            className="text-gray-500 hover:text-gray-700 text-sm underline"
+          >
+            Limpar dados salvos
+          </button>
+        </div>
+      )}
+
       {/* Nome do Evento */}
       <div>
         <label className="block text-sm font-semibold text-[#520029] mb-2">

@@ -46,6 +46,9 @@ import { Event, EventStatus } from '@/types/database';
 import ProfileClient from '@/components/profile/ProfileClient';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { useToast } from '@/hooks/useToast';
+import { EditProfileModal } from '@/components/modals/EditProfileModal';
+import { ChangePasswordModal } from '@/components/modals/ChangePasswordModal';
+import { DeleteAccountModal } from '@/components/modals/DeleteAccountModal';
 
 interface Tab {
   id: string;
@@ -838,6 +841,12 @@ Esta ação não pode ser desfeita. Apenas festas em rascunho ou canceladas pode
 // Componente Configurações
 const ConfiguracoesTab = () => {
   const [loading, setLoading] = useState(true);
+  const [modals, setModals] = useState({
+    editProfile: false,
+    changePassword: false,
+    deleteAccount: false
+  });
+  const { userData } = useAuth();
 
   useEffect(() => {
     // Simular carregamento inicial
@@ -848,17 +857,37 @@ const ConfiguracoesTab = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  const openModal = (modalName: keyof typeof modals) => {
+    setModals(prev => ({ ...prev, [modalName]: true }));
+  };
+
+  const closeModal = (modalName: keyof typeof modals) => {
+    setModals(prev => ({ ...prev, [modalName]: false }));
+  };
+
   const settingsGroups = [
     {
       title: 'Conta',
       icon: MdAccountCircle,
       items: [
-        { label: 'Informações Pessoais', description: 'Nome, email, telefone' },
-        { label: 'Endereço', description: 'Local padrão para eventos' },
-        { label: 'Senha', description: 'Alterar senha de acesso' }
+        { 
+          label: 'Informações Pessoais', 
+          description: 'Nome, email, telefone',
+          onClick: () => openModal('editProfile')
+        },
+        { 
+          label: 'Senha', 
+          description: 'Alterar senha de acesso',
+          onClick: () => openModal('changePassword')
+        }
       ]
     }
   ];
+
+  const handleProfileUpdateSuccess = () => {
+    // A página será revalidada automaticamente pelo action
+    window.location.reload();
+  };
 
   if (loading) {
     return (
@@ -948,6 +977,7 @@ const ConfiguracoesTab = () => {
               {group.items.map((item, itemIndex) => (
                 <div
                   key={item.label}
+                  onClick={item.onClick}
                   className="p-6 hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
@@ -976,7 +1006,10 @@ const ConfiguracoesTab = () => {
           Ações da Conta
         </h4>
         <div className="space-y-4">
-          <button className="w-full text-left p-4 rounded-xl hover:bg-red-50 transition-colors duration-200">
+          <button 
+            onClick={() => openModal('deleteAccount')}
+            className="w-full text-left p-4 rounded-xl hover:bg-red-50 transition-colors duration-200"
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-red-600">Excluir Conta</p>
@@ -989,6 +1022,25 @@ const ConfiguracoesTab = () => {
           </button>
         </div>
       </div>
+
+      {/* Modals */}
+      <EditProfileModal
+        isOpen={modals.editProfile}
+        onClose={() => closeModal('editProfile')}
+        userData={userData || {}}
+        onSuccess={handleProfileUpdateSuccess}
+      />
+
+      <ChangePasswordModal
+        isOpen={modals.changePassword}
+        onClose={() => closeModal('changePassword')}
+      />
+
+      <DeleteAccountModal
+        isOpen={modals.deleteAccount}
+        onClose={() => closeModal('deleteAccount')}
+        userName={userData?.full_name || userData?.organization_name || 'usuário'}
+      />
     </div>
   );
 };

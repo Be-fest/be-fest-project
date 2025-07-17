@@ -37,24 +37,20 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Verificação mais robusta de cookies de autenticação do Supabase
+  // Verificação de autenticação baseada em cookies do Supabase
   const cookies = request.cookies;
   
-  // Procurar por cookies específicos do Supabase
-  const authTokenCookie = cookies.get('sb-auth-token');
-  const accessTokenCookie = cookies.get('sb-access-token');
-  
-  // Buscar qualquer cookie que comece com sb- e contenha informações de auth
+  // Buscar cookies do Supabase (formato padrão: sb-{projectid}-auth-token)
   const supabaseCookies = Array.from(cookies.getAll()).filter(cookie => 
-    cookie.name.startsWith('sb-') && 
+    cookie.name.includes('auth-token') &&
     cookie.value && 
     cookie.value !== 'null' && 
     cookie.value !== 'undefined' &&
-    cookie.value.length > 10 // Cookie válido deve ter conteúdo substancial
+    cookie.value.length > 20 // Token válido deve ter conteúdo substancial
   );
   
   // Se não há cookies de autenticação válidos, redirecionar para login
-  if (supabaseCookies.length === 0 && !authTokenCookie && !accessTokenCookie) {
+  if (supabaseCookies.length === 0) {
     console.log(`Middleware: Nenhum cookie de auth válido encontrado para ${pathname}`);
     const redirectUrl = new URL('/auth/login', request.url);
     redirectUrl.searchParams.set('redirectTo', pathname);

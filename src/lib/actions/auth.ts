@@ -52,6 +52,16 @@ const updateProfileSchema = z.object({
   organizationName: z.string().optional()
 })
 
+// Esquema para mudança de senha
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Senha atual é obrigatória'),
+  newPassword: z.string().min(8, 'Nova senha deve ter pelo menos 8 caracteres'),
+  confirmPassword: z.string()
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Nova senha e confirmação não coincidem",
+  path: ["confirmPassword"],
+})
+
 // Definir tipo de retorno das actions
 type ActionResult<T = any> = {
   success: boolean
@@ -537,6 +547,64 @@ export async function updateCompleteProfileAction(formData: FormData): Promise<A
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Ocorreu um erro ao atualizar o perfil completo' 
+    }
+  }
+}
+
+export async function changePasswordAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const user = await getCurrentUser()
+    
+    if (!user) {
+      return { success: false, error: 'Usuário não autenticado' }
+    }
+
+    const rawData = {
+      currentPassword: formData.get('currentPassword') as string,
+      newPassword: formData.get('newPassword') as string,
+      confirmPassword: formData.get('confirmPassword') as string
+    }
+
+    const validatedData = changePasswordSchema.parse(rawData)
+    const supabase = await createServerClient()
+
+    // Verificar senha atual fazendo login
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: user.email!,
+      password: validatedData.currentPassword
+    })
+
+    if (signInError) {
+      console.error('Current password verification failed:', signInError)
+      return { success: false, error: 'Senha atual incorreta' }
+    }
+
+    // Atualizar senha
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: validatedData.newPassword
+    })
+
+    if (updateError) {
+      console.error('Password update failed:', updateError)
+      return { success: false, error: 'Erro ao atualizar senha' }
+    }
+
+    return { 
+      success: true, 
+      data: { message: 'Senha alterada com sucesso!' } 
+    }
+
+  } catch (error) {
+    console.error('Change password failed:', error)
+    
+    if (error instanceof z.ZodError) {
+      const firstError = error.errors[0]
+      return { success: false, error: firstError.message }
+    }
+    
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Ocorreu um erro ao alterar a senha' 
     }
   }
 }
