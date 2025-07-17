@@ -1,16 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { MdArrowBack, MdSearch, MdStar, MdLocationOn, MdWarning, MdTune, MdClose } from 'react-icons/md';
 import { Categories } from '@/components/Categories';
 import { getPublicServicesAction } from '@/lib/actions/services';
+import { createEventServiceAction } from '@/lib/actions/event-services';
 import { ServiceWithProvider } from '@/types/database';
 import { Header } from '@/components/Header';
 import { ServicesSkeleton } from '@/components/ui';
 import { SafeHTML } from '@/components/ui/SafeHTML';
+import { useToast } from '@/hooks/useToast';
 
 // Skeleton Components para a página de serviços
 const SearchSkeleton = () => (
@@ -148,6 +150,7 @@ const ServicesGrid = ({ services, selectedParty }: {
 
 export default function ServicesPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [services, setServices] = useState<ServiceWithProvider[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -156,6 +159,11 @@ export default function ServicesPage() {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
   const [selectedParty, setSelectedParty] = useState<{ id: string; name: string } | null>(null);
+  const [actionLoading, setActionLoading] = useState<'booking' | null>(null);
+  const [submittingServiceId, setSubmittingServiceId] = useState<string | null>(null);
+
+  // Get toast function from useToast hook instead of react-toastify
+  const { toast } = useToast();
 
   // Detectar se estamos adicionando serviços para uma festa
   useEffect(() => {
@@ -216,6 +224,52 @@ export default function ServicesPage() {
     setSelectedCategory(undefined);
     setSearchQuery('');
     setLocationFilter('');
+  };
+
+  const handleBookService = async (serviceId: string) => {
+    if (!selectedParty) {
+      toast.error('Selecione uma festa', 'Você precisa selecionar uma festa para adicionar o serviço.');
+      return;
+    }
+
+    setActionLoading('booking');
+    setSubmittingServiceId(serviceId);
+    
+    console.log('📝 [Services] Booking service:', { 
+      serviceId, 
+      partyId: selectedParty.id, 
+      partyName: selectedParty.name 
+    });
+
+    try {
+      const result = await createEventServiceAction({
+        event_id: selectedParty.id,
+        service_id: serviceId,
+      });
+      
+      console.log('📝 [Services] Booking result:', result);
+
+      if (result.success) {
+        toast.success('Serviço adicionado', 'O serviço foi adicionado com sucesso à sua festa.');
+        
+        // Close the modal first to prevent UI issues during navigation
+        setIsModalOpen(false);
+        
+        // Small delay to ensure modal is closed before navigation
+        setTimeout(() => {
+          // Redirect back to party page with a query parameter to indicate service was added
+          router.push(`/minhas-festas/${selectedParty.id}?added=true`);
+        }, 100);
+      } else {
+        toast.error('Erro ao solicitar serviço', result.error || 'Ocorreu um erro inesperado.');
+      }
+    } catch (err) {
+      console.error('Error booking service:', err);
+      toast.error('Erro ao solicitar serviço', 'Ocorreu um erro inesperado.');
+    } finally {
+      setActionLoading(null);
+      setSubmittingServiceId(null);
+    }
   };
 
   if (loading) {
@@ -446,4 +500,4 @@ export default function ServicesPage() {
       </div>
     </>
   );
-} 
+}

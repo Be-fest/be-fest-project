@@ -54,7 +54,7 @@ export default function LogoutButton() {
     >
       <div className="w-10 h-10 flex items-center justify-center rounded-lg bg-red-50 group-hover:bg-red-100 transition-colors">
         {isLoggingOut ? (
-          <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+          <MdExitToApp className="text-xl animate-pulse" />
         ) : (
           <MdExitToApp className="text-xl" />
         )}
@@ -69,4 +69,4 @@ export default function LogoutButton() {
       </div>
     </button>
   );
-} 
+}

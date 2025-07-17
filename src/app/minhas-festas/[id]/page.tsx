@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   MdArrowBack,
@@ -25,6 +25,7 @@ import {
   MdCheckCircle,
   MdSchedule,
   MdAssignmentTurnedIn,
+  MdRefresh,
 } from 'react-icons/md';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PartyConfigForm } from '@/components/PartyConfigForm';
@@ -35,15 +36,25 @@ import { Event, EventWithServices, EventServiceWithDetails } from '@/types/datab
 import { ClientLayout } from '@/components/client';
 import { FastAuthGuard } from '@/components/FastAuthGuard';
 import { calculateAdvancedPrice, formatGuestsInfo } from '@/utils/formatters';
+import { useToast } from '@/hooks/useToast';
 
 export default function PartyDetailsPage() {
+  console.log('🔍 [PartyDetailsPage] Component rendering');
+  
   const params = useParams();
   const eventId = params.id as string;
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { toast } = useToast();
+  
+  // Check if we just returned from adding services
+  const justAddedService = searchParams.get('added') === 'true';
+  
+  console.log('📝 [PartyDetailsPage] Initial props:', { eventId, justAddedService });
   
   const [event, setEvent] = useState<EventWithServices | null>(null);
   const [eventServices, setEventServices] = useState<EventServiceWithDetails[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,97 +63,186 @@ export default function PartyDetailsPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [selectedServicesForPayment, setSelectedServicesForPayment] = useState<Set<string>>(new Set());
   const [selectAllServices, setSelectAllServices] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   
   // Use ref para evitar múltiplas chamadas
   const isLoadingRef = useRef(false);
+  // Add a mounted ref to track component lifecycle
+  const isMountedRef = useRef(true);
+  
+  console.log('📊 [PartyDetailsPage] Current state:', { 
+    hasEvent: !!event,
+    eventServicesCount: eventServices.length,
+    loading, 
+    error,
+    isLoadingRef: isLoadingRef.current,
+    justAddedService
+  });
+
+  // Function to manually refresh services data
+  const refreshServices = async () => {
+    if (!eventId || !isMountedRef.current || refreshing) return;
+    
+    console.log('🔄 [PartyDetailsPage] Manually refreshing services data');
+    setRefreshing(true);
+    
+    try {
+      const result = await getEventServicesAction({ event_id: eventId });
+      if (result.success && result.data && isMountedRef.current) {
+        console.log('✅ [PartyDetailsPage] Services refreshed successfully:', result.data.length);
+        setEventServices(result.data);
+        
+        // Clear the "added" query parameter from the URL without page reload
+        if (justAddedService && typeof window !== 'undefined') {
+          const newUrl = window.location.pathname;
+          window.history.replaceState({ path: newUrl }, '', newUrl);
+        }
+      }
+    } catch (err) {
+      console.error('❌ [PartyDetailsPage] Failed to refresh services:', err);
+    } finally {
+      if (isMountedRef.current) {
+        setRefreshing(false);
+      }
+    }
+  };
 
   // Função simplificada para buscar dados do evento
   const fetchEventData = async () => {
-    // Evitar múltiplas chamadas simultâneas
-    if (isLoadingRef.current) return;
+    console.log('🚀 [PartyDetailsPage] fetchEventData called');
     
+    // Evitar múltiplas chamadas simultâneas
+    if (isLoadingRef.current) {
+      console.log('⚠️ [PartyDetailsPage] Fetch already in progress, skipping');
+      return;
+    }
+    
+    console.log('⏳ [PartyDetailsPage] Starting data fetch');
     isLoadingRef.current = true;
-    setLoading(true);
+    setLoading(false);
     setError(null);
     
-    // Timeout de segurança para evitar loading infinito
-    const timeoutId = setTimeout(() => {
-      setLoading(false);
-      isLoadingRef.current = false;
-      setError('Timeout na requisição. Tente recarregar a página.');
-    }, 10000); // 10 segundos
-    
     try {
-      const [eventResult, servicesResult] = await Promise.race([
-        Promise.all([
-          getEventByIdAction(eventId),
-          getEventServicesAction({ event_id: eventId }),
-        ]),
-        new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout')), 8000)
-        )
-      ]);
+      console.log('🔄 [PartyDetailsPage] Making API calls');
+      console.time('eventDataFetch');
       
-      clearTimeout(timeoutId);
+      const promises = [
+        getEventByIdAction(eventId),
+        getEventServicesAction({ event_id: eventId })
+      ];
+      
+      console.log('⏱️ [PartyDetailsPage] Awaiting Promise.all');
+      const [eventResult, servicesResult] = await Promise.all(promises);
+      console.timeEnd('eventDataFetch');
+      
+      console.log('✅ [PartyDetailsPage] API calls completed:', { 
+        eventSuccess: eventResult.success,
+        serviceSuccess: servicesResult.success
+      });
+      
+      // Check if component is still mounted before updating state
+      if (!isMountedRef.current) {
+        console.log('⚠️ [PartyDetailsPage] Component unmounted, skipping state updates');
+        return;
+      }
       
       if (eventResult.success && eventResult.data) {
+        console.log('📅 [PartyDetailsPage] Event data received');
         setEvent(eventResult.data);
       } else {
+        console.error('❌ [PartyDetailsPage] Failed to load event:', eventResult.error);
         setError(eventResult.error || 'Erro ao carregar dados do evento');
       }
       
       if (servicesResult.success && servicesResult.data) {
+        console.log('🛠️ [PartyDetailsPage] Services data received:', servicesResult.data.length);
         setEventServices(servicesResult.data);
+        
+        // If we just added a service and got results, show a success toast
+        if (justAddedService && servicesResult.data.length > 0) {
+          toast.success('Serviço adicionado', 'O serviço foi adicionado com sucesso à sua festa.');
+        }
       } else {
-        console.error('Erro ao carregar serviços:', servicesResult.error);
+        console.error('❌ [PartyDetailsPage] Failed to load services:', servicesResult.error);
         setEventServices([]);
       }
     } catch (err) {
-      clearTimeout(timeoutId);
-      console.error('Erro ao carregar dados:', err);
+      // Check if component is still mounted before updating state
+      if (!isMountedRef.current) {
+        console.log('⚠️ [PartyDetailsPage] Component unmounted, skipping error state update');
+        return;
+      }
+      
+      console.error('💥 [PartyDetailsPage] Error during data fetch:', err);
       setError('Erro ao carregar dados. Tente novamente.');
     } finally {
-      setLoading(false);
-      isLoadingRef.current = false;
+      // Check if component is still mounted before updating state
+      if (isMountedRef.current) {
+        console.log('🏁 [PartyDetailsPage] Finishing data fetch, setting loading to false');
+        setLoading(false);
+        isLoadingRef.current = false;
+      }
     }
   };
 
   useEffect(() => {
+    console.log('🔄 [PartyDetailsPage] useEffect triggered with eventId:', eventId);
+    
+    // Set mounted flag to true when component mounts
+    isMountedRef.current = true;
+    
     if (eventId) {
-      fetchEventData();
+      console.log('🔍 [PartyDetailsPage] Valid eventId, calling fetchEventData');
+      
+      // Add a small delay to prevent potential race conditions with router
+      const timeoutId = setTimeout(() => {
+        if (isMountedRef.current) {
+          fetchEventData();
+        }
+      }, 10);
+      
+      return () => {
+        // Clear timeout and mark component as unmounted on cleanup
+        clearTimeout(timeoutId);
+        console.log('♻️ [PartyDetailsPage] Component cleanup');
+        isMountedRef.current = false;
+      };
+    } else {
+      console.warn('⚠️ [PartyDetailsPage] No eventId available');
+      return () => {
+        console.log('♻️ [PartyDetailsPage] Component cleanup (no eventId)');
+        isMountedRef.current = false;
+      };
     }
   }, [eventId]);
 
-  // Safety check: force stop loading after 15 seconds
-  useEffect(() => {
-    if (loading) {
-      const emergencyTimeout = setTimeout(() => {
-        console.warn('Forçando parada do loading após 15 segundos');
-        setLoading(false);
-        isLoadingRef.current = false;
-        if (!error) {
-          setError('Timeout no carregamento. Por favor, recarregue a página.');
-        }
-      }, 15000);
-
-      return () => clearTimeout(emergencyTimeout);
-    }
-  }, [loading, error]);
+  // Handle navigation to add services
+  const handleAddService = () => {
+    if (!event) return;
+    
+    console.log('➕ [PartyDetailsPage] Navigating to add service');
+    router.push(`/servicos?partyId=${eventId}&partyName=${encodeURIComponent(event.title)}`);
+  };
 
   const handleUpdateStatus = async (newStatus: string) => {
+    console.log('🔄 [PartyDetailsPage] Updating status to:', newStatus);
     setActionLoading('status');
     try {
       const result = await updateEventStatusAction(eventId, newStatus);
       if (result.success) {
+        console.log('✅ [PartyDetailsPage] Status updated successfully');
         setEvent((prev) => prev ? { ...prev, status: newStatus as any } : null);
         // Só refetch se necessário (quando o status muda fundamentalmente a estrutura)
         if (newStatus === 'completed' || newStatus === 'cancelled') {
+          console.log('🔄 [PartyDetailsPage] Status requires data refresh');
           fetchEventData();
         }
       } else {
+        console.error('❌ [PartyDetailsPage] Failed to update status:', result.error);
         setError(result.error || 'Erro ao atualizar status');
       }
     } catch (err) {
+      console.error('💥 [PartyDetailsPage] Error updating status:', err);
       setError('Erro ao atualizar status');
     } finally {
       setActionLoading(null);
@@ -370,32 +470,15 @@ export default function PartyDetailsPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <FastAuthGuard requiredRole="client">
-        <ClientLayout>
-          <div className="min-h-screen bg-[#FFF6FB] flex items-center justify-center">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#A502CA] mx-auto mb-4"></div>
-              <p className="text-gray-600 mb-4">Carregando festa...</p>
-              <button
-                onClick={() => {
-                  setLoading(false);
-                  isLoadingRef.current = false;
-                  setError('Carregamento cancelado pelo usuário');
-                }}
-                className="text-sm text-gray-500 hover:text-gray-700 underline"
-              >
-                Cancelar carregamento
-              </button>
-            </div>
-          </div>
-        </ClientLayout>
-      </FastAuthGuard>
-    );
-  }
-
+  console.log('🎬 [PartyDetailsPage] Render path decision:', { 
+    error: !!error, 
+    hasEvent: !!event, 
+    loading
+  });
+  
+  // Render states - keep simple, avoid spinners/loading indicators
   if (error) {
+    console.log('❌ [PartyDetailsPage] Rendering error state');
     return (
       <FastAuthGuard requiredRole="client">
         <ClientLayout>
@@ -405,7 +488,10 @@ export default function PartyDetailsPage() {
             <p className="text-gray-600 mb-8">{error}</p>
             <div className="space-x-4">
               <button
-                onClick={fetchEventData}
+                onClick={() => {
+                  console.log('🔄 [PartyDetailsPage] Retry button clicked');
+                  fetchEventData();
+                }}
                 className="bg-[#A502CA] text-white px-6 py-3 rounded-lg hover:bg-[#8B0A9E] transition-colors"
               >
                 Tentar Novamente
@@ -424,27 +510,36 @@ export default function PartyDetailsPage() {
   }
 
   if (!event) {
+    console.log('⚠️ [PartyDetailsPage] Rendering placeholder state (waiting for data)');
     return (
       <FastAuthGuard requiredRole="client">
         <ClientLayout>
-          <div className="text-center py-12">
-            <MdWarning className="text-gray-400 text-6xl mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Festa não encontrada</h2>
-            <p className="text-gray-600 mb-8">
-              A festa que você está procurando não existe ou foi removida.
-            </p>
-            <Link
-              href="/minhas-festas"
-              className="bg-[#A502CA] text-white px-6 py-3 rounded-lg hover:bg-[#8B0A9E] transition-colors"
-            >
-              Voltar para Minhas Festas
-            </Link>
+          <div className="max-w-4xl mx-auto space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Link
+                  href="/minhas-festas"
+                  className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
+                >
+                  <MdArrowBack className="text-xl" />
+                  Voltar
+                </Link>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Carregando detalhes...</h1>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <p className="text-gray-500">Carregando informações da festa...</p>
+            </div>
           </div>
         </ClientLayout>
       </FastAuthGuard>
     );
   }
 
+  console.log('✅ [PartyDetailsPage] Rendering main content');
   return (
     <FastAuthGuard requiredRole="client">
       <ClientLayout>
@@ -535,16 +630,29 @@ export default function PartyDetailsPage() {
 
           {/* Services */}
           <div className="bg-white rounded-lg shadow-sm p-6">
-                      <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Serviços</h3>
-            <Link
-              href={`/servicos?partyId=${eventId}&partyName=${encodeURIComponent(event.title)}`}
-              className="flex items-center gap-2 px-4 py-2 bg-[#A502CA] text-white rounded-lg hover:bg-[#8B0A9E] transition-colors"
-            >
-              <MdAdd className="text-lg" />
-              Adicionar Serviço
-            </Link>
-          </div>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-gray-900">Serviços</h3>
+                {justAddedService && (
+                  <button 
+                    onClick={refreshServices}
+                    disabled={refreshing}
+                    className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm"
+                    title="Atualizar lista de serviços"
+                  >
+                    <MdRefresh className={`text-lg ${refreshing ? 'animate-spin' : ''}`} />
+                    {refreshing ? 'Atualizando...' : 'Atualizar'}
+                  </button>
+                )}
+              </div>
+              <button
+                onClick={handleAddService}
+                className="flex items-center gap-2 px-4 py-2 bg-[#A502CA] text-white rounded-lg hover:bg-[#8B0A9E] transition-colors"
+              >
+                <MdAdd className="text-lg" />
+                Adicionar Serviço
+              </button>
+            </div>
             
             {eventServices.length > 0 ? (
               <div className="space-y-4">
@@ -568,15 +676,15 @@ export default function PartyDetailsPage() {
                         <div className="flex-1">
                           <div className="flex items-start justify-between">
                             <div>
-                              <h4 className="font-medium text-gray-900">{service.service.name}</h4>
+                              <h4 className="font-medium text-gray-900">{service.service?.name || 'Serviço'}</h4>
                               <p className="text-sm text-gray-600 mb-2">
-                                por {service.provider.full_name || service.provider.organization_name}
+                                por {service.provider?.full_name || service.provider?.organization_name || 'Prestador'}
                               </p>
                               {getServiceStatusBadge(service.booking_status)}
                             </div>
                             <div className="text-right">
                               <span className="font-medium text-gray-900 text-lg">
-                                {formatPrice(calculateAdvancedPrice(service.service, event.full_guests, event.half_guests, event.free_guests))}
+                                {service.service ? formatPrice(calculateAdvancedPrice(service.service, event.full_guests, event.half_guests, event.free_guests)) : 'R$ 0,00'}
                               </span>
                             </div>
                           </div>
@@ -607,7 +715,7 @@ export default function PartyDetailsPage() {
                                   Cancelar Serviço
                                 </button>
                                 <a
-                                  href={`https://wa.me/5511999999999?text=Olá! Gostaria de falar sobre o serviço ${service.service.name} para minha festa.`}
+                                  href={`https://wa.me/5511999999999?text=Olá! Gostaria de falar sobre o serviço ${service.service?.name || ''} para minha festa.`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="flex items-center gap-1 px-4 py-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg text-sm font-medium transition-colors"
@@ -742,4 +850,4 @@ export default function PartyDetailsPage() {
       </ClientLayout>
     </FastAuthGuard>
   );
-} 
+}
