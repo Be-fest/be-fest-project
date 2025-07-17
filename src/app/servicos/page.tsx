@@ -131,16 +131,19 @@ const ServicesGrid = ({ services, selectedParty }: {
               </div>
             </div>
 
-            {/* Botão de ação */}
-            <Link
-              href={selectedParty 
-                ? `/servicos/${service.id}?partyId=${selectedParty.id}&partyName=${encodeURIComponent(selectedParty.name)}`
-                : `/servicos/${service.id}`
-              }
-              className="w-full bg-[#FF0080] hover:bg-[#E6006F] text-white py-3 px-4 rounded-lg transition-colors duration-200 font-medium text-center block"
-            >
-              Ver Cardápio
-            </Link>
+            {/* Botões de ação */}
+            <div className="flex flex-col gap-2">
+              <Link
+                href={selectedParty 
+                  ? `/servicos/${service.id}?partyId=${selectedParty.id}&partyName=${encodeURIComponent(selectedParty.name)}`
+                  : `/servicos/${service.id}`
+                }
+                className="w-full bg-[#FF0080] hover:bg-[#E6006F] text-white py-3 px-4 rounded-lg transition-colors duration-200 font-medium text-center block"
+              >
+                Ver Cardápio
+              </Link>
+              
+            </div>
           </div>
         </motion.div>
       ))}
@@ -242,24 +245,22 @@ export default function ServicesPage() {
     });
 
     try {
-      const result = await createEventServiceAction({
-        event_id: selectedParty.id,
-        service_id: serviceId,
-      });
+      // Create FormData object for proper serialization with the server action
+      const formData = new FormData();
+      formData.append('event_id', selectedParty.id);
+      formData.append('service_id', serviceId);
+      
+      // Call the server action with the FormData
+      const result = await createEventServiceAction(formData);
       
       console.log('📝 [Services] Booking result:', result);
 
       if (result.success) {
         toast.success('Serviço adicionado', 'O serviço foi adicionado com sucesso à sua festa.');
         
-        // Close the modal first to prevent UI issues during navigation
-        setIsModalOpen(false);
-        
-        // Small delay to ensure modal is closed before navigation
-        setTimeout(() => {
-          // Redirect back to party page with a query parameter to indicate service was added
-          router.push(`/minhas-festas/${selectedParty.id}?added=true`);
-        }, 100);
+        // Redirect back to party page with a query parameter to indicate service was added
+        // No need for setTimeout as there's no modal to close first
+        router.push(`/minhas-festas/${selectedParty.id}?added=true`);
       } else {
         toast.error('Erro ao solicitar serviço', result.error || 'Ocorreu um erro inesperado.');
       }
@@ -271,6 +272,9 @@ export default function ServicesPage() {
       setSubmittingServiceId(null);
     }
   };
+
+  // Make handleBookService accessible to the ServicesGrid component
+  window.handleBookService = handleBookService;
 
   if (loading) {
     return (
@@ -500,4 +504,11 @@ export default function ServicesPage() {
       </div>
     </>
   );
+}
+
+// Add this to global.d.ts or declare it here for TypeScript
+declare global {
+  interface Window {
+    handleBookService: (serviceId: string) => Promise<void>;
+  }
 }

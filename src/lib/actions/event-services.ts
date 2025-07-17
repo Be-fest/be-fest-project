@@ -185,15 +185,24 @@ export async function getProviderEventServicesAction(): Promise<ActionResult<Eve
   }
 }
 
-export async function createEventServiceAction(formData: FormData): Promise<ActionResult<EventService>> {
+export async function createEventServiceAction(
+  input: FormData | { event_id: string; service_id: string; client_notes?: string | null }
+): Promise<ActionResult<EventService>> {
   try {
     const user = await getCurrentUser()
     
-    const rawData = {
-      event_id: formData.get('event_id') as string,
-      service_id: formData.get('service_id') as string,
-      client_notes: formData.get('client_notes') as string || null
-    }
+    // Handle both FormData and direct object input
+    const rawData = input instanceof FormData 
+      ? {
+          event_id: input.get('event_id') as string,
+          service_id: input.get('service_id') as string,
+          client_notes: input.get('client_notes') as string || null
+        }
+      : {
+          event_id: input.event_id,
+          service_id: input.service_id,
+          client_notes: input.client_notes || null
+        };
 
     const validatedData = createEventServiceSchema.parse(rawData)
     const supabase = await createServerClient()
@@ -500,4 +509,4 @@ export async function deleteEventServiceAction(eventServiceId: string): Promise<
       error: error instanceof Error ? error.message : 'Erro ao cancelar solicitação' 
     }
   }
-} 
+}

@@ -21,6 +21,7 @@ import { SafeHTML } from '@/components/ui/SafeHTML';
 import { getServiceByIdAction } from '@/lib/actions/services';
 import { ServiceWithProvider, ServiceWithDetails } from '@/types/database';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
+import { createEventServiceAction } from '@/lib/actions/event-services';
 
 export default function ServiceDetailsPage() {
   const params = useParams();
@@ -33,6 +34,7 @@ export default function ServiceDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedParty, setSelectedParty] = useState<{ id: string; name: string } | null>(null);
+  const [actionLoading, setActionLoading] = useState<boolean>(false);
 
   // Detectar se estamos adicionando serviço para uma festa específica
   useEffect(() => {
@@ -144,19 +146,42 @@ export default function ServiceDetailsPage() {
     }
   };
 
-  const handleAddServiceToParty = () => {
+  const handleAddServiceToParty = async () => {
     if (!service || !selectedParty) return;
     
-    // TODO: Implementar lógica real para adicionar serviço à festa
-    toast.success(
-      'Serviço adicionado!',
-      `${service.name} foi adicionado à festa "${selectedParty.name}"`
-    );
+    setActionLoading(true);
     
-    // Redirecionar de volta para a festa
-    setTimeout(() => {
-      router.push(`/minhas-festas/${selectedParty.id}`);
-    }, 1500);
+    console.log('📝 [ServiceDetail] Booking service:', { 
+      serviceId: service.id, 
+      partyId: selectedParty.id, 
+      partyName: selectedParty.name 
+    });
+
+    try {
+      // Create FormData object for proper serialization with the server action
+      const formData = new FormData();
+      formData.append('event_id', selectedParty.id);
+      formData.append('service_id', service.id);
+      
+      // Call the server action with the FormData
+      const result = await createEventServiceAction(formData);
+      
+      console.log('📝 [ServiceDetail] Booking result:', result);
+
+      if (result.success) {
+        toast.success('Serviço adicionado', 'O serviço foi adicionado com sucesso à sua festa.');
+        
+        // Redirect back to party page with a query parameter to indicate service was added
+        router.push(`/minhas-festas/${selectedParty.id}?added=true`);
+      } else {
+        toast.error('Erro ao solicitar serviço', result.error || 'Ocorreu um erro inesperado.');
+      }
+    } catch (err) {
+      console.error('Error booking service:', err);
+      toast.error('Erro ao solicitar serviço', 'Ocorreu um erro inesperado.');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   if (loading) {
@@ -365,8 +390,17 @@ export default function ServiceDetailsPage() {
                     onClick={handleAddServiceToParty}
                     className="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 px-6 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                   >
-                    <MdAdd className="text-xl" />
-                    Adicionar à Festa
+                    {actionLoading ? (
+                      <>
+                        <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                        Adicionando...
+                      </>
+                    ) : (
+                      <>
+                        <MdAdd className="text-xl" />
+                        Adicionar à Festa
+                      </>
+                    )}
                   </motion.button>
                 ) : (
                   <Link
@@ -394,4 +428,4 @@ export default function ServiceDetailsPage() {
       </div>
     </>
   );
-} 
+}
