@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -52,26 +52,38 @@ export default function PartyDetailsPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [selectedServicesForPayment, setSelectedServicesForPayment] = useState<Set<string>>(new Set());
   const [selectAllServices, setSelectAllServices] = useState(false);
-  const [lastFetchTime, setLastFetchTime] = useState(0);
+  
+  // Use ref para evitar múltiplas chamadas
+  const isLoadingRef = useRef(false);
 
-  // Função otimizada para buscar dados do evento com debounce e prevenção de chamadas simultâneas
-  const fetchEventData = useCallback(async () => {
+  // Função simplificada para buscar dados do evento
+  const fetchEventData = async () => {
     // Evitar múltiplas chamadas simultâneas
-    if (loading) return;
+    if (isLoadingRef.current) return;
     
-    // Debounce: não fazer fetch se a última chamada foi há menos de 1 segundo
-    const now = Date.now();
-    if (now - lastFetchTime < 1000) return;
-    setLastFetchTime(now);
+    isLoadingRef.current = true;
+    setLoading(true);
+    setError(null);
+    
+    // Timeout de segurança para evitar loading infinito
+    const timeoutId = setTimeout(() => {
+      setLoading(false);
+      isLoadingRef.current = false;
+      setError('Timeout na requisição. Tente recarregar a página.');
+    }, 10000); // 10 segundos
     
     try {
-      setLoading(true);
-      setError(null);
-      
-      const [eventResult, servicesResult] = await Promise.all([
-        getEventByIdAction(eventId),
-        getEventServicesAction({ event_id: eventId }),
+      const [eventResult, servicesResult] = await Promise.race([
+        Promise.all([
+          getEventByIdAction(eventId),
+          getEventServicesAction({ event_id: eventId }),
+        ]),
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout')), 8000)
+        )
       ]);
+      
+      clearTimeout(timeoutId);
       
       if (eventResult.success && eventResult.data) {
         setEvent(eventResult.data);
@@ -83,18 +95,39 @@ export default function PartyDetailsPage() {
         setEventServices(servicesResult.data);
       } else {
         console.error('Erro ao carregar serviços:', servicesResult.error);
+        setEventServices([]);
       }
     } catch (err) {
-      setError('Erro inesperado ao carregar dados');
+      clearTimeout(timeoutId);
       console.error('Erro ao carregar dados:', err);
+      setError('Erro ao carregar dados. Tente novamente.');
     } finally {
       setLoading(false);
+      isLoadingRef.current = false;
     }
-  }, [eventId, loading, lastFetchTime]);
+  };
 
   useEffect(() => {
-    fetchEventData();
-  }, [fetchEventData]);
+    if (eventId) {
+      fetchEventData();
+    }
+  }, [eventId]);
+
+  // Safety check: force stop loading after 15 seconds
+  useEffect(() => {
+    if (loading) {
+      const emergencyTimeout = setTimeout(() => {
+        console.warn('Forçando parada do loading após 15 segundos');
+        setLoading(false);
+        isLoadingRef.current = false;
+        if (!error) {
+          setError('Timeout no carregamento. Por favor, recarregue a página.');
+        }
+      }, 15000);
+
+      return () => clearTimeout(emergencyTimeout);
+    }
+  }, [loading, error]);
 
   const handleUpdateStatus = async (newStatus: string) => {
     setActionLoading('status');
@@ -341,16 +374,20 @@ export default function PartyDetailsPage() {
     return (
       <FastAuthGuard requiredRole="client">
         <ClientLayout>
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2 mb-8"></div>
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
-              <div className="space-y-3">
-                <div className="h-4 bg-gray-200 rounded w-full"></div>
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-              </div>
+          <div className="min-h-screen bg-[#FFF6FB] flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#A502CA] mx-auto mb-4"></div>
+              <p className="text-gray-600 mb-4">Carregando festa...</p>
+              <button
+                onClick={() => {
+                  setLoading(false);
+                  isLoadingRef.current = false;
+                  setError('Carregamento cancelado pelo usuário');
+                }}
+                className="text-sm text-gray-500 hover:text-gray-700 underline"
+              >
+                Cancelar carregamento
+              </button>
             </div>
           </div>
         </ClientLayout>
@@ -366,12 +403,20 @@ export default function PartyDetailsPage() {
             <MdWarning className="text-red-500 text-6xl mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Erro ao carregar dados</h2>
             <p className="text-gray-600 mb-8">{error}</p>
-            <button
-              onClick={fetchEventData}
-              className="bg-[#A502CA] text-white px-6 py-3 rounded-lg hover:bg-[#8B0A9E] transition-colors"
-            >
-              Tentar Novamente
-            </button>
+            <div className="space-x-4">
+              <button
+                onClick={fetchEventData}
+                className="bg-[#A502CA] text-white px-6 py-3 rounded-lg hover:bg-[#8B0A9E] transition-colors"
+              >
+                Tentar Novamente
+              </button>
+              <Link
+                href="/minhas-festas"
+                className="bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                Voltar
+              </Link>
+            </div>
           </div>
         </ClientLayout>
       </FastAuthGuard>

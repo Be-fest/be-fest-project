@@ -144,14 +144,9 @@ export async function getClientEventsAction(): Promise<ActionResult<Event[]>> {
 
 export async function getEventByIdAction(eventId: string): Promise<ActionResult<EventWithServices>> {
   try {
-    console.log('🔍 [GET_EVENT] Iniciando busca do evento, eventId:', eventId);
-    
     const user = await getCurrentUser()
-    console.log('👤 [GET_EVENT] Usuário autenticado:', user.id, user.email);
-    
     const supabase = await createServerClient()
     
-    console.log('📞 [GET_EVENT] Fazendo query no Supabase...');
     const { data: event, error } = await supabase
       .from('events')
       .select(`
@@ -179,33 +174,21 @@ export async function getEventByIdAction(eventId: string): Promise<ActionResult<
       .eq('id', eventId)
       .single()
 
-    console.log('📊 [GET_EVENT] Resultado da query:', { data: event, error });
-
     if (error) {
-      console.error('❌ [GET_EVENT] Erro na query Supabase:', error)
+      console.error('Erro ao buscar evento:', error)
       return { success: false, error: 'Evento não encontrado' }
     }
-
-    console.log('🔐 [GET_EVENT] Verificando acesso...');
-    console.log('🔐 [GET_EVENT] event.client_id:', event.client_id);
-    console.log('🔐 [GET_EVENT] user.id:', user.id);
-    console.log('🔐 [GET_EVENT] event_services:', event.event_services?.length);
 
     // Verificar se o usuário tem acesso ao evento (cliente ou prestador)
     const isOwner = event.client_id === user.id;
     const isProvider = event.event_services?.some((es: any) => es.provider_id === user.id);
     
-    console.log('🔐 [GET_EVENT] isOwner:', isOwner);
-    console.log('🔐 [GET_EVENT] isProvider:', isProvider);
-    
     const hasAccess = isOwner || isProvider;
 
     if (!hasAccess) {
-      console.error('🚫 [GET_EVENT] Acesso negado!');
       return { success: false, error: 'Acesso negado' }
     }
 
-    console.log('✅ [GET_EVENT] Acesso autorizado, retornando evento');
     return { success: true, data: event as EventWithServices }
   } catch (error) {
     console.error('❌ [GET_EVENT] Erro geral:', error)
