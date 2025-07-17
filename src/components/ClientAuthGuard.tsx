@@ -164,7 +164,7 @@ export function ClientAuthGuard({
     
     return (
       <div className="min-h-screen bg-[#FFF6FB] flex items-center justify-center">
-        {/* <div className="w-8 h-8 border-2 border-[#F71875] border-t-transparent rounded-full animate-spin"></div> */}
+        <div className="w-8 h-8 border-2 border-[#F71875] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
