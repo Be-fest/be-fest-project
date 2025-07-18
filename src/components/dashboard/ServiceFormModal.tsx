@@ -13,7 +13,7 @@ import { useToastGlobal } from '@/contexts/GlobalToastContext';
 interface ServiceFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  service?: Service | null;
+  service?: (Service & { guest_tiers?: GuestTier[] }) | null;
   onSubmit: () => void;
 }
 
@@ -25,6 +25,14 @@ interface PricingRule {
   value: number;
 }
 
+interface GuestTier {
+  id?: string;
+  min_total_guests: number;
+  max_total_guests: number | null;
+  base_price_per_adult: number;
+  tier_description: string | null;
+}
+
 export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: ServiceFormModalProps) {
   const toast = useToastGlobal();
 
@@ -32,7 +40,6 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
     name: service?.name || '',
     description: service?.description || '',
     category: service?.category || '',
-    price_per_guest: service?.price_per_guest?.toString() || '',
     min_guests: service?.min_guests?.toString() || '0',
     max_guests: service?.max_guests?.toString() || '',
     images_urls: service?.images_urls || [],
@@ -60,7 +67,34 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
         pricing_method: 'percentage' as const,
         value: 0
       }
-    ] as PricingRule[]
+    ] as PricingRule[],
+    // Faixas de preços por número de convidados
+    guest_tiers: [
+      {
+        min_total_guests: 30,
+        max_total_guests: 70,
+        base_price_per_adult: 0,
+        tier_description: '30-70 Convidados'
+      },
+      {
+        min_total_guests: 71,
+        max_total_guests: 100,
+        base_price_per_adult: 0,
+        tier_description: '71-100 Convidados'
+      },
+      {
+        min_total_guests: 101,
+        max_total_guests: 120,
+        base_price_per_adult: 0,
+        tier_description: '101-120 Convidados'
+      },
+      {
+        min_total_guests: 121,
+        max_total_guests: 150,
+        base_price_per_adult: 0,
+        tier_description: '121-150 Convidados'
+      }
+    ] as GuestTier[]
   });
 
   const [categories, setCategories] = useState<string[]>([
@@ -107,7 +141,6 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
         name: service?.name || '',
         description: service?.description || '',
         category: service?.category || '',
-        price_per_guest: service?.price_per_guest?.toString() || '',
         min_guests: service?.min_guests?.toString() || '0',
         max_guests: service?.max_guests?.toString() || '',
         images_urls: service?.images_urls || [],
@@ -134,11 +167,82 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
             pricing_method: 'percentage' as const,
             value: 0
           }
+        ],
+        // Inicializar guest_tiers com dados do serviço ou valores padrão
+        guest_tiers: service?.guest_tiers || [
+          {
+            min_total_guests: 30,
+            max_total_guests: 70,
+            base_price_per_adult: 0,
+            tier_description: '30-70 Convidados'
+          },
+          {
+            min_total_guests: 71,
+            max_total_guests: 100,
+            base_price_per_adult: 0,
+            tier_description: '71-100 Convidados'
+          },
+          {
+            min_total_guests: 101,
+            max_total_guests: 120,
+            base_price_per_adult: 0,
+            tier_description: '101-120 Convidados'
+          },
+          {
+            min_total_guests: 121,
+            max_total_guests: 150,
+            base_price_per_adult: 0,
+            tier_description: '121-150 Convidados'
+          }
         ]
       });
       setErrors({});
     }
   }, [isOpen, service]);
+
+  // Função para adicionar uma nova faixa de preços
+  const addGuestTier = () => {
+    const lastTier = formData.guest_tiers[formData.guest_tiers.length - 1];
+    const newMinGuests = lastTier ? (lastTier.max_total_guests || lastTier.min_total_guests) + 1 : 30;
+    
+    setFormData(prev => ({
+      ...prev,
+      guest_tiers: [
+        ...prev.guest_tiers,
+        {
+          min_total_guests: newMinGuests,
+          max_total_guests: newMinGuests + 30,
+          base_price_per_adult: 0,
+          tier_description: `${newMinGuests}-${newMinGuests + 30} Convidados`
+        }
+      ]
+    }));
+  };
+
+  // Função para remover uma faixa de preços
+  const removeGuestTier = (index: number) => {
+    if (formData.guest_tiers.length > 1) {
+      setFormData(prev => ({
+        ...prev,
+        guest_tiers: prev.guest_tiers.filter((_, i) => i !== index)
+      }));
+    }
+  };
+
+  // Função para atualizar uma faixa de preços
+  const updateGuestTier = (index: number, field: keyof GuestTier, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      guest_tiers: prev.guest_tiers.map((tier, i) => 
+        i === index ? { ...tier, [field]: value } : tier
+      )
+    }));
+  };
+
+  // Função para calcular preço com taxa Be Fest
+  const calculatePriceWithBeFestFee = (basePrice: number) => {
+    return basePrice * 1.05; // 5% de taxa
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -147,8 +251,17 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
     
     if (!formData.name.trim()) newErrors.name = 'Nome é obrigatório';
     if (!formData.category) newErrors.category = 'Categoria é obrigatória';
-    if (!formData.price_per_guest) newErrors.price_per_guest = 'Preço por convidado é obrigatório';
-    if (parseFloat(formData.price_per_guest) < 0) newErrors.price_per_guest = 'Preço por convidado deve ser maior ou igual a 0';
+    
+    // Validar guest_tiers
+    if (!formData.guest_tiers || formData.guest_tiers.length === 0) {
+      newErrors.guest_tiers = 'Pelo menos uma faixa de preços é obrigatória';
+    } else {
+      const hasValidTier = formData.guest_tiers.some(tier => tier.base_price_per_adult > 0);
+      if (!hasValidTier) {
+        newErrors.guest_tiers = 'Pelo menos uma faixa deve ter preço maior que zero';
+      }
+    }
+    
     if (formData.min_guests && parseInt(formData.min_guests) < 0) {
       newErrors.min_guests = 'Número mínimo de convidados deve ser maior ou igual a 0';
     }
@@ -177,12 +290,14 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
       formDataToSend.append('name', formData.name.trim());
       formDataToSend.append('description', formData.description.trim());
       formDataToSend.append('category', formData.category);
-      // Usar price_per_guest como base_price para compatibilidade com o backend
-      formDataToSend.append('base_price', formData.price_per_guest || '0');
       
-      if (formData.price_per_guest) {
-        formDataToSend.append('price_per_guest', formData.price_per_guest);
-      }
+      // Calcular base_price a partir da primeira faixa de guest_tiers
+      const firstTier = formData.guest_tiers.find(tier => tier.base_price_per_adult > 0);
+      const basePrice = firstTier ? firstTier.base_price_per_adult.toString() : '0';
+      formDataToSend.append('base_price', basePrice);
+      
+      // Não enviar price_per_guest pois agora usamos apenas guest_tiers
+      formDataToSend.append('price_per_guest', '0');
       
       formDataToSend.append('min_guests', formData.min_guests || '0');
       
@@ -203,6 +318,9 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
       
       // Adicionar regras de pricing por idade
       formDataToSend.append('pricing_rules', JSON.stringify(formData.pricing_rules));
+      
+      // Adicionar faixas de preços por convidados
+      formDataToSend.append('guest_tiers', JSON.stringify(formData.guest_tiers));
       
       const result = service 
         ? await updateServiceAction(formDataToSend)
@@ -401,26 +519,6 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
             />
           </div>
 
-          {/* Preço */}
-          <div>
-            <label className="block text-sm font-medium text-[#520029] mb-2">
-              Preço por Convidado (R$) *
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={formData.price_per_guest}
-              onChange={(e) => handleInputChange('price_per_guest', e.target.value)}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A502CA] ${
-                errors.price_per_guest ? 'border-red-500' : 'border-gray-300'
-              }`}
-              placeholder="0.00"
-              disabled={loading}
-            />
-            {errors.price_per_guest && <p className="text-red-500 text-xs mt-1">{errors.price_per_guest}</p>}
-          </div>
-
           {/* Regras de Preços por Idade */}
           <div>
             <label className="block text-sm font-medium text-[#520029] mb-4">
@@ -472,6 +570,136 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
                         disabled={loading}
                       />
                     </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Faixas de Preços por Número de Convidados */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <label className="block text-sm font-medium text-[#520029]">
+                Tabela de Preços por Faixas de Convidados *
+              </label>
+              <button
+                type="button"
+                onClick={addGuestTier}
+                className="bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-3 py-1 rounded text-sm flex items-center gap-1"
+                disabled={loading}
+              >
+                <MdAdd className="text-sm" />
+                Adicionar Faixa
+              </button>
+            </div>
+            
+            {errors.guest_tiers && <p className="text-red-500 text-xs mb-2">{errors.guest_tiers}</p>}
+            
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+              <p className="text-sm text-yellow-800">
+                <strong>💡 Importante:</strong> Aos preços será automaticamente adicionada a taxa de 5% da Be Fest. 
+                Por exemplo: se você definir R$ 130,00, o cliente verá R$ 136,50 (já com a taxa incluída).
+                A taxa é oculta do cliente - ele só vê o preço final.
+              </p>
+            </div>
+
+            {/* Exemplo de visualização da tabela para o cliente */}
+            {formData.guest_tiers.some(tier => tier.base_price_per_adult > 0) && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <h4 className="text-sm font-semibold text-blue-800 mb-3">
+                  📋 Prévia - Como o cliente verá a tabela de preços:
+                </h4>
+                <div className="space-y-2">
+                  {formData.guest_tiers
+                    .filter(tier => tier.base_price_per_adult > 0)
+                    .map((tier, index) => (
+                      <div key={index} className="flex justify-between text-sm">
+                        <span className="text-blue-700">
+                          • De {tier.min_total_guests} {tier.max_total_guests ? `a ${tier.max_total_guests}` : '+'} convidados:
+                        </span>
+                        <span className="font-semibold text-blue-800">
+                          R$ {calculatePriceWithBeFestFee(tier.base_price_per_adult).toFixed(2)}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              {formData.guest_tiers.map((tier, index) => (
+                <div key={index} className="border border-gray-200 rounded-lg p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        Mín. Convidados
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={tier.min_total_guests}
+                        onChange={(e) => updateGuestTier(index, 'min_total_guests', parseInt(e.target.value))}
+                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                        disabled={loading}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        Máx. Convidados
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={tier.max_total_guests || ''}
+                        onChange={(e) => updateGuestTier(index, 'max_total_guests', e.target.value ? parseInt(e.target.value) : null)}
+                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                        placeholder="Sem limite"
+                        disabled={loading}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        Preço/Convidado (R$)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={tier.base_price_per_adult}
+                        onChange={(e) => updateGuestTier(index, 'base_price_per_adult', parseFloat(e.target.value) || 0)}
+                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                        disabled={loading}
+                      />
+                      <p className="text-xs text-green-600 mt-1">
+                        Cliente verá: R$ {calculatePriceWithBeFestFee(tier.base_price_per_adult).toFixed(2)}
+                      </p>
+                    </div>
+                    
+                    <div className="flex items-end">
+                      {formData.guest_tiers.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeGuestTier(index)}
+                          className="bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded text-sm"
+                          disabled={loading}
+                        >
+                          <MdRemove className="text-sm" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="mt-2">
+                    <input
+                      type="text"
+                      value={tier.tier_description || ''}
+                      onChange={(e) => updateGuestTier(index, 'tier_description', e.target.value)}
+                      className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                      placeholder="Descrição da faixa (ex: Festa Pequena)"
+                      disabled={loading}
+                    />
                   </div>
                 </div>
               ))}

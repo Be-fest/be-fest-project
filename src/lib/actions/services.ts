@@ -155,14 +155,23 @@ export async function getServiceByIdAction(serviceId: string): Promise<ActionRes
   }
 }
 
-export async function getProviderServicesAction(): Promise<ActionResult<Service[]>> {
+export async function getProviderServicesAction(): Promise<ActionResult<(Service & { guest_tiers?: any[] })[]>> {
   try {
     const user = await getCurrentUser()
     const supabase = await createServerClient()
     
     const { data: services, error } = await supabase
       .from('services')
-      .select('*')
+      .select(`
+        *,
+        service_guest_tiers (
+          id,
+          min_total_guests,
+          max_total_guests,
+          base_price_per_adult,
+          tier_description
+        )
+      `)
       .eq('provider_id', user.id)
       .order('created_at', { ascending: false })
 
@@ -171,7 +180,13 @@ export async function getProviderServicesAction(): Promise<ActionResult<Service[
       return { success: false, error: 'Erro ao buscar seus serviços' }
     }
 
-    return { success: true, data: services }
+    // Transformar o resultado para incluir guest_tiers
+    const servicesWithTiers = services?.map(service => ({
+      ...service,
+      guest_tiers: service.service_guest_tiers || []
+    })) || []
+
+    return { success: true, data: servicesWithTiers }
   } catch (error) {
     console.error('Provider services fetch failed:', error)
     return { 
@@ -256,6 +271,36 @@ export async function createServiceAction(formData: FormData): Promise<ActionRes
       } catch (parseError) {
         console.error('Error parsing pricing rules:', parseError)
         // Não falhar a criação do serviço por causa das regras de pricing
+      }
+    }
+
+    // Salvar faixas de preços por convidados se fornecidas
+    const guestTiersData = formData.get('guest_tiers') as string
+    if (guestTiersData) {
+      try {
+        const guestTiers = JSON.parse(guestTiersData)
+        
+        if (Array.isArray(guestTiers) && guestTiers.length > 0) {
+          const guestTiersInsert = guestTiers.map((tier: any) => ({
+            service_id: service.id,
+            min_total_guests: Number(tier.min_total_guests),
+            max_total_guests: tier.max_total_guests ? Number(tier.max_total_guests) : null,
+            base_price_per_adult: Number(tier.base_price_per_adult),
+            tier_description: tier.tier_description || null
+          }))
+
+          const { error: guestTiersError } = await supabase
+            .from('service_guest_tiers')
+            .insert(guestTiersInsert)
+
+          if (guestTiersError) {
+            console.error('Error creating guest tiers:', guestTiersError)
+            // Não falhar a criação do serviço por causa das faixas de preços
+          }
+        }
+      } catch (parseError) {
+        console.error('Error parsing guest tiers:', parseError)
+        // Não falhar a criação do serviço por causa das faixas de preços
       }
     }
 
@@ -355,6 +400,75 @@ export async function updateServiceAction(formData: FormData): Promise<ActionRes
     if (error) {
       console.error('Error updating service:', error)
       return { success: false, error: 'Erro ao atualizar serviço' }
+    }
+
+    // Atualizar regras de pricing por idade se fornecidas
+    const pricingRulesData = formData.get('pricing_rules') as string
+    if (pricingRulesData) {
+      try {
+        const pricingRules = JSON.parse(pricingRulesData)
+        
+        // Primeiro, remover as regras existentes
+        await supabase
+          .from('service_age_pricing_rules')
+          .delete()
+          .eq('service_id', service.id)
+        
+        if (Array.isArray(pricingRules) && pricingRules.length > 0) {
+          const pricingRulesInsert = pricingRules.map((rule: any) => ({
+            service_id: service.id,
+            rule_description: String(rule.rule_description),
+            age_min_years: Number(rule.age_min_years),
+            age_max_years: rule.age_max_years ? Number(rule.age_max_years) : null,
+            pricing_method: String(rule.pricing_method) as any,
+            value: Number(rule.value)
+          }))
+
+          const { error: pricingRulesError } = await supabase
+            .from('service_age_pricing_rules')
+            .insert(pricingRulesInsert)
+
+          if (pricingRulesError) {
+            console.error('Error updating pricing rules:', pricingRulesError)
+          }
+        }
+      } catch (parseError) {
+        console.error('Error parsing pricing rules:', parseError)
+      }
+    }
+
+    // Atualizar faixas de preços por convidados se fornecidas
+    const guestTiersData = formData.get('guest_tiers') as string
+    if (guestTiersData) {
+      try {
+        const guestTiers = JSON.parse(guestTiersData)
+        
+        // Primeiro, remover as faixas existentes
+        await supabase
+          .from('service_guest_tiers')
+          .delete()
+          .eq('service_id', service.id)
+        
+        if (Array.isArray(guestTiers) && guestTiers.length > 0) {
+          const guestTiersInsert = guestTiers.map((tier: any) => ({
+            service_id: service.id,
+            min_total_guests: Number(tier.min_total_guests),
+            max_total_guests: tier.max_total_guests ? Number(tier.max_total_guests) : null,
+            base_price_per_adult: Number(tier.base_price_per_adult),
+            tier_description: tier.tier_description || null
+          }))
+
+          const { error: guestTiersError } = await supabase
+            .from('service_guest_tiers')
+            .insert(guestTiersInsert)
+
+          if (guestTiersError) {
+            console.error('Error updating guest tiers:', guestTiersError)
+          }
+        }
+      } catch (parseError) {
+        console.error('Error parsing guest tiers:', parseError)
+      }
     }
 
     revalidatePath('/dashboard/prestador')
