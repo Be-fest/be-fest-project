@@ -162,6 +162,7 @@ export function useAuth() {
         // Verificar se é erro de JWT expirado
         if (isJWTExpiredError(sessionError)) {
           handleJWTExpired();
+          setLoading(false);
           return;
         }
         
@@ -172,15 +173,18 @@ export function useAuth() {
 
       if (session?.user) {
         setUser(session.user);
+        setLoading(false);
         await fetchUserData(session.user.id);
       } else {
         setUser(null);
         setUserData(null);
+        setLoading(false);
       }
     } catch (error) {
       // Verificar se é erro de JWT expirado
       if (isJWTExpiredError(error)) {
         handleJWTExpired();
+        setLoading(false);
         return;
       }
       
@@ -237,8 +241,10 @@ export function useAuth() {
       setUser(null);
       setUserData(null);
       setError(null);
+      setLoading(false);
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
+      setLoading(false);
       setError('Erro ao fazer logout');
     } finally {
       setLoading(false);
@@ -259,9 +265,11 @@ export function useAuth() {
         // Verificar se é erro de JWT expirado
         if (isJWTExpiredError(userError)) {
           await handleJWTExpired();
+          setLoading(false);
           return;
         }
       } else {
+        setLoading(false);
         setUserData(userData);
       }
     } catch (error) {

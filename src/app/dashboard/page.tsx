@@ -36,51 +36,16 @@ export default function DashboardPage() {
     const result = await getClientEventsAction();
     if (result.success && result.data) {
       setEvents(result.data);
+      setLoading(false);
     }
     setLoading(false);
   };
 
   useEffect(() => {
     loadEvents();
+    setLoading(false);
   }, []);
 
-  const getStatusColor = (status: EventStatus) => {
-    switch (status) {
-      case 'draft':
-        return 'bg-gray-100 text-gray-800';
-      case 'published':
-        return 'bg-green-100 text-green-800';
-      case 'waiting_payment':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'completed':
-        return 'bg-blue-100 text-blue-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      case null:
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusLabel = (status: EventStatus) => {
-    switch (status) {
-      case 'draft':
-        return 'Rascunho';
-      case 'published':
-        return 'Publicado';
-      case 'waiting_payment':
-        return 'Aguardando Pagamento';
-      case 'completed':
-        return 'Realizado';
-      case 'cancelled':
-        return 'Cancelado';
-      case null:
-        return 'Sem Status';
-      default:
-        return status || 'Sem Status';
-    }
-  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
@@ -311,9 +276,7 @@ export default function DashboardPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(event.status)}`}>
-                          {getStatusLabel(event.status)}
-                        </span>
+                       
                         <Link
                           href={`/minhas-festas/${event.id}`}
                           className="text-[#F71875] hover:text-[#E6006F] transition-colors"

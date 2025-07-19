@@ -39,7 +39,6 @@ export function AuthGuard({
           setLoading(false);
         }
 
-        // Se não há role obrigatório, autoriza diretamente
         if (!requiredRole) {
           setIsAuthorized(true);
           setLoading(false);
@@ -60,8 +59,10 @@ export function AuthGuard({
           return;
         }
 
+        setLoading(false);
         setIsAuthorized(true);
       } catch (error) {
+        setLoading(false);
         router.push(redirectTo);
       } finally {
         setLoading(false);
@@ -75,6 +76,7 @@ export function AuthGuard({
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT" || !session) {
+        setLoading(false);
         setIsAuthorized(false);
         router.push(redirectTo);
       } else if (event === "SIGNED_IN" && session) {
@@ -83,7 +85,7 @@ export function AuthGuard({
     });
 
     return () => subscription.unsubscribe();
-  }, [requiredRole, redirectTo, router, supabase]);
+  }, []);
 
   if (loading) {
     return (

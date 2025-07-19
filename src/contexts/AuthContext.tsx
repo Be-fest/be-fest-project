@@ -102,6 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { user: loggedUser, profile: userProfile } = await authService.signIn(data.email, data.password)
       setUser(loggedUser)
       setProfile(userProfile)
+      setLoading(false)
     } finally {
       setLoading(false)
     }
@@ -118,6 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         full_name: data.fullName,
         whatsapp_number: data.whatsapp,
       })
+      setLoading(false)
     } finally {
       setLoading(false)
     }
@@ -136,6 +138,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         whatsapp_number: data.whatsapp,
         area_of_operation: data.areaOfOperation,
       })
+      setLoading(false)
     } finally {
       setLoading(false)
     }

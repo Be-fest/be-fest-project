@@ -328,11 +328,13 @@ const MinhasFestasTab = () => {
       } else {
         console.error('❌ [PROFILE] Erro ao carregar eventos:', result.error);
         setEvents([]);
+        setLoading(false);
         setEventServices({});
       }
     } catch (error) {
       console.error('💥 [PROFILE] Erro inesperado ao carregar eventos:', error);
       setEvents([]);
+      setLoading(false);
       setEventServices({});
     } finally {
       setLoading(false);
@@ -617,24 +619,6 @@ const MinhasFestasTab = () => {
                     <MdListAlt className="text-lg" />
                     Ver Detalhes
                   </Link>
-                  {(event.status === 'draft' || event.status === 'cancelled' || event.status === null) ? (
-                    <button
-                      onClick={() => handleDeleteEvent(event)}
-                      className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-                    >
-                      <MdDelete className="text-lg" />
-                      Excluir
-                    </button>
-                  ) : (
-                    <button
-                      disabled
-                      className="bg-gray-300 text-gray-500 px-4 py-2 rounded-lg text-sm font-medium cursor-not-allowed flex items-center gap-2"
-                      title="Não é possível excluir festas publicadas ou completas"
-                    >
-                      <MdDelete className="text-lg" />
-                      Excluir
-                    </button>
-                  )}
                 </div>
               </div>
             </div>

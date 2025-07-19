@@ -55,12 +55,15 @@ export function ClientAuthGuard({
         const userRole = userData?.role || 'client';
         
         if (userRole !== requiredRole) {
+          setLoading(false);
           router.push('/acesso-negado');
           return;
         }
 
+        setLoading(false);
         setIsAuthorized(true);
       } catch (error) {
+        setLoading(false);
         router.push(`${redirectTo}?redirectTo=${encodeURIComponent(window.location.pathname)}`);
       } finally {
         setLoading(false);
