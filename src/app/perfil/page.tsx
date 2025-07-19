@@ -42,6 +42,7 @@ import { ClientLayout } from '@/components/client/ClientLayout';
 import { ClientAuthGuard } from '@/components/ClientAuthGuard';
 import { NewPartyModal } from '@/components/NewPartyModal';
 import { getClientEventsAction, deleteEventAction } from '@/lib/actions/events';
+import { getEventServicesAction } from '@/lib/actions/event-services';
 import { Event, EventStatus } from '@/types/database';
 import ProfileClient from '@/components/profile/ProfileClient';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
@@ -286,6 +287,7 @@ const DashboardTab = () => {
 // Componente Minhas Festas
 const MinhasFestasTab = () => {
   const [events, setEvents] = useState<Event[]>([]);
+  const [eventServices, setEventServices] = useState<Record<string, any[]>>({});
   const [loading, setLoading] = useState(false); // Changed from true to false
   const [isNewPartyModalOpen, setNewPartyModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -306,13 +308,32 @@ const MinhasFestasTab = () => {
       if (result.success && result.data) {
         console.log('✅ [PROFILE] Eventos carregados com sucesso:', result.data.length, 'eventos');
         setEvents(result.data);
+        
+        // Carregar serviços para cada evento
+        const servicesData: Record<string, any[]> = {};
+        for (const event of result.data) {
+          try {
+            const servicesResult = await getEventServicesAction({ event_id: event.id });
+            if (servicesResult.success && servicesResult.data) {
+              servicesData[event.id] = servicesResult.data;
+            } else {
+              servicesData[event.id] = [];
+            }
+          } catch (error) {
+            console.error(`❌ [PROFILE] Erro ao carregar serviços do evento ${event.id}:`, error);
+            servicesData[event.id] = [];
+          }
+        }
+        setEventServices(servicesData);
       } else {
         console.error('❌ [PROFILE] Erro ao carregar eventos:', result.error);
         setEvents([]);
+        setEventServices({});
       }
     } catch (error) {
       console.error('💥 [PROFILE] Erro inesperado ao carregar eventos:', error);
       setEvents([]);
+      setEventServices({});
     } finally {
       setLoading(false);
     }
@@ -341,7 +362,7 @@ const MinhasFestasTab = () => {
 
   const handleCreatePartySuccess = () => {
     setNewPartyModalOpen(false);
-    loadEvents();
+    loadEvents(); // Isso já recarregará tanto os eventos quanto os serviços
   };
 
   const handleDeleteEvent = (event: Event) => {
@@ -586,7 +607,7 @@ const MinhasFestasTab = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm text-gray-500">
                   <MdWorkOutline className="text-lg" />
-                  <span>0 serviços contratados</span>
+                  <span>{(eventServices[event.id] || []).length} serviços contratados</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Link
