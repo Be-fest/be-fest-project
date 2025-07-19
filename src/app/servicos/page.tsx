@@ -7,7 +7,6 @@ import Link from 'next/link';
 import { MdArrowBack, MdSearch, MdStar, MdLocationOn, MdWarning, MdTune, MdClose } from 'react-icons/md';
 import { Categories } from '@/components/Categories';
 import { getPublicServicesAction } from '@/lib/actions/services';
-import { createEventServiceAction } from '@/lib/actions/event-services';
 import { ServiceWithProvider } from '@/types/database';
 import { Header } from '@/components/Header';
 import { ServicesSkeleton } from '@/components/ui';
@@ -27,7 +26,7 @@ const SearchSkeleton = () => (
     </div>
 
     {/* Categories Skeleton */}
-    <div className="grid grid-cols-2 md:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
       {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
         <div key={i} className="bg-white rounded-xl p-4 shadow-sm animate-pulse">
           <div className="w-16 h-16 bg-gray-300 rounded-lg mx-auto mb-3"></div>
@@ -162,8 +161,6 @@ export default function ServicesPage() {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
   const [selectedParty, setSelectedParty] = useState<{ id: string; name: string } | null>(null);
-  const [actionLoading, setActionLoading] = useState<'booking' | null>(null);
-  const [submittingServiceId, setSubmittingServiceId] = useState<string | null>(null);
 
   // Get toast function from useToast hook instead of react-toastify
   const { toast } = useToast();
@@ -205,11 +202,14 @@ export default function ServicesPage() {
 
         if (result.success && result.data) {
           setServices(result.data);
+          setLoading(false);
         } else {
           setError(result.error || 'Erro ao carregar serviços');
+          setLoading(false);
         }
       } catch (err) {
         setError('Erro ao carregar serviços');
+        setLoading(false);
         console.error('Error fetching services:', err);
       } finally {
         setLoading(false);
@@ -228,53 +228,6 @@ export default function ServicesPage() {
     setSearchQuery('');
     setLocationFilter('');
   };
-
-  const handleBookService = async (serviceId: string) => {
-    if (!selectedParty) {
-      toast.error('Selecione uma festa', 'Você precisa selecionar uma festa para adicionar o serviço.');
-      return;
-    }
-
-    setActionLoading('booking');
-    setSubmittingServiceId(serviceId);
-    
-    console.log('📝 [Services] Booking service:', { 
-      serviceId, 
-      partyId: selectedParty.id, 
-      partyName: selectedParty.name 
-    });
-
-    try {
-      // Create FormData object for proper serialization with the server action
-      const formData = new FormData();
-      formData.append('event_id', selectedParty.id);
-      formData.append('service_id', serviceId);
-      
-      // Call the server action with the FormData
-      const result = await createEventServiceAction(formData);
-      
-      console.log('📝 [Services] Booking result:', result);
-
-      if (result.success) {
-        toast.success('Serviço adicionado', 'O serviço foi adicionado com sucesso à sua festa.');
-        
-        // Redirect back to party page with a query parameter to indicate service was added
-        // No need for setTimeout as there's no modal to close first
-        router.push(`/minhas-festas/${selectedParty.id}?added=true`);
-      } else {
-        toast.error('Erro ao solicitar serviço', result.error || 'Ocorreu um erro inesperado.');
-      }
-    } catch (err) {
-      console.error('Error booking service:', err);
-      toast.error('Erro ao solicitar serviço', 'Ocorreu um erro inesperado.');
-    } finally {
-      setActionLoading(null);
-      setSubmittingServiceId(null);
-    }
-  };
-
-  // Make handleBookService accessible to the ServicesGrid component
-  window.handleBookService = handleBookService;
 
   if (loading) {
     return (
@@ -463,7 +416,7 @@ export default function ServicesPage() {
                 <MdWarning className="text-red-500 text-4xl mx-auto mb-4" />
                 <p className="text-red-600 mb-4">{error}</p>
                 <button
-                  onClick={() => window.location.reload()}
+                  onClick={() => router.refresh()}
                   className="px-4 py-2 bg-[#FF0080] text-white rounded-lg hover:bg-[#E6006F] transition-colors"
                 >
                   Tentar novamente
@@ -506,9 +459,3 @@ export default function ServicesPage() {
   );
 }
 
-// Add this to global.d.ts or declare it here for TypeScript
-declare global {
-  interface Window {
-    handleBookService: (serviceId: string) => Promise<void>;
-  }
-}

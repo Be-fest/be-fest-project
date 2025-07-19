@@ -424,25 +424,6 @@ const MinhasFestasTab = () => {
     }
   };
 
-  const getStatusLabel = (status: EventStatus) => {
-    switch (status) {
-      case 'draft':
-        return 'Rascunho';
-      case 'published':
-        return 'Publicada';
-      case 'waiting_payment':
-        return 'Aguardando Pagamento';
-      case 'completed':
-        return 'Realizada';
-      case 'cancelled':
-        return 'Cancelada';
-      case null:
-        return 'Sem Status';
-      default:
-        return status || 'Sem Status';
-    }
-  };
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
       day: '2-digit',
@@ -581,10 +562,6 @@ const MinhasFestasTab = () => {
                 </div>
               </div>
               <div className="absolute top-4 right-4">
-                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(event.status)}`}>
-                  {getStatusIcon(event.status)}
-                  {getStatusLabel(event.status)}
-                </div>
               </div>
             </div>
 

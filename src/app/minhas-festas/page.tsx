@@ -19,7 +19,6 @@ import {
   MdSettings,
   MdPerson,
   MdArrowForward,
-  MdFilterList,
   MdWorkOutline,
   MdListAlt,
   MdDelete,
@@ -47,7 +46,6 @@ export default function MinhasFestasPage() {
   const [loading, setLoading] = useState(true);
   const [isNewPartyModalOpen, setNewPartyModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'published' | 'waiting_payment' | 'completed' | 'cancelled' | 'null'>('all');
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
@@ -87,10 +85,8 @@ export default function MinhasFestasPage() {
     const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (event.description && event.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (event.location && event.location.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesStatus = statusFilter === 'all' || 
-      (statusFilter === 'null' && event.status === null) ||
-      (statusFilter !== 'null' && event.status === statusFilter);
-    return matchesSearch && matchesStatus;
+    
+    return matchesSearch;
   });
 
   const handleCreatePartySuccess = () => {
@@ -133,63 +129,6 @@ export default function MinhasFestasPage() {
     window.open(whatsappUrl, '_blank');
     setCancelModalOpen(false);
     setServiceToCancel(null);
-  };
-
-  const getStatusColor = (status: EventStatus) => {
-    switch (status) {
-      case 'draft':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-      case 'published':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'waiting_payment':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'completed':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case null:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getStatusIcon = (status: EventStatus) => {
-    switch (status) {
-      case 'draft':
-        return <MdEdit className="text-gray-600" />;
-      case 'published':
-        return <MdCheckCircle className="text-green-600" />;
-      case 'waiting_payment':
-        return <MdPayment className="text-yellow-600" />;
-      case 'completed':
-        return <MdCheckCircle className="text-blue-600" />;
-      case 'cancelled':
-        return <MdCancel className="text-red-600" />;
-      case null:
-        return <MdInfo className="text-gray-600" />;
-      default:
-        return <MdInfo className="text-gray-600" />;
-    }
-  };
-
-  const getStatusLabel = (status: EventStatus) => {
-    switch (status) {
-      case 'draft':
-        return 'Rascunho';
-      case 'published':
-        return 'Publicada';
-      case 'waiting_payment':
-        return 'Aguardando Pagamento';
-      case 'completed':
-        return 'Realizada';
-      case 'cancelled':
-        return 'Cancelada';
-      case null:
-        return 'Sem Status';
-      default:
-        return status || 'Sem Status';
-    }
   };
 
   const getNextAction = (event: Event) => {
@@ -374,23 +313,6 @@ export default function MinhasFestasPage() {
                       className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#F71875] focus:border-transparent outline-none transition-all duration-200"
                     />
                   </div>
-
-                  <div className="flex items-center gap-3">
-                    <MdFilterList className="text-gray-500 text-xl" />
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value as any)}
-                      className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#F71875] focus:border-transparent outline-none transition-all duration-200 min-w-[140px]"
-                    >
-                      <option value="all">Todas</option>
-                      <option value="draft">Rascunho</option>
-                      <option value="published">Publicada</option>
-                      <option value="waiting_payment">Aguardando Pagamento</option>
-                      <option value="completed">Realizada</option>
-                      <option value="cancelled">Cancelada</option>
-                      <option value="null">Sem Status</option>
-                    </select>
-                  </div>
                 </div>
               </div>
 
@@ -413,12 +335,6 @@ export default function MinhasFestasPage() {
                           <div className="flex items-center gap-2 text-pink-100">
                             <MdCalendarToday className="text-lg" />
                             <span className="font-medium">{formatDate(event.event_date)}</span>
-                          </div>
-                        </div>
-                        <div className="absolute top-4 right-4">
-                          <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(event.status)}`}>
-                            {getStatusIcon(event.status)}
-                            {getStatusLabel(event.status)}
                           </div>
                         </div>
                       </div>
@@ -488,15 +404,15 @@ export default function MinhasFestasPage() {
                     <MdEvent className="text-white text-4xl" />
                   </div>
                   <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                    {searchTerm || statusFilter !== 'all' ? 'Nenhuma festa encontrada' : 'Nenhuma festa criada ainda'}
+                    {searchTerm ? 'Nenhuma festa encontrada' : 'Nenhuma festa criada ainda'}
                   </h3>
                   <p className="text-gray-600 mb-8 max-w-md mx-auto text-lg">
-                    {searchTerm || statusFilter !== 'all' 
-                      ? 'Tente ajustar os filtros para encontrar suas festas.' 
+                    {searchTerm 
+                      ? 'Tente ajustar a busca para encontrar suas festas.' 
                       : 'Que tal começar a planejar sua primeira festa? É fácil e rápido!'
                     }
                   </p>
-                  {!(searchTerm || statusFilter !== 'all') && (
+                  {!searchTerm && (
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}

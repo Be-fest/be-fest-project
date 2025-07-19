@@ -606,9 +606,6 @@ export default function PartyDetailsPage() {
               </Link>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">{event.title}</h1>
-                <div className="flex items-center gap-2 mt-1">
-                  {getStatusBadge(event.status || 'draft')}
-                </div>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -676,12 +673,6 @@ export default function PartyDetailsPage() {
                 )}
               </div>
             </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Ações</h3>
-            {getActionButtons()}
           </div>
 
           {/* Services */}
