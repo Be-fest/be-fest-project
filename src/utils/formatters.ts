@@ -99,40 +99,103 @@ export function formatGuestCountBreakdown(
   return `${total} convidados${parts.length > 0 ? ` (${parts.join(', ')})` : ''}`;
 }
 
-// Função para calcular preços avançados considerando diferentes tipos de convidados
+/**
+ * Calcula o valor total de um serviço baseado na lógica de full_guests e half_guests
+ * @param fullGuests - Número de convidados inteiros (pagam preço cheio)
+ * @param halfGuests - Número de convidados meia (pagam metade do preço)
+ * @param pricePerGuest - Preço por convidado do serviço
+ * @returns Valor total calculado
+ */
+export const calculateServiceTotalValue = (
+  fullGuests: number,
+  halfGuests: number,
+  pricePerGuest: number
+): number => {
+  const normalizedFullGuests = fullGuests || 0;
+  const normalizedHalfGuests = halfGuests || 0;
+  const normalizedPricePerGuest = Number(pricePerGuest) || 0;
+  
+  // Aplicar a fórmula: fullGuests * pricePerGuest + halfGuests * (pricePerGuest / 2)
+  const fullGuestsTotal = normalizedFullGuests * normalizedPricePerGuest;
+  const halfGuestsTotal = normalizedHalfGuests * (normalizedPricePerGuest / 2);
+  
+  return fullGuestsTotal + halfGuestsTotal;
+};
+
+/**
+ * Calcula o preço de um serviço usando os dados do evento
+ * Esta função implementa a lógica descrita no documento:
+ * 1. Usa full_guests e half_guests do evento
+ * 2. Usa price_per_guest do serviço
+ * 3. Aplica a fórmula: fullGuests * pricePerGuest + halfGuests * (pricePerGuest / 2)
+ */
+export const calculateEventServicePrice = (
+  eventData: { full_guests?: number; half_guests?: number },
+  serviceData: { price_per_guest?: number; base_price?: number },
+  fallbackPrice?: number
+): number => {
+  const fullGuests = eventData.full_guests || 0;
+  const halfGuests = eventData.half_guests || 0;
+  
+  // Primeiro, tentar usar o preço por convidado
+  if (serviceData.price_per_guest && serviceData.price_per_guest > 0) {
+    return calculateServiceTotalValue(fullGuests, halfGuests, serviceData.price_per_guest);
+  }
+  
+  // Se não tem preço por convidado, usar preço base
+  if (serviceData.base_price && serviceData.base_price > 0) {
+    return serviceData.base_price;
+  }
+  
+  // Último recurso: usar preço de fallback ou calcular baseado em estimativa
+  if (fallbackPrice && fallbackPrice > 0) {
+    return calculateServiceTotalValue(fullGuests, halfGuests, fallbackPrice);
+  }
+  
+  // Preço mínimo de emergência
+  const totalGuests = fullGuests + halfGuests;
+  return totalGuests > 0 ? Math.max(500, totalGuests * 30) : 500;
+};
+
+// Função para calcular preços baseado na lógica de full_guests e half_guests
 export const calculateAdvancedPrice = (
   service: any,
   fullGuests: number,
   halfGuests: number,
-  freeGuests: number
+  freeGuests: number = 0
 ): number => {
-  // Se já tem preço total definido, usar ele
+  // Normalizar valores para garantir números válidos
+  const normalizedFullGuests = fullGuests || 0;
+  const normalizedHalfGuests = halfGuests || 0;
+  
+  // Prioridade 1: Se já tem preço total definido, usar ele
   if (service.total_estimated_price && service.total_estimated_price > 0) {
     return service.total_estimated_price;
   }
   
-  // Se tem preço por convidado definido no serviço
+  // Prioridade 2: Usar preço por convidado do serviço (services.price_per_guest)
+  let pricePerGuest = 0;
   if (service.service?.price_per_guest && service.service.price_per_guest > 0) {
-    const fullPrice = fullGuests * service.service.price_per_guest;
-    const halfPrice = halfGuests * (service.service.price_per_guest * 0.5);
-    const freePrice = 0; // Convidados gratuitos não pagam
-    return fullPrice + halfPrice + freePrice;
+    pricePerGuest = Number(service.service.price_per_guest);
+  } 
+  // Prioridade 3: Usar preço por convidado no booking
+  else if (service.price_per_guest_at_booking && service.price_per_guest_at_booking > 0) {
+    pricePerGuest = Number(service.price_per_guest_at_booking);
   }
   
-  // Se tem preço por convidado no booking
-  if (service.price_per_guest_at_booking && service.price_per_guest_at_booking > 0) {
-    const fullPrice = fullGuests * service.price_per_guest_at_booking;
-    const halfPrice = halfGuests * (service.price_per_guest_at_booking * 0.5);
-    const freePrice = 0;
-    return fullPrice + halfPrice + freePrice;
+  // Se encontrou um preço por convidado, aplicar a fórmula
+  if (pricePerGuest > 0) {
+    const fullPrice = normalizedFullGuests * pricePerGuest;
+    const halfPrice = normalizedHalfGuests * (pricePerGuest / 2);
+    return fullPrice + halfPrice; // freeGuests não pagam
   }
   
-  // Se tem preço base definido
+  // Prioridade 4: Se tem preço base definido
   if (service.service?.base_price && service.service.base_price > 0) {
     return service.service.base_price;
   }
   
-  // Preços estimados baseados na categoria como fallback
+  // Fallback: Preços estimados baseados na categoria
   const categoryPrices: Record<string, number> = {
     'buffet': 130,
     'bar': 25,
@@ -153,14 +216,13 @@ export const calculateAdvancedPrice = (
   const categoryPrice = categoryPrices[category] || 30;
   
   if (categoryPrice > 0) {
-    const fullPrice = fullGuests * categoryPrice;
-    const halfPrice = halfGuests * (categoryPrice * 0.5);
-    const freePrice = 0;
-    return fullPrice + halfPrice + freePrice;
+    const fullPrice = normalizedFullGuests * categoryPrice;
+    const halfPrice = normalizedHalfGuests * (categoryPrice / 2);
+    return fullPrice + halfPrice;
   }
   
-  // Preço base mínimo como último recurso
-  const totalGuests = fullGuests + halfGuests + freeGuests;
+  // Último recurso: preço base mínimo
+  const totalGuests = normalizedFullGuests + normalizedHalfGuests;
   return totalGuests > 0 ? Math.max(500, totalGuests * 30) : 500;
 };
 
@@ -174,21 +236,27 @@ export const calculateEstimatedPrice = (
     return service.total_estimated_price;
   }
   
-  // Calcular preço baseado no serviço original
-  if (service.service?.price_per_guest && guestCount > 0) {
-    return service.service.price_per_guest * guestCount;
+  // Prioridade 1: Usar preço por convidado do serviço (services.price_per_guest)
+  let pricePerGuest = 0;
+  if (service.service?.price_per_guest && service.service.price_per_guest > 0) {
+    pricePerGuest = Number(service.service.price_per_guest);
+  }
+  // Prioridade 2: Usar preço por convidado no booking
+  else if (service.price_per_guest_at_booking && service.price_per_guest_at_booking > 0) {
+    pricePerGuest = Number(service.price_per_guest_at_booking);
   }
   
+  // Se encontrou um preço por convidado, calcular (assumindo todos como full_guests para compatibilidade)
+  if (pricePerGuest > 0 && guestCount > 0) {
+    return pricePerGuest * guestCount;
+  }
+  
+  // Prioridade 3: Se tem preço base definido
   if (service.service?.base_price && service.service.base_price > 0) {
     return service.service.base_price;
   }
   
-  // Fallback para campos de booking
-  if (service.price_per_guest_at_booking && guestCount > 0) {
-    return service.price_per_guest_at_booking * guestCount;
-  }
-  
-  // Preços estimados baseados na categoria como fallback
+  // Fallback: Preços estimados baseados na categoria
   const categoryPrices: Record<string, number> = {
     'buffet': 45,
     'bar': 25,
