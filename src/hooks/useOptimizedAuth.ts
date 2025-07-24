@@ -31,23 +31,15 @@ export function useOptimizedAuth() {
   });
   
   const supabase = createClient();
-  const initializingRef = useRef(false);
   const mountedRef = useRef(true);
-  const lastSessionCheckRef = useRef(Date.now());
+  const loadingTimeoutRef = useRef<NodeJS.Timeout>();
+  const initializingRef = useRef(false);
 
   // Função segura para atualizar estado
   const safeSetState = useCallback((updates: Partial<AuthState>) => {
     if (mountedRef.current) {
       setState(prev => ({ ...prev, ...updates }));
     }
-  }, []);
-
-  // Função para verificar se precisamos recarregar a sessão
-  const shouldReloadSession = useCallback(() => {
-    const now = Date.now();
-    const timeSinceLastCheck = now - lastSessionCheckRef.current;
-    // Recarregar se passou mais de 5 segundos desde a última verificação
-    return timeSinceLastCheck > 5000;
   }, []);
 
   // Função para buscar dados do usuário
@@ -77,12 +69,23 @@ export function useOptimizedAuth() {
   const handleSessionChange = useCallback(async (session: any) => {
     if (!mountedRef.current) return;
 
+    // Limpar qualquer timeout de loading anterior
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+    }
+
+    // Definir um timeout para garantir que o loading não fique preso
+    loadingTimeoutRef.current = setTimeout(() => {
+      if (mountedRef.current) {
+        safeSetState({ loading: false, isInitialized: true });
+      }
+    }, 3000); // 3 segundos de timeout máximo
+
     if (session?.user) {
-      // Primeiro, definir o usuário e marcar como inicializado
+      // Primeiro, definir o usuário
       safeSetState({
         user: session.user,
-        loading: true, // Mantém loading true até carregar os dados do usuário
-        isInitialized: true
+        loading: true
       });
 
       // Depois, buscar os dados do usuário
@@ -92,7 +95,8 @@ export function useOptimizedAuth() {
         safeSetState({
           userData,
           loading: false,
-          error: userData ? null : 'Erro ao carregar dados do usuário'
+          error: userData ? null : 'Erro ao carregar dados do usuário',
+          isInitialized: true
         });
       }
     } else {
@@ -104,8 +108,6 @@ export function useOptimizedAuth() {
         isInitialized: true
       });
     }
-
-    lastSessionCheckRef.current = Date.now();
   }, [fetchUserData, safeSetState]);
 
   // Inicialização
@@ -113,9 +115,9 @@ export function useOptimizedAuth() {
     mountedRef.current = true;
 
     const initializeAuth = async () => {
-      if (initializingRef.current || !shouldReloadSession()) return;
+      if (initializingRef.current) return;
       initializingRef.current = true;
-      
+
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
         
@@ -166,9 +168,12 @@ export function useOptimizedAuth() {
 
     return () => {
       mountedRef.current = false;
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
       subscription.unsubscribe();
     };
-  }, [supabase, handleSessionChange, safeSetState, shouldReloadSession]);
+  }, [supabase, handleSessionChange, safeSetState]);
 
   return {
     ...state,

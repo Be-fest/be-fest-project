@@ -14,7 +14,7 @@ interface ClientLayoutProps {
 export function ClientLayout({ children }: ClientLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const { user, userData, loading, error } = useOptimizedAuth();
+  const { user, userData, loading, error, isInitialized } = useOptimizedAuth();
 
   // Efeito para montar o componente
   useEffect(() => {
@@ -52,7 +52,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
   }
 
   // Mostrar loading apenas durante a autenticação inicial
-  if (loading) {
+  if (!isInitialized || (loading && !user)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
         <LoadingSpinner />

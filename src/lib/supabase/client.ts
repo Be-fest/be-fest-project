@@ -1,8 +1,12 @@
 import { createBrowserClient } from '@supabase/ssr';
 import { Database } from '@/types/database';
 
+let supabaseClient: ReturnType<typeof createBrowserClient<Database>> | null = null;
+
 export const createClient = () => {
-    return createBrowserClient<Database>(
+    if (supabaseClient) return supabaseClient;
+
+    supabaseClient = createBrowserClient<Database>(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         {
@@ -10,11 +14,33 @@ export const createClient = () => {
                 persistSession: true,
                 autoRefreshToken: true,
                 detectSessionInUrl: true,
-                flowType: 'pkce'
-            }
+                flowType: 'pkce',
+                storageKey: 'sb-auth-token',
+                storage: {
+                    getItem: (key) => {
+                        if (typeof window === 'undefined') return null;
+                        return window.localStorage.getItem(key);
+                    },
+                    setItem: (key, value) => {
+                        if (typeof window === 'undefined') return;
+                        window.localStorage.setItem(key, value);
+                    },
+                    removeItem: (key) => {
+                        if (typeof window === 'undefined') return;
+                        window.localStorage.removeItem(key);
+                    },
+                },
+            },
+            global: {
+                headers: {
+                    'Cache-Control': 'no-store, no-cache, must-revalidate',
+                },
+            },
         }
     );
-}
+
+    return supabaseClient;
+};
 
 export const supabase = createClient();
 
