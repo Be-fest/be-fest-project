@@ -51,7 +51,6 @@ export default function PartyDetailsPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [selectedServicesForPayment, setSelectedServicesForPayment] = useState<Set<string>>(new Set());
   const [selectAllServices, setSelectAllServices] = useState(false);
-  const [initialized, setInitialized] = useState(false);
 
   // Função para buscar dados do evento
   const fetchEventData = useCallback(async () => {
@@ -97,19 +96,16 @@ export default function PartyDetailsPage() {
       setEventServices([]);
     } finally {
       setLoading(false);
-      setInitialized(true);
     }
   }, [eventId]);
 
   // Effect para carregar dados iniciais
   useEffect(() => {
-    if (!initialized) {
-      fetchEventData();
-    }
-  }, [fetchEventData, initialized]);
+    fetchEventData();
+  }, [fetchEventData]);
 
-  // Não renderizar nada até a inicialização
-  if (!initialized && loading) {
+  // Mostrar loading apenas durante a primeira carga
+  if (loading && !event && !error) {
     return (
       <ClientLayout>
         <div className="animate-pulse">

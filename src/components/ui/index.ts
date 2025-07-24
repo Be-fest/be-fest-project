@@ -9,7 +9,7 @@ export { ServicesSkeleton } from './ServicesSkeleton';
 export { CategoriesSkeleton } from './CategoriesSkeleton';
 export { DashboardSkeleton } from './DashboardSkeleton';
 export { ProviderProfileSkeleton } from './ProviderProfileSkeleton';
-export * from './AuthLoadingSpinner';
 export * from './SimpleToast';
 export { TipTapEditor } from './TipTapEditor';
 export { SafeHTML } from './SafeHTML';
+export { LoadingSpinner } from './LoadingSpinner';

@@ -33,12 +33,21 @@ export function useOptimizedAuth() {
   const supabase = createClient();
   const initializingRef = useRef(false);
   const mountedRef = useRef(true);
+  const lastSessionCheckRef = useRef(Date.now());
 
   // Função segura para atualizar estado
   const safeSetState = useCallback((updates: Partial<AuthState>) => {
     if (mountedRef.current) {
       setState(prev => ({ ...prev, ...updates }));
     }
+  }, []);
+
+  // Função para verificar se precisamos recarregar a sessão
+  const shouldReloadSession = useCallback(() => {
+    const now = Date.now();
+    const timeSinceLastCheck = now - lastSessionCheckRef.current;
+    // Recarregar se passou mais de 5 segundos desde a última verificação
+    return timeSinceLastCheck > 5000;
   }, []);
 
   // Função para buscar dados do usuário
@@ -72,16 +81,17 @@ export function useOptimizedAuth() {
       // Primeiro, definir o usuário e marcar como inicializado
       safeSetState({
         user: session.user,
-        loading: false,
+        loading: true, // Mantém loading true até carregar os dados do usuário
         isInitialized: true
       });
 
-      // Depois, buscar os dados do usuário em background
+      // Depois, buscar os dados do usuário
       const userData = await fetchUserData(session.user.id);
       
       if (mountedRef.current) {
         safeSetState({
           userData,
+          loading: false,
           error: userData ? null : 'Erro ao carregar dados do usuário'
         });
       }
@@ -94,6 +104,8 @@ export function useOptimizedAuth() {
         isInitialized: true
       });
     }
+
+    lastSessionCheckRef.current = Date.now();
   }, [fetchUserData, safeSetState]);
 
   // Inicialização
@@ -101,7 +113,7 @@ export function useOptimizedAuth() {
     mountedRef.current = true;
 
     const initializeAuth = async () => {
-      if (initializingRef.current) return;
+      if (initializingRef.current || !shouldReloadSession()) return;
       initializingRef.current = true;
       
       try {
@@ -142,6 +154,12 @@ export function useOptimizedAuth() {
         if (!mountedRef.current) return;
         
         console.log('Auth state changed:', event);
+        
+        // Reset do estado de inicialização para eventos importantes
+        if (['SIGNED_IN', 'SIGNED_OUT', 'USER_UPDATED'].includes(event)) {
+          initializingRef.current = false;
+        }
+        
         await handleSessionChange(session);
       }
     );
@@ -150,7 +168,7 @@ export function useOptimizedAuth() {
       mountedRef.current = false;
       subscription.unsubscribe();
     };
-  }, [supabase, handleSessionChange, safeSetState]);
+  }, [supabase, handleSessionChange, safeSetState, shouldReloadSession]);
 
   return {
     ...state,

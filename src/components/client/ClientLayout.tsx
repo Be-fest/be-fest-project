@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MdMenu, MdClose, MdNotifications } from 'react-icons/md';
 import { ClientSidebar } from './ClientSidebar';
 import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
+import { LoadingSpinner } from '@/components/ui';
 
 interface ClientLayoutProps {
   children: React.ReactNode;
@@ -54,10 +55,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-[#F71875] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando...</p>
-        </div>
+        <LoadingSpinner />
       </div>
     );
   }

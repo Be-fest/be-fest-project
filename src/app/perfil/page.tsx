@@ -41,7 +41,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { ClientLayout } from '@/components/client/ClientLayout';
 import { NewPartyModal } from '@/components/NewPartyModal';
 import { getClientEventsAction, deleteEventAction } from '@/lib/actions/events';
-import { Event, EventStatus } from '@/types/database';
+import { getClientEventServicesAction } from '@/lib/actions/event-services';
+import { Event, EventStatus, EventServiceWithDetails } from '@/types/database';
 import ProfileClient from '@/components/profile/ProfileClient';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { useToast } from '@/hooks/useToast';
@@ -344,6 +345,7 @@ const DashboardTab = () => {
 // Componente Minhas Festas
 const MinhasFestasTab = () => {
   const [events, setEvents] = useState<Event[]>([]);
+  const [eventServices, setEventServices] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [isNewPartyModalOpen, setNewPartyModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -358,14 +360,27 @@ const MinhasFestasTab = () => {
     setLoading(true);
     
     try {
-      const result = await getClientEventsAction();
-      console.log('📋 [PROFILE] Resultado do carregamento:', result);
+      const [eventsResult, servicesResult] = await Promise.all([
+        getClientEventsAction(),
+        getClientEventServicesAction()
+      ]);
       
-      if (result.success && result.data) {
-        console.log('✅ [PROFILE] Eventos carregados com sucesso:', result.data.length, 'eventos');
-        setEvents(result.data);
+      console.log('📋 [PROFILE] Resultado do carregamento:', eventsResult);
+      
+      if (eventsResult.success && eventsResult.data) {
+        console.log('✅ [PROFILE] Eventos carregados com sucesso:', eventsResult.data.length, 'eventos');
+        setEvents(eventsResult.data);
+        
+        // Contar serviços por evento
+        if (servicesResult.success && servicesResult.data) {
+          const serviceCount: Record<string, number> = {};
+          servicesResult.data.forEach((service: EventServiceWithDetails) => {
+            serviceCount[service.event_id] = (serviceCount[service.event_id] || 0) + 1;
+          });
+          setEventServices(serviceCount);
+        }
       } else {
-        console.error('❌ [PROFILE] Erro ao carregar eventos:', result.error);
+        console.error('❌ [PROFILE] Erro ao carregar eventos:', eventsResult.error);
         setEvents([]);
       }
     } catch (error) {
@@ -540,6 +555,26 @@ const MinhasFestasTab = () => {
     }
   ];
 
+  // Mostrar loading apenas durante o carregamento inicial dos dados
+  if (loading && !events.length) {
+    return (
+      <div className="animate-pulse space-y-8">
+        <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-white rounded-lg p-6 shadow-sm">
+              <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
+              <div className="space-y-3">
+                <div className="h-4 bg-gray-200 rounded w-full"></div>
+                <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="space-y-8">
@@ -712,12 +747,7 @@ const MinhasFestasTab = () => {
                   <span className="font-medium">{formatDate(event.event_date)}</span>
                 </div>
               </div>
-              <div className="absolute top-4 right-4">
-                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(event.status)}`}>
-                  {getStatusIcon(event.status)}
-                  {getStatusLabel(event.status)}
-                </div>
-              </div>
+             
             </div>
 
             <div className="p-6">
@@ -741,7 +771,7 @@ const MinhasFestasTab = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm text-gray-500">
                   <MdWorkOutline className="text-lg" />
-                  <span>0 serviços contratados</span>
+                  <span>{eventServices[event.id] || 0} serviços contratados</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Link
@@ -751,24 +781,7 @@ const MinhasFestasTab = () => {
                     <MdListAlt className="text-lg" />
                     Ver Detalhes
                   </Link>
-                  {(event.status === 'draft' || event.status === 'cancelled' || event.status === null) ? (
-                    <button
-                      onClick={() => handleDeleteEvent(event)}
-                      className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-                    >
-                      <MdDelete className="text-lg" />
-                      Excluir
-                    </button>
-                  ) : (
-                    <button
-                      disabled
-                      className="bg-gray-300 text-gray-500 px-4 py-2 rounded-lg text-sm font-medium cursor-not-allowed flex items-center gap-2"
-                      title="Não é possível excluir festas publicadas ou completas"
-                    >
-                      <MdDelete className="text-lg" />
-                      Excluir
-                    </button>
-                  )}
+                  
                 </div>
               </div>
             </div>
