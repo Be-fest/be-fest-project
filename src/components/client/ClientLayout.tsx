@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MdMenu, MdClose, MdNotifications } from 'react-icons/md';
+import { MdMenu, MdClose } from 'react-icons/md';
 import { ClientSidebar } from './ClientSidebar';
 import { useAuth } from '@/hooks/useAuth';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 interface ClientLayoutProps {
   children: React.ReactNode;
@@ -17,26 +18,22 @@ export function ClientLayout({ children }: ClientLayoutProps) {
 
   useEffect(() => {
     setMounted(true);
-    
     // Close sidebar on escape key
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && sidebarOpen) {
         setSidebarOpen(false);
       }
     };
-
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [sidebarOpen]);
 
-  // Prevent body scroll when sidebar is open on mobile
   useEffect(() => {
     if (sidebarOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
     }
-
     return () => {
       document.body.style.overflow = 'unset';
     };
@@ -50,8 +47,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
     );
   }
 
-  const userInitial = userData?.full_name ? userData.full_name.charAt(0).toUpperCase() : 
-                     user?.email ? user.email.charAt(0).toUpperCase() : 'U';
+  const userInitial = userData?.full_name ? userData.full_name.charAt(0).toUpperCase() : user?.email ? user.email.charAt(0).toUpperCase() : 'U';
   const userName = userData?.full_name || user?.email?.split('@')[0] || 'Usuário';
 
   return (
@@ -118,7 +114,6 @@ export function ClientLayout({ children }: ClientLayoutProps) {
               >
                 <MdMenu className="text-xl text-gray-700" />
               </button>
-              
               <div className="hidden sm:block">
                 <h1 className="text-xl font-bold bg-gradient-to-r from-[#520029] to-[#F71875] bg-clip-text text-transparent">
                   Área do Cliente
@@ -126,7 +121,6 @@ export function ClientLayout({ children }: ClientLayoutProps) {
                 <p className="text-sm text-gray-500">Bem-vindo de volta, {userName.split(' ')[0]}!</p>
               </div>
             </div>
-
             {/* Right side - User info */}
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-100 transition-all duration-200 cursor-pointer">
@@ -141,31 +135,25 @@ export function ClientLayout({ children }: ClientLayoutProps) {
             </div>
           </div>
         </header>
-
         {/* Main Content */}
-        <div className="container mx-auto">
-          {/* Content Wrapper */}
-          <div className="px-4 sm:px-6 lg:px-8 py-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="max-w-6xl mx-auto"
-            >
-              {/* Content Area with better spacing */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 min-h-[calc(100vh-12rem)] overflow-hidden">
-                <div className="p-8">
-                  {children}
-                </div>
+        <div className="px-4 sm:px-6 lg:px-8 py-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="max-w-6xl mx-auto"
+          >
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 min-h-[calc(100vh-12rem)] overflow-hidden">
+              <div className="p-8">
+                {children}
               </div>
-            </motion.div>
-          </div>
-
-          {/* Decorative background elements */}
-          <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-            <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-r from-purple-200/30 to-pink-200/30 rounded-full blur-3xl"></div>
-            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-to-r from-rose-200/20 to-purple-200/20 rounded-full blur-3xl"></div>
-          </div>
+            </div>
+          </motion.div>
+        </div>
+        {/* Decorative background elements */}
+        <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-r from-purple-200/30 to-pink-200/30 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-to-r from-rose-200/20 to-purple-200/20 rounded-full blur-3xl"></div>
         </div>
       </main>
     </div>
