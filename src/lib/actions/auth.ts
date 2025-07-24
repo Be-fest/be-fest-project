@@ -313,7 +313,7 @@ export async function loginAction(formData: FormData): Promise<ActionResult> {
     revalidatePath('/', 'layout')
 
     // Determine redirect URL based on user role
-    let redirectTo = '/dashboard'
+    let redirectTo = '/perfil'
     if (user.role === 'provider') {
       redirectTo = '/dashboard/prestador'
     } else if (user.role === 'admin') {
