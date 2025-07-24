@@ -136,22 +136,6 @@ function UserDropdown({ user, userType }: UserDropdownProps) {
                   <div className="text-xs text-gray-500">Gerencie seu perfil</div>
                 </div>
               </Link>
-
-              {userType === 'service_provider' && (
-                <Link
-                  href="/dashboard/prestador"
-                  onClick={() => setIsDropdownOpen(false)}
-                  className="flex items-center space-x-4 px-5 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-[#FF0080]/5 hover:to-[#A502CA]/5 hover:text-[#FF0080] transition-all duration-200 group mx-2 rounded-xl"
-                >
-                  <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 group-hover:bg-[#FF0080]/10 transition-colors">
-                    <MdDashboard className="text-lg group-hover:text-[#FF0080]" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-medium">Dashboard</div>
-                    <div className="text-xs text-gray-500">Área do prestador</div>
-                  </div>
-                </Link>
-              )}
             </div>
 
             <div className="border-t border-gray-100 p-3">
@@ -180,10 +164,6 @@ export function Header() {
   
   if (pathname?.startsWith('/prestadores')) {
     return <ProviderHeader />;
-  }
-  
-  if (pathname?.startsWith('/dashboard/prestador')) {
-    return null; // Não renderizar header, pois o ProviderLayout já tem seu próprio
   }
   
   if (pathname?.startsWith('/admin')) {
@@ -321,23 +301,21 @@ function HomeHeader() {
             </ScrollLink>
             {user ? (
               <>
-                {userType === 'service_provider' && (
-                  <Link 
-                    href="/dashboard/prestador" 
-                    className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
-                  >
-                    Dashboard
-                  </Link>
-                )}
+                <Link 
+                  href="/perfil"
+                  className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
+                >
+                  Minhas Festas
+                </Link>
               </>
             ) : (
               <>
                 <Link 
-                  href="/minhas-festas"
+                  href="/perfil"
                   onClick={() => setIsMenuOpen(false)}
                   className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
                 >
-                  New Fest
+                  Minhas Festas
                 </Link>
                 <ScrollLink 
                   to="contatos" 
@@ -431,15 +409,6 @@ function HomeHeader() {
             </ScrollLink>
             {user ? (
               <>
-                {userType === 'service_provider' && (
-                  <Link 
-                    href="/dashboard/prestador" 
-                    className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Dashboard
-                  </Link>
-                )}
                 <Link 
                   href="/perfil" 
                   className="flex items-center space-x-2 text-gray-600 hover:text-[#FF0080] transition-colors py-2"
@@ -548,10 +517,10 @@ function ProviderHeader() {
           {user && userType === 'service_provider' ? (
             <>
               <Link 
-                href="/dashboard/prestador"
+                href="/perfil"
                 className="text-gray-600 hover:text-[#A502CA] transition-colors font-poppins"
               >
-                Dashboard
+                Minha Área
               </Link>
               <Link 
                 href="/"

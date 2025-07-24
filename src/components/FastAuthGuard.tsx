@@ -15,7 +15,7 @@ export function FastAuthGuard({
   requiredRole, 
   redirectTo = '/auth/login' 
 }: FastAuthGuardProps) {
-  const { user, userRole, loading, isAuthenticated } = useOptimizedAuth(requiredRole);
+  const { user, userData, loading, isAuthenticated } = useOptimizedAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -26,11 +26,11 @@ export function FastAuthGuard({
       return;
     }
 
-    if (requiredRole && userRole !== requiredRole) {
+    if (requiredRole && userData?.role !== requiredRole) {
       router.push('/acesso-negado');
       return;
     }
-  }, [isAuthenticated, userRole, requiredRole, loading, router, redirectTo]);
+  }, [isAuthenticated, userData?.role, requiredRole, loading, router, redirectTo]);
 
   if (loading) {
     return (
@@ -40,7 +40,7 @@ export function FastAuthGuard({
     );
   }
 
-  if (!isAuthenticated || (requiredRole && userRole !== requiredRole)) {
+  if (!isAuthenticated || (requiredRole && userData?.role !== requiredRole)) {
     return null;
   }
 

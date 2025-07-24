@@ -14,7 +14,6 @@ import {
   MdDownload
 } from 'react-icons/md';
 import { ClientLayout } from '@/components/client/ClientLayout';
-import { ClientAuthGuard } from '@/components/ClientAuthGuard';
 
 export default function HistoricoPage() {
   const pastEvents = [
@@ -78,9 +77,8 @@ export default function HistoricoPage() {
   };
 
   return (
-    <ClientAuthGuard requiredRole="client">
-      <ClientLayout>
-        <div className="space-y-8">
+    <ClientLayout>
+      <div className="space-y-8">
           {/* Header */}
           <div className="text-center space-y-4">
             <h1 className="text-3xl font-bold text-gray-900">
@@ -244,6 +242,5 @@ export default function HistoricoPage() {
           )}
         </div>
       </ClientLayout>
-    </ClientAuthGuard>
   );
 } 

@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { MdTrendingUp, MdSecurity, MdSupport } from 'react-icons/md';
+import { MdTrendingUp, MdSecurity, MdSupport, MdDashboard } from 'react-icons/md';
 
 export function ProviderCTA() {
   return (
@@ -40,13 +40,14 @@ export function ProviderCTA() {
                 </motion.button>
               </Link>
               
-              <Link href="/dashboard/prestador" className="w-full md:w-auto">
+              <Link href="/perfil" className="w-full md:w-auto">
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="w-full md:w-auto border-2 border-white text-white hover:bg-white hover:text-[#520029] px-6 md:px-8 py-3 md:py-4 rounded-full font-bold text-base md:text-lg transition-all duration-300"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full bg-gradient-to-r from-[#A502CA] to-[#8B0A9E] hover:from-[#8B0A9E] hover:to-[#7A0A8B] text-white px-8 py-4 rounded-xl font-semibold inline-flex items-center justify-center gap-3 shadow-lg shadow-purple-500/25 transition-all duration-200"
                 >
-                  Ver Dashboard
+                  <MdDashboard className="text-xl" />
+                  Acessar Minha Área
                 </motion.button>
               </Link>
             </div>

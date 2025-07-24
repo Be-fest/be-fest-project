@@ -29,8 +29,8 @@ export function PaymentForm({ services, totalValue, onSubmit }: PaymentFormProps
   return (
     <div className="w-full space-y-6 md:space-y-8">
       <Link
-        href="/minhas-festas"
-        className="inline-block mb-4 md:mb-6"
+        href={`/minhas-festas/${eventId}`}
+        className="text-gray-600 hover:text-gray-800 transition-colors"
       >
         <motion.div
           whileHover={{ x: -5 }}

@@ -1,104 +1,163 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
 
-interface OptimizedAuthState {
-  user: User | null;
-  userRole: string | null;
-  loading: boolean;
-  isAuthenticated: boolean;
+interface UserData {
+  id: string;
+  role: string;
+  full_name: string | null;
+  email: string | null;
+  organization_name: string | null;
+  profile_image: string | null;
 }
 
-export function useOptimizedAuth(requiredRole?: string) {
-  const [state, setState] = useState<OptimizedAuthState>({
+interface AuthState {
+  user: User | null;
+  userData: UserData | null;
+  loading: boolean;
+  error: string | null;
+  isInitialized: boolean;
+}
+
+export function useOptimizedAuth() {
+  const [state, setState] = useState<AuthState>({
     user: null,
-    userRole: null,
+    userData: null,
     loading: true,
-    isAuthenticated: false
+    error: null,
+    isInitialized: false
   });
-
-  const router = useRouter();
+  
   const supabase = createClient();
+  const initializingRef = useRef(false);
+  const mountedRef = useRef(true);
 
-  const checkAuth = useCallback(async () => {
+  // Função segura para atualizar estado
+  const safeSetState = useCallback((updates: Partial<AuthState>) => {
+    if (mountedRef.current) {
+      setState(prev => ({ ...prev, ...updates }));
+    }
+  }, []);
+
+  // Função para buscar dados do usuário
+  const fetchUserData = useCallback(async (userId: string): Promise<UserData | null> => {
+    if (!mountedRef.current) return null;
+    
     try {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      if (error || !session?.user) {
-        setState({
-          user: null,
-          userRole: null,
-          loading: false,
-          isAuthenticated: false
-        });
-        return false;
-      }
-
-      // Se não precisar do role, não fazer query desnecessária
-      if (!requiredRole) {
-        setState({
-          user: session.user,
-          userRole: 'client', // assumir client por padrão
-          loading: false,
-          isAuthenticated: true
-        });
-        return true;
-      }
-
-      // Só buscar role se necessário
-      const { data: userData } = await supabase
+      const { data, error } = await supabase
         .from('users')
-        .select('role')
-        .eq('id', session.user.id)
+        .select('id, role, full_name, email, organization_name, profile_image')
+        .eq('id', userId)
         .single();
 
-      const userRole = userData?.role || 'client';
-      
-      setState({
-        user: session.user,
-        userRole,
-        loading: false,
-        isAuthenticated: true
-      });
+      if (error) {
+        console.error('Erro ao buscar dados do usuário:', error);
+        return null;
+      }
 
-      return true;
+      return data;
     } catch (error) {
-      setState({
-        user: null,
-        userRole: null,
-        loading: false,
-        isAuthenticated: false
-      });
-      return false;
+      console.error('Erro na requisição de dados do usuário:', error);
+      return null;
     }
-  }, [supabase, requiredRole]);
+  }, [supabase]);
 
+  // Função para processar mudança de sessão
+  const handleSessionChange = useCallback(async (session: any) => {
+    if (!mountedRef.current) return;
+
+    if (session?.user) {
+      // Primeiro, definir o usuário e marcar como inicializado
+      safeSetState({
+        user: session.user,
+        loading: false,
+        isInitialized: true
+      });
+
+      // Depois, buscar os dados do usuário em background
+      const userData = await fetchUserData(session.user.id);
+      
+      if (mountedRef.current) {
+        safeSetState({
+          userData,
+          error: userData ? null : 'Erro ao carregar dados do usuário'
+        });
+      }
+    } else {
+      safeSetState({
+        user: null,
+        userData: null,
+        loading: false,
+        error: null,
+        isInitialized: true
+      });
+    }
+  }, [fetchUserData, safeSetState]);
+
+  // Inicialização
   useEffect(() => {
-    checkAuth();
+    mountedRef.current = true;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (event === 'SIGNED_OUT' || !session) {
-          setState({
+    const initializeAuth = async () => {
+      if (initializingRef.current) return;
+      initializingRef.current = true;
+      
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Erro ao verificar sessão:', error);
+          safeSetState({
             user: null,
-            userRole: null,
+            userData: null,
             loading: false,
-            isAuthenticated: false
+            error: 'Erro ao verificar autenticação',
+            isInitialized: true
           });
-        } else if (event === 'SIGNED_IN' && session) {
-          checkAuth();
+          return;
         }
+
+        await handleSessionChange(session);
+      } catch (error) {
+        console.error('Erro na inicialização:', error);
+        safeSetState({
+          user: null,
+          userData: null,
+          loading: false,
+          error: 'Erro inesperado',
+          isInitialized: true
+        });
+      } finally {
+        initializingRef.current = false;
+      }
+    };
+
+    initializeAuth();
+
+    // Listener para mudanças de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!mountedRef.current) return;
+        
+        console.log('Auth state changed:', event);
+        await handleSessionChange(session);
       }
     );
 
-    return () => subscription.unsubscribe();
-  }, [checkAuth, supabase]);
+    return () => {
+      mountedRef.current = false;
+      subscription.unsubscribe();
+    };
+  }, [supabase, handleSessionChange, safeSetState]);
 
   return {
     ...state,
-    checkAuth
+    isAuthenticated: !!state.user,
+    hasUserData: !!state.userData,
+    userDisplayName: state.userData?.full_name || state.user?.email?.split('@')[0] || 'Usuário',
+    userInitial: state.userData?.full_name?.charAt(0).toUpperCase() || 
+                 state.user?.email?.charAt(0).toUpperCase() || 'U'
   };
 } 

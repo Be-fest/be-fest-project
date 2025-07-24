@@ -217,11 +217,11 @@ export default function ServiceDetailsPage() {
           {/* Botão Voltar */}
           <div className="mb-6">
             <Link
-              href="/servicos"
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
+              href="/perfil"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 border-2 border-[#A502CA] text-[#A502CA] rounded-lg hover:bg-[#A502CA] hover:text-white transition-colors font-medium"
             >
               <MdArrowBack className="text-xl" />
-              Voltar aos Serviços
+              Voltar para Minhas Festas
             </Link>
           </div>
 

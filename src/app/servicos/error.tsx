@@ -35,11 +35,11 @@ export default function ServicosError({
               Tentar Novamente
             </button>
             <Link
-              href="/minhas-festas"
+              href="/perfil"
               className="inline-flex items-center justify-center gap-2 px-6 py-3 border-2 border-[#A502CA] text-[#A502CA] rounded-lg hover:bg-[#A502CA] hover:text-white transition-colors font-medium"
             >
               <MdArrowBack className="text-xl" />
-              Voltar para Lista de Festas
+              Voltar para Minhas Festas
             </Link>
           </div>
         </div>

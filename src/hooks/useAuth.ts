@@ -33,52 +33,81 @@ export function useAuth() {
   const toast = useToastGlobal();
   const supabase = createClient();
   
-  // Ref para prevenir múltiplos toasts de sessão expirada
   const sessionExpiredToastShownRef = useRef(false);
+  const sessionCheckedRef = useRef(false);
+  const mountedRef = useRef(true);
+
+  // Função para atualizar estado com segurança
+  const safeSetState = useCallback((updates: {
+    user?: User | null;
+    userData?: UserData | null;
+    loading?: boolean;
+    error?: string | null;
+  }) => {
+    if (mountedRef.current) {
+      if ('user' in updates && updates.user !== undefined) setUser(updates.user);
+      if ('userData' in updates && updates.userData !== undefined) setUserData(updates.userData);
+      if ('loading' in updates && updates.loading !== undefined) setLoading(updates.loading);
+      if ('error' in updates && updates.error !== undefined) setError(updates.error);
+    }
+  }, []);
+
+  // Função para buscar dados do usuário
+  const fetchUserData = useCallback(async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, role, full_name, email, organization_name, profile_image')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+      safeSetState({ userData: data });
+      return data;
+    } catch (error) {
+      console.error('Erro ao buscar dados do usuário:', error);
+      safeSetState({ error: 'Erro ao carregar dados do usuário' });
+      return null;
+    }
+  }, [supabase, safeSetState]);
 
   // Função para lidar com JWT expirado
   const handleJWTExpired = useCallback(async () => {
-    // Prevenir múltiplos toasts
-    if (sessionExpiredToastShownRef.current) {
-      return;
-    }
-    
+    if (sessionExpiredToastShownRef.current) return;
     sessionExpiredToastShownRef.current = true;
     
     try {
-      // Mostrar toast de sessão expirada
       toast.warning(
         'Sessão Expirada',
         'Sua sessão expirou. Você será redirecionado para fazer login novamente.',
         6000
       );
 
-      // Fazer logout
       await supabase.auth.signOut();
-      setUser(null);
-      setUserData(null);
-      setError(null);
+      safeSetState({
+        user: null,
+        userData: null,
+        error: null,
+        loading: false
+      });
       
-      // Aguardar um pouco para o usuário ver o toast
       setTimeout(() => {
-        // Usar localStorage como fallback
         if (typeof window !== 'undefined') {
           localStorage.setItem('sessionExpired', 'true');
           router.push('/auth/login');
         }
       }, 2000);
       
-    } catch (logoutError) {
-      console.error('Erro ao fazer logout após JWT expirado:', logoutError);
+    } catch (error) {
+      console.error('Erro ao fazer logout após JWT expirado:', error);
+      safeSetState({ loading: false });
       
-      // Mostrar toast de erro
       toast.error(
         'Erro de Sessão',
         'Houve um problema ao encerrar sua sessão. Você será redirecionado para o login.',
         4000
       );
       
-      // Forçar redirecionamento mesmo se o logout falhar
       setTimeout(() => {
         if (typeof window !== 'undefined') {
           localStorage.setItem('sessionExpired', 'true');
@@ -86,153 +115,99 @@ export function useAuth() {
         }
       }, 2000);
     }
-  }, [supabase, router, toast]);
-
-  // Função para buscar dados do usuário
-  const fetchUserData = useCallback(async (userId: string) => {
-    try {
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('id, role, full_name, email, organization_name, profile_image')
-        .eq('id', userId)
-        .single();
-
-      if (userError) {
-        console.error('Erro ao buscar dados do usuário:', userError);
-        
-        // Verificar se é erro de JWT expirado
-        if (isJWTExpiredError(userError)) {
-          await handleJWTExpired();
-          return;
-        }
-        
-        setError('Erro ao carregar dados do usuário');
-      } else {
-        setUserData(userData);
-      }
-    } catch (fetchError) {
-      console.error('Erro ao buscar dados do usuário:', fetchError);
-      
-      // Verificar se é erro de JWT expirado
-      if (isJWTExpiredError(fetchError)) {
-        await handleJWTExpired();
-        return;
-      }
-      
-      setError('Erro ao carregar dados do usuário');
-    }
-  }, [supabase, handleJWTExpired]);
+  }, [supabase, router, toast, safeSetState]);
 
   // Função para obter sessão inicial
   const getInitialSession = useCallback(async () => {
+    if (sessionCheckedRef.current) return;
+    sessionCheckedRef.current = true;
+
     try {
-      setLoading(true);
-      setError(null);
+      safeSetState({ loading: true, error: null });
 
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
-        // Verificar se é erro de JWT expirado
         if (isJWTExpiredError(sessionError)) {
           await handleJWTExpired();
           return;
         }
-        
-        setError('Erro ao verificar autenticação');
-        setLoading(false);
-        return;
+        throw sessionError;
       }
 
       if (session?.user) {
-        setUser(session.user);
+        safeSetState({ user: session.user });
         await fetchUserData(session.user.id);
-      } else {
-        setUser(null);
-        setUserData(null);
       }
     } catch (error) {
-      // Verificar se é erro de JWT expirado
-      if (isJWTExpiredError(error)) {
-        await handleJWTExpired();
-        return;
-      }
-      
-      setError('Erro inesperado na autenticação');
+      console.error('Erro ao verificar sessão:', error);
+      safeSetState({ error: 'Erro ao verificar autenticação' });
     } finally {
-      setLoading(false);
+      safeSetState({ loading: false });
     }
-  }, [supabase, handleJWTExpired, fetchUserData]);
+  }, [supabase, handleJWTExpired, fetchUserData, safeSetState]);
 
-  // Effect para sessão inicial
+  // Effect para sessão inicial e listener de mudanças
   useEffect(() => {
+    mountedRef.current = true;
     getInitialSession();
-  }, [getInitialSession]);
 
-  // Effect para escutar mudanças na autenticação
-  useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mountedRef.current) return;
+        
+        console.log('Auth state changed:', event, session?.user?.id);
+        
         if (event === 'SIGNED_OUT' || !session) {
-          setUser(null);
-          setUserData(null);
-          setError(null);
+          safeSetState({
+            user: null,
+            userData: null,
+            error: null,
+            loading: false
+          });
+          sessionCheckedRef.current = false;
         } else if (event === 'SIGNED_IN' && session) {
-          setUser(session.user);
+          safeSetState({ user: session.user });
           await fetchUserData(session.user.id);
-          // Reset flag para permitir novos toasts de sessão expirada
           sessionExpiredToastShownRef.current = false;
+          safeSetState({ loading: false });
+        } else if (event === 'TOKEN_REFRESHED' && session) {
+          safeSetState({ user: session.user });
+          sessionExpiredToastShownRef.current = false;
+          safeSetState({ loading: false });
         }
       }
     );
 
     return () => {
+      mountedRef.current = false;
       subscription.unsubscribe();
     };
-  }, [supabase, fetchUserData]);
+  }, [supabase, getInitialSession, fetchUserData, safeSetState]);
 
   const signOut = async () => {
     try {
-      setLoading(true);
+      safeSetState({ loading: true });
       await supabase.auth.signOut();
-      setUser(null);
-      setUserData(null);
-      setError(null);
+      safeSetState({
+        user: null,
+        userData: null,
+        error: null,
+        loading: false
+      });
+      sessionCheckedRef.current = false;
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
-      setError('Erro ao fazer logout');
-    } finally {
-      setLoading(false);
+      safeSetState({
+        error: 'Erro ao fazer logout',
+        loading: false
+      });
     }
   };
 
   const refreshUserData = async () => {
     if (!user) return;
-    
-    try {
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('id, role, full_name, email, organization_name, profile_image')
-        .eq('id', user.id)
-        .single();
-
-      if (userError) {
-        // Verificar se é erro de JWT expirado
-        if (isJWTExpiredError(userError)) {
-          await handleJWTExpired();
-          return;
-        }
-      } else {
-        setUserData(userData);
-      }
-    } catch (error) {
-      console.error('Erro ao atualizar dados do usuário:', error);
-      
-      // Verificar se é erro de JWT expirado
-      if (isJWTExpiredError(error)) {
-        await handleJWTExpired();
-        return;
-      }
-    }
+    await fetchUserData(user.id);
   };
 
   return {

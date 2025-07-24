@@ -133,7 +133,7 @@ export default function TestSessionPage() {
                   Testar /minhas-festas
                 </a>
                 <a href="/dashboard" className="block bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600">
-                  Testar /dashboard
+                  Ir para o Dashboard
                 </a>
               </div>
             </div>
