@@ -258,8 +258,7 @@ export async function createEventServiceAction(formData: FormData): Promise<Acti
       return { success: false, error: 'Erro ao solicitar orçamento' }
     }
 
-    revalidatePath('/minhas-festas')
-    revalidatePath(`/minhas-festas/${validatedData.event_id}`)
+    revalidatePath('/perfil')
     revalidatePath('/dashboard/prestador')
     
     return { success: true, data: eventService }
@@ -362,8 +361,7 @@ export async function updateEventServiceAction(formData: FormData): Promise<Acti
       return { success: false, error: 'Erro ao atualizar orçamento' }
     }
 
-    revalidatePath('/minhas-festas')
-    revalidatePath(`/minhas-festas/${existingEventService.event_id}`)
+    revalidatePath('/perfil')
     revalidatePath('/dashboard/prestador')
     
     return { success: true, data: eventService }
@@ -436,8 +434,7 @@ export async function updateEventServiceStatusAction(
       return { success: false, error: 'Erro ao atualizar status do orçamento' }
     }
 
-    revalidatePath('/minhas-festas')
-    revalidatePath(`/minhas-festas/${existingEventService.event_id}`)
+    revalidatePath('/perfil')
     revalidatePath('/dashboard/prestador')
     
     return { success: true, data: eventService }
@@ -489,7 +486,7 @@ export async function deleteEventServiceAction(eventServiceId: string): Promise<
       return { success: false, error: 'Erro ao cancelar solicitação' }
     }
 
-    revalidatePath('/minhas-festas')
+    revalidatePath('/perfil')
     revalidatePath('/dashboard/prestador')
     
     return { success: true }

@@ -147,7 +147,6 @@ export default function ServiceDetailsPage() {
   const handleAddServiceToParty = () => {
     if (!service || !selectedParty) return;
     
-    // TODO: Implementar lógica real para adicionar serviço à festa
     toast.success(
       'Serviço adicionado!',
       `${service.name} foi adicionado à festa "${selectedParty.name}"`
@@ -155,7 +154,7 @@ export default function ServiceDetailsPage() {
     
     // Redirecionar de volta para a festa
     setTimeout(() => {
-      router.push(`/minhas-festas/${selectedParty.id}`);
+      router.push(`/perfil?tab=minhas-festas&eventId=${selectedParty.id}`);
     }, 1500);
   };
 

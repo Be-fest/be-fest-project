@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { performLogout, emergencyLogout } from '@/lib/logout';
 
 export default function LogoutButton() {
-  const { userData } = useOptimizedAuth();
+  const { user } = useOptimizedAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
@@ -64,7 +64,7 @@ export default function LogoutButton() {
           {isLoggingOut ? 'Saindo...' : 'Sair'}
         </div>
         <div className="text-xs text-red-400">
-          {userData?.full_name ? `${userData.full_name}` : 'Fazer logout da conta'}
+          {user?.email ? `Fazer logout de ${user.email}` : 'Fazer logout da conta'}
         </div>
       </div>
     </button>

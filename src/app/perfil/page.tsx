@@ -51,6 +51,7 @@ import { useToast } from '@/hooks/useToast';
 import { PersonalInfoForm } from '@/components/profile/PersonalInfoForm';
 import { AddressForm } from '@/components/profile/AddressForm';
 import { PasswordForm } from '@/components/profile/PasswordForm';
+import { PartyDetailsTab } from '@/components/profile/PartyDetailsTab';
 
 interface Tab {
   id: string;
@@ -348,7 +349,7 @@ const DashboardTab = () => {
 };
 
 // Componente Minhas Festas
-const MinhasFestasTab = () => {
+const MinhasFestasTab = ({ onShowPartyDetails }: { onShowPartyDetails?: (eventId: string) => void }) => {
   const [events, setEvents] = useState<Event[]>([]);
   const [eventServices, setEventServices] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -779,13 +780,13 @@ const MinhasFestasTab = () => {
                   <span>{eventServices[event.id] || 0} serviços contratados</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Link
-                    href={`/minhas-festas/${event.id}`}
+                  <button
+                    onClick={() => onShowPartyDetails?.(event.id)}
                     className="bg-[#F71875] hover:bg-[#E6006F] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                   >
                     <MdListAlt className="text-lg" />
                     Ver Detalhes
-                  </Link>
+                  </button>
                   
                 </div>
               </div>
@@ -856,7 +857,7 @@ Esta ação não pode ser desfeita. Apenas festas em rascunho ou canceladas pode
 const ConfiguracoesTab = () => {
   const [loading, setLoading] = useState(true);
   const [activeForm, setActiveForm] = useState<'personal' | 'address' | 'password' | null>(null);
-  const { userData } = useOptimizedAuth();
+  const { user } = useOptimizedAuth();
 
   useEffect(() => {
     // Simular carregamento inicial
@@ -1078,19 +1079,37 @@ const ConfiguracoesTab = () => {
 // Componente principal
 function ProfilePageContent() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const { user, userData, loading } = useOptimizedAuth();
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const { user, loading } = useOptimizedAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
 
   useEffect(() => {
     const tab = searchParams.get('tab') || 'dashboard';
+    const eventId = searchParams.get('eventId');
+    
     setActiveTab(tab);
+    if (eventId) {
+      setSelectedEventId(eventId);
+    }
   }, [searchParams]);
 
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
+    setSelectedEventId(null); // Limpar seleção de evento ao mudar de tab
     const newUrl = tabId === 'dashboard' ? '/perfil' : `/perfil?tab=${tabId}`;
     router.push(newUrl);
+  };
+
+  const handleShowPartyDetails = (eventId: string) => {
+    setSelectedEventId(eventId);
+    setActiveTab('minhas-festas');
+    router.push(`/perfil?tab=minhas-festas&eventId=${eventId}`);
+  };
+
+  const handleBackToMinhasFestas = () => {
+    setSelectedEventId(null);
+    router.push('/perfil?tab=minhas-festas');
   };
 
   if (loading) {
@@ -1143,7 +1162,15 @@ function ProfilePageContent() {
       case 'dashboard':
         return <DashboardTab />;
       case 'minhas-festas':
-        return <MinhasFestasTab />;
+        if (selectedEventId) {
+          return (
+            <PartyDetailsTab 
+              eventId={selectedEventId} 
+              onBack={handleBackToMinhasFestas} 
+            />
+          );
+        }
+        return <MinhasFestasTab onShowPartyDetails={handleShowPartyDetails} />;
       case 'configuracoes':
         return <ConfiguracoesTab />;
       default:
