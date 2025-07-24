@@ -42,3 +42,39 @@ export interface UserSession {
   email: string;
   type: 'client' | 'service_provider';
 }
+
+export interface UserProfile {
+  id: string;
+  role: 'client' | 'provider' | 'admin';
+  full_name?: string;
+  email?: string;
+  organization_name?: string;
+  cnpj?: string;
+  whatsapp_number?: string;
+  logo_url?: string;
+  area_of_operation?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  postal_code?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UpdatePasswordData {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface UpdateProfileData {
+  full_name: string;
+  email: string;
+  whatsapp_number: string;
+}
+
+export interface UpdateAddressData {
+  address: string;
+  city: string;
+  state: string;
+  postal_code: string;
+}

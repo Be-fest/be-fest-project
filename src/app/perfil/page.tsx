@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import {
   MdDashboard,
@@ -35,9 +35,10 @@ import {
   MdStar,
   MdVisibility,
   MdDownload,
-  MdDelete
+  MdDelete,
+  MdClose
 } from 'react-icons/md';
-import { useAuth } from '@/hooks/useAuth';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { ClientLayout } from '@/components/client/ClientLayout';
 import { NewPartyModal } from '@/components/NewPartyModal';
 import { getClientEventsAction, deleteEventAction } from '@/lib/actions/events';
@@ -46,6 +47,9 @@ import { Event, EventStatus, EventServiceWithDetails } from '@/types/database';
 import ProfileClient from '@/components/profile/ProfileClient';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { useToast } from '@/hooks/useToast';
+import { PersonalInfoForm } from '@/components/profile/PersonalInfoForm';
+import { AddressForm } from '@/components/profile/AddressForm';
+import { PasswordForm } from '@/components/profile/PasswordForm';
 
 interface Tab {
   id: string;
@@ -850,6 +854,8 @@ Esta ação não pode ser desfeita. Apenas festas em rascunho ou canceladas pode
 // Componente Configurações
 const ConfiguracoesTab = () => {
   const [loading, setLoading] = useState(true);
+  const [activeForm, setActiveForm] = useState<'personal' | 'address' | 'password' | null>(null);
+  const { userData } = useOptimizedAuth();
 
   useEffect(() => {
     // Simular carregamento inicial
@@ -865,9 +871,24 @@ const ConfiguracoesTab = () => {
       title: 'Conta',
       icon: MdAccountCircle,
       items: [
-        { label: 'Informações Pessoais', description: 'Nome, email, telefone' },
-        { label: 'Endereço', description: 'Local padrão para eventos' },
-        { label: 'Senha', description: 'Alterar senha de acesso' }
+        { 
+          id: 'personal',
+          label: 'Informações Pessoais', 
+          description: 'Nome, email, telefone',
+          onClick: () => setActiveForm('personal')
+        },
+        { 
+          id: 'address',
+          label: 'Endereço', 
+          description: 'Local padrão para eventos',
+          onClick: () => setActiveForm('address')
+        },
+        { 
+          id: 'password',
+          label: 'Senha', 
+          description: 'Alterar senha de acesso',
+          onClick: () => setActiveForm('password')
+        }
       ]
     }
   ];
@@ -957,9 +978,10 @@ const ConfiguracoesTab = () => {
             </div>
             
             <div className="divide-y divide-gray-100">
-              {group.items.map((item, itemIndex) => (
+              {group.items.map((item) => (
                 <div
-                  key={item.label}
+                  key={item.id}
+                  onClick={item.onClick}
                   className="p-6 hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
@@ -1001,6 +1023,53 @@ const ConfiguracoesTab = () => {
           </button>
         </div>
       </div>
+
+      {/* Forms Modals */}
+      <AnimatePresence>
+        {activeForm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+            >
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    {activeForm === 'personal' && 'Informações Pessoais'}
+                    {activeForm === 'address' && 'Endereço'}
+                    {activeForm === 'password' && 'Alterar Senha'}
+                  </h2>
+                  <button
+                    onClick={() => setActiveForm(null)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <MdClose className="text-2xl" />
+                  </button>
+                </div>
+
+                {activeForm === 'personal' && (
+                  <PersonalInfoForm onClose={() => setActiveForm(null)} />
+                )}
+
+                {activeForm === 'address' && (
+                  <AddressForm onClose={() => setActiveForm(null)} />
+                )}
+
+                {activeForm === 'password' && (
+                  <PasswordForm onClose={() => setActiveForm(null)} />
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -1008,7 +1077,7 @@ const ConfiguracoesTab = () => {
 // Componente principal
 function ProfilePageContent() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const { user, userData, loading } = useAuth();
+  const { user, userData, loading } = useOptimizedAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
 

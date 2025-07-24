@@ -13,6 +13,14 @@ interface UserData {
   email: string | null;
   organization_name: string | null;
   profile_image: string | null;
+  whatsapp_number: string | null;
+  area_of_operation: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  postal_code: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 // Função para verificar se o erro é de JWT expirado
@@ -57,7 +65,22 @@ export function useAuth() {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('id, role, full_name, email, organization_name, profile_image')
+        .select(`
+          id, 
+          role, 
+          full_name, 
+          email, 
+          organization_name, 
+          profile_image,
+          whatsapp_number,
+          area_of_operation,
+          address,
+          city,
+          state,
+          postal_code,
+          created_at,
+          updated_at
+        `)
         .eq('id', userId)
         .single();
 
@@ -173,7 +196,12 @@ export function useAuth() {
           safeSetState({ loading: false });
         } else if (event === 'TOKEN_REFRESHED' && session) {
           safeSetState({ user: session.user });
+          await fetchUserData(session.user.id);
           sessionExpiredToastShownRef.current = false;
+          safeSetState({ loading: false });
+        } else if (event === 'USER_UPDATED' && session) {
+          safeSetState({ user: session.user });
+          await fetchUserData(session.user.id);
           safeSetState({ loading: false });
         }
       }

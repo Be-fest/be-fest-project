@@ -1,12 +1,12 @@
 'use client';
 
 import { MdExitToApp } from 'react-icons/md';
-import { useAuth } from '@/hooks/useAuth';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { useState } from 'react';
 import { performLogout, emergencyLogout } from '@/lib/logout';
 
 export default function LogoutButton() {
-  const { userData } = useAuth();
+  const { userData } = useOptimizedAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {

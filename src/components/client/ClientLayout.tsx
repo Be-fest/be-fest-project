@@ -14,7 +14,7 @@ interface ClientLayoutProps {
 export function ClientLayout({ children }: ClientLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const { user, userData, loading, error, isInitialized } = useOptimizedAuth();
+  const { user, userData, loading, error } = useOptimizedAuth();
 
   // Efeito para montar o componente
   useEffect(() => {
@@ -52,7 +52,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
   }
 
   // Mostrar loading apenas durante a autenticação inicial
-  if (!isInitialized || (loading && !user)) {
+  if (loading && !user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
         <LoadingSpinner />
@@ -134,7 +134,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
       </AnimatePresence>
 
       {/* Main content area */}
-      <div className="lg:ml-80 min-h-screen">
+      <main className="lg:pl-80">
         {/* Top Header Bar */}
         <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-200/50 shadow-sm">
           <div className="px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -172,7 +172,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
         </header>
 
         {/* Main Content */}
-        <main className="relative">
+        <div className="container mx-auto">
           {/* Content Wrapper */}
           <div className="px-4 sm:px-6 lg:px-8 py-8">
             <motion.div
@@ -195,8 +195,8 @@ export function ClientLayout({ children }: ClientLayoutProps) {
             <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-r from-purple-200/30 to-pink-200/30 rounded-full blur-3xl"></div>
             <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-to-r from-rose-200/20 to-purple-200/20 rounded-full blur-3xl"></div>
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 } 

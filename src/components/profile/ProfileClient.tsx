@@ -30,6 +30,7 @@ import { updateCompleteProfileAction, deleteAccountAction } from '@/lib/actions/
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
+import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 
 interface User {
   id: string;
@@ -44,12 +45,8 @@ interface User {
 interface Event {
   id: string;
   title: string;
-  description: string | null;
   event_date: string;
-  start_time: string | null;
   location: string | null;
-  budget: number | null;
-  guest_count: number | null;
   status: string;
   created_at: string;
 }
@@ -367,62 +364,71 @@ export default function ProfileClient({ user, events, stats }: ProfileClientProp
                 </button>
               </div>
             </div>
-            {events.length > 0 ? (
-              <div className="divide-y divide-gray-200">
-                {events.slice(0, 3).map((event) => (
-                  <div key={event.id} className="p-6 hover:bg-gradient-to-r hover:from-[#FF0080]/5 hover:to-[#A502CA]/5 transition-all duration-200 group">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-3">
-                          <div className="w-8 h-8 bg-gradient-to-r from-[#FF0080]/20 to-[#A502CA]/20 rounded-lg flex items-center justify-center">
-                            <MdCelebration className="text-sm text-[#FF0080]" />
+            
+            <div className="divide-y divide-gray-100">
+              {events.length > 0 ? (
+                events
+                  .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                  .slice(0, 3)
+                  .map((event, index) => (
+                    <motion.div
+                      key={event.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="p-6 hover:bg-gray-50 transition-all duration-200"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-12 h-12 bg-gradient-to-r from-[#FF0080]/10 to-[#A502CA]/10 rounded-xl flex items-center justify-center">
+                            <MdCelebration className="text-xl text-[#FF0080]" />
                           </div>
-                          <h4 className="font-semibold text-gray-900 text-lg">{event.title}</h4>
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(event.status)}`}>
-                            {getStatusText(event.status)}
-                          </span>
+                          <div>
+                            <h4 className="text-lg font-semibold text-gray-900 mb-1">
+                              {event.title}
+                            </h4>
+                            <div className="flex items-center space-x-4 text-sm text-gray-500">
+                              <div className="flex items-center">
+                                <MdCalendarToday className="mr-1" />
+                                {formatDate(event.event_date)}
+                              </div>
+                              {event.location && (
+                                <div className="flex items-center">
+                                  <MdLocationOn className="mr-1" />
+                                  {event.location}
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex items-center space-x-6 text-sm text-gray-500">
-                          <span className="flex items-center space-x-2">
-                            <MdCalendarToday className="text-[#FF0080]" />
-                            <span className="font-medium">{formatDate(event.event_date)}</span>
-                          </span>
-                          {event.location && (
-                            <span className="flex items-center space-x-2">
-                              <MdLocationOn className="text-[#FF0080]" />
-                              <span className="font-medium">{event.location}</span>
-                            </span>
-                          )}
-                        </div>
+                        <Link
+                          href={`/minhas-festas/${event.id}`}
+                          className="px-4 py-2 bg-[#FF0080]/10 text-[#FF0080] hover:bg-[#FF0080] hover:text-white rounded-xl font-medium transition-all duration-200"
+                        >
+                          Ver Detalhes
+                        </Link>
                       </div>
-                      <Link
-                        href={`/minhas-festas/${event.id}`}
-                        className="px-4 py-2 bg-[#FF0080]/10 text-[#FF0080] hover:bg-[#FF0080] hover:text-white rounded-xl font-medium transition-all duration-200 group-hover:shadow-md"
-                      >
-                        Ver Detalhes
-                      </Link>
-                    </div>
+                    </motion.div>
+                  ))
+              ) : (
+                <div className="p-12 text-center">
+                  <div className="w-24 h-24 bg-gradient-to-r from-[#FF0080]/10 to-[#A502CA]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <MdCelebration className="text-4xl text-[#FF0080]/50" />
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="p-12 text-center">
-                <div className="w-24 h-24 bg-gradient-to-r from-[#FF0080]/10 to-[#A502CA]/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <MdCelebration className="text-4xl text-[#FF0080]/50" />
+                  <h3 className="text-2xl font-bold text-gray-700 mb-3">Nenhuma festa criada</h3>
+                  <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                    Comece criando sua primeira festa e explore nossos incríveis serviços para tornar seu evento inesquecível!
+                  </p>
+                  <Link
+                    href="/servicos"
+                    className="inline-flex items-center space-x-2 bg-gradient-to-r from-[#FF0080] to-[#A502CA] text-white px-8 py-4 rounded-xl hover:shadow-lg transition-all duration-300 font-semibold"
+                  >
+                    <MdCelebration className="text-xl" />
+                    <span>Explorar Serviços</span>
+                  </Link>
                 </div>
-                <h3 className="text-2xl font-bold text-gray-700 mb-3">Nenhuma festa criada</h3>
-                <p className="text-gray-500 mb-6 max-w-md mx-auto">
-                  Comece criando sua primeira festa e explore nossos incríveis serviços para tornar seu evento inesquecível!
-                </p>
-                <Link
-                  href="/servicos"
-                  className="inline-flex items-center space-x-2 bg-gradient-to-r from-[#FF0080] to-[#A502CA] text-white px-8 py-4 rounded-xl hover:shadow-lg transition-all duration-300 font-semibold"
-                >
-                  <MdCelebration className="text-xl" />
-                  <span>Explorar Serviços</span>
-                </Link>
-              </div>
-            )}
+              )}
+            </div>
           </motion.div>
         </div>
       )}
@@ -450,86 +456,70 @@ export default function ProfileClient({ user, events, stats }: ProfileClientProp
               </Link>
             </div>
           </div>
-          {events.length > 0 ? (
-            <div className="divide-y divide-gray-100">
-              {events.map((event) => (
-                <motion.div
-                  key={event.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="p-6 hover:bg-gradient-to-r hover:from-[#FF0080]/5 hover:to-[#A502CA]/5 transition-all duration-200 group"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-4 mb-3">
-                        <div className="w-12 h-12 bg-gradient-to-r from-[#FF0080]/20 to-[#A502CA]/20 rounded-xl flex items-center justify-center">
+          
+          <div className="divide-y divide-gray-100">
+            {events.length > 0 ? (
+              events
+                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                .map((event, index) => (
+                  <motion.div
+                    key={event.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="p-6 hover:bg-gray-50 transition-all duration-200"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-12 h-12 bg-gradient-to-r from-[#FF0080]/10 to-[#A502CA]/10 rounded-xl flex items-center justify-center">
                           <MdCelebration className="text-xl text-[#FF0080]" />
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-3 mb-1">
-                            <h4 className="text-xl font-bold text-gray-900">{event.title}</h4>
-                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(event.status)}`}>
-                              {getStatusText(event.status)}
-                            </span>
+                        <div>
+                          <h4 className="text-lg font-semibold text-gray-900 mb-1">
+                            {event.title}
+                          </h4>
+                          <div className="flex items-center space-x-4 text-sm text-gray-500">
+                            <div className="flex items-center">
+                              <MdCalendarToday className="mr-1" />
+                              {formatDate(event.event_date)}
+                            </div>
+                            {event.location && (
+                              <div className="flex items-center">
+                                <MdLocationOn className="mr-1" />
+                                {event.location}
+                              </div>
+                            )}
                           </div>
-                          {event.description && (
-                            <p className="text-gray-600 text-sm">{event.description}</p>
-                          )}
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-                        <div className="flex items-center space-x-2 text-gray-600">
-                          <MdCalendarToday className="text-[#FF0080]" />
-                          <span className="font-medium">{formatDate(event.event_date)}</span>
-                        </div>
-                        {event.location && (
-                          <div className="flex items-center space-x-2 text-gray-600">
-                            <MdLocationOn className="text-[#FF0080]" />
-                            <span className="font-medium">{event.location}</span>
-                          </div>
-                        )}
-                        {event.guest_count && (
-                          <div className="flex items-center space-x-2 text-gray-600">
-                            <MdPeople className="text-[#FF0080]" />
-                            <span className="font-medium">{event.guest_count} convidados</span>
-                          </div>
-                        )}
-                        {event.budget && (
-                          <div className="flex items-center space-x-2 text-gray-600">
-                            <MdAttachMoney className="text-[#FF0080]" />
-                            <span className="font-medium">{formatCurrency(event.budget)}</span>
-                          </div>
-                        )}
-                      </div>
+                      <Link
+                        href={`/minhas-festas/${event.id}`}
+                        className="px-4 py-2 bg-[#FF0080]/10 text-[#FF0080] hover:bg-[#FF0080] hover:text-white rounded-xl font-medium transition-all duration-200"
+                      >
+                        Ver Detalhes
+                      </Link>
                     </div>
-                    <Link
-                      href={`/minhas-festas/${event.id}`}
-                      className="px-6 py-3 bg-[#FF0080]/10 text-[#FF0080] hover:bg-[#FF0080] hover:text-white rounded-xl font-medium transition-all duration-200 group-hover:shadow-md ml-6"
-                    >
-                      Ver Detalhes
-                    </Link>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          ) : (
-            <div className="p-12 text-center">
-              <div className="w-24 h-24 bg-gradient-to-r from-[#FF0080]/10 to-[#A502CA]/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <MdCelebration className="text-4xl text-[#FF0080]/50" />
+                  </motion.div>
+                ))
+            ) : (
+              <div className="p-12 text-center">
+                <div className="w-24 h-24 bg-gradient-to-r from-[#FF0080]/10 to-[#A502CA]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <MdCelebration className="text-4xl text-[#FF0080]/50" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-700 mb-3">Nenhuma festa criada</h3>
+                <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                  Comece criando sua primeira festa e explore nossos incríveis serviços para tornar seu evento inesquecível!
+                </p>
+                <Link
+                  href="/servicos"
+                  className="inline-flex items-center space-x-2 bg-gradient-to-r from-[#FF0080] to-[#A502CA] text-white px-8 py-4 rounded-xl hover:shadow-lg transition-all duration-300 font-semibold"
+                >
+                  <MdCelebration className="text-xl" />
+                  <span>Explorar Serviços</span>
+                </Link>
               </div>
-              <h3 className="text-2xl font-bold text-gray-700 mb-3">Nenhuma festa criada</h3>
-              <p className="text-gray-500 mb-6 max-w-md mx-auto">
-                Comece criando sua primeira festa e explore nossos incríveis serviços para tornar seu evento inesquecível!
-              </p>
-              <Link
-                href="/servicos"
-                className="inline-flex items-center space-x-2 bg-gradient-to-r from-[#FF0080] to-[#A502CA] text-white px-8 py-4 rounded-xl hover:shadow-lg transition-all duration-300 font-semibold"
-              >
-                <MdCelebration className="text-xl" />
-                <span>Explorar Serviços</span>
-              </Link>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
 

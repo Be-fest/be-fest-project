@@ -32,6 +32,10 @@ export interface Database {
           logo_url: string | null
           profile_image: string | null
           area_of_operation: string | null
+          address: string | null
+          city: string | null
+          state: string | null
+          postal_code: string | null
           coordenates: Json | null
           created_at: string
           updated_at: string
@@ -48,6 +52,10 @@ export interface Database {
           logo_url?: string | null
           profile_image?: string | null
           area_of_operation?: string | null
+          address?: string | null
+          city?: string | null
+          state?: string | null
+          postal_code?: string | null
           coordenates?: Json | null
           created_at?: string
           updated_at?: string
@@ -64,6 +72,10 @@ export interface Database {
           logo_url?: string | null
           profile_image?: string | null
           area_of_operation?: string | null
+          address?: string | null
+          city?: string | null
+          state?: string | null
+          postal_code?: string | null
           coordenates?: Json | null
           created_at?: string
           updated_at?: string

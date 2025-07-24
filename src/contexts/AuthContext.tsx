@@ -14,6 +14,10 @@ interface UserProfile {
   whatsapp_number?: string
   logo_url?: string
   area_of_operation?: string
+  address?: string
+  city?: string
+  state?: string
+  postal_code?: string
   created_at: string
   updated_at: string
 }
