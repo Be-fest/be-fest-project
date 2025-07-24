@@ -25,11 +25,6 @@ export default function PaymentPage() {
     }
   };
 
-  const handlePaymentSuccess = () => {
-    // Redirecionar para a página da festa
-    router.push(`/minhas-festas/${eventId}`);
-  };
-
   return (
     <AuthLayout>
       <div className="relative w-full px-4 sm:px-0">

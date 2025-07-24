@@ -1,6 +1,6 @@
 'use client';
 
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
+import { useSessionManager } from '@/hooks/useSessionManager';
 import { SessionExpiryModal } from './SessionExpiryModal';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
@@ -37,14 +37,17 @@ export function SessionProvider({ children }: SessionProviderProps) {
     handleSessionExpired();
   }, [handleSessionExpired]);
 
-  // Usando o novo sistema de autenticação otimizado
-  const optimizedAuth = useOptimizedAuth();
-  
-  // Simplificado - sem gerenciamento de sessão complexo por enquanto
-  const showWarning = false;
-  const minutesLeft = 0;
-  const extendSession = () => Promise.resolve(true);
-  const dismissWarning = () => {};
+  const {
+    showWarning,
+    minutesLeft,
+    extendSession,
+    dismissWarning,
+  } = useSessionManager({
+    warningMinutes: 5, // Avisar 5 minutos antes
+    autoRefresh: true, // Renovar automaticamente
+    onSessionExpired: handleSessionExpired,
+    onSessionWarning: handleSessionWarning,
+  });
 
   return (
     <>

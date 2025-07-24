@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { MdArrowBack, MdRefresh } from 'react-icons/md';
 
-export default function ServicosError({
+export default function MinhasFestasError({
   error,
   reset,
 }: {
@@ -24,7 +24,7 @@ export default function ServicosError({
             Ops! Algo deu errado
           </h2>
           <p className="text-gray-600 mb-8">
-            Não foi possível carregar os serviços. Por favor, tente novamente.
+            Não foi possível carregar suas festas. Por favor, tente novamente.
           </p>
           <div className="flex flex-col gap-4">
             <button
@@ -35,11 +35,11 @@ export default function ServicosError({
               Tentar Novamente
             </button>
             <Link
-              href="/minhas-festas"
+              href="/"
               className="inline-flex items-center justify-center gap-2 px-6 py-3 border-2 border-[#A502CA] text-[#A502CA] rounded-lg hover:bg-[#A502CA] hover:text-white transition-colors font-medium"
             >
               <MdArrowBack className="text-xl" />
-              Voltar para Lista de Festas
+              Voltar para Home
             </Link>
           </div>
         </div>

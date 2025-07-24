@@ -40,6 +40,7 @@ import {
 } from 'react-icons/md';
 import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { ClientLayout } from '@/components/client/ClientLayout';
+import { ClientAuthGuard } from '@/components/ClientAuthGuard';
 import { NewPartyModal } from '@/components/NewPartyModal';
 import { getClientEventsAction, deleteEventAction } from '@/lib/actions/events';
 import { getClientEventServicesAction } from '@/lib/actions/event-services';
@@ -1094,46 +1095,50 @@ function ProfilePageContent() {
 
   if (loading) {
     return (
-      <ClientLayout>
-        <div className="space-y-8">
-          {/* Tab Navigation Skeleton */}
-          <div className="border-b border-gray-200">
-            <nav className="flex space-x-8">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="py-4 px-1 animate-pulse">
-                  <div className="h-5 w-24 bg-gray-300 rounded"></div>
-                </div>
-              ))}
-            </nav>
-          </div>
-
-          {/* Tab Content Skeleton */}
-          <div className="mt-8 space-y-8">
-            {/* Header Skeleton */}
-            <div className="text-center space-y-4">
-              <div className="h-8 w-48 bg-gray-300 rounded-lg animate-pulse mx-auto"></div>
-              <div className="h-5 w-96 bg-gray-200 rounded animate-pulse mx-auto"></div>
+      <ClientAuthGuard requiredRole="client">
+        <ClientLayout>
+          <div className="space-y-8">
+            {/* Tab Navigation Skeleton */}
+            <div className="border-b border-gray-200">
+              <nav className="flex space-x-8">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="py-4 px-1 animate-pulse">
+                    <div className="h-5 w-24 bg-gray-300 rounded"></div>
+                  </div>
+                ))}
+              </nav>
             </div>
 
-            {/* Cards Skeleton */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gray-300 rounded-xl"></div>
-                    <div className="space-y-2">
-                      <div className="h-6 w-16 bg-gray-300 rounded"></div>
-                      <div className="h-4 w-24 bg-gray-200 rounded"></div>
+            {/* Tab Content Skeleton */}
+            <div className="mt-8 space-y-8">
+              {/* Header Skeleton */}
+              <div className="text-center space-y-4">
+                <div className="h-8 w-48 bg-gray-300 rounded-lg animate-pulse mx-auto"></div>
+                <div className="h-5 w-96 bg-gray-200 rounded animate-pulse mx-auto"></div>
+              </div>
+
+              {/* Cards Skeleton */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-gray-300 rounded-xl"></div>
+                      <div className="space-y-2">
+                        <div className="h-6 w-16 bg-gray-300 rounded"></div>
+                        <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      </ClientLayout>
+        </ClientLayout>
+      </ClientAuthGuard>
     );
-  }  const renderTabContent = () => {
+  }
+
+  const renderTabContent = () => {
     switch (activeTab) {
       case 'dashboard':
         return <DashboardTab />;
@@ -1147,84 +1152,88 @@ function ProfilePageContent() {
   };
 
   return (
-    <ClientLayout>
-      <div className="space-y-8">
-        {/* Tab Navigation */}
-        <div className="border-b border-gray-200">
-          <nav className="flex space-x-8">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => handleTabChange(tab.id)}
-                  className={`
-                    flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200
-                    ${isActive 
-                      ? 'border-[#F71875] text-[#F71875]' 
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }
-                  `}
-                >
-                  <Icon className="text-lg" />
-                  {tab.label}
-                </button>
-              );
-            })}
-          </nav>
-        </div>
+    <ClientAuthGuard requiredRole="client">
+      <ClientLayout>
+        <div className="space-y-8">
+          {/* Tab Navigation */}
+          <div className="border-b border-gray-200">
+            <nav className="flex space-x-8">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => handleTabChange(tab.id)}
+                    className={`
+                      flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200
+                      ${isActive 
+                        ? 'border-[#F71875] text-[#F71875]' 
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }
+                    `}
+                  >
+                    <Icon className="text-lg" />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
 
-        {/* Tab Content */}
-        <div className="mt-8">
-          {renderTabContent()}
+          {/* Tab Content */}
+          <div className="mt-8">
+            {renderTabContent()}
+          </div>
         </div>
-      </div>
-    </ClientLayout>
+      </ClientLayout>
+    </ClientAuthGuard>
   );
 }
 
 export default function ProfilePage() {
   return (
     <Suspense fallback={
-      <ClientLayout>
-        <div className="space-y-8">
-          {/* Tab Navigation Skeleton */}
-          <div className="border-b border-gray-200">
-            <nav className="flex space-x-8">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="py-4 px-1 animate-pulse">
-                  <div className="h-5 w-24 bg-gray-300 rounded"></div>
-                </div>
-              ))}
-            </nav>
-          </div>
-
-          {/* Tab Content Skeleton */}
-          <div className="mt-8 space-y-8">
-            {/* Header Skeleton */}
-            <div className="text-center space-y-4">
-              <div className="h-8 w-48 bg-gray-300 rounded-lg animate-pulse mx-auto"></div>
-              <div className="h-5 w-96 bg-gray-200 rounded animate-pulse mx-auto"></div>
+      <ClientAuthGuard requiredRole="client">
+        <ClientLayout>
+          <div className="space-y-8">
+            {/* Tab Navigation Skeleton */}
+            <div className="border-b border-gray-200">
+              <nav className="flex space-x-8">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="py-4 px-1 animate-pulse">
+                    <div className="h-5 w-24 bg-gray-300 rounded"></div>
+                  </div>
+                ))}
+              </nav>
             </div>
 
-            {/* Cards Skeleton */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gray-300 rounded-xl"></div>
-                    <div className="space-y-2">
-                      <div className="h-6 w-16 bg-gray-300 rounded"></div>
-                      <div className="h-4 w-24 bg-gray-200 rounded"></div>
+            {/* Tab Content Skeleton */}
+            <div className="mt-8 space-y-8">
+              {/* Header Skeleton */}
+              <div className="text-center space-y-4">
+                <div className="h-8 w-48 bg-gray-300 rounded-lg animate-pulse mx-auto"></div>
+                <div className="h-5 w-96 bg-gray-200 rounded animate-pulse mx-auto"></div>
+              </div>
+
+              {/* Cards Skeleton */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-gray-300 rounded-xl"></div>
+                      <div className="space-y-2">
+                        <div className="h-6 w-16 bg-gray-300 rounded"></div>
+                        <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      </ClientLayout>
+        </ClientLayout>
+      </ClientAuthGuard>
     }>
       <ProfilePageContent />
     </Suspense>
