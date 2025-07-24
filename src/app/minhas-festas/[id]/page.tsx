@@ -33,6 +33,7 @@ import { getEventByIdAction, updateEventStatusAction, deleteEventAction } from '
 import { getEventServicesAction, deleteEventServiceAction } from '@/lib/actions/event-services';
 import { Event, EventWithServices, EventServiceWithDetails } from '@/types/database';
 import { ClientLayout } from '@/components/client';
+import { FastAuthGuard } from '@/components/FastAuthGuard';
 import { calculateAdvancedPrice, formatGuestsInfo } from '@/utils/formatters';
 
 export default function PartyDetailsPage() {
@@ -51,14 +52,17 @@ export default function PartyDetailsPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [selectedServicesForPayment, setSelectedServicesForPayment] = useState<Set<string>>(new Set());
   const [selectAllServices, setSelectAllServices] = useState(false);
+  const [lastFetchTime, setLastFetchTime] = useState(0);
 
-  // Função para buscar dados do evento
+  // Função otimizada para buscar dados do evento com debounce e prevenção de chamadas simultâneas
   const fetchEventData = useCallback(async () => {
-    if (!eventId) {
-      setError('ID do evento não fornecido');
-      setLoading(false);
-      return;
-    }
+    // Evitar múltiplas chamadas simultâneas
+    if (loading) return;
+    
+    // Debounce: não fazer fetch se a última chamada foi há menos de 1 segundo
+    const now = Date.now();
+    if (now - lastFetchTime < 1000) return;
+    setLastFetchTime(now);
     
     try {
       setLoading(true);
@@ -69,60 +73,28 @@ export default function PartyDetailsPage() {
         getEventServicesAction({ event_id: eventId }),
       ]);
       
-      if (!eventResult.success || !eventResult.data) {
-        console.error('Erro ao carregar evento:', eventResult.error);
+      if (eventResult.success && eventResult.data) {
+        setEvent(eventResult.data);
+      } else {
         setError(eventResult.error || 'Erro ao carregar dados do evento');
-        setEvent(null);
-        setEventServices([]);
-        return;
       }
-      
-      setEvent(eventResult.data);
       
       if (servicesResult.success && servicesResult.data) {
-        // Filtrar serviços inválidos
-        const validServices = servicesResult.data.filter(service => 
-          service && service.service && service.provider
-        );
-        setEventServices(validServices);
+        setEventServices(servicesResult.data);
       } else {
         console.error('Erro ao carregar serviços:', servicesResult.error);
-        setEventServices([]);
       }
     } catch (err) {
-      console.error('Erro ao carregar dados:', err);
       setError('Erro inesperado ao carregar dados');
-      setEvent(null);
-      setEventServices([]);
+      console.error('Erro ao carregar dados:', err);
     } finally {
       setLoading(false);
     }
-  }, [eventId]);
+  }, [eventId, loading, lastFetchTime]);
 
-  // Effect para carregar dados iniciais
   useEffect(() => {
     fetchEventData();
   }, [fetchEventData]);
-
-  // Mostrar loading apenas durante a primeira carga
-  if (loading && !event && !error) {
-    return (
-      <ClientLayout>
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2 mb-8"></div>
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
-            <div className="space-y-3">
-              <div className="h-4 bg-gray-200 rounded w-full"></div>
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-            </div>
-          </div>
-        </div>
-      </ClientLayout>
-    );
-  }
 
   const handleUpdateStatus = async (newStatus: string) => {
     setActionLoading('status');
@@ -149,7 +121,7 @@ export default function PartyDetailsPage() {
     try {
       const result = await deleteEventAction(eventId);
       if (result.success) {
-        router.push('/perfil');
+        router.push('/minhas-festas');
       } else {
         setError(result.error || 'Erro ao deletar evento');
       }
@@ -367,69 +339,76 @@ export default function PartyDetailsPage() {
 
   if (loading) {
     return (
-      <ClientLayout>
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2 mb-8"></div>
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
-            <div className="space-y-3">
-              <div className="h-4 bg-gray-200 rounded w-full"></div>
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+      <FastAuthGuard requiredRole="client">
+        <ClientLayout>
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2 mb-8"></div>
+            <div className="bg-white rounded-lg p-6 shadow-sm">
+              <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+              <div className="space-y-3">
+                <div className="h-4 bg-gray-200 rounded w-full"></div>
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              </div>
             </div>
           </div>
-        </div>
-      </ClientLayout>
+        </ClientLayout>
+      </FastAuthGuard>
     );
   }
 
   if (error) {
     return (
-      <ClientLayout>
-        <div className="text-center py-12">
-          <MdWarning className="text-red-500 text-6xl mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Erro ao carregar dados</h2>
-          <p className="text-gray-600 mb-8">{error}</p>
-          <button
-            onClick={fetchEventData}
-            className="bg-[#A502CA] text-white px-6 py-3 rounded-lg hover:bg-[#8B0A9E] transition-colors"
-          >
-            Tentar Novamente
-          </button>
-        </div>
-      </ClientLayout>
+      <FastAuthGuard requiredRole="client">
+        <ClientLayout>
+          <div className="text-center py-12">
+            <MdWarning className="text-red-500 text-6xl mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Erro ao carregar dados</h2>
+            <p className="text-gray-600 mb-8">{error}</p>
+            <button
+              onClick={fetchEventData}
+              className="bg-[#A502CA] text-white px-6 py-3 rounded-lg hover:bg-[#8B0A9E] transition-colors"
+            >
+              Tentar Novamente
+            </button>
+          </div>
+        </ClientLayout>
+      </FastAuthGuard>
     );
   }
 
   if (!event) {
     return (
-      <ClientLayout>
-        <div className="text-center py-12">
-          <MdWarning className="text-gray-400 text-6xl mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Festa não encontrada</h2>
-          <p className="text-gray-600 mb-8">
-            A festa que você está procurando não existe ou foi removida.
-          </p>
-          <Link
-            href="/minhas-festas"
-            className="bg-[#A502CA] text-white px-6 py-3 rounded-lg hover:bg-[#8B0A9E] transition-colors"
-          >
-            Voltar para Minhas Festas
-          </Link>
-        </div>
-      </ClientLayout>
+      <FastAuthGuard requiredRole="client">
+        <ClientLayout>
+          <div className="text-center py-12">
+            <MdWarning className="text-gray-400 text-6xl mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Festa não encontrada</h2>
+            <p className="text-gray-600 mb-8">
+              A festa que você está procurando não existe ou foi removida.
+            </p>
+            <Link
+              href="/minhas-festas"
+              className="bg-[#A502CA] text-white px-6 py-3 rounded-lg hover:bg-[#8B0A9E] transition-colors"
+            >
+              Voltar para Minhas Festas
+            </Link>
+          </div>
+        </ClientLayout>
+      </FastAuthGuard>
     );
   }
 
   return (
-    <ClientLayout>
-      <div className="max-w-4xl mx-auto space-y-6">
+    <FastAuthGuard requiredRole="client">
+      <ClientLayout>
+        <div className="max-w-4xl mx-auto space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link
-                href="/perfil"
+                href="/minhas-festas"
                 className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
               >
                 <MdArrowBack className="text-xl" />
@@ -511,18 +490,16 @@ export default function PartyDetailsPage() {
 
           {/* Services */}
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Serviços</h3>
-              {event && (
-                <Link
-                  href={`/servicos?partyId=${eventId}&partyName=${encodeURIComponent(event.title)}`}
-                  className="flex items-center gap-2 px-4 py-2 bg-[#A502CA] text-white rounded-lg hover:bg-[#8B0A9E] transition-colors"
-                >
-                  <MdAdd className="text-lg" />
-                  Adicionar Serviço
-                </Link>
-              )}
-            </div>
+                      <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Serviços</h3>
+            <Link
+              href={`/servicos?partyId=${eventId}&partyName=${encodeURIComponent(event.title)}`}
+              className="flex items-center gap-2 px-4 py-2 bg-[#A502CA] text-white rounded-lg hover:bg-[#8B0A9E] transition-colors"
+            >
+              <MdAdd className="text-lg" />
+              Adicionar Serviço
+            </Link>
+          </div>
             
             {eventServices.length > 0 ? (
               <div className="space-y-4">
@@ -534,7 +511,7 @@ export default function PartyDetailsPage() {
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-4 flex-1">
                         {/* Checkbox para seleção de pagamento */}
-                        {service.booking_status === 'waiting_payment' && event?.status === 'waiting_payment' && (
+                        {service.booking_status === 'waiting_payment' && event.status === 'waiting_payment' && (
                           <input
                             type="checkbox"
                             checked={selectedServicesForPayment.has(service.id)}
@@ -546,15 +523,15 @@ export default function PartyDetailsPage() {
                         <div className="flex-1">
                           <div className="flex items-start justify-between">
                             <div>
-                              <h4 className="font-medium text-gray-900">{service.service?.name || 'Serviço não encontrado'}</h4>
+                              <h4 className="font-medium text-gray-900">{service.service.name}</h4>
                               <p className="text-sm text-gray-600 mb-2">
-                                por {service.provider?.full_name || service.provider?.organization_name || 'Prestador não encontrado'}
+                                por {service.provider.full_name || service.provider.organization_name}
                               </p>
                               {getServiceStatusBadge(service.booking_status)}
                             </div>
                             <div className="text-right">
                               <span className="font-medium text-gray-900 text-lg">
-                                {formatPrice(calculateAdvancedPrice(service.service || { base_price: 0, price_per_guest: 0 }, event.full_guests, event.half_guests, event.free_guests))}
+                                {formatPrice(calculateAdvancedPrice(service.service, event.full_guests, event.half_guests, event.free_guests))}
                               </span>
                             </div>
                           </div>
@@ -585,7 +562,7 @@ export default function PartyDetailsPage() {
                                   Cancelar Serviço
                                 </button>
                                 <a
-                                  href={`https://wa.me/5511999999999?text=Olá! Gostaria de falar sobre o serviço ${service.service?.name || 'contratado'} para minha festa.`}
+                                  href={`https://wa.me/5511999999999?text=Olá! Gostaria de falar sobre o serviço ${service.service.name} para minha festa.`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="flex items-center gap-1 px-4 py-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg text-sm font-medium transition-colors"
@@ -718,5 +695,6 @@ export default function PartyDetailsPage() {
           confirmVariant="danger"
         />
       </ClientLayout>
+    </FastAuthGuard>
   );
 } 

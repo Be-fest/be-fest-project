@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MdMenu, MdClose, MdNotifications } from 'react-icons/md';
 import { ClientSidebar } from './ClientSidebar';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
-import { LoadingSpinner } from '@/components/ui';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ClientLayoutProps {
   children: React.ReactNode;
@@ -14,14 +13,23 @@ interface ClientLayoutProps {
 export function ClientLayout({ children }: ClientLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const { user, userData, loading, error } = useOptimizedAuth();
+  const { user, userData } = useAuth();
 
-  // Efeito para montar o componente
   useEffect(() => {
     setMounted(true);
-  }, []);
+    
+    // Close sidebar on escape key
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && sidebarOpen) {
+        setSidebarOpen(false);
+      }
+    };
 
-  // Efeito para controlar o scroll do body
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [sidebarOpen]);
+
+  // Prevent body scroll when sidebar is open on mobile
   useEffect(() => {
     if (sidebarOpen) {
       document.body.style.overflow = 'hidden';
@@ -34,47 +42,10 @@ export function ClientLayout({ children }: ClientLayoutProps) {
     };
   }, [sidebarOpen]);
 
-  // Efeito para fechar sidebar com tecla Escape
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && sidebarOpen) {
-        setSidebarOpen(false);
-      }
-    };
-
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [sidebarOpen]);
-
-  // Não renderizar nada até o componente estar montado
   if (!mounted) {
-    return null;
-  }
-
-  // Mostrar loading apenas durante a autenticação inicial
-  if (loading && !user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
         <LoadingSpinner />
-      </div>
-    );
-  }
-
-  // Mostrar erro de autenticação se houver
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Erro de Autenticação</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-[#A502CA] text-white px-6 py-2 rounded-lg hover:bg-[#8B0A9E] transition-colors"
-          >
-            Tentar Novamente
-          </button>
-        </div>
       </div>
     );
   }
