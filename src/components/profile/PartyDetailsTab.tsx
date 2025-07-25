@@ -27,7 +27,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { PartyConfigForm } from '@/components/PartyConfigForm';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
-import { getEventByIdAction, updateEventStatusAction, deleteEventAction } from '@/lib/actions/events';
+import { getEventByIdAction, deleteEventAction } from '@/lib/actions/events';
 import { getEventServicesAction, deleteEventServiceAction } from '@/lib/actions/event-services';
 import { Event, EventWithServices, EventServiceWithDetails } from '@/types/database';
 import { calculateAdvancedPrice, formatGuestsInfo } from '@/utils/formatters';
@@ -48,7 +48,7 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
   const [error, setError] = useState<string | null>(null);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [serviceToCancel, setServiceToCancel] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
 
 
   // Função para buscar dados do evento
@@ -90,7 +90,6 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
 
 
   const handleDeleteEvent = async () => {
-    setActionLoading('delete');
     try {
       const result = await deleteEventAction(eventId);
       if (result.success) {
@@ -100,13 +99,10 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
       }
     } catch (err) {
       setError('Erro ao deletar evento');
-    } finally {
-      setActionLoading(null);
     }
   };
 
   const handleCancelService = async (serviceId: string) => {
-    setActionLoading('cancel');
     try {
       const result = await deleteEventServiceAction(serviceId);
       if (result.success) {
@@ -117,7 +113,6 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
     } catch (err) {
       setError('Erro ao cancelar serviço');
     } finally {
-      setActionLoading(null);
       setCancelModalOpen(false);
       setServiceToCancel(null);
     }

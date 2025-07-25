@@ -154,7 +154,7 @@ const DashboardTab = () => {
       bgColor: 'bg-blue-50'
     },
     {
-      title: 'Eventos Ativos',
+      title: 'Eventos à Realizar',
       value: activeEvents.toString(),
       icon: MdCalendarToday,
       color: 'text-green-600',
@@ -678,27 +678,7 @@ const MinhasFestasTab = ({ onShowPartyDetails }: { onShowPartyDetails?: (eventId
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => (
-          <motion.div
-            key={stat.title}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: index * 0.1 }}
-            className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100"
-          >
-            <div className="flex items-center gap-4">
-              <div className={`w-14 h-14 ${stat.bgColor} rounded-xl flex items-center justify-center`}>
-                <stat.icon className={`text-xl ${stat.textColor}`} />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                <p className="text-gray-600 text-sm font-medium">{stat.title}</p>
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+      {/* REMOVIDO: Bloco de cards de estatísticas duplicados */}
 
       {/* Search and Filter */}
       <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
