@@ -11,14 +11,14 @@ interface AddressFormProps {
 }
 
 export function AddressForm({ onClose }: AddressFormProps) {
-  const { user } = useAuth();
+  const { userData } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    address: user?.profile?.address || '',
-    city: user?.profile?.city || '',
-    state: user?.profile?.state || '',
-    postal_code: user?.profile?.postal_code || ''
+    address: userData?.address || '',
+    city: userData?.city || '',
+    state: userData?.state || '',
+    postal_code: userData?.postal_code || ''
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -26,7 +26,12 @@ export function AddressForm({ onClose }: AddressFormProps) {
     setLoading(true);
 
     try {
-      const result = await updateUserAddressAction(formData);
+      const result = await updateUserAddressAction({
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        postal_code: formData.postal_code
+      });
       
       if (result.success) {
         toast.success('Endereço atualizado', 'Seu endereço foi atualizado com sucesso!');

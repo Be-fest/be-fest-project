@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: '10mb', // Aumentar limite para 10MB para upload de imagens
     },
+    optimizePackageImports: ['framer-motion'],
   },
   images: {
     remotePatterns: [

@@ -11,13 +11,13 @@ interface PersonalInfoFormProps {
 }
 
 export function PersonalInfoForm({ onClose }: PersonalInfoFormProps) {
-  const { user } = useAuth();
+  const { userData } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    full_name: user?.profile?.full_name || '',
-    email: user?.email || '',
-    whatsapp_number: user?.profile?.whatsapp_number || ''
+    full_name: userData?.full_name || '',
+    email: userData?.email || '',
+    whatsapp_number: userData?.whatsapp_number || ''
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -25,7 +25,11 @@ export function PersonalInfoForm({ onClose }: PersonalInfoFormProps) {
     setLoading(true);
 
     try {
-      const result = await updateUserProfileAction(formData);
+      const result = await updateUserProfileAction({
+        full_name: formData.full_name,
+        email: formData.email,
+        whatsapp_number: formData.whatsapp_number
+      });
       
       if (result.success) {
         toast.success('Perfil atualizado', 'Suas informações foram atualizadas com sucesso!');
@@ -44,7 +48,7 @@ export function PersonalInfoForm({ onClose }: PersonalInfoFormProps) {
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-4">
         <Input
-          label="Nome Completo"
+          label="Nome completo"
           value={formData.full_name}
           onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
           required
@@ -60,7 +64,6 @@ export function PersonalInfoForm({ onClose }: PersonalInfoFormProps) {
         
         <Input
           label="WhatsApp"
-          type="tel"
           value={formData.whatsapp_number}
           onChange={(e) => setFormData(prev => ({ ...prev, whatsapp_number: e.target.value }))}
           required

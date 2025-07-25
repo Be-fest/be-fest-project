@@ -21,6 +21,27 @@ import { AddressForm } from '@/components/profile/AddressForm';
 import { PasswordForm } from '@/components/profile/PasswordForm';
 import { BaseModal } from '@/components/ui/BaseModal';
 
+interface SettingsItemBase {
+  label: string;
+  description: string;
+}
+
+interface ClickableSettingsItem extends SettingsItemBase {
+  onClick: () => void;
+}
+
+interface NonClickableSettingsItem extends SettingsItemBase {
+  onClick?: never;
+}
+
+type SettingsItem = ClickableSettingsItem | NonClickableSettingsItem;
+
+interface SettingsGroup {
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  items: SettingsItem[];
+}
+
 export default function ConfiguracoesPage() {
   const [activeModal, setActiveModal] = useState<'personal' | 'address' | 'password' | null>(null);
 
@@ -28,7 +49,7 @@ export default function ConfiguracoesPage() {
     setActiveModal(null);
   };
 
-  const settingsGroups = [
+  const settingsGroups: SettingsGroup[] = [
     {
       title: 'Conta',
       icon: MdAccountCircle,
@@ -113,11 +134,11 @@ export default function ConfiguracoesPage() {
                 </div>
                 
                 <div>
-                  {group.items.map((item, itemIndex) => (
+                  {group.items.map((item) => (
                     <div
                       key={item.label}
-                      onClick={item.onClick}
-                      className={`p-6 hover:bg-gray-50 transition-colors duration-200 ${item.onClick ? 'cursor-pointer' : 'cursor-default'}`}
+                      onClick={'onClick' in item ? item.onClick : undefined}
+                      className={`p-6 hover:bg-gray-50 transition-colors duration-200 ${'onClick' in item ? 'cursor-pointer' : 'cursor-default'}`}
                     >
                       <div className="flex items-center justify-between">
                         <div>
@@ -128,7 +149,7 @@ export default function ConfiguracoesPage() {
                             {item.description}
                           </p>
                         </div>
-                        {item.onClick && (
+                        {'onClick' in item && (
                           <div className="text-gray-400">
                             →
                           </div>

@@ -101,7 +101,22 @@ export function useAuth() {
     try {
       const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('id, role, full_name, email, organization_name, profile_image')
+        .select(`
+          id,
+          role,
+          full_name,
+          email,
+          organization_name,
+          profile_image,
+          whatsapp_number,
+          area_of_operation,
+          address,
+          city,
+          state,
+          postal_code,
+          created_at,
+          updated_at
+        `)
         .eq('id', userId)
         .single();
 
@@ -219,7 +234,22 @@ export function useAuth() {
     try {
       const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('id, role, full_name, email, organization_name, profile_image')
+        .select(`
+          id,
+          role,
+          full_name,
+          email,
+          organization_name,
+          profile_image,
+          whatsapp_number,
+          area_of_operation,
+          address,
+          city,
+          state,
+          postal_code,
+          created_at,
+          updated_at
+        `)
         .eq('id', user.id)
         .single();
 
