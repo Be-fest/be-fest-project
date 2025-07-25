@@ -28,6 +28,31 @@ interface PricingRule {
 export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: ServiceFormModalProps) {
   const toast = useToastGlobal();
 
+  // Regras de preços fixas conforme solicitado
+  const fixedPricingRules: PricingRule[] = [
+    {
+      rule_description: 'Preço Inteira (12+ anos)',
+      age_min_years: 12,
+      age_max_years: null,
+      pricing_method: 'percentage',
+      value: 100
+    },
+    {
+      rule_description: 'Preço Meia (6-11 anos)',
+      age_min_years: 6,
+      age_max_years: 11,
+      pricing_method: 'percentage',
+      value: 50
+    },
+    {
+      rule_description: 'Gratuito (0-5 anos)',
+      age_min_years: 0,
+      age_max_years: 5,
+      pricing_method: 'percentage',
+      value: 0
+    }
+  ];
+
   const [formData, setFormData] = useState({
     name: service?.name || '',
     description: service?.description || '',
@@ -37,30 +62,8 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
     max_guests: service?.max_guests?.toString() || '',
     images_urls: service?.images_urls || [],
     is_active: service?.is_active ?? true,
-    // Campos de pricing por idade
-    pricing_rules: [
-      {
-        rule_description: 'Preço Inteira (13+ anos)',
-        age_min_years: 13,
-        age_max_years: null,
-        pricing_method: 'percentage' as const,
-        value: 100
-      },
-      {
-        rule_description: 'Preço Meia (6-12 anos)',
-        age_min_years: 6,
-        age_max_years: 12,
-        pricing_method: 'percentage' as const,
-        value: 50
-      },
-      {
-        rule_description: 'Gratuito (0-5 anos)',
-        age_min_years: 0,
-        age_max_years: 5,
-        pricing_method: 'percentage' as const,
-        value: 0
-      }
-    ] as PricingRule[]
+    // Usar regras fixas
+    pricing_rules: fixedPricingRules
   });
 
   const [categories, setCategories] = useState<string[]>([
@@ -112,29 +115,8 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
         max_guests: service?.max_guests?.toString() || '',
         images_urls: service?.images_urls || [],
         is_active: service?.is_active ?? true,
-        pricing_rules: [
-          {
-            rule_description: 'Preço Inteira (13+ anos)',
-            age_min_years: 13,
-            age_max_years: null,
-            pricing_method: 'percentage' as const,
-            value: 100
-          },
-          {
-            rule_description: 'Preço Meia (6-12 anos)',
-            age_min_years: 6,
-            age_max_years: 12,
-            pricing_method: 'percentage' as const,
-            value: 50
-          },
-          {
-            rule_description: 'Gratuito (0-5 anos)',
-            age_min_years: 0,
-            age_max_years: 5,
-            pricing_method: 'percentage' as const,
-            value: 0
-          }
-        ]
+        // Sempre usar regras fixas
+        pricing_rules: fixedPricingRules
       });
       setErrors({});
     }
@@ -201,8 +183,8 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
         formDataToSend.append('status', service.status || 'active');
       }
       
-      // Adicionar regras de pricing por idade
-      formDataToSend.append('pricing_rules', JSON.stringify(formData.pricing_rules));
+      // Adicionar regras de pricing fixas
+      formDataToSend.append('pricing_rules', JSON.stringify(fixedPricingRules));
       
       const result = service 
         ? await updateServiceAction(formDataToSend)
@@ -250,12 +232,6 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
-  };
-
-  const handlePricingRuleChange = (index: number, field: string, value: any) => {
-    const newRules = [...formData.pricing_rules];
-    newRules[index] = { ...newRules[index], [field]: value };
-    setFormData(prev => ({ ...prev, pricing_rules: newRules }));
   };
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -318,7 +294,7 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
   if (!isOpen) return null;
 
   return (
-            <div className="fixed inset-0 backdrop-blur-md bg-white/20 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 backdrop-blur-md bg-white/20 z-50 flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -421,61 +397,27 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
             {errors.price_per_guest && <p className="text-red-500 text-xs mt-1">{errors.price_per_guest}</p>}
           </div>
 
-          {/* Regras de Preços por Idade */}
+          {/* Regras de Preços por Idade (FIXAS) */}
           <div>
             <label className="block text-sm font-medium text-[#520029] mb-4">
               Regras de Preços por Idade
             </label>
-            <div className="space-y-4">
-              {formData.pricing_rules.map((rule, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">
-                        Idade Mín. (anos)
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={rule.age_min_years}
-                        onChange={(e) => handlePricingRuleChange(index, 'age_min_years', parseInt(e.target.value))}
-                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                        disabled={loading}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">
-                        Idade Máx. (anos)
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={rule.age_max_years || ''}
-                        onChange={(e) => handlePricingRuleChange(index, 'age_max_years', e.target.value ? parseInt(e.target.value) : null)}
-                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                        placeholder="Sem limite"
-                        disabled={loading}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">
-                        Valor (%)
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={rule.value}
-                        onChange={(e) => handlePricingRuleChange(index, 'value', parseFloat(e.target.value))}
-                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                        placeholder="100"
-                        disabled={loading}
-                      />
-                    </div>
+            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+              {fixedPricingRules.map((rule, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-white rounded border">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                    <span className="font-medium text-gray-900">{rule.rule_description}</span>
                   </div>
+                  <span className="text-sm text-gray-600 font-medium">
+                    {rule.value === 0 ? 'Gratuito' : `${rule.value}% do preço`}
+                  </span>
                 </div>
               ))}
             </div>
+            <p className="text-xs text-gray-500 mt-2">
+              As regras de preços por idade são fixas e não podem ser alteradas.
+            </p>
           </div>
 
           {/* Número de Convidados */}
