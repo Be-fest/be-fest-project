@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
@@ -52,7 +52,7 @@ export function useAuth() {
   });
 
   // Função para lidar com JWT expirado
-  const handleJWTExpired = useCallback(async () => {
+  const handleJWTExpired = async () => {
     // Prevenir múltiplos toasts
     if (sessionExpiredToastShownRef.current) {
       return;
@@ -101,10 +101,10 @@ export function useAuth() {
         }
       }, 2000);
     }
-  }, [supabase, router, toast]);
+  };
 
   // Função para verificar políticas RLS
-  const checkRLSPolicies = useCallback(async (userId: string) => {
+  const checkRLSPolicies = async (userId: string) => {
     try {
       console.log('Verificando políticas RLS...');
       
@@ -137,10 +137,10 @@ export function useAuth() {
       console.error('Erro ao verificar políticas RLS:', error);
       return false;
     }
-  }, [supabase]);
+  };
 
   // Função para verificar e criar usuário se necessário
-  const ensureUserExists = useCallback(async (userId: string, email: string) => {
+  const ensureUserExists = async (userId: string, email: string) => {
     try {
       console.log('Verificando se usuário existe na tabela users...');
       
@@ -191,10 +191,9 @@ export function useAuth() {
       console.error('Erro ao verificar/criar usuário:', error);
       return false;
     }
-  }, [supabase, checkRLSPolicies]);
+  };
 
-  // Função para buscar dados do usuário
-  const fetchUserData = useCallback(async (userId: string) => {
+  const fetchUserData = async (userId: string) => {
     try {
       console.log('Buscando dados do usuário para ID:', userId);
       
@@ -362,10 +361,10 @@ export function useAuth() {
       
       setLoading(false);
     }
-  }, [supabase, handleJWTExpired, ensureUserExists]);
+  };
 
   // Função para obter sessão inicial
-  const getInitialSession = useCallback(async () => {
+  const getInitialSession = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -416,12 +415,12 @@ export function useAuth() {
     } finally {
       setLoading(false);
     }
-  }, [supabase, handleJWTExpired, fetchUserData]);
+  };
 
   // Effect para sessão inicial
   useEffect(() => {
     getInitialSession();
-  }, [getInitialSession]);
+  }, []);
 
   // Effect para escutar mudanças na autenticação
   useEffect(() => {
@@ -455,7 +454,7 @@ export function useAuth() {
     return () => {
       subscription.unsubscribe();
     };
-  }, [supabase, fetchUserData]);
+  }, []);
 
   const signOut = async () => {
     try {
