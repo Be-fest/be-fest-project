@@ -357,7 +357,7 @@ export function ProviderBudget({ providerId }: ProviderBudgetProps) {
 
                         {/* Modal de detalhes do serviço */}
                         {showServiceDetails === service.id && (
-                          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={hideDetails}>
+                          <div className="fixed inset-0 backdrop-blur-md bg-white/20 z-50 flex items-center justify-center" onClick={hideDetails}>
                             <motion.div
                               initial={{ opacity: 0, scale: 0.9 }}
                               animate={{ opacity: 1, scale: 1 }}

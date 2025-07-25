@@ -71,7 +71,7 @@ export function RoutesModal() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsOpen(false)}
-              className="fixed inset-0 bg-black bg-opacity-50 z-50"
+              className="fixed inset-0 backdrop-blur-md bg-white/20 z-50"
             />
 
             {/* Modal Content */}
