@@ -17,11 +17,11 @@ interface PartyConfigFormProps {
 }
 
 const partySchema = z.object({
-  title: z.string().min(3, 'Nome do evento deve ter pelo menos 3 caracteres'),
-  description: z.string().optional(),
+  title: z.string().min(2, 'Nome do evento deve ter pelo menos 2 caracteres'),
+  description: z.string().optional().nullable(),
   event_date: z.string().min(1, 'Data é obrigatória'),
-  start_time: z.string().optional(),
-  location: z.string().min(5, 'Endereço deve ter pelo menos 5 caracteres').optional(),
+  start_time: z.string().optional().nullable(),
+  location: z.string().optional().nullable(),
   full_guests: z.number().min(0, 'Número de convidados inteira deve ser 0 ou maior'),
   half_guests: z.number().min(0, 'Número de convidados meia deve ser 0 ou maior'),
   free_guests: z.number().min(0, 'Número de convidados gratuitos deve ser 0 ou maior'),

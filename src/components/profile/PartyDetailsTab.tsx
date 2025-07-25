@@ -403,6 +403,20 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
                             Serviço cancelado
                           </div>
                         )}
+
+                        {/* Botão de remoção para todos os status */}
+                        {service.booking_status !== 'confirmed' && (
+                          <button
+                            onClick={() => {
+                              setServiceToCancel(service.id);
+                              setCancelModalOpen(true);
+                            }}
+                            className="flex items-center gap-1 px-3 py-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg text-sm font-medium transition-colors"
+                          >
+                            <MdDelete className="text-base" />
+                            Remover
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -479,7 +493,7 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
         confirmVariant="danger"
       />
 
-      {/* Cancel Service Modal */}
+      {/* Remove/Cancel Service Modal */}
       <ConfirmationModal
         isOpen={cancelModalOpen}
         onCancel={() => {
@@ -487,9 +501,9 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
           setServiceToCancel(null);
         }}
         onConfirm={() => serviceToCancel && handleCancelService(serviceToCancel)}
-        title="Cancelar Serviço"
-        message="Tem certeza que deseja cancelar este serviço? Lembre-se de que o cancelamento deve ser feito com pelo menos 48 horas de antecedência."
-        confirmLabel="Cancelar Serviço"
+        title="Remover Serviço"
+        message="Tem certeza que deseja remover este serviço da sua festa? Esta ação não pode ser desfeita."
+        confirmLabel="Remover Serviço"
         cancelLabel="Manter Serviço"
         confirmVariant="danger"
       />
