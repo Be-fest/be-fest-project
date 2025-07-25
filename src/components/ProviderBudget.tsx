@@ -378,7 +378,7 @@ export function ProviderBudget({ providerId }: ProviderBudgetProps) {
                               
                               <div className="bg-white p-4 rounded-lg mb-4 border border-gray-200">
                                 <div className="text-sm text-[#6E5963] space-y-2">
-                                  <p><strong>Preço base:</strong> R$ {service.base_price.toFixed(2)}</p>
+                                  <p><strong>Preço base:</strong> R$ {(service.base_price || 0).toFixed(2)}</p>
                                   {service.min_guests && (
                                     <p><strong>Mínimo de convidados:</strong> {service.min_guests}</p>
                                   )}

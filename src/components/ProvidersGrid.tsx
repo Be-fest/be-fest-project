@@ -211,7 +211,7 @@ export function ProvidersGrid({ selectedCategory, searchQuery }: ProvidersGridPr
                   <div className="text-right">
                     <div className="text-xs text-gray-500">A partir de</div>
                     <div className="font-bold text-[#FF0080] text-lg">
-                      R$ {provider.minPrice === Infinity ? '0,00' : provider.minPrice.toFixed(2)}
+                      R$ {provider.minPrice === Infinity || !provider.minPrice ? '0,00' : provider.minPrice.toFixed(2)}
                     </div>
                   </div>
                 </div>

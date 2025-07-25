@@ -108,67 +108,82 @@ export default function ProviderDashboard() {
   ).length;
 
   const calculateEstimatedPriceForEvent = (service: any, event: any) => {
-    // Se tem dados detalhados de convidados, usar cálculo avançado
-    if (event?.full_guests !== undefined && event?.half_guests !== undefined && event?.free_guests !== undefined) {
-      return calculateAdvancedPrice(service, event.full_guests, event.half_guests, event.free_guests);
+    try {
+      // Se tem dados detalhados de convidados, usar cálculo avançado
+      if (event?.full_guests !== undefined && event?.half_guests !== undefined && event?.free_guests !== undefined) {
+        return calculateAdvancedPrice(service, event.full_guests, event.half_guests, event.free_guests);
+      }
+      
+      // Fallback para cálculo tradicional
+      const guestCount = event?.guest_count || 0;
+      
+      // Se já tem preço total definido, usar ele
+      if (service.total_estimated_price && service.total_estimated_price > 0) {
+        return service.total_estimated_price;
+      }
+      
+      // Calcular preço baseado no serviço original
+      if (service.service?.price_per_guest && guestCount > 0) {
+        return (service.service.price_per_guest || 0) * guestCount;
+      }
+      
+      if (service.service?.base_price && service.service.base_price > 0) {
+        return service.service.base_price || 0;
+      }
+      
+      // Fallback para campos de booking
+      if (service.price_per_guest_at_booking && guestCount > 0) {
+        return (service.price_per_guest_at_booking || 0) * guestCount;
+      }
+      
+      // Preços estimados baseados na categoria como fallback
+      const categoryPrices: Record<string, number> = {
+        'buffet': 45,
+        'bar': 25,
+        'decoracao': 15,
+        'som': 20,
+        'fotografia': 80,
+        'seguranca': 30,
+        'limpeza': 12,
+        'transporte': 35
+      };
+      
+      const category = service.service?.category?.toLowerCase();
+      if (category && categoryPrices[category] && guestCount > 0) {
+        return categoryPrices[category] * guestCount;
+      }
+      
+      // Preço base mínimo para qualquer serviço
+      return guestCount > 0 ? 30 * guestCount : 500;
+    } catch (error) {
+      console.error('Erro ao calcular preço estimado:', error);
+      return 0;
     }
-    
-    // Fallback para cálculo tradicional
-    const guestCount = event?.guest_count || 0;
-    
-    // Se já tem preço total definido, usar ele
-    if (service.total_estimated_price && service.total_estimated_price > 0) {
-      return service.total_estimated_price;
-    }
-    
-    // Calcular preço baseado no serviço original
-    if (service.service?.price_per_guest && guestCount > 0) {
-      return service.service.price_per_guest * guestCount;
-    }
-    
-    if (service.service?.base_price && service.service.base_price > 0) {
-      return service.service.base_price;
-    }
-    
-    // Fallback para campos de booking
-    if (service.price_per_guest_at_booking && guestCount > 0) {
-      return service.price_per_guest_at_booking * guestCount;
-    }
-    
-    // Preços estimados baseados na categoria como fallback
-    const categoryPrices: Record<string, number> = {
-      'buffet': 45,
-      'bar': 25,
-      'decoracao': 15,
-      'som': 20,
-      'fotografia': 80,
-      'seguranca': 30,
-      'limpeza': 12,
-      'transporte': 35
-    };
-    
-    const category = service.service?.category?.toLowerCase();
-    if (category && categoryPrices[category] && guestCount > 0) {
-      return categoryPrices[category] * guestCount;
-    }
-    
-    // Preço base mínimo para qualquer serviço
-    return guestCount > 0 ? 30 * guestCount : 500;
   };
 
   const totalRevenue = events.reduce((sum, event) => {
-    return sum + (event.event_services?.reduce((eventSum, service) => {
-      // Usar a função de cálculo mais precisa
-      const estimatedPrice = calculateEstimatedPriceForEvent(service, event);
-      return eventSum + estimatedPrice;
-    }, 0) || 0);
+    try {
+      return sum + (event.event_services?.reduce((eventSum, service) => {
+        // Usar a função de cálculo mais precisa
+        const estimatedPrice = calculateEstimatedPriceForEvent(service, event);
+        return eventSum + (estimatedPrice || 0);
+      }, 0) || 0);
+    } catch (error) {
+      console.error('Erro ao calcular receita total:', error);
+      return sum;
+    }
   }, 0);
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
+    try {
+      return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      }).format(value || 0);
+    } catch (error) {
+      console.error('Erro ao formatar moeda:', error);
+      return 'R$ 0,00';
+    }
   };
 
   const formatDate = (dateString: string) => {

@@ -141,7 +141,7 @@ export default function HistoricoPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-900">
-                    {(pastEvents.reduce((sum, event) => sum + event.rating, 0) / pastEvents.length).toFixed(1)}
+                    {pastEvents.length > 0 ? (pastEvents.reduce((sum, event) => sum + (event.rating || 0), 0) / pastEvents.length).toFixed(1) : '0.0'}
                   </p>
                   <p className="text-gray-600 text-sm font-medium">Avaliação Média</p>
                 </div>

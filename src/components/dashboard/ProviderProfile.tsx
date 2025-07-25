@@ -518,7 +518,7 @@ export function ProviderProfile() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
               <p className="text-2xl font-bold text-[#A502CA]">
-                {stats.averageRating > 0 ? stats.averageRating.toFixed(1) : '-'}
+                {stats.averageRating && stats.averageRating > 0 ? stats.averageRating.toFixed(1) : '-'}
               </p>
               <p className="text-sm text-gray-600">Avaliação Média</p>
               {stats.averageRating === 0 && (

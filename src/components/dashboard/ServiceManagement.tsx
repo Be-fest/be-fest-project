@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MdEdit, MdDelete, MdVisibility, MdVisibilityOff } from 'react-icons/md';
 import { ServiceFormModal } from './ServiceFormModal';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { getProviderServicesAction, toggleServiceStatusAction, deleteServiceAction } from '@/lib/actions/services';
 import { Service } from '@/types/database';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
@@ -15,6 +16,15 @@ export function ServiceManagement() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    serviceId: string | null;
+    serviceName: string;
+  }>({
+    isOpen: false,
+    serviceId: null,
+    serviceName: '',
+  });
   const toast = useToastGlobal();
 
   // Carregar serviços do prestador
@@ -49,31 +59,55 @@ export function ServiceManagement() {
     setIsModalOpen(true);
   };
 
-  const handleDeleteService = async (serviceId: string) => {
+  const handleDeleteService = (serviceId: string) => {
     const serviceToDelete = services.find(s => s.id === serviceId);
-    
-    if (confirm('Tem certeza que deseja excluir este serviço?')) {
-      const result = await deleteServiceAction(serviceId);
-      if (result.success) {
-        setServices(services.filter(s => s.id !== serviceId));
-        
-        // Toast de sucesso
-        toast.success(
-          'Serviço excluído!',
-          `O serviço "${serviceToDelete?.name}" foi excluído com sucesso.`,
-          4000
-        );
-      } else {
-        const errorMessage = result.error || 'Erro ao excluir serviço';
-        
-        // Toast de erro
-        toast.error(
-          'Erro ao excluir serviço',
-          errorMessage,
-          5000
-        );
-      }
+    if (serviceToDelete) {
+      setDeleteModal({
+        isOpen: true,
+        serviceId,
+        serviceName: serviceToDelete.name,
+      });
     }
+  };
+
+  const confirmDeleteService = async () => {
+    if (!deleteModal.serviceId) return;
+    
+    const result = await deleteServiceAction(deleteModal.serviceId);
+    if (result.success) {
+      setServices(services.filter(s => s.id !== deleteModal.serviceId));
+      
+      // Toast de sucesso
+      toast.success(
+        'Serviço excluído!',
+        `O serviço "${deleteModal.serviceName}" foi excluído com sucesso.`,
+        4000
+      );
+    } else {
+      const errorMessage = result.error || 'Erro ao excluir serviço';
+      
+      // Toast de erro
+      toast.error(
+        'Erro ao excluir serviço',
+        errorMessage,
+        5000
+      );
+    }
+    
+    // Fechar modal
+    setDeleteModal({
+      isOpen: false,
+      serviceId: null,
+      serviceName: '',
+    });
+  };
+
+  const cancelDeleteService = () => {
+    setDeleteModal({
+      isOpen: false,
+      serviceId: null,
+      serviceName: '',
+    });
   };
 
   const toggleServiceStatus = async (serviceId: string) => {
@@ -225,7 +259,7 @@ export function ServiceManagement() {
                 <div className="space-y-2 mb-5">
                   <div className="flex items-center justify-between">
                     <span className="text-[#A502CA] font-bold text-lg">
-                      R$ {service.base_price.toFixed(2)}
+                      R$ {(service.base_price || 0).toFixed(2)}
                     </span>
                     <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
                       {service.category}
@@ -234,7 +268,7 @@ export function ServiceManagement() {
                   
                   {service.price_per_guest && (
                     <div className="text-sm text-gray-600">
-                      + R$ {service.price_per_guest.toFixed(2)}/convidado
+                      + R$ {(service.price_per_guest || 0).toFixed(2)}/convidado
                     </div>
                   )}
                   
@@ -287,6 +321,18 @@ export function ServiceManagement() {
           />
         )}
       </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteModal.isOpen}
+        title="Excluir Serviço"
+        message={`Tem certeza que deseja excluir o serviço "${deleteModal.serviceName}"? Esta ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        confirmVariant="danger"
+        onConfirm={confirmDeleteService}
+        onCancel={cancelDeleteService}
+      />
     </div>
   );
 }

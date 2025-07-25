@@ -291,7 +291,6 @@ export function useAuth() {
 
       if (userError) {
         console.error('Erro detalhado ao buscar dados do usuário:', {
-          error: userError,
           message: userError.message,
           details: userError.details,
           hint: userError.hint,
