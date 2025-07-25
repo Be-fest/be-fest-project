@@ -446,7 +446,7 @@ function HomeHeader() {
                   onClick={() => setIsMenuOpen(false)}
                 >
                   <div className="w-6 h-6 bg-[#FF0080] rounded-full flex items-center justify-center text-white text-xs font-medium">
-                    {user.email?.charAt(0).toUpperCase()}
+                    U
                   </div>
                   <span>Minha Área</span>
                 </Link>

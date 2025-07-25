@@ -11,7 +11,6 @@ import {
   MdEdit,
   MdDelete,
   MdAdd,
-  MdCheck,
   MdClose,
   MdWarning,
   MdAttachMoney,
@@ -24,7 +23,6 @@ import {
   MdWhatsapp,
   MdCheckCircle,
   MdSchedule,
-  MdAssignmentTurnedIn,
 } from 'react-icons/md';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PartyConfigForm } from '@/components/PartyConfigForm';
@@ -51,8 +49,7 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [serviceToCancel, setServiceToCancel] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [selectedServicesForPayment, setSelectedServicesForPayment] = useState<Set<string>>(new Set());
-  const [selectAllServices, setSelectAllServices] = useState(false);
+
 
   // Função para buscar dados do evento
   const fetchEventData = useCallback(async () => {
@@ -90,24 +87,7 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
     fetchEventData();
   }, [fetchEventData]);
 
-  const handleUpdateStatus = async (newStatus: string) => {
-    setActionLoading('status');
-    try {
-      const result = await updateEventStatusAction(eventId, newStatus);
-      if (result.success) {
-        setEvent((prev) => prev ? { ...prev, status: newStatus as any } : null);
-        if (newStatus === 'completed' || newStatus === 'cancelled') {
-          fetchEventData();
-        }
-      } else {
-        setError(result.error || 'Erro ao atualizar status');
-      }
-    } catch (err) {
-      setError('Erro ao atualizar status');
-    } finally {
-      setActionLoading(null);
-    }
-  };
+
 
   const handleDeleteEvent = async () => {
     setActionLoading('delete');
@@ -143,45 +123,7 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
     }
   };
 
-  const handlePayment = () => {
-    const selectedServices = eventServices.filter(service => 
-      selectedServicesForPayment.has(service.id)
-    );
-    
-    if (selectedServices.length === 0) {
-      alert('Selecione pelo menos um serviço para pagamento');
-      return;
-    }
-    
-    router.push(`/pagamento?eventId=${eventId}&services=${selectedServices.map(s => s.id).join(',')}`);
-  };
 
-  const handleSelectAllServices = (checked: boolean) => {
-    setSelectAllServices(checked);
-    if (checked) {
-      const servicesWaitingPayment = eventServices.filter(service => service.booking_status === 'waiting_payment');
-      setSelectedServicesForPayment(new Set(servicesWaitingPayment.map(s => s.id)));
-    } else {
-      setSelectedServicesForPayment(new Set());
-    }
-  };
-
-  const handleServiceSelect = (serviceId: string, checked: boolean) => {
-    const newSelected = new Set(selectedServicesForPayment);
-    if (checked) {
-      newSelected.add(serviceId);
-    } else {
-      newSelected.delete(serviceId);
-    }
-    setSelectedServicesForPayment(newSelected);
-    
-    const servicesWaitingPayment = eventServices.filter(service => service.booking_status === 'waiting_payment');
-    setSelectAllServices(newSelected.size === servicesWaitingPayment.length);
-  };
-
-  const handleConfirmScheduling = async () => {
-    await handleUpdateStatus('completed');
-  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -195,7 +137,7 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
       draft: { label: 'Rascunho', color: 'bg-gray-100 text-gray-700', icon: MdEdit },
       published: { label: 'Publicada', color: 'bg-blue-100 text-blue-700', icon: MdCheckCircle },
       waiting_payment: { label: 'Aguardando Pagamento', color: 'bg-yellow-100 text-yellow-700', icon: MdPayment },
-      completed: { label: 'Confirmada', color: 'bg-green-100 text-green-700', icon: MdAssignmentTurnedIn },
+      completed: { label: 'Confirmada', color: 'bg-green-100 text-green-700', icon: MdCheckCircle },
       cancelled: { label: 'Cancelada', color: 'bg-red-100 text-red-700', icon: MdClose },
     }[status] || { label: 'Desconhecido', color: 'bg-gray-100 text-gray-700', icon: MdWarning };
 
@@ -224,111 +166,7 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
     );
   };
 
-  const getActionButtons = () => {
-    if (!event) return null;
 
-    const servicesWaitingPayment = eventServices.filter(service => service.booking_status === 'waiting_payment');
-    const confirmedServices = eventServices.filter(service => service.booking_status === 'confirmed');
-    const allServicesPaid = servicesWaitingPayment.length > 0 && confirmedServices.length === servicesWaitingPayment.length;
-
-    switch (event.status) {
-      case 'draft':
-        return (
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => handleUpdateStatus('published')}
-            disabled={actionLoading === 'status'}
-            className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 disabled:opacity-50"
-          >
-            <MdCheck className="text-xl" />
-            {actionLoading === 'status' ? 'Publicando...' : 'Publicar Festa'}
-          </motion.button>
-        );
-
-      case 'published':
-        return (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-            <MdCheckCircle className="text-green-500 text-2xl mx-auto mb-2" />
-            <p className="text-green-700 font-medium">Festa publicada</p>
-            <p className="text-green-600 text-sm">Aguardando propostas dos prestadores</p>
-          </div>
-        );
-
-      case 'waiting_payment':
-        if (servicesWaitingPayment.length > 0) {
-          return (
-            <>
-              {allServicesPaid ? (
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleConfirmScheduling}
-                  disabled={actionLoading === 'status'}
-                  className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 disabled:opacity-50"
-                >
-                  <MdAssignmentTurnedIn className="text-xl" />
-                  {actionLoading === 'status' ? 'Confirmando...' : 'Confirmar Agendamento'}
-                </motion.button>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 mb-4">
-                    <input
-                      type="checkbox"
-                      id="selectAll"
-                      checked={selectAllServices}
-                      onChange={(e) => handleSelectAllServices(e.target.checked)}
-                      className="w-4 h-4 text-[#A502CA] rounded focus:ring-[#A502CA]"
-                    />
-                    <label htmlFor="selectAll" className="text-sm font-medium text-gray-700">
-                      Selecionar todos os serviços aguardando pagamento
-                    </label>
-                  </div>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={handlePayment}
-                    disabled={selectedServicesForPayment.size === 0}
-                    className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 disabled:opacity-50"
-                  >
-                    <MdPayment className="text-xl" />
-                    Pagar Serviços Selecionados ({selectedServicesForPayment.size})
-                  </motion.button>
-                </div>
-              )}
-            </>
-          );
-        }
-        return (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
-            <MdSchedule className="text-yellow-500 text-2xl mx-auto mb-2" />
-            <p className="text-yellow-700 font-medium">Aguardando aprovação</p>
-            <p className="text-yellow-600 text-sm">Nenhum serviço aprovado ainda</p>
-          </div>
-        );
-
-      case 'completed':
-        return (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-            <MdEvent className="text-blue-500 text-2xl mx-auto mb-2" />
-            <p className="text-blue-700 font-medium">Festa confirmada</p>
-            <p className="text-blue-600 text-sm">Todos os serviços foram confirmados</p>
-          </div>
-        );
-
-      case 'cancelled':
-        return (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-            <MdClose className="text-red-500 text-2xl mx-auto mb-2" />
-            <p className="text-red-700 font-medium">Festa cancelada</p>
-            <p className="text-red-600 text-sm">Esta festa foi cancelada</p>
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
 
   if (loading) {
     return (
@@ -395,9 +233,6 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
           </button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{event.title}</h1>
-            <div className="flex items-center gap-2 mt-1">
-              {getStatusBadge(event.status || 'draft')}
-            </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -445,7 +280,7 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
               <MdPeople className="text-[#A502CA] text-xl" />
               <div>
                 <p className="text-sm text-gray-600">Convidados</p>
-                <p className="font-medium">{formatGuestsInfo(event.full_guests, event.half_guests, event.free_guests)}</p>
+                <p className="font-medium">{event.full_guests + event.half_guests + event.free_guests} convidados</p>
               </div>
             </div>
             {event.description && (
@@ -461,11 +296,7 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
         </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Ações</h3>
-        {getActionButtons()}
-      </div>
+
 
       {/* Services */}
       <div className="bg-white rounded-lg shadow-sm p-6">
@@ -489,15 +320,7 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-4 flex-1">
-                    {/* Checkbox para seleção de pagamento */}
-                    {service.booking_status === 'waiting_payment' && event.status === 'waiting_payment' && (
-                      <input
-                        type="checkbox"
-                        checked={selectedServicesForPayment.has(service.id)}
-                        onChange={(e) => handleServiceSelect(service.id, e.target.checked)}
-                        className="w-4 h-4 text-[#A502CA] rounded focus:ring-[#A502CA] mt-1"
-                      />
-                    )}
+
                     
                     <div className="flex-1">
                       <div className="flex items-start justify-between">

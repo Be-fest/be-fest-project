@@ -44,6 +44,13 @@ export function useAuth() {
   // Ref para prevenir múltiplos toasts de sessão expirada
   const sessionExpiredToastShownRef = useRef(false);
 
+  console.log('useAuth: Estado atual', { 
+    user: !!user, 
+    userData: !!userData, 
+    loading, 
+    error 
+  });
+
   // Função para lidar com JWT expirado
   const handleJWTExpired = useCallback(async () => {
     // Prevenir múltiplos toasts
@@ -96,10 +103,158 @@ export function useAuth() {
     }
   }, [supabase, router, toast]);
 
+  // Função para verificar políticas RLS
+  const checkRLSPolicies = useCallback(async (userId: string) => {
+    try {
+      console.log('Verificando políticas RLS...');
+      
+      // Tentar uma query simples para verificar permissões
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, role')
+        .eq('id', userId)
+        .limit(1);
+
+      if (error) {
+        console.error('Erro ao verificar políticas RLS:', {
+          error,
+          message: error.message,
+          code: error.code,
+          details: error.details
+        });
+        
+        if (error.code === 'PGRST116') {
+          console.error('Política RLS bloqueando acesso');
+          return false;
+        }
+        
+        return false;
+      }
+      
+      console.log('Políticas RLS funcionando corretamente');
+      return true;
+    } catch (error) {
+      console.error('Erro ao verificar políticas RLS:', error);
+      return false;
+    }
+  }, [supabase]);
+
+  // Função para verificar e criar usuário se necessário
+  const ensureUserExists = useCallback(async (userId: string, email: string) => {
+    try {
+      console.log('Verificando se usuário existe na tabela users...');
+      
+      // Verificar políticas RLS primeiro
+      const rlsWorking = await checkRLSPolicies(userId);
+      if (!rlsWorking) {
+        console.error('Políticas RLS não estão funcionando corretamente');
+        return false;
+      }
+      
+      // Primeiro, tentar buscar o usuário
+      const { data: existingUser, error: fetchError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', userId)
+        .single();
+
+      if (fetchError && fetchError.code === 'PGRST116') {
+        // Usuário não existe, criar registro
+        console.log('Usuário não encontrado, criando registro...');
+        
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert({
+            id: userId,
+            role: 'client',
+            email: email,
+            full_name: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+        if (insertError) {
+          console.error('Erro ao criar usuário:', insertError);
+          return false;
+        }
+
+        console.log('Usuário criado com sucesso');
+        return true;
+      } else if (fetchError) {
+        console.error('Erro ao verificar usuário:', fetchError);
+        return false;
+      } else {
+        console.log('Usuário já existe na tabela');
+        return true;
+      }
+    } catch (error) {
+      console.error('Erro ao verificar/criar usuário:', error);
+      return false;
+    }
+  }, [supabase, checkRLSPolicies]);
+
   // Função para buscar dados do usuário
   const fetchUserData = useCallback(async (userId: string) => {
     try {
-      const { data: userData, error: userError } = await supabase
+      console.log('Buscando dados do usuário para ID:', userId);
+      
+      // Verificar se o userId é válido
+      if (!userId || userId === 'undefined' || userId === 'null') {
+        console.error('ID do usuário inválido:', userId);
+        setError('ID do usuário inválido');
+        setLoading(false);
+        return;
+      }
+      
+      // Verificar se o usuário está autenticado
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      console.log('Sessão atual:', session ? 'Existe' : 'Não existe', sessionError);
+      
+      if (sessionError) {
+        console.error('Erro ao verificar sessão:', sessionError);
+        setError('Erro ao verificar autenticação');
+        setLoading(false);
+        return;
+      }
+      
+      if (!session) {
+        console.log('Nenhuma sessão encontrada');
+        setUser(null);
+        setUserData(null);
+        setLoading(false);
+        return;
+      }
+
+      // Verificar se o usuário da sessão corresponde ao userId
+      if (session.user.id !== userId) {
+        console.error('ID da sessão não corresponde ao userId:', {
+          sessionUserId: session.user.id,
+          requestedUserId: userId
+        });
+        setError('Inconsistência na autenticação');
+        setLoading(false);
+        return;
+      }
+
+      // Verificar se o usuário existe na tabela users
+      const userExists = await ensureUserExists(userId, session.user.email || '');
+      if (!userExists) {
+        console.error('Falha ao verificar/criar usuário na tabela');
+        setError('Erro ao acessar dados do usuário');
+        setLoading(false);
+        return;
+      }
+
+      console.log('Tentando buscar dados do usuário...');
+      
+      // Timeout de segurança: 8 segundos
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Timeout na busca de dados do usuário'));
+        }, 8000);
+      });
+
+      const userDataPromise = supabase
         .from('users')
         .select(`
           id,
@@ -120,8 +275,31 @@ export function useAuth() {
         .eq('id', userId)
         .single();
 
+      const { data: userData, error: userError } = await Promise.race([
+        userDataPromise,
+        timeoutPromise
+      ]) as any;
+
+      console.log('Resultado da query:', { 
+        userData: userData ? 'Dados encontrados' : 'Nenhum dado', 
+        userError: userError ? {
+          message: userError.message,
+          details: userError.details,
+          hint: userError.hint,
+          code: userError.code
+        } : null
+      });
+
       if (userError) {
-        console.error('Erro ao buscar dados do usuário:', userError);
+        console.error('Erro detalhado ao buscar dados do usuário:', {
+          error: userError,
+          message: userError.message,
+          details: userError.details,
+          hint: userError.hint,
+          code: userError.code,
+          userId,
+          sessionExists: !!session
+        });
         
         // Verificar se é erro de JWT expirado
         if (isJWTExpiredError(userError)) {
@@ -129,12 +307,45 @@ export function useAuth() {
           return;
         }
         
-        setError('Erro ao carregar dados do usuário');
+        // Verificar se é erro de RLS (Row Level Security)
+        if (userError.code === 'PGRST116' || userError.message?.includes('permission denied')) {
+          console.error('Erro de permissão RLS detectado');
+          setError('Erro de permissão: Verifique se você tem acesso aos dados');
+          setLoading(false);
+          return;
+        }
+        
+        // Verificar se é erro de registro não encontrado
+        if (userError.code === 'PGRST116' || userError.message?.includes('No rows found')) {
+          console.error('Usuário não encontrado na tabela users');
+          setError('Perfil de usuário não encontrado. Tente fazer login novamente.');
+          setLoading(false);
+          return;
+        }
+        
+        setError(`Erro ao carregar dados do usuário: ${userError.message || 'Erro desconhecido'}`);
+        setLoading(false);
+      } else if (!userData) {
+        console.error('Dados do usuário retornaram null/undefined');
+        setError('Dados do usuário não encontrados');
+        setLoading(false);
       } else {
+        console.log('Dados do usuário carregados com sucesso:', {
+          id: userData.id,
+          role: userData.role,
+          full_name: userData.full_name,
+          email: userData.email
+        });
         setUserData(userData);
+        setLoading(false);
       }
     } catch (fetchError) {
-      console.error('Erro ao buscar dados do usuário:', fetchError);
+      console.error('Erro ao buscar dados do usuário:', {
+        error: fetchError,
+        message: fetchError instanceof Error ? fetchError.message : 'Erro desconhecido',
+        stack: fetchError instanceof Error ? fetchError.stack : undefined,
+        userId
+      });
       
       // Verificar se é erro de JWT expirado
       if (isJWTExpiredError(fetchError)) {
@@ -142,9 +353,16 @@ export function useAuth() {
         return;
       }
       
-      setError('Erro ao carregar dados do usuário');
+      // Verificar se é erro de timeout
+      if (fetchError instanceof Error && fetchError.message.includes('Timeout')) {
+        setError('Tempo limite excedido ao carregar dados. Tente novamente.');
+      } else {
+        setError(`Erro ao carregar dados do usuário: ${fetchError instanceof Error ? fetchError.message : 'Erro desconhecido'}`);
+      }
+      
+      setLoading(false);
     }
-  }, [supabase, handleJWTExpired]);
+  }, [supabase, handleJWTExpired, ensureUserExists]);
 
   // Função para obter sessão inicial
   const getInitialSession = useCallback(async () => {
@@ -152,7 +370,19 @@ export function useAuth() {
       setLoading(true);
       setError(null);
 
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      // Timeout de segurança: 10 segundos
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Timeout na verificação de autenticação'));
+        }, 10000);
+      });
+
+      const sessionPromise = supabase.auth.getSession();
+      
+      const { data: { session }, error: sessionError } = await Promise.race([
+        sessionPromise,
+        timeoutPromise
+      ]) as any;
       
       if (sessionError) {
         // Verificar se é erro de JWT expirado
@@ -174,6 +404,8 @@ export function useAuth() {
         setUserData(null);
       }
     } catch (error) {
+      console.error('Erro na inicialização da autenticação:', error);
+      
       // Verificar se é erro de JWT expirado
       if (isJWTExpiredError(error)) {
         await handleJWTExpired();
@@ -195,15 +427,27 @@ export function useAuth() {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('useAuth: Auth state change', { event, session: !!session });
+        
         if (event === 'SIGNED_OUT' || !session) {
+          console.log('useAuth: Usuário deslogado');
           setUser(null);
           setUserData(null);
           setError(null);
+          setLoading(false);
         } else if (event === 'SIGNED_IN' && session) {
+          console.log('useAuth: Usuário logado');
           setUser(session.user);
           await fetchUserData(session.user.id);
           // Reset flag para permitir novos toasts de sessão expirada
           sessionExpiredToastShownRef.current = false;
+          setLoading(false);
+        } else if (event === 'TOKEN_REFRESHED') {
+          console.log('useAuth: Token atualizado');
+          setLoading(false);
+        } else {
+          console.log('useAuth: Outro evento de auth', event);
+          setLoading(false);
         }
       }
     );

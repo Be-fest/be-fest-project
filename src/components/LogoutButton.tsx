@@ -64,7 +64,7 @@ export default function LogoutButton() {
           {isLoggingOut ? 'Saindo...' : 'Sair'}
         </div>
         <div className="text-xs text-red-400">
-          {user?.email ? `Fazer logout de ${user.email}` : 'Fazer logout da conta'}
+          Fazer logout da conta
         </div>
       </div>
     </button>

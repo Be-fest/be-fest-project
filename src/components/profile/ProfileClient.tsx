@@ -288,11 +288,11 @@ export default function ProfileClient({ user, events, stats }: ProfileClientProp
               <div className="flex-1">
                 <div className="flex items-center space-x-4 mb-4">
                   <div className="w-16 h-16 bg-gradient-to-r from-[#FF0080] to-[#A502CA] rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-lg">
-                    {(user.full_name || user.email || 'U').charAt(0).toUpperCase()}
+                    {(user.full_name || 'U').charAt(0).toUpperCase()}
                   </div>
                   <div>
                     <h1 className="text-3xl font-bold text-[#520029] mb-1">
-                      Olá, {user.full_name || user.email?.split('@')[0] || 'Usuário'}! 👋
+                      Olá, {user.full_name || 'Usuário'}! 👋
                     </h1>
                     <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-[#FF0080]/10 text-[#FF0080]">
                       🎉 Área do Cliente
@@ -563,7 +563,7 @@ export default function ProfileClient({ user, events, stats }: ProfileClientProp
                 <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
                 <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
                   <MdEmail className="text-gray-400" />
-                  <span>{user.email}</span>
+                  <span className="text-gray-500">••••••••@••••••••</span>
                 </div>
               </div>
 

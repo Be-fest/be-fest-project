@@ -58,8 +58,8 @@ export function PersonalInfoForm({ onClose }: PersonalInfoFormProps) {
           label="Email"
           type="email"
           value={formData.email}
-          onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-          required
+          disabled
+          className="bg-gray-100 cursor-not-allowed"
         />
         
         <Input
