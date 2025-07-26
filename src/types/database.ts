@@ -448,7 +448,23 @@ export type Event = Database['public']['Tables']['events']['Row']
 export type EventInsert = Database['public']['Tables']['events']['Insert']
 export type EventUpdate = Database['public']['Tables']['events']['Update']
 
-export type Service = Database['public']['Tables']['services']['Row']
+export interface Service {
+  id: string;
+  provider_id: string;
+  name: string;
+  description: string | null;
+  category: string;
+  images_urls: string[] | null;
+  base_price: number;
+  price_per_guest: number | null;
+  min_guests: number;
+  max_guests: number | null;
+  status: ServiceStatus;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  guest_tiers?: GuestTier[]; // Faixas de preço por convidados
+}
 export type ServiceInsert = Database['public']['Tables']['services']['Insert']
 export type ServiceUpdate = Database['public']['Tables']['services']['Update']
 
@@ -500,4 +516,23 @@ export type EventServiceWithDetails = EventService & {
 export type BookingWithDetails = Booking & {
   event: Pick<Event, 'id' | 'title' | 'event_date' | 'location' | 'client_id'>
   service: ServiceWithProvider
+} 
+
+// Adiciona o tipo GuestTier conforme a tabela service_guest_tiers
+export interface GuestTier {
+  id?: string;
+  service_id?: string;
+  min_total_guests: number;
+  max_total_guests: number;
+  base_price_per_adult: number;
+  tier_description: string;
+} 
+
+// Adicionando tipo para faixas de convidados dos serviços
+export interface ServiceGuestTier {
+  id?: string;
+  min_total_guests: number;
+  max_total_guests: number;
+  base_price_per_adult: number;
+  tier_description: string;
 } 

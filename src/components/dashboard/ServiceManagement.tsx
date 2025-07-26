@@ -6,16 +6,17 @@ import { MdEdit, MdDelete, MdVisibility, MdVisibilityOff } from 'react-icons/md'
 import { ServiceFormModal } from './ServiceFormModal';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { getProviderServicesAction, toggleServiceStatusAction, deleteServiceAction } from '@/lib/actions/services';
-import { Service } from '@/types/database';
+import { Service, ServiceWithDetails, GuestTier } from '@/types/database';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
 import { SafeHTML } from '@/components/ui';
 import { useServiceImage, invalidateServiceImagesCache } from '@/hooks/useImagePreloader';
+import { calculateMinPrice, formatPrice } from '@/utils/pricingUtils';
 
 export function ServiceManagement() {
-  const [services, setServices] = useState<Service[]>([]);
+  const [services, setServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [editingService, setEditingService] = useState<any | null>(null);
   const [deleteModal, setDeleteModal] = useState<{
     isOpen: boolean;
     serviceId: string | null;
@@ -54,7 +55,7 @@ export function ServiceManagement() {
     setIsModalOpen(true);
   };
 
-  const handleEditService = (service: Service) => {
+  const handleEditService = (service: any) => {
     setEditingService(service);
     setIsModalOpen(true);
   };
@@ -171,9 +172,18 @@ export function ServiceManagement() {
 
   return (
     <div className="space-y-6">
-      {/* Header - Removido botão */}
+      {/* Header com botão de adicionar */}
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-[#520029] mb-2">Meus Serviços</h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-2xl font-bold text-[#520029]">Meus Serviços</h2>
+          <button
+            onClick={handleAddService}
+            className="bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-6 py-2 rounded-lg font-medium transition-colors shadow-sm hover:shadow-md flex items-center gap-2"
+          >
+            <span className="text-lg">+</span>
+            Adicionar Serviço
+          </button>
+        </div>
         <p className="text-gray-600">Gerencie seus serviços e preços</p>
       </div>
 
@@ -257,29 +267,45 @@ export function ServiceManagement() {
                 </div>
                 
                 <div className="space-y-2 mb-5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[#A502CA] font-bold text-lg">
-                      R$ {(service.base_price || 0).toFixed(2)}
-                    </span>
-                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                      {service.category}
-                    </span>
-                  </div>
-                  
-                  {service.price_per_guest && (
-                    <div className="text-sm text-gray-600">
-                      + R$ {(service.price_per_guest || 0).toFixed(2)}/convidado
-                    </div>
-                  )}
-                  
-                  {(service.min_guests > 0 || service.max_guests) && (
-                    <div className="text-xs text-gray-500">
-                      {service.min_guests > 0 && `Mín: ${service.min_guests}`}
-                      {service.min_guests > 0 && service.max_guests && ' • '}
-                      {service.max_guests && `Máx: ${service.max_guests}`}
-                      {' convidados'}
-                    </div>
-                  )}
+                  {(() => {
+                    const minPriceInfo = calculateMinPrice(service);
+                    return (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[#A502CA] font-bold text-lg">
+                            {formatPrice(minPriceInfo.price)}
+                          </span>
+                          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                            {service.category}
+                          </span>
+                        </div>
+                        
+                        {/* Mostrar informação sobre faixas de preço se existirem */}
+                        {minPriceInfo.hasTiers && (
+                          <div className="text-sm text-gray-600">
+                            A partir de {minPriceInfo.minGuests} convidados
+                          </div>
+                        )}
+                        
+                        {/* Mostrar preço por convidado apenas se não houver faixas */}
+                        {!minPriceInfo.hasTiers && service.price_per_guest && (
+                          <div className="text-sm text-gray-600">
+                            + {formatPrice(service.price_per_guest)}/convidado
+                          </div>
+                        )}
+                        
+                        {/* Informações de capacidade */}
+                        {(minPriceInfo.minGuests > 0 || minPriceInfo.maxGuests) && (
+                          <div className="text-xs text-gray-500">
+                            {minPriceInfo.minGuests > 0 && `Mín: ${minPriceInfo.minGuests}`}
+                            {minPriceInfo.minGuests > 0 && minPriceInfo.maxGuests && ' • '}
+                            {minPriceInfo.maxGuests && `Máx: ${minPriceInfo.maxGuests}`}
+                            {' convidados'}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
 
                 {/* Action Buttons - Reorganizados */}

@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { getPublicServicesAction } from '@/lib/actions/services';
 import { ServiceWithProvider } from '@/types/database';
 import { ServicesSkeleton } from '@/components/ui';
+import { calculateMinPrice } from '@/utils/pricingUtils';
 
 interface ProvidersGridProps {
   selectedCategory?: string;
@@ -74,18 +75,11 @@ export function ProvidersGrid({ selectedCategory, searchQuery }: ProvidersGridPr
     acc[providerId].services.push(service);
     acc[providerId].serviceCount++;
     
-    // Calcular o menor preço considerando base_price e price_per_guest
-    const servicePrice = service.base_price || 0;
-    const pricePerGuest = service.price_per_guest || 0;
+    // Calcular o menor preço usando a nova lógica de faixas
+    const minPriceInfo = calculateMinPrice(service);
     
-    // Usar o menor entre base_price e price_per_guest (se existir)
-    let minServicePrice = servicePrice;
-    if (pricePerGuest > 0 && pricePerGuest < minServicePrice) {
-      minServicePrice = pricePerGuest;
-    }
-    
-    if (minServicePrice < acc[providerId].minPrice) {
-      acc[providerId].minPrice = minServicePrice;
+    if (minPriceInfo.price < acc[providerId].minPrice) {
+      acc[providerId].minPrice = minPriceInfo.price;
     }
     
     return acc;

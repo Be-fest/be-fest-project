@@ -10,11 +10,8 @@ const createServiceSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres').max(100, 'Nome deve ter no máximo 100 caracteres'),
   description: z.string().optional(),
   category: z.string().min(1, 'Categoria é obrigatória'),
-  base_price: z.coerce.number().min(0, 'Preço base deve ser maior ou igual a 0'),
-  price_per_guest: z.coerce.number().min(0, 'Preço por convidado deve ser maior ou igual a 0').optional().nullable(),
-  min_guests: z.coerce.number().min(0, 'Número mínimo de convidados deve ser maior ou igual a 0').optional(),
-  max_guests: z.coerce.number().min(1, 'Número máximo de convidados deve ser maior que 0').optional().nullable(),
-  images_urls: z.array(z.string().url('URL da imagem inválida')).optional()
+  images_urls: z.array(z.string().url('URL da imagem inválida')).optional(),
+  is_active: z.boolean().optional()
 })
 
 const updateServiceSchema = z.object({
@@ -22,11 +19,7 @@ const updateServiceSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres').max(100, 'Nome deve ter no máximo 100 caracteres').optional(),
   description: z.string().optional().nullable(),
   category: z.string().min(1, 'Categoria é obrigatória').optional(),
-  base_price: z.coerce.number().min(0, 'Preço base deve ser maior ou igual a 0').optional(),
-  price_per_guest: z.coerce.number().min(0, 'Preço por convidado deve ser maior ou igual a 0').optional().nullable(),
-  min_guests: z.coerce.number().min(0, 'Número mínimo de convidados deve ser maior ou igual a 0').optional(),
-  max_guests: z.coerce.number().min(1, 'Número máximo de convidados deve ser maior que 0').optional().nullable(),
-  images_urls: z.array(z.string().url('URL da imagem inválida')).optional(),
+  images_urls: z.array(z.string()).optional(),
   status: z.enum(['active', 'inactive', 'pending_approval']).optional(),
   is_active: z.boolean().optional()
 })
@@ -155,14 +148,17 @@ export async function getServiceByIdAction(serviceId: string): Promise<ActionRes
   }
 }
 
-export async function getProviderServicesAction(): Promise<ActionResult<Service[]>> {
+export async function getProviderServicesAction(): Promise<ActionResult<ServiceWithDetails[]>> {
   try {
     const user = await getCurrentUser()
     const supabase = await createServerClient()
     
     const { data: services, error } = await supabase
       .from('services')
-      .select('*')
+      .select(`
+        *,
+        guest_tiers:service_guest_tiers(*)
+      `)
       .eq('provider_id', user.id)
       .order('created_at', { ascending: false })
 
@@ -189,11 +185,8 @@ export async function createServiceAction(formData: FormData): Promise<ActionRes
       name: formData.get('name') as string,
       description: formData.get('description') as string || null,
       category: formData.get('category') as string,
-      base_price: formData.get('base_price') as string,
-      price_per_guest: formData.get('price_per_guest') as string || null,
-      min_guests: formData.get('min_guests') as string || '0',
-      max_guests: formData.get('max_guests') as string || null,
-      images_urls: formData.getAll('images_urls').filter(url => url) as string[]
+      images_urls: formData.getAll('images_urls').filter(url => url) as string[],
+      is_active: formData.get('is_active') === 'true'
     }
 
     const validatedData = createServiceSchema.parse(rawData)
@@ -214,7 +207,11 @@ export async function createServiceAction(formData: FormData): Promise<ActionRes
       ...validatedData,
       provider_id: user.id,
       status: 'active',
-      is_active: true
+      is_active: validatedData.is_active ?? true,
+      base_price: 0, // Campo obrigatório mas não usado mais
+      price_per_guest: null,
+      min_guests: 0,
+      max_guests: null
     }
 
     const { data: service, error } = await supabase
@@ -228,34 +225,33 @@ export async function createServiceAction(formData: FormData): Promise<ActionRes
       return { success: false, error: 'Erro ao criar serviço' }
     }
 
-    // Salvar regras de pricing por idade se fornecidas
-    const pricingRulesData = formData.get('pricing_rules') as string
-    if (pricingRulesData) {
+    // Salvar faixas de preço por número de convidados
+    const guestTiersData = formData.get('guest_tiers') as string
+    if (guestTiersData) {
       try {
-        const pricingRules = JSON.parse(pricingRulesData)
+        const guestTiers = JSON.parse(guestTiersData)
         
-        if (Array.isArray(pricingRules) && pricingRules.length > 0) {
-                     const pricingRulesInsert = pricingRules.map((rule: any) => ({
-             service_id: service.id,
-             rule_description: String(rule.rule_description),
-             age_min_years: Number(rule.age_min_years),
-             age_max_years: rule.age_max_years ? Number(rule.age_max_years) : null,
-             pricing_method: String(rule.pricing_method) as any,
-             value: Number(rule.value)
-           } as any))
+        if (Array.isArray(guestTiers) && guestTiers.length > 0) {
+          const guestTiersInsert = guestTiers.map((tier: any) => ({
+            service_id: service.id,
+            min_total_guests: Number(tier.min_total_guests),
+            max_total_guests: tier.max_total_guests ? Number(tier.max_total_guests) : null,
+            base_price_per_adult: Number(tier.base_price_per_adult),
+            tier_description: String(tier.tier_description)
+          }))
 
-          const { error: pricingRulesError } = await supabase
-            .from('service_age_pricing_rules')
-            .insert(pricingRulesInsert)
+          const { error: guestTiersError } = await supabase
+            .from('service_guest_tiers')
+            .insert(guestTiersInsert)
 
-          if (pricingRulesError) {
-            console.error('Error creating pricing rules:', pricingRulesError)
-            // Não falhar a criação do serviço por causa das regras de pricing
+          if (guestTiersError) {
+            console.error('Error creating guest tiers:', guestTiersError)
+            // Não falhar a criação do serviço por causa das faixas de preço
           }
         }
       } catch (parseError) {
-        console.error('Error parsing pricing rules:', parseError)
-        // Não falhar a criação do serviço por causa das regras de pricing
+        console.error('Error parsing guest tiers:', parseError)
+        // Não falhar a criação do serviço por causa das faixas de preço
       }
     }
 
@@ -288,10 +284,6 @@ export async function updateServiceAction(formData: FormData): Promise<ActionRes
       name: formData.get('name') as string,
       description: formData.get('description') as string || null,
       category: formData.get('category') as string,
-      base_price: formData.get('base_price') as string,
-      price_per_guest: formData.get('price_per_guest') as string || null,
-      min_guests: formData.get('min_guests') as string,
-      max_guests: formData.get('max_guests') as string || null,
       images_urls: formData.getAll('images_urls').filter(url => url) as string[],
       status: (formData.get('status') as string) || undefined,
       is_active: formData.get('is_active') === 'true'
@@ -329,15 +321,7 @@ export async function updateServiceAction(formData: FormData): Promise<ActionRes
     if (validatedData.category !== undefined) {
       updateData.category = validatedData.category
     }
-    if (validatedData.base_price !== undefined) {
-      updateData.base_price = validatedData.base_price
-    }
-    if (validatedData.min_guests !== undefined) {
-      updateData.min_guests = validatedData.min_guests
-    }
-    if (validatedData.max_guests !== undefined) {
-      updateData.max_guests = validatedData.max_guests === null ? undefined : validatedData.max_guests
-    }
+
     if (validatedData.is_active !== undefined) {
       updateData.is_active = validatedData.is_active
     }
@@ -355,6 +339,43 @@ export async function updateServiceAction(formData: FormData): Promise<ActionRes
     if (error) {
       console.error('Error updating service:', error)
       return { success: false, error: 'Erro ao atualizar serviço' }
+    }
+
+    // Atualizar faixas de preço por número de convidados
+    const guestTiersData = formData.get('guest_tiers') as string
+    if (guestTiersData) {
+      try {
+        const guestTiers = JSON.parse(guestTiersData)
+        
+        if (Array.isArray(guestTiers) && guestTiers.length > 0) {
+          // Primeiro, deletar todas as faixas existentes
+          await supabase
+            .from('service_guest_tiers')
+            .delete()
+            .eq('service_id', validatedData.id)
+
+          // Depois, inserir as novas faixas
+          const guestTiersInsert = guestTiers.map((tier: any) => ({
+            service_id: validatedData.id,
+            min_total_guests: Number(tier.min_total_guests),
+            max_total_guests: tier.max_total_guests ? Number(tier.max_total_guests) : null,
+            base_price_per_adult: Number(tier.base_price_per_adult),
+            tier_description: String(tier.tier_description)
+          }))
+
+          const { error: guestTiersError } = await supabase
+            .from('service_guest_tiers')
+            .insert(guestTiersInsert)
+
+          if (guestTiersError) {
+            console.error('Error updating guest tiers:', guestTiersError)
+            // Não falhar a atualização do serviço por causa das faixas de preço
+          }
+        }
+      } catch (parseError) {
+        console.error('Error parsing guest tiers:', parseError)
+        // Não falhar a atualização do serviço por causa das faixas de preço
+      }
     }
 
     revalidatePath('/dashboard/prestador')
