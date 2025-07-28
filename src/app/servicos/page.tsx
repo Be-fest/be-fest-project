@@ -14,6 +14,8 @@ import { ServicesSkeleton } from '@/components/ui';
 import { SafeHTML } from '@/components/ui/SafeHTML';
 import { formatMinimumPrice } from '@/utils/formatters';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
 
 // Skeleton Components para a página de serviços
 const SearchSkeleton = () => (
@@ -45,6 +47,8 @@ const ServicesGrid = ({ services, selectedParty }: {
   selectedParty: { id: string; name: string } | null;
 }) => {
   const toast = useToastGlobal();
+  const router = useRouter();
+  const { user } = useAuth();
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -78,11 +82,32 @@ const ServicesGrid = ({ services, selectedParty }: {
   };
 
   const handleAddServiceDirectly = async (service: ServiceWithProvider) => {
-    if (!selectedParty) {
-      toast.error('Erro', 'Selecione uma festa primeiro para adicionar serviços.', 3000);
+    // Verificar se o usuário está logado
+    if (!user) {
+      toast.error(
+        'Login necessário',
+        'Você precisa fazer login para adicionar serviços às suas festas'
+      );
+      
+      // Redirecionar para login com returnUrl
+      const currentUrl = window.location.href;
+      router.push(`/auth/login?returnUrl=${encodeURIComponent(currentUrl)}`);
       return;
     }
-
+    
+    // Se estiver logado mas não tem festa selecionada, redirecionar para perfil
+    if (!selectedParty) {
+      toast.info(
+        'Selecione uma festa',
+        'Você será redirecionado para selecionar uma festa'
+      );
+      
+      // Redirecionar para perfil
+      router.push('/perfil');
+      return;
+    }
+    
+    // Se estiver logado e tem festa selecionada, adicionar o serviço
     try {
       const result = await addServiceToCartAction({
         event_id: selectedParty.id,
@@ -183,20 +208,13 @@ const ServicesGrid = ({ services, selectedParty }: {
                 Ver Cardápio
               </Link>
               
-              {/* Botão de adicionar diretamente - sempre visível */}
+              {/* Botão de adicionar diretamente - sempre adiciona à festa */}
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  if (selectedParty) {
-                    handleAddServiceDirectly(service);
-                  } else {
-                    // Redirecionar para a página do serviço se não há festa selecionada
-                    window.location.href = `/servicos/${service.id}`;
-                  }
-                }}
+                onClick={() => handleAddServiceDirectly(service)}
                 className="bg-[#FF0080] hover:bg-[#E6006F] text-white w-12 h-12 rounded-full transition-colors duration-200 shadow-lg flex items-center justify-center"
-                title={selectedParty ? "Adicionar diretamente à festa" : "Ver detalhes do serviço"}
+                title="Adicionar à festa"
               >
                 <MdAdd className="text-xl" />
               </motion.button>
