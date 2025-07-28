@@ -116,14 +116,27 @@ const ServicesGrid = ({ services, selectedParty }: {
           transition={{ duration: 0.5 }}
           className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
         >
-                      {/* Imagem do serviço */}
-            <div className="h-48 bg-gray-200 overflow-hidden">
-              <img
-                src={service.images_urls?.[0] || service.provider?.profile_image || service.provider?.logo_url || '/be-fest-provider-logo.png'}
-                alt={service.name}
-                className="w-full h-full object-cover"
-              />
-            </div>
+          {/* Imagem do serviço */}
+          <div className="relative h-48 bg-gray-200 overflow-hidden">
+            <img
+              src={service.images_urls?.[0] || service.provider?.profile_image || service.provider?.logo_url || '/be-fest-provider-logo.png'}
+              alt={service.name}
+              className="w-full h-full object-cover"
+            />
+            
+            {/* Botão de adicionar diretamente - posicionado no canto superior direito da imagem */}
+            {selectedParty && (
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => handleAddServiceDirectly(service)}
+                className="absolute top-3 right-3 bg-[#FF0080] hover:bg-[#E6006F] text-white w-10 h-10 rounded-full transition-colors duration-200 shadow-lg flex items-center justify-center"
+                title="Adicionar diretamente à festa"
+              >
+                <MdAdd className="text-xl" />
+              </motion.button>
+            )}
+          </div>
 
           {/* Conteúdo do card */}
           <div className="p-6">
@@ -170,18 +183,23 @@ const ServicesGrid = ({ services, selectedParty }: {
                 Ver Cardápio
               </Link>
               
-              {/* Botão de adicionar diretamente - apenas quando uma festa está selecionada */}
-              {selectedParty && (
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => handleAddServiceDirectly(service)}
-                  className="bg-[#FF0080] hover:bg-[#E6006F] text-white p-3 rounded-lg transition-colors duration-200 shadow-lg flex items-center justify-center"
-                  title="Adicionar diretamente à festa"
-                >
-                  <MdAdd className="text-xl" />
-                </motion.button>
-              )}
+              {/* Botão de adicionar diretamente - sempre visível */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  if (selectedParty) {
+                    handleAddServiceDirectly(service);
+                  } else {
+                    // Redirecionar para a página do serviço se não há festa selecionada
+                    window.location.href = `/servicos/${service.id}`;
+                  }
+                }}
+                className="bg-[#FF0080] hover:bg-[#E6006F] text-white w-12 h-12 rounded-full transition-colors duration-200 shadow-lg flex items-center justify-center"
+                title={selectedParty ? "Adicionar diretamente à festa" : "Ver detalhes do serviço"}
+              >
+                <MdAdd className="text-xl" />
+              </motion.button>
             </div>
           </div>
         </motion.div>
