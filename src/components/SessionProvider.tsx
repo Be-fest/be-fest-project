@@ -1,68 +1,109 @@
 'use client';
 
-import { useSessionManager } from '@/hooks/useSessionManager';
-import { SessionExpiryModal } from './SessionExpiryModal';
-import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/navigation';
-import { useCallback, useRef } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { Session } from '@supabase/supabase-js';
 
-interface SessionProviderProps {
-  children: React.ReactNode;
+interface SessionContextType {
+  session: Session | null;
+  loading: boolean;
 }
 
-export function SessionProvider({ children }: SessionProviderProps) {
-  const { isAuthenticated } = useAuth();
-  const router = useRouter();
-  const sessionHandledRef = useRef(false);
+const SessionContext = createContext<SessionContextType>({
+  session: null,
+  loading: true,
+});
 
-  const handleSessionExpired = useCallback(() => {
-    // Prevenir múltiplos redirecionamentos
-    if (sessionHandledRef.current) {
-      return;
-    }
-    
-    sessionHandledRef.current = true;
-    console.log('Sessão expirada - redirecionando para login');
-    
-    // Adicionar parâmetro para mostrar mensagem específica
-    router.push('/auth/login?reason=session_expired');
-  }, [router]);
+export function SessionProvider({ children }: { children: React.ReactNode }) {
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+  const supabase = createClient();
 
-  const handleSessionWarning = useCallback((minutesLeft: number) => {
-    console.log(`Aviso: sessão expira em ${minutesLeft} minutos`);
-    // Aqui você pode adicionar notificações toast se quiser
+  useEffect(() => {
+    // Função para limpar localStorage se necessário
+    const clearLocalStorageIfNeeded = () => {
+      if (typeof window === 'undefined') return;
+      
+      try {
+        // Verificar se há dados corrompidos no localStorage
+        const sessionData = localStorage.getItem('be-fest-session');
+        if (sessionData) {
+          const parsed = JSON.parse(sessionData);
+          const now = Date.now();
+          
+          // Se a sessão expirou, limpar
+          if (parsed.expiresAt && now > parsed.expiresAt) {
+            localStorage.removeItem('be-fest-session');
+            localStorage.removeItem('be-fest-user-data');
+            console.log('Sessão expirada removida do localStorage');
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao verificar localStorage:', error);
+        // Se há erro ao ler, limpar dados possivelmente corrompidos
+        localStorage.removeItem('be-fest-session');
+        localStorage.removeItem('be-fest-user-data');
+      }
+    };
+
+    // Limpar localStorage se necessário
+    clearLocalStorageIfNeeded();
+
+    // Obter sessão inicial
+    const getInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Erro ao obter sessão inicial:', error);
+          setSession(null);
+        } else {
+          setSession(session);
+        }
+      } catch (error) {
+        console.error('Erro inesperado ao obter sessão:', error);
+        setSession(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    getInitialSession();
+
+    // Escutar mudanças na autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('SessionProvider: Auth state change', { event, session: !!session });
+        
+        if (event === 'SIGNED_OUT') {
+          // Limpar localStorage ao fazer logout
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('be-fest-session');
+            localStorage.removeItem('be-fest-user-data');
+          }
+        }
+        
+        setSession(session);
+        setLoading(false);
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
-  const handleLogout = useCallback(async () => {
-    handleSessionExpired();
-  }, [handleSessionExpired]);
-
-  const {
-    showWarning,
-    minutesLeft,
-    extendSession,
-    dismissWarning,
-  } = useSessionManager({
-    warningMinutes: 5, // Avisar 5 minutos antes
-    autoRefresh: true, // Renovar automaticamente
-    onSessionExpired: handleSessionExpired,
-    onSessionWarning: handleSessionWarning,
-  });
-
   return (
-    <>
+    <SessionContext.Provider value={{ session, loading }}>
       {children}
-      
-      {/* Modal de aviso de expiração - só mostra se o usuário estiver autenticado */}
-      {isAuthenticated && (
-        <SessionExpiryModal
-          isOpen={showWarning}
-          minutesLeft={minutesLeft}
-          onExtendSession={extendSession}
-          onLogout={handleLogout}
-          onDismiss={dismissWarning}
-        />
-      )}
-    </>
+    </SessionContext.Provider>
   );
-} 
+}
+
+export const useSession = () => {
+  const context = useContext(SessionContext);
+  if (context === undefined) {
+    throw new Error('useSession must be used within a SessionProvider');
+  }
+  return context;
+}; 

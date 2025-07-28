@@ -37,7 +37,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Verificação mais robusta de cookies de autenticação do Supabase
+  // Verificação híbrida: cookies do Supabase + header customizado para localStorage
   const cookies = request.cookies;
   
   // Procurar por cookies específicos do Supabase
@@ -53,16 +53,19 @@ export async function middleware(request: NextRequest) {
     cookie.value.length > 10 // Cookie válido deve ter conteúdo substancial
   );
   
-  // Se não há cookies de autenticação válidos, redirecionar para login
-  if (supabaseCookies.length === 0 && !authTokenCookie && !accessTokenCookie) {
-    console.log(`Middleware: Nenhum cookie de auth válido encontrado para ${pathname}`);
+  // Verificar header customizado que pode ser enviado pelo cliente
+  const localStorageAuth = request.headers.get('x-localstorage-auth');
+  
+  // Se não há cookies de autenticação válidos E não há header de localStorage, redirecionar para login
+  if (supabaseCookies.length === 0 && !authTokenCookie && !accessTokenCookie && !localStorageAuth) {
+    console.log(`Middleware: Nenhuma autenticação válida encontrada para ${pathname}`);
     const redirectUrl = new URL('/auth/login', request.url);
     redirectUrl.searchParams.set('redirectTo', pathname);
     redirectUrl.searchParams.set('reason', 'unauthorized');
     return NextResponse.redirect(redirectUrl);
   }
 
-  console.log(`Middleware: Cookies de auth encontrados para ${pathname}, permitindo acesso`);
+  console.log(`Middleware: Autenticação encontrada para ${pathname}, permitindo acesso`);
   return NextResponse.next();
 }
 

@@ -32,6 +32,76 @@ const isJWTExpiredError = (error: any): boolean => {
   );
 };
 
+// Funções para gerenciar localStorage
+const getStoredSession = () => {
+  if (typeof window === 'undefined') return null;
+  
+  try {
+    const sessionData = localStorage.getItem('be-fest-session');
+    if (!sessionData) return null;
+    
+    const parsed = JSON.parse(sessionData);
+    const now = Date.now();
+    
+    // Verificar se a sessão não expirou (24 horas)
+    if (parsed.expiresAt && now > parsed.expiresAt) {
+      localStorage.removeItem('be-fest-session');
+      localStorage.removeItem('be-fest-user-data');
+      return null;
+    }
+    
+    return parsed;
+  } catch (error) {
+    console.error('Erro ao ler sessão do localStorage:', error);
+    localStorage.removeItem('be-fest-session');
+    localStorage.removeItem('be-fest-user-data');
+    return null;
+  }
+};
+
+const setStoredSession = (session: any) => {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const sessionData = {
+      ...session,
+      expiresAt: Date.now() + (24 * 60 * 60 * 1000) // 24 horas
+    };
+    localStorage.setItem('be-fest-session', JSON.stringify(sessionData));
+  } catch (error) {
+    console.error('Erro ao salvar sessão no localStorage:', error);
+  }
+};
+
+const clearStoredSession = () => {
+  if (typeof window === 'undefined') return;
+  
+  localStorage.removeItem('be-fest-session');
+  localStorage.removeItem('be-fest-user-data');
+};
+
+const getStoredUserData = (): UserData | null => {
+  if (typeof window === 'undefined') return null;
+  
+  try {
+    const userData = localStorage.getItem('be-fest-user-data');
+    return userData ? JSON.parse(userData) : null;
+  } catch (error) {
+    console.error('Erro ao ler dados do usuário do localStorage:', error);
+    return null;
+  }
+};
+
+const setStoredUserData = (userData: UserData) => {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    localStorage.setItem('be-fest-user-data', JSON.stringify(userData));
+  } catch (error) {
+    console.error('Erro ao salvar dados do usuário no localStorage:', error);
+  }
+};
+
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -65,6 +135,9 @@ export function useAuth() {
         6000
       );
 
+      // Limpar dados do localStorage
+      clearStoredSession();
+      
       // Fazer logout
       await supabase.auth.signOut();
       setUser(null);
@@ -73,11 +146,7 @@ export function useAuth() {
       
       // Aguardar um pouco para o usuário ver o toast
       setTimeout(() => {
-        // Usar localStorage como fallback
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('sessionExpired', 'true');
-          router.push('/auth/login');
-        }
+        router.push('/auth/login');
       }, 2000);
       
     } catch (logoutError) {
@@ -92,10 +161,8 @@ export function useAuth() {
       
       // Forçar redirecionamento mesmo se o logout falhar
       setTimeout(() => {
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('sessionExpired', 'true');
-          window.location.href = '/auth/login';
-        }
+        clearStoredSession();
+        window.location.href = '/auth/login';
       }, 2000);
     }
   };
@@ -217,6 +284,7 @@ export function useAuth() {
         console.log('Nenhuma sessão encontrada');
         setUser(null);
         setUserData(null);
+        clearStoredSession();
         setLoading(false);
         return;
       }
@@ -332,6 +400,7 @@ export function useAuth() {
           email: userData.email
         });
         setUserData(userData);
+        setStoredUserData(userData);
         setLoading(false);
       }
     } catch (fetchError) {
@@ -365,6 +434,42 @@ export function useAuth() {
       setLoading(true);
       setError(null);
 
+      // Primeiro, tentar carregar dados do localStorage
+      const storedSession = getStoredSession();
+      const storedUserData = getStoredUserData();
+
+      if (storedSession && storedUserData) {
+        console.log('Carregando sessão do localStorage');
+        setUser(storedSession.user);
+        setUserData(storedUserData);
+        setLoading(false);
+        
+        // Verificar se a sessão ainda é válida no Supabase
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError || !session) {
+          console.log('Sessão do localStorage inválida, fazendo logout');
+          clearStoredSession();
+          setUser(null);
+          setUserData(null);
+          setLoading(false);
+          return;
+        }
+        
+        // Atualizar dados do usuário se necessário
+        if (session.user.id === storedUserData.id) {
+          await fetchUserData(session.user.id);
+        } else {
+          console.log('ID do usuário mudou, recarregando dados');
+          setUser(session.user);
+          await fetchUserData(session.user.id);
+        }
+        return;
+      }
+
+      // Se não há dados no localStorage, verificar no Supabase
+      console.log('Verificando sessão no Supabase');
+      
       // Timeout de segurança: 10 segundos
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => {
@@ -393,10 +498,12 @@ export function useAuth() {
 
       if (session?.user) {
         setUser(session.user);
+        setStoredSession(session);
         await fetchUserData(session.user.id);
       } else {
         setUser(null);
         setUserData(null);
+        clearStoredSession();
       }
     } catch (error) {
       console.error('Erro na inicialização da autenticação:', error);
@@ -429,16 +536,21 @@ export function useAuth() {
           setUser(null);
           setUserData(null);
           setError(null);
+          clearStoredSession();
           setLoading(false);
         } else if (event === 'SIGNED_IN' && session) {
           console.log('useAuth: Usuário logado');
           setUser(session.user);
+          setStoredSession(session);
           await fetchUserData(session.user.id);
           // Reset flag para permitir novos toasts de sessão expirada
           sessionExpiredToastShownRef.current = false;
           setLoading(false);
         } else if (event === 'TOKEN_REFRESHED') {
           console.log('useAuth: Token atualizado');
+          if (session) {
+            setStoredSession(session);
+          }
           setLoading(false);
         } else {
           console.log('useAuth: Outro evento de auth', event);
@@ -455,6 +567,7 @@ export function useAuth() {
   const signOut = async () => {
     try {
       setLoading(true);
+      clearStoredSession();
       await supabase.auth.signOut();
       setUser(null);
       setUserData(null);
@@ -500,6 +613,7 @@ export function useAuth() {
         }
       } else {
         setUserData(userData);
+        setStoredUserData(userData);
       }
     } catch (error) {
       console.error('Erro ao atualizar dados do usuário:', error);
@@ -511,6 +625,33 @@ export function useAuth() {
       }
     }
   };
+
+  // Função para configurar headers de autenticação para requisições
+  const setupAuthHeaders = () => {
+    if (typeof window === 'undefined') return;
+    
+    // Interceptar todas as requisições fetch para adicionar headers de auth
+    const originalFetch = window.fetch;
+    window.fetch = function(input, init) {
+      const storedSession = getStoredSession();
+      
+      if (storedSession && init) {
+        init.headers = {
+          ...init.headers,
+          'x-localstorage-auth': 'true'
+        };
+      }
+      
+      return originalFetch.call(this, input, init);
+    };
+  };
+
+  // Effect para configurar headers de autenticação
+  useEffect(() => {
+    if (user) {
+      setupAuthHeaders();
+    }
+  }, [user]);
 
   return {
     user,

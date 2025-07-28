@@ -29,6 +29,37 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Script para limpar localStorage se necessário
+              (function() {
+                try {
+                  // Verificar se há dados corrompidos no localStorage
+                  const sessionData = localStorage.getItem('be-fest-session');
+                  if (sessionData) {
+                    const parsed = JSON.parse(sessionData);
+                    const now = Date.now();
+                    
+                    // Se a sessão expirou, limpar
+                    if (parsed.expiresAt && now > parsed.expiresAt) {
+                      localStorage.removeItem('be-fest-session');
+                      localStorage.removeItem('be-fest-user-data');
+                      console.log('Sessão expirada removida do localStorage');
+                    }
+                  }
+                } catch (error) {
+                  console.error('Erro ao verificar localStorage:', error);
+                  // Se há erro ao ler, limpar dados possivelmente corrompidos
+                  localStorage.removeItem('be-fest-session');
+                  localStorage.removeItem('be-fest-user-data');
+                }
+              })();
+            `,
+          }}
+        />
+      </head>
       <body
         className={`${poppins.variable} ${roboto.variable} antialiased font-poppins`}
         cz-shortcut-listen="true"
