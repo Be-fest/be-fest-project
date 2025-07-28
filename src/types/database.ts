@@ -491,12 +491,12 @@ export type BookingUpdate = Database['public']['Tables']['bookings']['Update']
 // Extended types with relationships
 export type ServiceWithProvider = Service & {
   provider: Pick<User, 'id' | 'full_name' | 'organization_name' | 'logo_url' | 'profile_image' | 'area_of_operation'>
+  guest_tiers?: ServiceGuestTier[]
 }
 
 export type ServiceWithDetails = Service & {
   provider: Pick<User, 'id' | 'full_name' | 'organization_name' | 'logo_url' | 'profile_image' | 'area_of_operation'>
   guest_tiers: ServiceGuestTier[]
-  age_pricing_rules: ServiceAgePricingRule[]
   date_surcharges: ServiceDateSurcharge[]
 }
 
@@ -522,15 +522,6 @@ export type BookingWithDetails = Booking & {
 export interface GuestTier {
   id?: string;
   service_id?: string;
-  min_total_guests: number;
-  max_total_guests: number;
-  base_price_per_adult: number;
-  tier_description: string;
-} 
-
-// Adicionando tipo para faixas de convidados dos serviços
-export interface ServiceGuestTier {
-  id?: string;
   min_total_guests: number;
   max_total_guests: number;
   base_price_per_adult: number;

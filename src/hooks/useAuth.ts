@@ -41,7 +41,6 @@ export function useAuth() {
   const toast = useToastGlobal();
   const supabase = createClient();
   
-  // Ref para prevenir múltiplos toasts de sessão expirada
   const sessionExpiredToastShownRef = useRef(false);
 
   console.log('useAuth: Estado atual', { 
@@ -51,9 +50,7 @@ export function useAuth() {
     error 
   });
 
-  // Função para lidar com JWT expirado
   const handleJWTExpired = async () => {
-    // Prevenir múltiplos toasts
     if (sessionExpiredToastShownRef.current) {
       return;
     }

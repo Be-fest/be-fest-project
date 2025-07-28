@@ -331,22 +331,7 @@ function HomeHeader() {
                 )}
               </>
             ) : (
-              <>
-                <Link 
-                  href="/minhas-festas"
-                  onClick={() => setIsMenuOpen(false)}
-                  className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
-                >
-                  New Fest
-                </Link>
-                <ScrollLink 
-                  to="contatos" 
-                  smooth={true} 
-                  duration={500} 
-                  className="text-gray-600 hover:text-[#FF0080] transition-colors cursor-pointer font-poppins"
-                >
-                  Contatos
-                </ScrollLink>
+              <> 
                 <Link 
                   href="/prestadores" 
                   className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
@@ -409,7 +394,7 @@ function HomeHeader() {
               className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
               onClick={() => setIsMenuOpen(false)}
             >
-              Categorias
+              Serviços
             </Link>
             <ScrollLink 
               to="como-funciona" 

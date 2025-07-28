@@ -21,6 +21,7 @@ import { SafeHTML } from '@/components/ui/SafeHTML';
 import { getServiceByIdAction } from '@/lib/actions/services';
 import { ServiceWithProvider, ServiceWithDetails } from '@/types/database';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
+import { formatMinimumPrice } from '@/utils/formatters';
 
 export default function ServiceDetailsPage() {
   const params = useParams();
@@ -94,6 +95,16 @@ export default function ServiceDetailsPage() {
   const getPriceInfo = () => {
     if (!service) return null;
     
+    // Se tem tiers de preço, usar o preço mínimo
+    if (service.guest_tiers && service.guest_tiers.length > 0) {
+      const minPrice = formatMinimumPrice(service.guest_tiers, service.base_price);
+      return {
+        price: `A partir de ${minPrice}`,
+        unit: ''
+      };
+    }
+    
+    // Fallback para preços tradicionais
     if (service.base_price && service.base_price > 0) {
       return {
         price: formatPrice(service.base_price),

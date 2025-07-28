@@ -11,6 +11,7 @@ import { ServiceWithProvider } from '@/types/database';
 import { Header } from '@/components/Header';
 import { ServicesSkeleton } from '@/components/ui';
 import { SafeHTML } from '@/components/ui/SafeHTML';
+import { formatMinimumPrice } from '@/utils/formatters';
 
 // Skeleton Components para a página de serviços
 const SearchSkeleton = () => (
@@ -56,6 +57,13 @@ const ServicesGrid = ({ services, selectedParty }: {
   };
 
   const getPriceLabel = (service: ServiceWithProvider) => {
+    // Se tem tiers de preço, usar o preço mínimo
+    if (service.guest_tiers && service.guest_tiers.length > 0) {
+      const minPrice = formatMinimumPrice(service.guest_tiers, service.base_price);
+      return `A partir de ${minPrice}`;
+    }
+    
+    // Fallback para preços tradicionais
     if (service.base_price && service.base_price > 0) {
       return formatPrice(service.base_price);
     }
@@ -122,10 +130,6 @@ const ServicesGrid = ({ services, selectedParty }: {
             <div className="flex items-center justify-between mb-4">
               <div className="text-[#FF0080] font-bold text-lg">
                 {getPriceLabel(service)}
-              </div>
-              <div className="flex items-center text-gray-500 text-sm">
-                <MdLocationOn className="mr-1" />
-                <span>{service.provider?.area_of_operation || 'São Paulo'}</span>
               </div>
             </div>
 

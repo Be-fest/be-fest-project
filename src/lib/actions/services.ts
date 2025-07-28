@@ -127,7 +127,6 @@ export async function getServiceByIdAction(serviceId: string): Promise<ActionRes
           area_of_operation
         ),
         guest_tiers:service_guest_tiers (*),
-        age_pricing_rules:service_age_pricing_rules (*),
         date_surcharges:service_date_surcharges (*)
       `)
       .eq('id', serviceId)
@@ -518,7 +517,8 @@ export async function getPublicServicesAction(filters?: {
           logo_url,
           profile_image,
           area_of_operation
-        )
+        ),
+        guest_tiers:service_guest_tiers (*)
       `)
       .eq('is_active', true)
       .eq('status', 'active')
