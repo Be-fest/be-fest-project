@@ -301,7 +301,7 @@ function HomeHeader() {
               href="/servicos"
               className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
             >
-              Categorias
+              Serviços
             </Link>
             <ScrollLink 
               to="como-funciona" 

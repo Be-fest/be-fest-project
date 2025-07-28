@@ -126,8 +126,7 @@ export async function getServiceByIdAction(serviceId: string): Promise<ActionRes
           profile_image,
           area_of_operation
         ),
-        guest_tiers:service_guest_tiers (*),
-        date_surcharges:service_date_surcharges (*)
+        guest_tiers:service_guest_tiers (*)
       `)
       .eq('id', serviceId)
       .single()

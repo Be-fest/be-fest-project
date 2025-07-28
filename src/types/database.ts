@@ -497,7 +497,6 @@ export type ServiceWithProvider = Service & {
 export type ServiceWithDetails = Service & {
   provider: Pick<User, 'id' | 'full_name' | 'organization_name' | 'logo_url' | 'profile_image' | 'area_of_operation'>
   guest_tiers: ServiceGuestTier[]
-  date_surcharges: ServiceDateSurcharge[]
 }
 
 export type EventWithServices = Event & {

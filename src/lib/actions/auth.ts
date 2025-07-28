@@ -312,12 +312,38 @@ export async function loginAction(formData: FormData): Promise<ActionResult> {
     // Revalidate cache
     revalidatePath('/', 'layout')
 
-    // Determine redirect URL based on user role
+    // Check for returnUrl parameter
+    const returnUrl = formData.get('returnUrl') as string
+    
+    // Determine redirect URL based on user role or returnUrl
     let redirectTo = '/perfil'
-    if (user.role === 'provider') {
-      redirectTo = '/dashboard/prestador'
-    } else if (user.role === 'admin') {
-      redirectTo = '/admin'
+    
+    if (returnUrl && returnUrl.trim() !== '') {
+      // Validate returnUrl to prevent open redirect attacks
+      const url = new URL(returnUrl, process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000')
+      const allowedHosts = [
+        'localhost:3000',
+        'localhost:3001',
+        process.env.NEXT_PUBLIC_SITE_URL?.replace(/^https?:\/\//, '') || ''
+      ]
+      
+      if (allowedHosts.includes(url.host)) {
+        redirectTo = returnUrl
+      } else {
+        // If returnUrl is invalid, use default redirect
+        if (user.role === 'provider') {
+          redirectTo = '/dashboard/prestador'
+        } else if (user.role === 'admin') {
+          redirectTo = '/admin'
+        }
+      }
+    } else {
+      // No returnUrl, use default redirect based on role
+      if (user.role === 'provider') {
+        redirectTo = '/dashboard/prestador'
+      } else if (user.role === 'admin') {
+        redirectTo = '/admin'
+      }
     }
 
     // Return success with redirect data instead of using redirect()

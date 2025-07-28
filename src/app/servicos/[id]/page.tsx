@@ -22,12 +22,14 @@ import { getServiceByIdAction } from '@/lib/actions/services';
 import { ServiceWithProvider, ServiceWithDetails } from '@/types/database';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
 import { formatMinimumPrice } from '@/utils/formatters';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function ServiceDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
   const toast = useToastGlobal();
+  const { user, loading: authLoading } = useAuth();
   const serviceId = params.id as string;
   
   const [service, setService] = useState<ServiceWithDetails | null>(null);
@@ -125,16 +127,6 @@ export default function ServiceDetailsPage() {
     };
   };
 
-  const handleWhatsAppContact = () => {
-    if (!service?.provider) return;
-    
-    // Usar número padrão por enquanto - pode ser melhorado depois
-    const phone = '5511999999999';
-    const message = `Olá! Tenho interesse no serviço ${service.name}. Gostaria de mais informações.`;
-    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank');
-  };
-
   const handleShare = async () => {
     const url = window.location.href;
     const title = `${service?.name} - ${service?.provider?.organization_name || service?.provider?.full_name}`;
@@ -169,12 +161,42 @@ export default function ServiceDetailsPage() {
     }, 1500);
   };
 
-  if (loading) {
+  const handleAddServiceClick = () => {
+    // Verificar se o usuário está logado
+    if (!user) {
+      toast.error(
+        'Login necessário',
+        'Você precisa fazer login para adicionar serviços às suas festas'
+      );
+      
+      // Redirecionar para login com returnUrl
+      const currentUrl = window.location.href;
+      router.push(`/auth/login?returnUrl=${encodeURIComponent(currentUrl)}`);
+      return;
+    }
+    
+    // Se estiver logado mas não tem festa selecionada, redirecionar para perfil
+    if (!selectedParty) {
+      toast.info(
+        'Selecione uma festa',
+        'Você será redirecionado para selecionar uma festa'
+      );
+      
+      // Redirecionar para perfil
+      router.push('/perfil');
+      return;
+    }
+    
+    // Se estiver logado e tem festa selecionada, redirecionar para minhas festas
+    router.push('/minhas-festas');
+  };
+
+  if (loading || authLoading) {
     return (
       <>
         <Header />
         <div className="pt-20 pb-8 min-h-screen bg-[#FFF6FB]">
-          <div className="max-w-4xl mx-auto px-4 md:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
             <div className="animate-pulse">
               <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
               <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
@@ -197,7 +219,7 @@ export default function ServiceDetailsPage() {
       <>
         <Header />
         <div className="pt-20 pb-8 min-h-screen bg-[#FFF6FB]">
-          <div className="max-w-4xl mx-auto px-4 md:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
             <div className="text-center py-12">
               <MdWarning className="text-red-500 text-6xl mx-auto mb-4" />
               <h2 className="text-2xl font-bold text-gray-900 mb-4">{error}</h2>
@@ -223,7 +245,7 @@ export default function ServiceDetailsPage() {
     <>
       <Header />
       <div className="pt-20 pb-8 min-h-screen bg-[#FFF6FB]">
-        <div className="max-w-4xl mx-auto px-4 md:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
           {/* Botão Voltar */}
           <div className="mb-6">
             <Link
@@ -264,7 +286,7 @@ export default function ServiceDetailsPage() {
             </motion.div>
           )}
 
-          {/* Card do Serviço */}
+          {/* Card do Serviço - Largura Total */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -272,7 +294,7 @@ export default function ServiceDetailsPage() {
             className="bg-white rounded-2xl shadow-lg overflow-hidden"
           >
             {/* Imagem do Serviço */}
-            <div className="relative h-64 md:h-80 bg-gray-200">
+            <div className="relative h-64 md:h-80 lg:h-96 bg-gray-200">
               <img
                 src={service.images_urls?.[0] || service.provider?.profile_image || service.provider?.logo_url || '/be-fest-provider-logo.png'}
                 alt={service.name}
@@ -284,8 +306,8 @@ export default function ServiceDetailsPage() {
               <div className="absolute bottom-4 left-4 right-4">
                 <div className="flex items-end justify-between text-white">
                   <div>
-                    <h1 className="text-2xl md:text-3xl font-bold mb-1">{service.name}</h1>
-                    <p className="text-sm md:text-base opacity-90">
+                    <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-1">{service.name}</h1>
+                    <p className="text-sm md:text-base lg:text-lg opacity-90">
                       por {service.provider?.organization_name || service.provider?.full_name}
                     </p>
                   </div>
@@ -298,14 +320,14 @@ export default function ServiceDetailsPage() {
             </div>
 
             {/* Conteúdo Principal */}
-            <div className="p-6 md:p-8">
+            <div className="p-6 md:p-8 lg:p-10">
               {/* Categoria e Preço */}
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-8">
                 <span className="inline-block bg-[#FF0080] text-white px-4 py-2 rounded-full text-sm font-medium">
                   {service.category}
                 </span>
                 <div className="text-right">
-                  <div className="text-2xl md:text-3xl font-bold text-[#FF0080]">
+                  <div className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#FF0080]">
                     {priceInfo?.price}
                   </div>
                   {priceInfo?.unit && (
@@ -315,8 +337,8 @@ export default function ServiceDetailsPage() {
               </div>
 
               {/* Informações do Prestador */}
-              <div className="flex items-center gap-4 mb-6 p-4 bg-gray-50 rounded-xl">
-                <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200">
+              <div className="flex items-center gap-4 mb-8 p-6 bg-gray-50 rounded-xl">
+                <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200">
                   <img
                     src={service.provider?.profile_image || service.provider?.logo_url || '/be-fest-provider-logo.png'}
                     alt={service.provider?.organization_name || service.provider?.full_name || ''}
@@ -324,7 +346,7 @@ export default function ServiceDetailsPage() {
                   />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">
+                  <h3 className="text-lg font-semibold text-gray-900">
                     {service.provider?.organization_name || service.provider?.full_name}
                   </h3>
                   <div className="flex items-center gap-1 text-gray-600 text-sm">
@@ -336,9 +358,9 @@ export default function ServiceDetailsPage() {
 
               {/* Descrição do Serviço */}
               {service.description && (
-                <div className="mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Descrição do Serviço</h2>
-                  <div className="text-gray-600 leading-relaxed">
+                <div className="mb-8">
+                  <h2 className="text-2xl font-semibold text-gray-900 mb-6">Descrição do Serviço</h2>
+                  <div className="text-gray-700 leading-relaxed text-base md:text-lg">
                     <SafeHTML 
                       html={service.description} 
                       fallback="Sem descrição disponível"
@@ -349,12 +371,12 @@ export default function ServiceDetailsPage() {
 
               {/* Informações de Capacidade */}
               {(service.min_guests || service.max_guests) && (
-                <div className="mb-6 p-4 bg-blue-50 rounded-xl">
-                  <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                <div className="mb-8 p-6 bg-blue-50 rounded-xl">
+                  <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2 text-lg">
                     <MdPeople className="text-blue-600" />
                     Capacidade
                   </h3>
-                  <div className="text-gray-600">
+                  <div className="text-gray-700 text-base">
                     {service.min_guests && service.max_guests ? (
                       `De ${service.min_guests} a ${service.max_guests} pessoas`
                     ) : service.min_guests ? (
@@ -373,26 +395,28 @@ export default function ServiceDetailsPage() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleAddServiceToParty}
-                    className="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 px-6 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                    className="flex-1 bg-green-500 hover:bg-green-600 text-white py-4 px-8 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 text-lg"
                   >
                     <MdAdd className="text-xl" />
                     Adicionar à Festa
                   </motion.button>
                 ) : (
-                  <Link
-                    href="/minhas-festas"
-                    className="flex-1 bg-[#FF0080] hover:bg-[#E6006F] text-white py-3 px-6 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleAddServiceClick}
+                    className="flex-1 bg-[#FF0080] hover:bg-[#E6006F] text-white py-4 px-8 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 text-lg"
                   >
                     <MdAdd className="text-xl" />
                     Adicionar à uma Festa
-                  </Link>
+                  </motion.button>
                 )}
                 
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleShare}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-6 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 py-4 px-8 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 text-lg"
                 >
                   <MdShare className="text-xl" />
                   Compartilhar

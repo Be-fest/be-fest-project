@@ -4,14 +4,16 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { MdArrowBack, MdSearch, MdStar, MdLocationOn, MdWarning, MdTune, MdClose } from 'react-icons/md';
+import { MdArrowBack, MdSearch, MdStar, MdLocationOn, MdWarning, MdTune, MdClose, MdAdd } from 'react-icons/md';
 import { Categories } from '@/components/Categories';
 import { getPublicServicesAction } from '@/lib/actions/services';
+import { addServiceToCartAction } from '@/lib/actions/cart';
 import { ServiceWithProvider } from '@/types/database';
 import { Header } from '@/components/Header';
 import { ServicesSkeleton } from '@/components/ui';
 import { SafeHTML } from '@/components/ui/SafeHTML';
 import { formatMinimumPrice } from '@/utils/formatters';
+import { useToastGlobal } from '@/contexts/GlobalToastContext';
 
 // Skeleton Components para a página de serviços
 const SearchSkeleton = () => (
@@ -42,6 +44,8 @@ const ServicesGrid = ({ services, selectedParty }: {
   services: ServiceWithProvider[];
   selectedParty: { id: string; name: string } | null;
 }) => {
+  const toast = useToastGlobal();
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -73,6 +77,35 @@ const ServicesGrid = ({ services, selectedParty }: {
     return 'Preço sob consulta';
   };
 
+  const handleAddServiceDirectly = async (service: ServiceWithProvider) => {
+    if (!selectedParty) {
+      toast.error('Erro', 'Selecione uma festa primeiro para adicionar serviços.', 3000);
+      return;
+    }
+
+    try {
+      const result = await addServiceToCartAction({
+        event_id: selectedParty.id,
+        service_id: service.id,
+        provider_id: service.provider_id,
+        client_notes: null
+      });
+
+      if (result.success) {
+        toast.success(
+          'Serviço adicionado!',
+          `${service.name} foi adicionado à sua festa "${selectedParty.name}".`,
+          3000
+        );
+      } else {
+        toast.error('Erro', result.error || 'Erro ao adicionar serviço.', 3000);
+      }
+    } catch (error) {
+      console.error('Erro ao adicionar serviço:', error);
+      toast.error('Erro', 'Erro inesperado ao adicionar serviço.', 3000);
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {services.map((service) => (
@@ -83,30 +116,22 @@ const ServicesGrid = ({ services, selectedParty }: {
           transition={{ duration: 0.5 }}
           className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
         >
-          {/* Imagem do serviço */}
-          <div className="h-48 bg-gray-200 overflow-hidden">
-            <img
-              src={service.images_urls?.[0] || service.provider?.profile_image || service.provider?.logo_url || '/be-fest-provider-logo.png'}
-              alt={service.name}
-              className="w-full h-full object-cover"
-            />
-          </div>
+                      {/* Imagem do serviço */}
+            <div className="h-48 bg-gray-200 overflow-hidden">
+              <img
+                src={service.images_urls?.[0] || service.provider?.profile_image || service.provider?.logo_url || '/be-fest-provider-logo.png'}
+                alt={service.name}
+                className="w-full h-full object-cover"
+              />
+            </div>
 
           {/* Conteúdo do card */}
           <div className="p-6">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex-1">
-                <h3 className="text-xl font-bold text-gray-900 mb-1">{service.name}</h3>
-                <p className="text-gray-600 text-sm">
-                  por {service.provider?.organization_name || service.provider?.full_name || 'Prestador'}
-                </p>
-              </div>
-              <div className="flex items-center text-yellow-500">
-                <MdStar className="text-lg mr-1" />
-                <span className="text-sm font-medium text-gray-700">
-                  5.0
-                </span>
-              </div>
+            <div className="mb-3">
+              <h3 className="text-xl font-bold text-gray-900 mb-1">{service.name}</h3>
+              <p className="text-gray-600 text-sm">
+                por {service.provider?.organization_name || service.provider?.full_name || 'Prestador'}
+              </p>
             </div>
 
             {/* Categoria */}
@@ -133,16 +158,31 @@ const ServicesGrid = ({ services, selectedParty }: {
               </div>
             </div>
 
-            {/* Botão de ação */}
-            <Link
-              href={selectedParty 
-                ? `/servicos/${service.id}?partyId=${selectedParty.id}&partyName=${encodeURIComponent(selectedParty.name)}`
-                : `/servicos/${service.id}`
-              }
-              className="w-full bg-[#FF0080] hover:bg-[#E6006F] text-white py-3 px-4 rounded-lg transition-colors duration-200 font-medium text-center block"
-            >
-              Ver Cardápio
-            </Link>
+            {/* Botões de ação */}
+            <div className="flex gap-2">
+              <Link
+                href={selectedParty 
+                  ? `/servicos/${service.id}?partyId=${selectedParty.id}&partyName=${encodeURIComponent(selectedParty.name)}`
+                  : `/servicos/${service.id}`
+                }
+                className="flex-1 bg-[#FF0080] hover:bg-[#E6006F] text-white py-3 px-4 rounded-lg transition-colors duration-200 font-medium text-center block"
+              >
+                Ver Cardápio
+              </Link>
+              
+              {/* Botão de adicionar diretamente - apenas quando uma festa está selecionada */}
+              {selectedParty && (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => handleAddServiceDirectly(service)}
+                  className="bg-[#FF0080] hover:bg-[#E6006F] text-white p-3 rounded-lg transition-colors duration-200 shadow-lg flex items-center justify-center"
+                  title="Adicionar diretamente à festa"
+                >
+                  <MdAdd className="text-xl" />
+                </motion.button>
+              )}
+            </div>
           </div>
         </motion.div>
       ))}
