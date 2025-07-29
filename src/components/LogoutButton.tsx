@@ -1,12 +1,13 @@
 'use client';
 
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/Button';
 import { MdExitToApp } from 'react-icons/md';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
 import { useState } from 'react';
 import { performLogout, emergencyLogout } from '@/lib/logout';
 
 export default function LogoutButton() {
-  const { user } = useOptimizedAuth();
+  const { user } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
@@ -47,7 +48,7 @@ export default function LogoutButton() {
   };
 
   return (
-    <button
+    <Button
       onClick={handleLogout}
       disabled={isLoggingOut}
       className="flex items-center space-x-4 p-3 text-red-600 hover:bg-red-50 transition-all duration-200 w-full rounded-xl group disabled:opacity-50 disabled:cursor-not-allowed"
@@ -67,6 +68,6 @@ export default function LogoutButton() {
           Fazer logout da conta
         </div>
       </div>
-    </button>
+    </Button>
   );
 } 

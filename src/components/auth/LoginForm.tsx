@@ -1,14 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { MdEmail, MdLock, MdVisibility, MdVisibilityOff } from 'react-icons/md'
-import { useAuth } from '@/contexts/AuthContext'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
+import { useToastGlobal } from '@/contexts/GlobalToastContext'
 
 export function LoginForm() {
-  const { login, loading } = useAuth()
+  const { signIn, loading } = useAuth()
   const router = useRouter()
+  const toast = useToastGlobal()
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -21,10 +23,12 @@ export function LoginForm() {
     setError('')
 
     try {
-      await login(formData)
-      router.push('/')
+      await signIn(formData.email, formData.password)
+      toast.success('Login realizado com sucesso!', 'Bem-vindo de volta!')
+      router.push('/dashboard')
     } catch (err: any) {
       setError(err.message || 'Erro ao fazer login')
+      toast.error('Erro no login', err.message || 'Erro ao fazer login')
     }
   }
 
@@ -36,10 +40,7 @@ export function LoginForm() {
   }
 
   return (
-    <motion.form
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
+    <form
       onSubmit={handleSubmit}
       className="space-y-6"
     >
@@ -54,7 +55,6 @@ export function LoginForm() {
           E-mail
         </label>
         <div className="relative">
-          <MdEmail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6E5963] text-xl" />
           <input
             type="email"
             name="email"
@@ -72,7 +72,6 @@ export function LoginForm() {
           Senha
         </label>
         <div className="relative">
-          <MdLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6E5963] text-xl" />
           <input
             type={showPassword ? 'text' : 'password'}
             name="password"
@@ -82,25 +81,16 @@ export function LoginForm() {
             className="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-lg focus:border-[#FF0080] focus:ring-2 focus:ring-[#FF0080]/20 outline-none transition-all"
             placeholder="Sua senha"
           />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#6E5963] hover:text-[#520029] transition-colors"
-          >
-            {showPassword ? <MdVisibilityOff /> : <MdVisibility />}
-          </button>
         </div>
       </div>
 
-      <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
+      <Button
         type="submit"
         disabled={loading}
         className="w-full bg-[#FF0080] text-white py-3 rounded-lg font-semibold hover:bg-[#E6006F] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         {loading ? 'Entrando...' : 'Entrar'}
-      </motion.button>
-    </motion.form>
+      </Button>
+    </form>
   )
 }

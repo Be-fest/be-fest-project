@@ -35,10 +35,7 @@ interface EventService {
   service_id: string;
   provider_id: string;
   price_per_guest_at_booking: number | null;
-  befest_fee_at_booking: number | null;
   total_estimated_price: number | null;
-  provider_notes: string | null;
-  client_notes: string | null;
   booking_status: string;
   created_at: string;
   updated_at: string;
@@ -47,8 +44,6 @@ interface EventService {
     name: string;
     description: string | null;
     category: string;
-    base_price: number;
-    price_per_guest: number | null;
     images_urls: string[] | null;
   };
   provider: {
@@ -80,6 +75,7 @@ export default function MinhasFestasDetalhePage() {
 
   const loadEventData = async () => {
     try {
+      console.log('🔄 Carregando dados do evento:', eventId);
       setLoading(true);
       
       // Buscar dados do evento
@@ -90,14 +86,16 @@ export default function MinhasFestasDetalhePage() {
         .single();
 
       if (eventError) {
-        console.error('Erro ao carregar evento:', eventError);
+        console.error('❌ Erro ao carregar evento:', eventError);
         toast.error('Erro', 'Não foi possível carregar os dados do evento');
         return;
       }
 
+      console.log('✅ Evento carregado:', eventData);
       setEvent(eventData);
 
       // Buscar serviços do evento
+      console.log('🔄 Buscando serviços do evento...');
       const { data: servicesData, error: servicesError } = await supabase
         .from('event_services')
         .select(`
@@ -107,8 +105,6 @@ export default function MinhasFestasDetalhePage() {
             name,
             description,
             category,
-            base_price,
-            price_per_guest,
             images_urls
           ),
           provider:users!event_services_provider_id_fkey (
@@ -122,14 +118,15 @@ export default function MinhasFestasDetalhePage() {
         .order('created_at', { ascending: false });
 
       if (servicesError) {
-        console.error('Erro ao carregar serviços:', servicesError);
+        console.error('❌ Erro ao carregar serviços:', servicesError);
         toast.error('Erro', 'Não foi possível carregar os serviços do evento');
         return;
       }
 
+      console.log('✅ Serviços carregados:', servicesData?.length || 0, servicesData);
       setEventServices(servicesData || []);
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
+      console.error('💥 Erro inesperado ao carregar dados:', error);
       toast.error('Erro', 'Erro inesperado ao carregar dados');
     } finally {
       setLoading(false);
@@ -317,7 +314,7 @@ export default function MinhasFestasDetalhePage() {
                 <Button
                   onClick={handleRecalculateAllPrices}
                   disabled={recalculating}
-                  variant="outline"
+                  variant="secondary"
                   className="text-sm"
                 >
                   {recalculating ? 'Recalculando...' : 'Recalcular Todos os Preços'}
@@ -339,14 +336,8 @@ export default function MinhasFestasDetalhePage() {
             ) : (
               <div className="space-y-4">
                 {eventServices.map((eventService) => {
-                  const calculatedPrice = calculateCorrectServicePrice(
-                    { full_guests: event.full_guests, half_guests: event.half_guests },
-                    {
-                      price_per_guest_at_booking: eventService.price_per_guest_at_booking,
-                      total_estimated_price: eventService.total_estimated_price
-                    },
-                    eventService.service
-                  );
+                  // Usar o preço direto da tabela event_services
+                  const servicePrice = eventService.price_per_guest_at_booking || 0;
 
                   return (
                     <div key={eventService.id} className="border rounded-lg p-4">
@@ -363,7 +354,7 @@ export default function MinhasFestasDetalhePage() {
                           </p>
                           <div className="flex items-center gap-2">
                             <span className="text-lg font-bold text-gray-900">
-                              {formatPrice(calculatedPrice)}
+                              {formatPrice(servicePrice)}
                             </span>
                             {getStatusBadge(eventService.booking_status)}
                           </div>
@@ -371,21 +362,19 @@ export default function MinhasFestasDetalhePage() {
                         <div className="flex items-center gap-2">
                           <Button
                             onClick={() => handleRecalculateServicePrice(eventService.id)}
-                            variant="outline"
-                            size="sm"
+                            variant="secondary"
                             className="text-xs"
                           >
                             Recalcular
                           </Button>
                           {eventService.booking_status === 'waiting_payment' && (
-                            <Button size="sm" className="bg-green-600 hover:bg-green-700 text-xs">
+                            <Button className="bg-green-600 hover:bg-green-700 text-xs">
                               <MdPayment className="text-sm mr-1" />
                               Pagar Agora
                             </Button>
                           )}
                           <Button
-                            variant="outline"
-                            size="sm"
+                            variant="secondary"
                             className="text-red-600 hover:text-red-700 text-xs"
                           >
                             <MdRemove className="text-sm" />

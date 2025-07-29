@@ -15,10 +15,7 @@ const createEventServiceSchema = z.object({
 const updateEventServiceSchema = z.object({
   id: z.string().uuid('ID inválido'),
   price_per_guest_at_booking: z.coerce.number().min(0, 'Preço por convidado deve ser maior ou igual a 0').optional().nullable(),
-  befest_fee_at_booking: z.coerce.number().min(0, 'Taxa deve ser maior ou igual a 0').optional().nullable(),
   total_estimated_price: z.coerce.number().min(0, 'Preço total deve ser maior ou igual a 0').optional().nullable(),
-  provider_notes: z.string().max(500, 'Notas do prestador devem ter no máximo 500 caracteres').optional().nullable(),
-  client_notes: z.string().max(500, 'Notas do cliente devem ter no máximo 500 caracteres').optional().nullable(),
   booking_status: z.enum(['pending_provider_approval', 'waiting_payment', 'confirmed', 'rejected', 'cancelled']).optional()
 })
 
@@ -158,11 +155,16 @@ export async function getEventServicesAction(filters?: {
           title,
           event_date,
           guest_count,
-          location,
-          client_id
+          location
         ),
         service:services (
-          *,
+          id,
+          name,
+          description,
+          category,
+          images_urls,
+          min_guests,
+          max_guests,
           provider:users!services_provider_id_fkey (
             id,
             full_name,
@@ -203,6 +205,8 @@ export async function getEventServicesAction(filters?: {
       console.error('Error fetching event services:', error)
       return { success: false, error: 'Erro ao buscar orçamentos' }
     }
+
+    console.log('📋 Event services encontrados:', eventServices?.length || 0)
 
     return { success: true, data: eventServices as EventServiceWithDetails[] }
   } catch (error) {
@@ -392,10 +396,7 @@ export async function updateEventServiceAction(formData: FormData): Promise<Acti
     const rawData = {
       id: formData.get('id') as string,
       price_per_guest_at_booking: formData.get('price_per_guest_at_booking') as string || null,
-      befest_fee_at_booking: formData.get('befest_fee_at_booking') as string || null,
       total_estimated_price: formData.get('total_estimated_price') as string || null,
-      provider_notes: formData.get('provider_notes') as string || null,
-      client_notes: formData.get('client_notes') as string || null,
       booking_status: formData.get('booking_status') as string
     }
 
@@ -432,14 +433,8 @@ export async function updateEventServiceAction(formData: FormData): Promise<Acti
       if (validatedData.price_per_guest_at_booking !== undefined) {
         updateData.price_per_guest_at_booking = validatedData.price_per_guest_at_booking
       }
-      if (validatedData.befest_fee_at_booking !== undefined) {
-        updateData.befest_fee_at_booking = validatedData.befest_fee_at_booking
-      }
       if (validatedData.total_estimated_price !== undefined) {
         updateData.total_estimated_price = validatedData.total_estimated_price
-      }
-      if (validatedData.provider_notes !== undefined) {
-        updateData.provider_notes = validatedData.provider_notes
       }
       if (validatedData.booking_status !== undefined) {
         updateData.booking_status = validatedData.booking_status
@@ -448,9 +443,9 @@ export async function updateEventServiceAction(formData: FormData): Promise<Acti
     
     if (isClient) {
       // Cliente pode apenas atualizar suas notas
-      if (validatedData.client_notes !== undefined) {
-        updateData.client_notes = validatedData.client_notes
-      }
+      // if (validatedData.client_notes !== undefined) { // Removed client_notes update
+      //   updateData.client_notes = validatedData.client_notes
+      // }
     }
 
     if (Object.keys(updateData).length === 0) {
@@ -497,60 +492,59 @@ export async function updateEventServiceStatusAction(
     const user = await getCurrentUser()
     const supabase = await createServerClient()
 
-    // Verificar se o event_service pertence ao prestador
-    const { data: existingEventService } = await supabase
+    // Verificar se o event_service existe e se o usuário tem permissão
+    const { data: eventService, error: fetchError } = await supabase
       .from('event_services')
-      .select('provider_id, booking_status, event_id')
+      .select(`
+        id,
+        event_id,
+        service_id,
+        provider_id,
+        event:events!inner (client_id)
+      `)
       .eq('id', eventServiceId)
       .single()
 
-    if (!existingEventService || existingEventService.provider_id !== user.id) {
-      return { success: false, error: 'Orçamento não encontrado ou acesso negado' }
+    if (fetchError || !eventService) {
+      return { success: false, error: 'Serviço não encontrado' }
     }
 
-    // Validar transições de status
-    const validTransitions: Record<string, string[]> = {
-      'pending_provider_approval': ['waiting_payment', 'rejected'],
-      'waiting_payment': ['confirmed'],
-      'confirmed': ['cancelled'],
-      'rejected': [],
-      'cancelled': []
+    // Verificar permissões
+    const isProvider = eventService.provider_id === user.id
+    const isClient = (eventService.event as any).client_id === user.id
+
+    if (!isProvider && !isClient) {
+      return { success: false, error: 'Acesso negado' }
     }
 
-    const allowedStatuses = validTransitions[existingEventService.booking_status] || []
-    if (!allowedStatuses.includes(status)) {
-      return { success: false, error: 'Transição de status inválida' }
-    }
-
+    // Preparar dados de atualização
     const updateData: Partial<EventServiceUpdate> = {
       booking_status: status
     }
 
-    if (providerNotes) {
-      updateData.provider_notes = providerNotes
-    }
+    // Apenas prestadores podem adicionar notas
+    // if (isProvider && providerNotes) {
+    //   updateData.provider_notes = providerNotes
+    // }
 
-    const { data: eventService, error } = await supabase
+    const { data: updatedService, error: updateError } = await supabase
       .from('event_services')
       .update(updateData)
       .eq('id', eventServiceId)
       .select()
       .single()
 
-    if (error) {
-      console.error('Error updating event service status:', error)
-      return { success: false, error: 'Erro ao atualizar status do orçamento' }
+    if (updateError) {
+      console.error('Error updating event service status:', updateError)
+      return { success: false, error: 'Erro ao atualizar status' }
     }
 
-    revalidatePath('/perfil')
-    revalidatePath('/dashboard/prestador')
-    
-    return { success: true, data: eventService }
+    return { success: true, data: updatedService }
   } catch (error) {
-    console.error('Event service status update failed:', error)
+    console.error('Update event service status failed:', error)
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : 'Erro ao atualizar status do orçamento' 
+      error: error instanceof Error ? error.message : 'Erro ao atualizar status' 
     }
   }
 }

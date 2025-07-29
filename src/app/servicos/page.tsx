@@ -136,6 +136,12 @@ const ServicesGrid = ({ services, selectedParty }: {
           `${service.name} foi adicionado à sua festa "${selectedParty.name}".`,
           3000
         );
+        
+        // Navegar para a página da festa após um pequeno delay
+        setTimeout(() => {
+          console.log('🔄 Navegando para:', `/minhas-festas/${selectedParty.id}`);
+          router.push(`/minhas-festas/${selectedParty.id}`);
+        }, 1500);
       } else {
         console.error('❌ Erro ao adicionar serviço:', result.error);
         toast.error('Erro', result.error || 'Erro ao adicionar serviço.', 3000);

@@ -562,11 +562,19 @@ export function useAuth() {
   const signOut = async () => {
     try {
       setLoading(true);
+      
+      // Limpar dados do localStorage
       clearStoredSession();
+      
+      // Fazer logout no Supabase
       await supabase.auth.signOut();
+      
+      // Limpar estado
       setUser(null);
       setUserData(null);
       setError(null);
+      
+      console.log('Logout realizado com sucesso');
     } catch (error) {
       const logoutErrorInfo = {
         message: error instanceof Error ? error.message : 'Erro desconhecido',
@@ -575,6 +583,42 @@ export function useAuth() {
       
       console.error('Erro ao fazer logout:', logoutErrorInfo);
       setError('Erro ao fazer logout');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signIn = async (email: string, password: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('Tentando fazer login com:', email);
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (error) {
+        console.error('Erro no login:', error);
+        throw new Error(error.message);
+      }
+      
+      if (data.user) {
+        console.log('Login realizado com sucesso para usuário:', data.user.id);
+        setUser(data.user);
+        
+        // Buscar dados do usuário
+        await fetchUserData(data.user.id);
+      }
+      
+      return data;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido no login';
+      console.error('Erro no login:', errorMessage);
+      setError(errorMessage);
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -662,6 +706,7 @@ export function useAuth() {
     userData,
     loading,
     error,
+    signIn,
     signOut,
     refreshUserData,
     isAuthenticated: !!user,

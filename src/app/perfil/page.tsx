@@ -38,7 +38,7 @@ import {
   MdDelete,
   MdClose
 } from 'react-icons/md';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { ClientLayout } from '@/components/client/ClientLayout';
 import { ClientAuthGuard } from '@/components/ClientAuthGuard';
 import { NewPartyModal } from '@/components/NewPartyModal';
@@ -837,7 +837,7 @@ Esta ação não pode ser desfeita. Apenas festas em rascunho ou canceladas pode
 const ConfiguracoesTab = () => {
   const [loading, setLoading] = useState(true);
   const [activeForm, setActiveForm] = useState<'personal' | 'address' | 'password' | null>(null);
-  const { user } = useOptimizedAuth();
+  const { user } = useAuth();
 
   useEffect(() => {
     // Simular carregamento inicial
@@ -1060,7 +1060,7 @@ const ConfiguracoesTab = () => {
 function ProfilePageContent() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-  const { user, loading } = useOptimizedAuth();
+  const { user, loading } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
 

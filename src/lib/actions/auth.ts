@@ -6,7 +6,6 @@ import { z } from 'zod'
 import { createServerClient, createAdminClient } from '@/lib/supabase/server'
 import { checkEmailExists, checkDocumentExists, verifySession, getCurrentUser } from '@/lib/dal'
 import { removeMask } from '@/utils/formatters'
-import { createClient } from '@supabase/supabase-js'
 import { Database } from '@/types/database'
 
 // Validation schemas
@@ -49,10 +48,10 @@ const forgotPasswordSchema = z.object({
 const updateProfileSchema = z.object({
   fullName: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
   whatsappNumber: z.string().min(10, 'Telefone inválido'),
-  organizationName: z.string().optional()
+  organizationName: z.string().optional(),
+  areaOfOperation: z.string().optional()
 })
 
-// Definir tipo de retorno das actions
 type ActionResult<T = any> = {
   success: boolean
   error?: string
@@ -81,25 +80,22 @@ export async function registerClientAction(formData: FormData): Promise<ActionRe
 
     console.log('Cleaned data:', { cpf, phone })
 
-    // Criar cliente Supabase Admin para criar usuário
-    const supabaseAdmin = createClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    )
+    // Usar createServerClient que usa a anon key
+    const supabase = await createServerClient()
 
-    console.log('Creating client with admin client...')
+    console.log('Creating client with server client...')
     
-    // Criar usuário no auth.users
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    // Criar usuário usando signUp normal (com anon key)
+    const { data: authData, error: authError } = await supabase.auth.signUp({
       email: validatedData.email,
       password: validatedData.password,
-      email_confirm: true // Auto-confirmar email para não precisar de verificação
+      options: {
+        data: {
+          full_name: validatedData.fullName,
+          cpf: cpf,
+          whatsapp_number: phone
+        }
+      }
     })
 
     if (authError) {
@@ -118,8 +114,8 @@ export async function registerClientAction(formData: FormData): Promise<ActionRe
 
     console.log('Auth user created successfully:', authData.user.id)
 
-    // Criar registro na tabela users com role 'client'
-    const { error: userError } = await supabaseAdmin
+    // Inserir manualmente na tabela users com role 'client'
+    const { error: insertError } = await supabase
       .from('users')
       .insert({
         id: authData.user.id,
@@ -130,11 +126,16 @@ export async function registerClientAction(formData: FormData): Promise<ActionRe
         whatsapp_number: phone
       })
 
-    if (userError) {
-      console.error('User profile creation error:', userError)
+    if (insertError) {
+      console.error('User profile creation error:', insertError)
       
-      // Se falhar ao criar o perfil, deletar o usuário criado
-      await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
+      // Se falhar ao criar o perfil, tentar deletar o usuário criado
+      try {
+        const supabaseAdmin = createAdminClient()
+        await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
+      } catch (deleteError) {
+        console.error('Error deleting user after profile creation failure:', deleteError)
+      }
       
       return { success: false, error: 'Erro ao criar perfil do usuário' }
     }
@@ -186,25 +187,24 @@ export async function registerProviderAction(formData: FormData): Promise<Action
 
     console.log('Cleaned provider data:', { cnpj, phone })
 
-    // Criar cliente Supabase Admin para criar usuário
-    const supabaseAdmin = createClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    )
+    // Usar createServerClient que usa a anon key
+    const supabase = await createServerClient()
 
-    console.log('Creating provider with admin client...')
+    console.log('Creating provider with server client...')
     
-    // Criar usuário no auth.users
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    // Criar usuário usando signUp normal (com anon key)
+    const { data: authData, error: authError } = await supabase.auth.signUp({
       email: validatedData.email,
       password: validatedData.password,
-      email_confirm: true // Auto-confirmar email para não precisar de verificação
+      options: {
+        data: {
+          full_name: validatedData.companyName,
+          organization_name: validatedData.companyName,
+          cnpj: cnpj,
+          whatsapp_number: phone,
+          area_of_operation: validatedData.areaOfOperation
+        }
+      }
     })
 
     if (authError) {
@@ -223,8 +223,8 @@ export async function registerProviderAction(formData: FormData): Promise<Action
 
     console.log('Provider auth user created successfully:', authData.user.id)
 
-    // Criar registro na tabela users com role 'provider'
-    const { error: userError } = await supabaseAdmin
+    // Inserir manualmente na tabela users com role 'provider'
+    const { error: insertError } = await supabase
       .from('users')
       .insert({
         id: authData.user.id,
@@ -237,11 +237,16 @@ export async function registerProviderAction(formData: FormData): Promise<Action
         area_of_operation: validatedData.areaOfOperation
       })
 
-    if (userError) {
-      console.error('Provider profile creation error:', userError)
+    if (insertError) {
+      console.error('Provider profile creation error:', insertError)
       
-      // Se falhar ao criar o perfil, deletar o usuário criado
-      await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
+      // Se falhar ao criar o perfil, tentar deletar o usuário criado
+      try {
+        const supabaseAdmin = createAdminClient()
+        await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
+      } catch (deleteError) {
+        console.error('Error deleting user after profile creation failure:', deleteError)
+      }
       
       return { success: false, error: 'Erro ao criar perfil do prestador' }
     }

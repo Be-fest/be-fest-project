@@ -185,12 +185,11 @@ export interface Database {
           description: string | null
           category: string
           images_urls: string[] | null
-          base_price: number
-          price_per_guest: number | null
           min_guests: number
           max_guests: number | null
           status: ServiceStatus
           is_active: boolean
+          platform_fee_percentage: number | null
           created_at: string
           updated_at: string
         }
@@ -201,12 +200,11 @@ export interface Database {
           description?: string | null
           category: string
           images_urls?: string[] | null
-          base_price: number
-          price_per_guest?: number | null
           min_guests?: number
           max_guests?: number | null
           status?: ServiceStatus
           is_active?: boolean
+          platform_fee_percentage?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -217,12 +215,11 @@ export interface Database {
           description?: string | null
           category?: string
           images_urls?: string[] | null
-          base_price?: number
-          price_per_guest?: number | null
           min_guests?: number
           max_guests?: number | null
           status?: ServiceStatus
           is_active?: boolean
+          platform_fee_percentage?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -336,10 +333,7 @@ export interface Database {
           service_id: string
           provider_id: string
           price_per_guest_at_booking: number | null
-          befest_fee_at_booking: number | null
           total_estimated_price: number | null
-          provider_notes: string | null
-          client_notes: string | null
           booking_status: EventServiceStatus
           created_at: string
           updated_at: string
@@ -350,10 +344,7 @@ export interface Database {
           service_id: string
           provider_id: string
           price_per_guest_at_booking?: number | null
-          befest_fee_at_booking?: number | null
           total_estimated_price?: number | null
-          provider_notes?: string | null
-          client_notes?: string | null
           booking_status?: EventServiceStatus
           created_at?: string
           updated_at?: string
@@ -364,10 +355,7 @@ export interface Database {
           service_id?: string
           provider_id?: string
           price_per_guest_at_booking?: number | null
-          befest_fee_at_booking?: number | null
           total_estimated_price?: number | null
-          provider_notes?: string | null
-          client_notes?: string | null
           booking_status?: EventServiceStatus
           created_at?: string
           updated_at?: string
@@ -452,12 +440,11 @@ export interface Service {
   description: string | null;
   category: string;
   images_urls: string[] | null;
-  base_price: number;
-  price_per_guest: number | null;
   min_guests: number;
   max_guests: number | null;
   status: ServiceStatus;
   is_active: boolean;
+  platform_fee_percentage: number | null;
   created_at: string;
   updated_at: string;
   guest_tiers?: GuestTier[]; // Faixas de preço por convidados

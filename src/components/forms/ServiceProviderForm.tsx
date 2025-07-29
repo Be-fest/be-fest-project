@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { MdVisibility, MdVisibilityOff } from 'react-icons/md';
 import Image from 'next/image';
 import { registerProviderAction } from '@/lib/actions/auth';
-import AreaOfOperationSelect from '@/components/ui/AreaOfOperationSelect';
+import { useToastGlobal } from '@/contexts/GlobalToastContext';
 
 interface ServiceProviderFormProps {
   userType: 'client' | 'service_provider';
@@ -15,7 +15,10 @@ interface ServiceProviderFormProps {
 }
 
 // Wrapper function for useActionState compatibility
-async function wrappedRegisterProviderAction(prevState: { success: boolean; error?: string }, formData: FormData) {
+async function wrappedRegisterProviderAction(
+  prevState: { success: boolean; error?: string; data?: any }, 
+  formData: FormData
+): Promise<{ success: boolean; error?: string; data?: any }> {
   try {
     const result = await registerProviderAction(formData);
     return result;
@@ -29,19 +32,66 @@ async function wrappedRegisterProviderAction(prevState: { success: boolean; erro
 }
 
 export function ServiceProviderForm({ userType, onUserTypeChange }: ServiceProviderFormProps) {
-  const [state, formAction, isPending] = useActionState(wrappedRegisterProviderAction, { success: false });
+  const initialState = { success: false, error: undefined, data: undefined };
+  const [state, formAction, isPending] = useActionState(wrappedRegisterProviderAction, initialState);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const router = useRouter();
+  const toast = useToastGlobal();
+  
+  // Flags para controlar toasts
+  const [hasShownSuccessToast, setHasShownSuccessToast] = useState(false);
+  const [hasShownErrorToast, setHasShownErrorToast] = useState(false);
+  const [lastError, setLastError] = useState('');
 
   useEffect(() => {
-    if (state.success && state.data?.message) {
-      // Mostrar mensagem de sucesso por alguns segundos
-      setTimeout(() => {
-        router.push('/auth/login');
-      }, 2000);
+    if (state?.success && state?.data?.message && !hasShownSuccessToast) {
+      // Toast de sucesso
+      setHasShownSuccessToast(true);
+      setHasShownErrorToast(false); // Reset error flag
+      
+      toast.success(
+        'Conta criada com sucesso!',
+        state.data.message,
+        6000
+      );
+      
+      // Redirecionar após mostrar o toast
+      const timer = setTimeout(() => {
+        try {
+          router.push('/auth/login');
+        } catch (error) {
+          console.error('Navigation error:', error);
+        }
+      }, 3000);
+      
+      return () => clearTimeout(timer);
     }
-  }, [state.success, state.data, router]);
+  }, [state?.success, state?.data?.message, router, toast, hasShownSuccessToast]);
+
+  useEffect(() => {
+    // Mostrar toast de erro se houver e não foi mostrado ainda
+    if (!state?.success && state?.error && state.error !== lastError && !hasShownErrorToast) {
+      setLastError(state.error);
+      setHasShownErrorToast(true);
+      setHasShownSuccessToast(false); // Reset success flag
+      
+      toast.error(
+        'Erro no cadastro',
+        state.error,
+        5000
+      );
+    }
+  }, [state?.error, state?.success, toast, hasShownErrorToast, lastError]);
+
+  // Reset flags quando o estado muda completamente
+  useEffect(() => {
+    if (!state || (state.success === false && !state.error)) {
+      setHasShownSuccessToast(false);
+      setHasShownErrorToast(false);
+      setLastError('');
+    }
+  }, [state]);
 
   return (
     <div className="w-full max-w-md space-y-6">
@@ -64,7 +114,9 @@ export function ServiceProviderForm({ userType, onUserTypeChange }: ServiceProvi
           alt="Be Fest Logo"
           width={60}
           height={60}
-          className="object-contain"
+          style={{ height: "auto" }}
+          className="object-contain mx-auto"
+          priority
         />
       </div>
 
@@ -79,8 +131,12 @@ export function ServiceProviderForm({ userType, onUserTypeChange }: ServiceProvi
         <div className="flex justify-start gap-4 text-xl">
           <motion.button
             type="button"
+            className={`transition-colors cursor-pointer ${
+              userType === "client"
+                ? "font-semibold text-[#F71875]"
+                : "text-[#520029] hover:opacity-70"
+            }`}
             onClick={() => onUserTypeChange('client')}
-            className="text-[#520029] hover:opacity-70"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -89,8 +145,12 @@ export function ServiceProviderForm({ userType, onUserTypeChange }: ServiceProvi
           <span className="text-gray-400">|</span>
           <motion.button
             type="button"
+            className={`transition-colors cursor-pointer ${
+              userType === "service_provider"
+                ? "font-semibold text-[#A502CA]"
+                : "text-[#520029] hover:opacity-70"
+            }`}
             onClick={() => onUserTypeChange('service_provider')}
-            className="font-semibold text-[#A502CA]"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -102,140 +162,165 @@ export function ServiceProviderForm({ userType, onUserTypeChange }: ServiceProvi
         </p>
       </div>
 
-      <motion.form
-        action={formAction}
-        className="space-y-4 text-[#8D8D8D]"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.1 }}
-      >
-        {!state.success && state.error && (
-          <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">
-            {state.error}
-          </div>
-        )}
-
-        {state.success && state.data?.message && (
-          <div className="bg-green-50 text-green-600 p-3 rounded-md text-sm">
-            {state.data.message}
-          </div>
-        )}
-
-        <Input
-          type="text"
-          name="companyName"
-          placeholder="Nome da empresa"
-          required
-          disabled={isPending}
-        />
-
-        <Input
-          type="email"
-          name="email"
-          placeholder="E-mail"
-          required
-          disabled={isPending}
-        />
-
-        <div className="relative">
+      <form action={formAction} className="space-y-4">
+        <div className="space-y-2">
+          <label htmlFor="companyName" className="block text-sm font-medium text-gray-700">
+            Nome da Empresa
+          </label>
           <Input
-            type={showPassword ? "text" : "password"}
-            name="password"
-            placeholder="Senha"
+            id="companyName"
+            name="companyName"
+            type="text"
             required
-            disabled={isPending}
+            placeholder="Digite o nome da empresa"
+            className="w-full"
           />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
-          >
-            {showPassword ? (
-              <MdVisibilityOff className="text-xl" />
-            ) : (
-              <MdVisibility className="text-xl" />
-            )}
-          </button>
         </div>
 
-        <div className="relative">
+        <div className="space-y-2">
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            Email
+          </label>
           <Input
-            type={showConfirmPassword ? "text" : "password"}
-            name="confirmPassword"
-            placeholder="Confirmar senha"
+            id="email"
+            name="email"
+            type="email"
             required
-            disabled={isPending}
+            placeholder="Digite o email da empresa"
+            className="w-full"
           />
-          <button
-            type="button"
-            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
-          >
-            {showConfirmPassword ? (
-              <MdVisibilityOff className="text-xl" />
-            ) : (
-              <MdVisibility className="text-xl" />
-            )}
-          </button>
         </div>
 
-        <Input
-          type="text"
-          name="cnpj"
-          placeholder="CNPJ"
-          maxLength={18}
-          required
-          disabled={isPending}
-          onChange={(e) => {
-            e.target.value = formatCNPJ(e.target.value);
-          }}
-        />
+        <div className="space-y-2">
+          <label htmlFor="cnpj" className="block text-sm font-medium text-gray-700">
+            CNPJ
+          </label>
+          <Input
+            id="cnpj"
+            name="cnpj"
+            type="text"
+            required
+            placeholder="00.000.000/0000-00"
+            className="w-full"
+            onChange={(e) => {
+              e.target.value = formatCNPJ(e.target.value);
+            }}
+          />
+        </div>
 
-        <Input
-          type="text"
-          name="phone"
-          placeholder="WhatsApp"
-          maxLength={15}
-          required
-          disabled={isPending}
-          onChange={(e) => {
-            e.target.value = formatPhoneNumber(e.target.value);
-          }}
-        />
+        <div className="space-y-2">
+          <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+            WhatsApp
+          </label>
+          <Input
+            id="phone"
+            name="phone"
+            type="tel"
+            required
+            placeholder="(11) 99999-9999"
+            className="w-full"
+            onChange={(e) => {
+              e.target.value = formatPhoneNumber(e.target.value);
+            }}
+          />
+        </div>
 
-        <AreaOfOperationSelect
-          value=""
-          onChange={() => {}} // FormData handles the value
-          name="areaOfOperation"
-          required
-          placeholder="Selecione a área de atuação"
-          className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
-        />
+        <div className="space-y-2">
+          <label htmlFor="areaOfOperation" className="block text-sm font-medium text-gray-700">
+            Área de Atuação
+          </label>
+          <select
+            id="areaOfOperation"
+            name="areaOfOperation"
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#A502CA] focus:border-[#A502CA]"
+          >
+            <option value="">Selecione uma área</option>
+            <option value="buffet">Buffet</option>
+            <option value="decoracao">Decoração</option>
+            <option value="musica">Música</option>
+            <option value="fotografia">Fotografia</option>
+            <option value="video">Vídeo</option>
+            <option value="churrasco">Churrasco</option>
+            <option value="doceria">Doceria</option>
+            <option value="outros">Outros</option>
+          </select>
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            Senha
+          </label>
+          <div className="relative">
+            <Input
+              id="password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              required
+              placeholder="Digite sua senha"
+              className="w-full pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+            >
+              {showPassword ? (
+                <MdVisibilityOff className="h-5 w-5 text-gray-400" />
+              ) : (
+                <MdVisibility className="h-5 w-5 text-gray-400" />
+              )}
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+            Confirmar Senha
+          </label>
+          <div className="relative">
+            <Input
+              id="confirmPassword"
+              name="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              required
+              placeholder="Confirme sua senha"
+              className="w-full pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+            >
+              {showConfirmPassword ? (
+                <MdVisibilityOff className="h-5 w-5 text-gray-400" />
+              ) : (
+                <MdVisibility className="h-5 w-5 text-gray-400" />
+              )}
+            </button>
+          </div>
+        </div>
 
         <Button
           type="submit"
-          className="w-full"
           disabled={isPending}
-          style={{ backgroundColor: '#A502CA' }}
+          className={`w-full py-3 text-white font-semibold rounded-lg transition-all duration-200 bg-[#A502CA] hover:bg-[#8A02A8] disabled:opacity-50 disabled:cursor-not-allowed`}
         >
-          {isPending ? 'Criando conta...' : 'Criar Conta'}
+          {isPending ? "Criando conta..." : "Criar Conta"}
         </Button>
-      </motion.form>
+      </form>
 
-      <motion.div
-        className="text-center"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.2 }}
-      >
-        <span className="text-[#520029]">Já tem uma conta? </span>
-        <Link
-          href="/auth/login"
-          className="text-[#A502CA] hover:underline"
-        >
-          Fazer login
-        </Link>
-      </motion.div>
+      <div className="text-center">
+        <p className="text-sm text-gray-600">
+          Já tem uma conta?{" "}
+          <Link
+            href="/auth/login"
+            className="font-semibold hover:underline text-[#A502CA]"
+          >
+            Fazer login
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

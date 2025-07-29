@@ -83,10 +83,18 @@ export const RegisterForm = ({ userType, onUserTypeChange }: RegisterFormProps) 
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const router = useRouter();
   const toast = useToastGlobal();
+  
+  // Flags para controlar toasts
+  const [hasShownSuccessToast, setHasShownSuccessToast] = useState(false);
+  const [hasShownErrorToast, setHasShownErrorToast] = useState(false);
+  const [lastError, setLastError] = useState('');
 
   useEffect(() => {
-    if (state?.success && state?.data?.message) {
+    if (state?.success && state?.data?.message && !hasShownSuccessToast) {
       // Toast de sucesso
+      setHasShownSuccessToast(true);
+      setHasShownErrorToast(false); // Reset error flag
+      
       toast.success(
         'Conta criada com sucesso!',
         state.data.message,
@@ -104,18 +112,31 @@ export const RegisterForm = ({ userType, onUserTypeChange }: RegisterFormProps) 
       
       return () => clearTimeout(timer);
     }
-  }, [state?.success, state?.data?.message, router, toast]);
+  }, [state?.success, state?.data?.message, router, toast, hasShownSuccessToast]);
 
   useEffect(() => {
-    // Mostrar toast de erro se houver
-    if (!state?.success && state?.error) {
+    // Mostrar toast de erro se houver e não foi mostrado ainda
+    if (!state?.success && state?.error && state.error !== lastError && !hasShownErrorToast) {
+      setLastError(state.error);
+      setHasShownErrorToast(true);
+      setHasShownSuccessToast(false); // Reset success flag
+      
       toast.error(
         'Erro no cadastro',
         state.error,
         5000
       );
     }
-  }, [state?.error, state?.success, toast]);
+  }, [state?.error, state?.success, toast, hasShownErrorToast, lastError]);
+
+  // Reset flags quando o estado muda completamente
+  useEffect(() => {
+    if (!state || (state.success === false && !state.error)) {
+      setHasShownSuccessToast(false);
+      setHasShownErrorToast(false);
+      setLastError('');
+    }
+  }, [state]);
 
   return (
     <div className="w-full max-w-md space-y-6">
@@ -187,148 +208,229 @@ export const RegisterForm = ({ userType, onUserTypeChange }: RegisterFormProps) 
             Sou Prestador
           </motion.button>
         </div>
-        <p className="text-gray-500 mt-4 text-xl">
-          Crie sua conta e comece a planejar a festa perfeita!
-        </p>
       </div>
 
-      <motion.form
-        action={formAction}
-        className="space-y-4 text-[#8D8D8D]"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.1 }}
-      >
-        <Input
-          type="text"
-          name={userType === 'service_provider' ? 'companyName' : 'fullName'}
-          placeholder={userType === 'service_provider' ? 'Nome da Empresa' : 'Nome Completo'}
-          required
-          disabled={isPending}
-        />
-
-        <Input
-          type="email"
-          name="email"
-          placeholder="Email"
-          required
-          disabled={isPending}
-        />
-
-        <div className="relative">
-          <Input
-            type={showPassword ? "text" : "password"}
-            name="password"
-            placeholder="Senha"
-            required
-            disabled={isPending}
-          />
-          <button
-            type="button"
-            className="absolute inset-y-0 right-0 pr-3 flex items-center"
-            onClick={() => setShowPassword(!showPassword)}
-          >
-            {showPassword ? (
-              <MdVisibilityOff className="h-5 w-5 text-gray-400" />
-            ) : (
-              <MdVisibility className="h-5 w-5 text-gray-400" />
-            )}
-          </button>
-        </div>
-
-        <div className="relative">
-          <Input
-            type={showConfirmPassword ? "text" : "password"}
-            name="confirmPassword"
-            placeholder="Confirmar Senha"
-            required
-            disabled={isPending}
-          />
-          <button
-            type="button"
-            className="absolute inset-y-0 right-0 pr-3 flex items-center"
-            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-          >
-            {showConfirmPassword ? (
-              <MdVisibilityOff className="h-5 w-5 text-gray-400" />
-            ) : (
-              <MdVisibility className="h-5 w-5 text-gray-400" />
-            )}
-          </button>
-        </div>
-
-        {userType === 'service_provider' ? (
+      <form action={formAction} className="space-y-4">
+        {userType === "client" ? (
           <>
-            <Input
-              type="text"
-              name="cnpj"
-              placeholder="CNPJ"
-              maxLength={18}
-              required
-              disabled={isPending}
-              onChange={(e) => {
-                e.target.value = formatCNPJ(e.target.value);
-              }}
-            />
-            
-            <AreaOfOperationSelect
-              value=""
-              onChange={() => {}} // FormData handles the value
-              name="areaOfOperation"
-              required
-              placeholder="Selecione a área de atuação"
-              className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
-            />
+            <div className="space-y-2">
+              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
+                Nome Completo
+              </label>
+              <Input
+                id="fullName"
+                name="fullName"
+                type="text"
+                required
+                placeholder="Digite seu nome completo"
+                className="w-full"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Email
+              </label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                required
+                placeholder="Digite seu email"
+                className="w-full"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="cpf" className="block text-sm font-medium text-gray-700">
+                CPF
+              </label>
+              <Input
+                id="cpf"
+                name="cpf"
+                type="text"
+                required
+                placeholder="000.000.000-00"
+                className="w-full"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                WhatsApp
+              </label>
+              <Input
+                id="phone"
+                name="phone"
+                type="tel"
+                required
+                placeholder="(11) 99999-9999"
+                className="w-full"
+              />
+            </div>
           </>
         ) : (
-          <Input
-            type="text"
-            name="cpf"
-            placeholder="CPF"
-            maxLength={14}
-            required
-            disabled={isPending}
-            onChange={(e) => {
-              e.target.value = formatCPF(e.target.value);
-            }}
-          />
+          <>
+            <div className="space-y-2">
+              <label htmlFor="companyName" className="block text-sm font-medium text-gray-700">
+                Nome da Empresa
+              </label>
+              <Input
+                id="companyName"
+                name="companyName"
+                type="text"
+                required
+                placeholder="Digite o nome da empresa"
+                className="w-full"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Email
+              </label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                required
+                placeholder="Digite o email da empresa"
+                className="w-full"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="cnpj" className="block text-sm font-medium text-gray-700">
+                CNPJ
+              </label>
+              <Input
+                id="cnpj"
+                name="cnpj"
+                type="text"
+                required
+                placeholder="00.000.000/0000-00"
+                className="w-full"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                WhatsApp
+              </label>
+              <Input
+                id="phone"
+                name="phone"
+                type="tel"
+                required
+                placeholder="(11) 99999-9999"
+                className="w-full"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="areaOfOperation" className="block text-sm font-medium text-gray-700">
+                Área de Atuação
+              </label>
+              <select
+                id="areaOfOperation"
+                name="areaOfOperation"
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#A502CA] focus:border-[#A502CA]"
+              >
+                <option value="">Selecione uma área</option>
+                <option value="buffet">Buffet</option>
+                <option value="decoracao">Decoração</option>
+                <option value="musica">Música</option>
+                <option value="fotografia">Fotografia</option>
+                <option value="video">Vídeo</option>
+                <option value="churrasco">Churrasco</option>
+                <option value="doceria">Doceria</option>
+                <option value="outros">Outros</option>
+              </select>
+            </div>
+          </>
         )}
 
-        <Input
-          type="text"
-          name="phone"
-          placeholder="WhatsApp"
-          maxLength={15}
-          required
-          disabled={isPending}
-          onChange={(e) => {
-            e.target.value = formatPhoneNumber(e.target.value);
-          }}
-        />
+        <div className="space-y-2">
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            Senha
+          </label>
+          <div className="relative">
+            <Input
+              id="password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              required
+              placeholder="Digite sua senha"
+              className="w-full pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+            >
+              {showPassword ? (
+                <MdVisibilityOff className="h-5 w-5 text-gray-400" />
+              ) : (
+                <MdVisibility className="h-5 w-5 text-gray-400" />
+              )}
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+            Confirmar Senha
+          </label>
+          <div className="relative">
+            <Input
+              id="confirmPassword"
+              name="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              required
+              placeholder="Confirme sua senha"
+              className="w-full pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+            >
+              {showConfirmPassword ? (
+                <MdVisibilityOff className="h-5 w-5 text-gray-400" />
+              ) : (
+                <MdVisibility className="h-5 w-5 text-gray-400" />
+              )}
+            </button>
+          </div>
+        </div>
 
         <Button
           type="submit"
-          className="w-full"
           disabled={isPending}
+          className={`w-full py-3 text-white font-semibold rounded-lg transition-all duration-200 ${
+            userType === "service_provider"
+              ? "bg-[#A502CA] hover:bg-[#8A02A8]"
+              : "bg-[#F71875] hover:bg-[#D41565]"
+          } disabled:opacity-50 disabled:cursor-not-allowed`}
         >
-          {isPending ? 'Criando conta...' : 'Criar conta'}
+          {isPending ? "Criando conta..." : "Criar Conta"}
         </Button>
-      </motion.form>
+      </form>
 
-      <motion.div
-        className="text-center"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.2 }}
-      >
-        <span className="text-[#520029]">Já tem uma conta? </span>
-        <Link
-          href="/auth/login"
-          className="text-[#F71875] hover:underline"
-        >
-          Fazer login
-        </Link>
-      </motion.div>
+      <div className="text-center">
+        <p className="text-sm text-gray-600">
+          Já tem uma conta?{" "}
+          <Link
+            href="/auth/login"
+            className={`font-semibold hover:underline ${
+              userType === "service_provider" ? "text-[#A502CA]" : "text-[#F71875]"
+            }`}
+          >
+            Fazer login
+          </Link>
+        </p>
+      </div>
     </div>
   );
 };

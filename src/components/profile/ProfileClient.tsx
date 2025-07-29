@@ -30,7 +30,7 @@ import { updateCompleteProfileAction, deleteAccountAction } from '@/lib/actions/
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
+import { useAuth } from '@/hooks/useAuth';
 
 interface User {
   id: string;

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Poppins, Roboto } from "next/font/google";
-import { SessionProvider } from "@/components/SessionProvider";
 import { GlobalToastProvider } from "@/contexts/GlobalToastContext";
 import { RoutesModal } from "@/components/ui";
 import "./globals.css";
@@ -65,10 +64,8 @@ export default function RootLayout({
         cz-shortcut-listen="true"
       >
         <GlobalToastProvider>
-          <SessionProvider>
-            {children}
-            <RoutesModal />
-          </SessionProvider>
+          {children}
+          <RoutesModal />
         </GlobalToastProvider>
       </body>
     </html>
