@@ -292,20 +292,20 @@ export async function addServiceToCartAction(serviceData: {
       service_id: validatedData.service_id,
       provider_id: validatedData.provider_id,
       price_per_guest_at_booking: pricePerGuest,
-      total_guests: totalGuests,
+      total_estimated_price: pricePerGuest * totalGuests,
       booking_status: 'pending_provider_approval'
     });
 
-    // Criar novo event_service
+    // Criar o event_service
     const { data: eventService, error } = await supabase
       .from('event_services')
       .insert({
         event_id: validatedData.event_id,
         service_id: validatedData.service_id,
         provider_id: validatedData.provider_id,
-        price_per_guest_at_booking: pricePerGuest,
-        total_estimated_price: null, // Será calculado posteriormente
-        booking_status: 'pending_provider_approval'
+        price_per_guest_at_booking: pricePerGuest, // Usar a coluna correta da tabela
+        total_estimated_price: pricePerGuest * totalGuests, // Calcular preço total estimado
+        booking_status: 'pending_provider_approval' // Usar o enum correto
       })
       .select()
       .single()

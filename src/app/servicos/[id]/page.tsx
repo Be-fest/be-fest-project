@@ -23,6 +23,7 @@ import { ServiceWithProvider, ServiceWithDetails } from '@/types/database';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
 import { formatMinimumPrice } from '@/utils/formatters';
 import { useAuth } from '@/hooks/useAuth';
+import { addServiceToCartAction } from '@/lib/actions/cart';
 
 export default function ServiceDetailsPage() {
   const params = useParams();
@@ -147,18 +148,44 @@ export default function ServiceDetailsPage() {
     }
   };
 
-  const handleAddServiceToParty = () => {
+  const handleAddServiceToParty = async () => {
     if (!service || !selectedParty) return;
     
-    toast.success(
-      'Serviço adicionado!',
-      `${service.name} foi adicionado à festa "${selectedParty.name}"`
-    );
-    
-    // Redirecionar de volta para a festa
-    setTimeout(() => {
-      router.push(`/perfil?tab=minhas-festas&eventId=${selectedParty.id}`);
-    }, 1500);
+    try {
+      console.log('✅ Adicionando serviço à festa:', {
+        event_id: selectedParty.id,
+        service_id: service.id,
+        provider_id: service.provider_id
+      });
+      
+      const result = await addServiceToCartAction({
+        event_id: selectedParty.id,
+        service_id: service.id,
+        provider_id: service.provider_id,
+        client_notes: null
+      });
+
+      console.log('📋 Resultado da action:', result);
+
+      if (result.success) {
+        console.log('✅ Serviço adicionado com sucesso!');
+        toast.success(
+          'Serviço adicionado!',
+          `${service.name} foi adicionado à festa "${selectedParty.name}"`
+        );
+        
+        // Redirecionar de volta para a festa
+        setTimeout(() => {
+          router.push(`/perfil?tab=minhas-festas&eventId=${selectedParty.id}`);
+        }, 1500);
+      } else {
+        console.error('❌ Erro ao adicionar serviço:', result.error);
+        toast.error('Erro', result.error || 'Erro ao adicionar serviço à festa.', 3000);
+      }
+    } catch (error) {
+      console.error('💥 Erro inesperado ao adicionar serviço:', error);
+      toast.error('Erro', 'Erro inesperado ao adicionar serviço à festa.', 3000);
+    }
   };
 
   const handleAddServiceClick = () => {

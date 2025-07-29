@@ -322,3 +322,154 @@ BEGIN
 END $$;
 
 -- Fim do script incremental
+
+-- Script para verificar e corrigir a estrutura da tabela event_services
+-- Execute este script no SQL Editor do Supabase
+
+-- 1. Verificar se a tabela event_services existe
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'event_services') THEN
+        RAISE NOTICE 'Tabela event_services não existe. Criando...';
+        
+        CREATE TABLE event_services (
+            id uuid default uuid_generate_v4() primary key,
+            event_id uuid references events(id) on delete cascade not null,
+            service_id uuid references services(id) on delete cascade not null,
+            provider_id uuid references users(id) on delete cascade not null,
+            price numeric(10,2) not null,
+            guest_count integer,
+            notes text,
+            status text default 'pending' check (status in ('pending', 'waiting_payment', 'confirmed', 'completed', 'cancelled')),
+            created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+            updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+        );
+        
+        -- Habilitar RLS
+        ALTER TABLE event_services ENABLE ROW LEVEL SECURITY;
+        
+        RAISE NOTICE 'Tabela event_services criada com sucesso';
+    ELSE
+        RAISE NOTICE 'Tabela event_services já existe';
+    END IF;
+END $$;
+
+-- 2. Verificar se as colunas necessárias existem
+DO $$
+BEGIN
+    -- Verificar se a coluna price existe
+    IF NOT EXISTS (SELECT FROM information_schema.columns WHERE table_name = 'event_services' AND column_name = 'price') THEN
+        RAISE NOTICE 'Coluna price não existe. Adicionando...';
+        ALTER TABLE event_services ADD COLUMN price numeric(10,2) not null default 0;
+    ELSE
+        RAISE NOTICE 'Coluna price já existe';
+    END IF;
+    
+    -- Verificar se a coluna guest_count existe
+    IF NOT EXISTS (SELECT FROM information_schema.columns WHERE table_name = 'event_services' AND column_name = 'guest_count') THEN
+        RAISE NOTICE 'Coluna guest_count não existe. Adicionando...';
+        ALTER TABLE event_services ADD COLUMN guest_count integer;
+    ELSE
+        RAISE NOTICE 'Coluna guest_count já existe';
+    END IF;
+    
+    -- Verificar se a coluna notes existe
+    IF NOT EXISTS (SELECT FROM information_schema.columns WHERE table_name = 'event_services' AND column_name = 'notes') THEN
+        RAISE NOTICE 'Coluna notes não existe. Adicionando...';
+        ALTER TABLE event_services ADD COLUMN notes text;
+    ELSE
+        RAISE NOTICE 'Coluna notes já existe';
+    END IF;
+    
+    -- Verificar se a coluna status existe
+    IF NOT EXISTS (SELECT FROM information_schema.columns WHERE table_name = 'event_services' AND column_name = 'status') THEN
+        RAISE NOTICE 'Coluna status não existe. Adicionando...';
+        ALTER TABLE event_services ADD COLUMN status text default 'pending' check (status in ('pending', 'waiting_payment', 'confirmed', 'completed', 'cancelled'));
+    ELSE
+        RAISE NOTICE 'Coluna status já existe';
+    END IF;
+END $$;
+
+-- 3. Verificar se as políticas RLS existem
+DO $$
+BEGIN
+    -- Política para clientes lerem seus event services
+    IF NOT EXISTS (SELECT FROM pg_policies WHERE tablename = 'event_services' AND policyname = 'Clients can read their event services') THEN
+        RAISE NOTICE 'Política "Clients can read their event services" não existe. Criando...';
+        CREATE POLICY "Clients can read their event services"
+            ON event_services FOR SELECT
+            USING (exists (
+                select 1 from events
+                where events.id = event_id
+                and events.client_id = auth.uid()
+            ));
+    ELSE
+        RAISE NOTICE 'Política "Clients can read their event services" já existe';
+    END IF;
+    
+    -- Política para prestadores lerem seus event services
+    IF NOT EXISTS (SELECT FROM pg_policies WHERE tablename = 'event_services' AND policyname = 'Providers can read their event services') THEN
+        RAISE NOTICE 'Política "Providers can read their event services" não existe. Criando...';
+        CREATE POLICY "Providers can read their event services"
+            ON event_services FOR SELECT
+            USING (provider_id = auth.uid());
+    ELSE
+        RAISE NOTICE 'Política "Providers can read their event services" já existe';
+    END IF;
+    
+    -- Política para clientes criarem event services
+    IF NOT EXISTS (SELECT FROM pg_policies WHERE tablename = 'event_services' AND policyname = 'Clients can create event services') THEN
+        RAISE NOTICE 'Política "Clients can create event services" não existe. Criando...';
+        CREATE POLICY "Clients can create event services"
+            ON event_services FOR INSERT
+            WITH CHECK (exists (
+                select 1 from events
+                where events.id = event_id
+                and events.client_id = auth.uid()
+            ));
+    ELSE
+        RAISE NOTICE 'Política "Clients can create event services" já existe';
+    END IF;
+    
+    -- Política para prestadores atualizarem seus event services
+    IF NOT EXISTS (SELECT FROM pg_policies WHERE tablename = 'event_services' AND policyname = 'Providers can update their event services') THEN
+        RAISE NOTICE 'Política "Providers can update their event services" não existe. Criando...';
+        CREATE POLICY "Providers can update their event services"
+            ON event_services FOR UPDATE
+            USING (provider_id = auth.uid());
+    ELSE
+        RAISE NOTICE 'Política "Providers can update their event services" já existe';
+    END IF;
+END $$;
+
+-- 4. Verificar se há constraint única para evitar duplicatas
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT FROM pg_constraint WHERE conname = 'event_services_unique_event_service_provider') THEN
+        RAISE NOTICE 'Constraint única não existe. Criando...';
+        ALTER TABLE event_services ADD CONSTRAINT event_services_unique_event_service_provider 
+            UNIQUE (event_id, service_id, provider_id);
+    ELSE
+        RAISE NOTICE 'Constraint única já existe';
+    END IF;
+END $$;
+
+-- 5. Mostrar estrutura final da tabela
+SELECT 
+    column_name, 
+    data_type, 
+    is_nullable, 
+    column_default
+FROM information_schema.columns 
+WHERE table_name = 'event_services' 
+ORDER BY ordinal_position;
+
+-- 6. Mostrar políticas existentes
+SELECT 
+    policyname, 
+    permissive, 
+    cmd, 
+    qual, 
+    with_check
+FROM pg_policies 
+WHERE tablename = 'event_services';
