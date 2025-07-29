@@ -143,6 +143,21 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
   const halfGuests = watch('half_guests');
   const freeGuests = watch('free_guests');
   const totalGuests = calculateGuestCount(fullGuests, halfGuests, freeGuests);
+  const startTime = watch('start_time');
+
+  // Função para calcular horário de término
+  const calculateEndTime = (startTime: string | null | undefined) => {
+    if (!startTime) return null;
+    
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const startDate = new Date();
+    startDate.setHours(hours, minutes, 0, 0);
+    
+    const endDate = new Date(startDate.getTime() + (5 * 60 * 60 * 1000)); // +5 horas
+    return endDate.toTimeString().slice(0, 5);
+  };
+
+  const endTime = calculateEndTime(startTime);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
@@ -210,6 +225,16 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
           {errors.start_time && (
             <p className="text-red-500 text-sm mt-1">{errors.start_time.message}</p>
           )}
+          {startTime && endTime && (
+            <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>O evento comumente acaba às {endTime}</strong>
+              </p>
+              <p className="text-xs text-blue-600 mt-1">
+                Consulte a duração do serviço. Horas extras são negociadas diretamente com o prestador.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -242,7 +267,7 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
           {/* Inteira */}
           <div className="space-y-2">
             <label className="block text-xs font-medium text-green-600">
-              Inteira (13+ anos)
+              Inteira (De 12 anos em diante)
             </label>
             <input
               type="number"
@@ -263,7 +288,7 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
           {/* Meia */}
           <div className="space-y-2">
             <label className="block text-xs font-medium text-blue-600">
-              Meia (6-12 anos)
+              Meia (De 6 a 11 anos de Idade)
             </label>
             <input
               type="number"
@@ -284,7 +309,7 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
           {/* Free */}
           <div className="space-y-2">
             <label className="block text-xs font-medium text-orange-600">
-              Gratuito (0-5 anos)
+              Grátis (De 0 a 5 anos de Idade)
             </label>
             <input
               type="number"
@@ -311,7 +336,7 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
             <p className="text-xs text-gray-500 mt-1">
               {fullGuests > 0 && `${fullGuests} inteira`}
               {halfGuests > 0 && `${fullGuests > 0 ? ', ' : ''}${halfGuests} meia`}
-              {freeGuests > 0 && `${(fullGuests > 0 || halfGuests > 0) ? ', ' : ''}${freeGuests} gratuito`}
+              {freeGuests > 0 && `${(fullGuests > 0 || halfGuests > 0) ? ', ' : ''}${freeGuests} grátis`}
             </p>
           </div>
         )}
