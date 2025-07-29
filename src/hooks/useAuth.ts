@@ -5,6 +5,16 @@ import { createClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
+import { 
+  isJWTExpiredError, 
+  isNetworkError, 
+  isPermissionError, 
+  isNotFoundError,
+  getFriendlyErrorMessage,
+  shouldRetry,
+  getRetryDelay,
+  safeLogError
+} from '@/utils/errorUtils';
 
 interface UserData {
   id: string;
@@ -21,48 +31,6 @@ interface UserData {
   created_at: string;
   updated_at: string;
 }
-
-// Função para verificar se o erro é de JWT expirado
-const isJWTExpiredError = (error: any): boolean => {
-  return (
-    error?.code === 'PGRST301' ||
-    error?.message?.includes('JWT expired') ||
-    error?.message?.includes('jwt expired')
-  );
-};
-
-// Função segura para logar erros
-const safeConsoleError = (message: string, data: any) => {
-  try {
-    // Verificar se o data é um objeto válido
-    if (data && typeof data === 'object') {
-      // Remover propriedades que podem causar problemas de serialização
-      const safeData = { ...data };
-      
-      // Garantir que todas as propriedades tenham valores válidos
-      Object.keys(safeData).forEach(key => {
-        if (safeData[key] === null || safeData[key] === undefined) {
-          safeData[key] = 'Valor não disponível';
-        }
-      });
-      
-      // Verificar se o objeto não está vazio
-      const hasValidData = Object.values(safeData).some(value => 
-        value !== null && value !== undefined && value !== ''
-      );
-      
-      if (hasValidData) {
-        console.error(message, safeData);
-      } else {
-        console.error(message, 'Objeto de erro vazio ou inválido');
-      }
-    } else {
-      console.error(message, data || 'Dados não disponíveis');
-    }
-  } catch (error) {
-    console.error(message, 'Erro ao processar dados de erro');
-  }
-};
 
 // Funções para gerenciar localStorage
 const getStoredSession = () => {
@@ -144,12 +112,15 @@ export function useAuth() {
   const supabase = createClient();
   
   const sessionExpiredToastShownRef = useRef(false);
+  const retryCountRef = useRef(0);
+  const maxRetries = 3;
 
   console.log('useAuth: Estado atual', { 
     user: !!user, 
     userData: !!userData, 
     loading, 
-    error 
+    error,
+    retryCount: retryCountRef.current
   });
 
   const handleJWTExpired = async () => {
@@ -160,38 +131,33 @@ export function useAuth() {
     sessionExpiredToastShownRef.current = true;
     
     try {
-      // Mostrar toast de sessão expirada
       toast.warning(
         'Sessão Expirada',
         'Sua sessão expirou. Você será redirecionado para fazer login novamente.',
         6000
       );
 
-      // Limpar dados do localStorage
       clearStoredSession();
       
-      // Fazer logout
       await supabase.auth.signOut();
       setUser(null);
       setUserData(null);
       setError(null);
+      retryCountRef.current = 0;
       
-      // Aguardar um pouco para o usuário ver o toast
       setTimeout(() => {
         router.push('/auth/login');
       }, 2000);
       
     } catch (logoutError) {
-      console.error('Erro ao fazer logout após JWT expirado:', logoutError);
+      safeLogError('Erro ao fazer logout após JWT expirado:', logoutError);
       
-      // Mostrar toast de erro
       toast.error(
         'Erro de Sessão',
         'Houve um problema ao encerrar sua sessão. Você será redirecionado para o login.',
         4000
       );
       
-      // Forçar redirecionamento mesmo se o logout falhar
       setTimeout(() => {
         router.push('/auth/login');
       }, 2000);
@@ -199,11 +165,10 @@ export function useAuth() {
   };
 
   // Função para verificar e criar usuário se necessário
-  const ensureUserExists = async (userId: string, email: string) => {
+  const ensureUserExists = async (userId: string, email: string): Promise<boolean> => {
     try {
       console.log('🔍 Verificando se usuário existe na tabela users...');
       
-      // Primeiro, tentar buscar o usuário
       const { data: existingUser, error: fetchError } = await supabase
         .from('users')
         .select('id')
@@ -232,39 +197,28 @@ export function useAuth() {
           });
 
         if (insertError) {
-          console.error('❌ Erro ao criar usuário:', {
-            message: insertError.message,
-            code: insertError.code,
-            details: insertError.details
-          });
+          safeLogError('❌ Erro ao criar usuário:', insertError);
           return false;
         }
 
         console.log('✅ Usuário criado com sucesso');
         return true;
       } else if (fetchError) {
-        console.error('❌ Erro ao verificar usuário:', {
-          message: fetchError.message,
-          code: fetchError.code,
-          details: fetchError.details
-        });
+        safeLogError('❌ Erro ao verificar usuário:', fetchError);
         return false;
       } else {
         console.log('✅ Usuário já existe na tabela');
         return true;
       }
     } catch (error) {
-      console.error('💥 Erro inesperado ao verificar/criar usuário:', {
-        message: error instanceof Error ? error.message : 'Erro desconhecido',
-        name: error instanceof Error ? error.name : 'Erro genérico'
-      });
+      safeLogError('💥 Erro inesperado ao verificar/criar usuário:', error);
       return false;
     }
   };
 
-  const fetchUserData = async (userId: string) => {
+  const fetchUserData = async (userId: string, retryAttempt = 0): Promise<void> => {
     try {
-      console.log('🔄 fetchUserData iniciado para userId:', userId);
+      console.log(`🔄 fetchUserData iniciado para userId: ${userId} (tentativa ${retryAttempt + 1})`);
       
       // Verificar se o userId é válido
       if (!userId || userId === 'undefined' || userId === 'null') {
@@ -278,7 +232,13 @@ export function useAuth() {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
-        console.error('❌ Erro ao verificar sessão:', sessionError);
+        safeLogError('❌ Erro ao verificar sessão:', sessionError);
+        
+        if (isJWTExpiredError(sessionError)) {
+          await handleJWTExpired();
+          return;
+        }
+        
         setError('Erro ao verificar autenticação');
         setLoading(false);
         return;
@@ -310,6 +270,16 @@ export function useAuth() {
       const userExists = await ensureUserExists(userId, session.user.email || '');
       if (!userExists) {
         console.error('❌ Falha ao verificar/criar usuário na tabela');
+        
+        if (shouldRetry(null, retryAttempt, maxRetries)) {
+          const delay = getRetryDelay(retryAttempt);
+          console.log(`🔄 Tentando novamente em ${delay}ms... (${retryAttempt + 1}/${maxRetries})`);
+          setTimeout(() => {
+            fetchUserData(userId, retryAttempt + 1);
+          }, delay);
+          return;
+        }
+        
         setError('Erro ao acessar dados do usuário');
         setLoading(false);
         return;
@@ -317,7 +287,6 @@ export function useAuth() {
 
       console.log('🔍 Buscando dados do usuário na tabela users...');
       
-      // Query simplificada e mais robusta
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
@@ -333,17 +302,7 @@ export function useAuth() {
       });
 
       if (userError) {
-        // Garantir que sempre temos dados válidos para logar
-        const errorInfo = {
-          message: userError.message || 'Sem mensagem de erro',
-          code: userError.code || 'Sem código de erro',
-          details: userError.details || 'Sem detalhes',
-          hint: userError.hint || 'Sem dica',
-          userId: userId,
-          timestamp: new Date().toISOString()
-        };
-        
-        console.error('❌ Erro na query users:', errorInfo);
+        safeLogError('❌ Erro na query users:', userError);
         
         // Verificar se é erro de JWT expirado
         if (isJWTExpiredError(userError)) {
@@ -352,29 +311,33 @@ export function useAuth() {
           return;
         }
         
-        // Verificar se é erro de RLS (Row Level Security)
-        if (userError.code === 'PGRST116' || userError.message?.includes('permission denied')) {
-          console.error('❌ Erro de permissão RLS detectado');
-          setError('Erro de permissão: Verifique se você tem acesso aos dados');
-          setLoading(false);
+        // Verificar se deve tentar novamente
+        if (shouldRetry(userError, retryAttempt, maxRetries)) {
+          const delay = getRetryDelay(retryAttempt);
+          console.log(`🔄 Tentando novamente em ${delay}ms... (${retryAttempt + 1}/${maxRetries})`);
+          setTimeout(() => {
+            fetchUserData(userId, retryAttempt + 1);
+          }, delay);
           return;
         }
         
-        // Verificar se é erro de registro não encontrado
-        if (userError.code === 'PGRST116' || userError.message?.includes('No rows found')) {
-          console.error('❌ Usuário não encontrado na tabela users');
-          setError('Perfil de usuário não encontrado. Tente fazer login novamente.');
-          setLoading(false);
-          return;
-        }
-        
-        setError(`Erro ao carregar dados do usuário: ${userError.message || 'Erro desconhecido'}`);
+        setError(getFriendlyErrorMessage(userError));
         setLoading(false);
         return;
       }
 
       if (!userData) {
         console.error('❌ Dados do usuário retornaram null/undefined');
+        
+        if (shouldRetry(null, retryAttempt, maxRetries)) {
+          const delay = getRetryDelay(retryAttempt);
+          console.log(`🔄 Dados nulos, tentando novamente em ${delay}ms... (${retryAttempt + 1}/${maxRetries})`);
+          setTimeout(() => {
+            fetchUserData(userId, retryAttempt + 1);
+          }, delay);
+          return;
+        }
+        
         setError('Dados do usuário não encontrados');
         setLoading(false);
         return;
@@ -389,14 +352,12 @@ export function useAuth() {
 
       setUserData(userData);
       setStoredUserData(userData);
+      setError(null);
+      retryCountRef.current = 0;
       setLoading(false);
       
     } catch (fetchError) {
-      console.error('💥 Erro inesperado em fetchUserData:', {
-        message: fetchError instanceof Error ? fetchError.message : 'Erro desconhecido',
-        name: fetchError instanceof Error ? fetchError.name : 'Erro genérico',
-        stack: fetchError instanceof Error ? fetchError.stack : 'Stack não disponível'
-      });
+      safeLogError('💥 Erro inesperado em fetchUserData:', fetchError);
       
       // Verificar se é erro de JWT expirado
       if (isJWTExpiredError(fetchError)) {
@@ -405,13 +366,17 @@ export function useAuth() {
         return;
       }
       
-      // Verificar se é erro de timeout
-      if (fetchError instanceof Error && fetchError.message.includes('Timeout')) {
-        setError('Tempo limite excedido ao carregar dados. Tente novamente.');
-      } else {
-        setError(`Erro ao carregar dados do usuário: ${fetchError instanceof Error ? fetchError.message : 'Erro desconhecido'}`);
+      // Verificar se deve tentar novamente
+      if (shouldRetry(fetchError, retryAttempt, maxRetries)) {
+        const delay = getRetryDelay(retryAttempt);
+        console.log(`🔄 Tentando novamente em ${delay}ms... (${retryAttempt + 1}/${maxRetries})`);
+        setTimeout(() => {
+          fetchUserData(userId, retryAttempt + 1);
+        }, delay);
+        return;
       }
       
+      setError(getFriendlyErrorMessage(fetchError));
       setLoading(false);
     }
   };
@@ -501,16 +466,15 @@ export function useAuth() {
         timestamp: new Date().toISOString()
       };
       
-      console.error('Erro na inicialização da autenticação:', sessionErrorInfo);
+      console.error('💥 Erro inesperado em getInitialSession:', sessionErrorInfo);
       
-      // Verificar se é erro de JWT expirado
-      if (isJWTExpiredError(error)) {
-        await handleJWTExpired();
-        return;
+      // Verificar se é erro de rede
+      if (isNetworkError(error)) {
+        setError('Erro de conexão. Verifique sua internet e tente novamente.');
+      } else {
+        setError('Erro ao inicializar autenticação');
       }
       
-      setError('Erro inesperado na autenticação');
-    } finally {
       setLoading(false);
     }
   };
@@ -628,6 +592,8 @@ export function useAuth() {
     if (!user) return;
     
     try {
+      console.log('🔄 Atualizando dados do usuário...');
+      
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select(`
@@ -654,52 +620,37 @@ export function useAuth() {
           await handleJWTExpired();
           return;
         }
-      } else {
-        setUserData(userData);
-        setStoredUserData(userData);
-      }
-    } catch (error) {
-      const refreshErrorInfo = {
-        message: error instanceof Error ? error.message : 'Erro desconhecido',
-        stack: error instanceof Error ? error.stack : undefined
-      };
-      
-      console.error('Erro ao atualizar dados do usuário:', refreshErrorInfo);
-      
-      // Verificar se é erro de JWT expirado
-      if (isJWTExpiredError(error)) {
-        await handleJWTExpired();
+        
+        // Verificar se é erro de rede
+        if (isNetworkError(userError)) {
+          console.error('❌ Erro de rede ao atualizar dados do usuário');
+          setError('Erro de conexão ao atualizar dados');
+          return;
+        }
+        
+        console.error('❌ Erro ao atualizar dados do usuário:', userError);
+        setError('Erro ao atualizar dados do usuário');
         return;
       }
+
+      if (userData) {
+        console.log('✅ Dados do usuário atualizados com sucesso');
+        setUserData(userData);
+        setStoredUserData(userData);
+        setError(null);
+      }
+    } catch (error) {
+      console.error('💥 Erro inesperado ao atualizar dados do usuário:', error);
+      setError('Erro inesperado ao atualizar dados');
     }
   };
 
-  // Função para configurar headers de autenticação para requisições
   const setupAuthHeaders = () => {
-    if (typeof window === 'undefined') return;
-    
-    // Interceptar todas as requisições fetch para adicionar headers de auth
-    const originalFetch = window.fetch;
-    window.fetch = function(input, init) {
-      const storedSession = getStoredSession();
-      
-      if (storedSession && init) {
-        init.headers = {
-          ...init.headers,
-          'x-localstorage-auth': 'true'
-        };
-      }
-      
-      return originalFetch.call(this, input, init);
+    // Função para configurar headers de autenticação se necessário
+    return {
+      'Content-Type': 'application/json',
     };
   };
-
-  // Effect para configurar headers de autenticação
-  useEffect(() => {
-    if (user) {
-      setupAuthHeaders();
-    }
-  }, [user]);
 
   return {
     user,
@@ -709,9 +660,6 @@ export function useAuth() {
     signIn,
     signOut,
     refreshUserData,
-    isAuthenticated: !!user,
-    isClient: userData?.role === 'client',
-    isProvider: userData?.role === 'provider',
-    isAdmin: userData?.role === 'admin',
+    setupAuthHeaders,
   };
 } 

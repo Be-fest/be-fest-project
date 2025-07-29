@@ -44,7 +44,7 @@ import { ClientAuthGuard } from '@/components/ClientAuthGuard';
 import { NewPartyModal } from '@/components/NewPartyModal';
 import { getClientEventsAction, deleteEventAction } from '@/lib/actions/events';
 import { getClientEventServicesAction } from '@/lib/actions/event-services';
-import { Event, EventStatus, EventServiceWithDetails } from '@/types/database';
+import { Event, EventServiceWithDetails } from '@/types/database';
 import ProfileClient from '@/components/profile/ProfileClient';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { useToast } from '@/hooks/useToast';
@@ -132,8 +132,6 @@ const DashboardTab = () => {
   ];
 
   // Calcular estatísticas reais
-  const activeEvents = events.filter(e => e.status === 'published').length;
-  const completedEvents = events.filter(e => e.status === 'completed').length;
   const totalEvents = events.length;
   
   // Calcular próximo evento
@@ -465,62 +463,7 @@ const MinhasFestasTab = ({ onShowPartyDetails }: { onShowPartyDetails?: (eventId
     setEventToDelete(null);
   };
 
-  const getStatusColor = (status: EventStatus) => {
-    switch (status) {
-      case 'draft':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-      case 'published':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'waiting_payment':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'completed':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case null:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getStatusIcon = (status: EventStatus) => {
-    switch (status) {
-      case 'draft':
-        return <MdEdit className="text-gray-600" />;
-      case 'published':
-        return <MdCheckCircle className="text-green-600" />;
-      case 'waiting_payment':
-        return <MdError className="text-yellow-600" />;
-      case 'completed':
-        return <MdCheckCircle className="text-blue-600" />;
-      case 'cancelled':
-        return <MdError className="text-red-600" />;
-      case null:
-        return <MdInfo className="text-gray-600" />;
-      default:
-        return <MdInfo className="text-gray-600" />;
-    }
-  };
-
-  const getStatusLabel = (status: EventStatus) => {
-    switch (status) {
-      case 'draft':
-        return 'Rascunho';
-      case 'published':
-        return 'Publicada';
-      case 'waiting_payment':
-        return 'Aguardando Pagamento';
-      case 'completed':
-        return 'Realizada';
-      case 'cancelled':
-        return 'Cancelada';
-      case null:
-        return 'Sem Status';
-      default:
-        return status || 'Sem Status';
-    }
-  };
+  // Funções de status removidas - a coluna status não existe mais na tabela events
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {

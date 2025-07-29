@@ -137,8 +137,6 @@ export interface Database {
           full_guests: number
           half_guests: number
           free_guests: number
-          budget: number | null
-          status: EventStatus
           created_at: string
           updated_at: string
         }
@@ -154,8 +152,6 @@ export interface Database {
           full_guests?: number
           half_guests?: number
           free_guests?: number
-          budget?: number | null
-          status?: EventStatus
           created_at?: string
           updated_at?: string
         }
@@ -171,8 +167,6 @@ export interface Database {
           full_guests?: number
           half_guests?: number
           free_guests?: number
-          budget?: number | null
-          status?: EventStatus
           created_at?: string
           updated_at?: string
         }

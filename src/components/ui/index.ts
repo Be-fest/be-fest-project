@@ -1,4 +1,5 @@
 export { default as AreaOfOperationSelect } from './AreaOfOperationSelect';
+export { AuthErrorFallback } from './AuthErrorFallback';
 export { Button } from './Button';
 export { CategoriesSkeleton } from './CategoriesSkeleton';
 export { ConfirmationModal } from './ConfirmationModal';

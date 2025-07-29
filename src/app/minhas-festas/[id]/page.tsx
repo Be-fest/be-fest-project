@@ -23,8 +23,6 @@ interface Event {
   full_guests: number;
   half_guests: number;
   free_guests: number;
-  budget: number | null;
-  status: string;
   created_at: string;
   updated_at: string;
 }
@@ -235,7 +233,7 @@ export default function MinhasFestasDetalhePage() {
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">
               <Button
-                variant="ghost"
+                variant="secondary"
                 onClick={() => router.push('/minhas-festas')}
                 className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
               >
@@ -245,11 +243,11 @@ export default function MinhasFestasDetalhePage() {
               <h1 className="text-3xl font-bold text-gray-900">{event.title}</h1>
             </div>
             <div className="flex items-center gap-3">
-              <Button variant="outline" className="flex items-center gap-2">
+              <Button variant="secondary" className="flex items-center gap-2">
                 <MdEdit className="text-lg" />
                 Editar
               </Button>
-              <Button variant="outline" className="flex items-center gap-2 text-red-600 hover:text-red-700">
+              <Button variant="secondary" className="flex items-center gap-2 text-red-600 hover:text-red-700">
                 <MdDelete className="text-lg" />
                 Excluir
               </Button>
