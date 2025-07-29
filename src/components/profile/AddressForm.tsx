@@ -15,7 +15,6 @@ export function AddressForm({ onClose }: AddressFormProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    address: userData?.address || '',
     city: userData?.city || '',
     state: userData?.state || '',
     postal_code: userData?.postal_code || ''
@@ -27,7 +26,6 @@ export function AddressForm({ onClose }: AddressFormProps) {
 
     try {
       const result = await updateUserAddressAction({
-        address: formData.address,
         city: formData.city,
         state: formData.state,
         postal_code: formData.postal_code
@@ -49,13 +47,6 @@ export function AddressForm({ onClose }: AddressFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-4">
-        <Input
-          label="Endereço"
-          value={formData.address}
-          onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-          required
-        />
-        
         <div className="grid grid-cols-2 gap-4">
           <Input
             label="Cidade"

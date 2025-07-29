@@ -288,7 +288,6 @@ export interface Database {
           whatsapp_number: string | null
           logo_url: string | null
           area_of_operation: string | null
-          address: string | null
           city: string | null
           state: string | null
           postal_code: string | null
@@ -305,7 +304,6 @@ export interface Database {
           whatsapp_number?: string | null
           logo_url?: string | null
           area_of_operation?: string | null
-          address?: string | null
           city?: string | null
           state?: string | null
           postal_code?: string | null
@@ -322,7 +320,6 @@ export interface Database {
           whatsapp_number?: string | null
           logo_url?: string | null
           area_of_operation?: string | null
-          address?: string | null
           city?: string | null
           state?: string | null
           postal_code?: string | null

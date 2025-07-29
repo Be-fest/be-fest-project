@@ -9,7 +9,6 @@ interface UpdateProfileData {
 }
 
 interface UpdateAddressData {
-  address: string;
   city: string;
   state: string;
   postal_code: string;
@@ -49,7 +48,6 @@ export async function updateUserAddressAction(data: UpdateAddressData) {
     const { error } = await supabase
       .from('users')
       .update({
-        address: data.address,
         city: data.city,
         state: data.state,
         postal_code: data.postal_code,

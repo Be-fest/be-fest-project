@@ -32,7 +32,6 @@ export interface Database {
           logo_url: string | null
           profile_image: string | null
           area_of_operation: string | null
-          address: string | null
           city: string | null
           state: string | null
           postal_code: string | null
@@ -52,7 +51,6 @@ export interface Database {
           logo_url?: string | null
           profile_image?: string | null
           area_of_operation?: string | null
-          address?: string | null
           city?: string | null
           state?: string | null
           postal_code?: string | null
@@ -72,7 +70,6 @@ export interface Database {
           logo_url?: string | null
           profile_image?: string | null
           area_of_operation?: string | null
-          address?: string | null
           city?: string | null
           state?: string | null
           postal_code?: string | null

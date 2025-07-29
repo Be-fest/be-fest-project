@@ -10,7 +10,7 @@ import { useToastGlobal } from '@/contexts/GlobalToastContext';
 import { createClient } from '@/lib/supabase/client';
 import { calculateCorrectServicePrice } from '@/utils/formatters';
 import { recalculateServicePriceAction, recalculateAllEventServicesAction } from '@/lib/actions/event-services';
-import { MdArrowBack, MdEdit, MdDelete, MdAdd, MdGrill, MdLocalFireDepartment, MdPayment, MdRemove } from 'react-icons/md';
+import { MdArrowBack, MdEdit, MdDelete, MdAdd, MdLocalFireDepartment, MdPayment, MdRemove } from 'react-icons/md';
 
 interface Event {
   id: string;
@@ -354,7 +354,6 @@ export default function MinhasFestasDetalhePage() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
                             <div className="flex items-center gap-1">
-                              <MdGrill className="text-orange-600" />
                               <MdLocalFireDepartment className="text-red-600" />
                             </div>
                             <h3 className="font-semibold text-gray-900">{eventService.service.name}</h3>

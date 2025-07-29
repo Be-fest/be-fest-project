@@ -53,7 +53,6 @@ export interface UserProfile {
   whatsapp_number?: string;
   logo_url?: string;
   area_of_operation?: string;
-  address?: string;
   city?: string;
   state?: string;
   postal_code?: string;
@@ -73,7 +72,6 @@ export interface UpdateProfileData {
 }
 
 export interface UpdateAddressData {
-  address: string;
   city: string;
   state: string;
   postal_code: string;

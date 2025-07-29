@@ -82,8 +82,16 @@ const ServicesGrid = ({ services, selectedParty }: {
   };
 
   const handleAddServiceDirectly = async (service: ServiceWithProvider) => {
+    console.log('🔄 Iniciando adição de serviço:', {
+      serviceId: service.id,
+      serviceName: service.name,
+      providerId: service.provider_id,
+      selectedParty: selectedParty
+    });
+
     // Verificar se o usuário está logado
     if (!user) {
+      console.log('❌ Usuário não logado');
       toast.error(
         'Login necessário',
         'Você precisa fazer login para adicionar serviços às suas festas'
@@ -97,6 +105,7 @@ const ServicesGrid = ({ services, selectedParty }: {
     
     // Se estiver logado mas não tem festa selecionada, redirecionar para perfil
     if (!selectedParty) {
+      console.log('❌ Nenhuma festa selecionada');
       toast.info(
         'Selecione uma festa',
         'Você será redirecionado para selecionar uma festa'
@@ -109,6 +118,8 @@ const ServicesGrid = ({ services, selectedParty }: {
     
     // Se estiver logado e tem festa selecionada, adicionar o serviço
     try {
+      console.log('✅ Dados válidos, chamando addServiceToCartAction...');
+      
       const result = await addServiceToCartAction({
         event_id: selectedParty.id,
         service_id: service.id,
@@ -116,17 +127,21 @@ const ServicesGrid = ({ services, selectedParty }: {
         client_notes: null
       });
 
+      console.log('📋 Resultado da action:', result);
+
       if (result.success) {
+        console.log('✅ Serviço adicionado com sucesso!');
         toast.success(
           'Serviço adicionado!',
           `${service.name} foi adicionado à sua festa "${selectedParty.name}".`,
           3000
         );
       } else {
+        console.error('❌ Erro ao adicionar serviço:', result.error);
         toast.error('Erro', result.error || 'Erro ao adicionar serviço.', 3000);
       }
     } catch (error) {
-      console.error('Erro ao adicionar serviço:', error);
+      console.error('💥 Erro inesperado ao adicionar serviço:', error);
       toast.error('Erro', 'Erro inesperado ao adicionar serviço.', 3000);
     }
   };
@@ -148,19 +163,6 @@ const ServicesGrid = ({ services, selectedParty }: {
               alt={service.name}
               className="w-full h-full object-cover"
             />
-            
-            {/* Botão de adicionar diretamente - posicionado no canto superior direito da imagem */}
-            {selectedParty && (
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={() => handleAddServiceDirectly(service)}
-                className="absolute top-3 right-3 bg-[#FF0080] hover:bg-[#E6006F] text-white w-10 h-10 rounded-full transition-colors duration-200 shadow-lg flex items-center justify-center"
-                title="Adicionar diretamente à festa"
-              >
-                <MdAdd className="text-xl" />
-              </motion.button>
-            )}
           </div>
 
           {/* Conteúdo do card */}

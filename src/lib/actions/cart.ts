@@ -174,30 +174,45 @@ export async function addServiceToCartAction(serviceData: {
   client_notes?: string | null
 }): Promise<ActionResult<EventService>> {
   try {
+    console.log('🚀 addServiceToCartAction iniciado com:', serviceData);
+    
     const user = await getCurrentUser()
+    console.log('👤 Usuário autenticado:', user.id);
+    
     const supabase = await createServerClient()
 
     const validatedData = addServiceToCartSchema.parse(serviceData)
+    console.log('✅ Dados validados:', validatedData);
 
     // Verificar se o evento pertence ao usuário
-    const { data: event } = await supabase
+    const { data: event, error: eventError } = await supabase
       .from('events')
       .select('client_id')
       .eq('id', validatedData.event_id)
       .single()
 
+    console.log('📅 Evento encontrado:', event, 'Erro:', eventError);
+
+    if (eventError) {
+      console.error('❌ Erro ao buscar evento:', eventError);
+      return { success: false, error: 'Evento não encontrado' }
+    }
+
     if (!event || event.client_id !== user.id) {
+      console.error('❌ Evento não pertence ao usuário:', { eventClientId: event?.client_id, userId: user.id });
       return { success: false, error: 'Evento não encontrado ou acesso negado' }
     }
 
     // Verificar se o serviço já foi adicionado ao evento (incluindo provider_id)
-    const { data: existingService } = await supabase
+    const { data: existingService, error: existingError } = await supabase
       .from('event_services')
       .select('*')
       .eq('event_id', validatedData.event_id)
       .eq('service_id', validatedData.service_id)
       .eq('provider_id', validatedData.provider_id)
       .single()
+
+    console.log('🔍 Serviço existente:', existingService, 'Erro:', existingError);
 
     if (existingService) {
       console.log('✅ Serviço já existe, retornando existente:', existingService.id);
@@ -206,13 +221,16 @@ export async function addServiceToCartAction(serviceData: {
     }
 
     // Buscar dados do serviço para calcular preços
-    const { data: service } = await supabase
+    const { data: service, error: serviceError } = await supabase
       .from('services')
       .select('base_price, price_per_guest')
       .eq('id', validatedData.service_id)
       .single()
 
-    if (!service) {
+    console.log('🔧 Dados do serviço:', service, 'Erro:', serviceError);
+
+    if (serviceError || !service) {
+      console.error('❌ Serviço não encontrado:', serviceError);
       return { success: false, error: 'Serviço não encontrado' }
     }
 
@@ -235,6 +253,8 @@ export async function addServiceToCartAction(serviceData: {
       })
       .select()
       .single()
+
+    console.log('📝 Resultado da inserção:', eventService, 'Erro:', error);
 
     if (error) {
       console.error('❌ Error creating event service:', error)
@@ -264,7 +284,7 @@ export async function addServiceToCartAction(serviceData: {
     revalidatePath(`/minhas-festas/${validatedData.event_id}`)
     return { success: true, data: eventService }
   } catch (error) {
-    console.error('Add service to cart failed:', error)
+    console.error('💥 Add service to cart failed:', error)
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Erro ao adicionar serviço' 

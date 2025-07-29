@@ -15,7 +15,6 @@ interface UserData {
   profile_image: string | null;
   whatsapp_number: string | null;
   area_of_operation: string | null;
-  address: string | null;
   city: string | null;
   state: string | null;
   postal_code: string | null;
@@ -30,6 +29,39 @@ const isJWTExpiredError = (error: any): boolean => {
     error?.message?.includes('JWT expired') ||
     error?.message?.includes('jwt expired')
   );
+};
+
+// Função segura para logar erros
+const safeConsoleError = (message: string, data: any) => {
+  try {
+    // Verificar se o data é um objeto válido
+    if (data && typeof data === 'object') {
+      // Remover propriedades que podem causar problemas de serialização
+      const safeData = { ...data };
+      
+      // Garantir que todas as propriedades tenham valores válidos
+      Object.keys(safeData).forEach(key => {
+        if (safeData[key] === null || safeData[key] === undefined) {
+          safeData[key] = 'Valor não disponível';
+        }
+      });
+      
+      // Verificar se o objeto não está vazio
+      const hasValidData = Object.values(safeData).some(value => 
+        value !== null && value !== undefined && value !== ''
+      );
+      
+      if (hasValidData) {
+        console.error(message, safeData);
+      } else {
+        console.error(message, 'Objeto de erro vazio ou inválido');
+      }
+    } else {
+      console.error(message, data || 'Dados não disponíveis');
+    }
+  } catch (error) {
+    console.error(message, 'Erro ao processar dados de erro');
+  }
 };
 
 // Funções para gerenciar localStorage
@@ -161,59 +193,15 @@ export function useAuth() {
       
       // Forçar redirecionamento mesmo se o logout falhar
       setTimeout(() => {
-        clearStoredSession();
-        window.location.href = '/auth/login';
+        router.push('/auth/login');
       }, 2000);
-    }
-  };
-
-  // Função para verificar políticas RLS
-  const checkRLSPolicies = async (userId: string) => {
-    try {
-      console.log('Verificando políticas RLS...');
-      
-      // Tentar uma query simples para verificar permissões
-      const { data, error } = await supabase
-        .from('users')
-        .select('id, role')
-        .eq('id', userId)
-        .limit(1);
-
-      if (error) {
-        console.error('Erro ao verificar políticas RLS:', {
-          error,
-          message: error.message,
-          code: error.code,
-          details: error.details
-        });
-        
-        if (error.code === 'PGRST116') {
-          console.error('Política RLS bloqueando acesso');
-          return false;
-        }
-        
-        return false;
-      }
-      
-      console.log('Políticas RLS funcionando corretamente');
-      return true;
-    } catch (error) {
-      console.error('Erro ao verificar políticas RLS:', error);
-      return false;
     }
   };
 
   // Função para verificar e criar usuário se necessário
   const ensureUserExists = async (userId: string, email: string) => {
     try {
-      console.log('Verificando se usuário existe na tabela users...');
-      
-      // Verificar políticas RLS primeiro
-      const rlsWorking = await checkRLSPolicies(userId);
-      if (!rlsWorking) {
-        console.error('Políticas RLS não estão funcionando corretamente');
-        return false;
-      }
+      console.log('🔍 Verificando se usuário existe na tabela users...');
       
       // Primeiro, tentar buscar o usuário
       const { data: existingUser, error: fetchError } = await supabase
@@ -222,9 +210,15 @@ export function useAuth() {
         .eq('id', userId)
         .single();
 
+      console.log('📊 Resultado da verificação:', { 
+        hasUser: !!existingUser, 
+        hasError: !!fetchError,
+        errorMessage: fetchError?.message 
+      });
+
       if (fetchError && fetchError.code === 'PGRST116') {
         // Usuário não existe, criar registro
-        console.log('Usuário não encontrado, criando registro...');
+        console.log('🆕 Usuário não encontrado, criando registro...');
         
         const { error: insertError } = await supabase
           .from('users')
@@ -238,32 +232,43 @@ export function useAuth() {
           });
 
         if (insertError) {
-          console.error('Erro ao criar usuário:', insertError);
+          console.error('❌ Erro ao criar usuário:', {
+            message: insertError.message,
+            code: insertError.code,
+            details: insertError.details
+          });
           return false;
         }
 
-        console.log('Usuário criado com sucesso');
+        console.log('✅ Usuário criado com sucesso');
         return true;
       } else if (fetchError) {
-        console.error('Erro ao verificar usuário:', fetchError);
+        console.error('❌ Erro ao verificar usuário:', {
+          message: fetchError.message,
+          code: fetchError.code,
+          details: fetchError.details
+        });
         return false;
       } else {
-        console.log('Usuário já existe na tabela');
+        console.log('✅ Usuário já existe na tabela');
         return true;
       }
     } catch (error) {
-      console.error('Erro ao verificar/criar usuário:', error);
+      console.error('💥 Erro inesperado ao verificar/criar usuário:', {
+        message: error instanceof Error ? error.message : 'Erro desconhecido',
+        name: error instanceof Error ? error.name : 'Erro genérico'
+      });
       return false;
     }
   };
 
   const fetchUserData = async (userId: string) => {
     try {
-      console.log('Buscando dados do usuário para ID:', userId);
+      console.log('🔄 fetchUserData iniciado para userId:', userId);
       
       // Verificar se o userId é válido
       if (!userId || userId === 'undefined' || userId === 'null') {
-        console.error('ID do usuário inválido:', userId);
+        console.error('❌ ID do usuário inválido:', userId);
         setError('ID do usuário inválido');
         setLoading(false);
         return;
@@ -271,17 +276,16 @@ export function useAuth() {
       
       // Verificar se o usuário está autenticado
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      console.log('Sessão atual:', session ? 'Existe' : 'Não existe', sessionError);
       
       if (sessionError) {
-        console.error('Erro ao verificar sessão:', sessionError);
+        console.error('❌ Erro ao verificar sessão:', sessionError);
         setError('Erro ao verificar autenticação');
         setLoading(false);
         return;
       }
       
       if (!session) {
-        console.log('Nenhuma sessão encontrada');
+        console.log('ℹ️ Nenhuma sessão encontrada');
         setUser(null);
         setUserData(null);
         clearStoredSession();
@@ -289,9 +293,11 @@ export function useAuth() {
         return;
       }
 
+      console.log('✅ Sessão válida encontrada para usuário:', session.user.id);
+
       // Verificar se o usuário da sessão corresponde ao userId
       if (session.user.id !== userId) {
-        console.error('ID da sessão não corresponde ao userId:', {
+        console.error('❌ ID da sessão não corresponde ao userId:', {
           sessionUserId: session.user.id,
           requestedUserId: userId
         });
@@ -303,76 +309,52 @@ export function useAuth() {
       // Verificar se o usuário existe na tabela users
       const userExists = await ensureUserExists(userId, session.user.email || '');
       if (!userExists) {
-        console.error('Falha ao verificar/criar usuário na tabela');
+        console.error('❌ Falha ao verificar/criar usuário na tabela');
         setError('Erro ao acessar dados do usuário');
         setLoading(false);
         return;
       }
 
-      console.log('Tentando buscar dados do usuário...');
+      console.log('🔍 Buscando dados do usuário na tabela users...');
       
-      // Timeout de segurança: 8 segundos
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => {
-          reject(new Error('Timeout na busca de dados do usuário'));
-        }, 8000);
-      });
-
-      const userDataPromise = supabase
+      // Query simplificada e mais robusta
+      const { data: userData, error: userError } = await supabase
         .from('users')
-        .select(`
-          id,
-          role,
-          full_name,
-          email,
-          organization_name,
-          profile_image,
-          whatsapp_number,
-          area_of_operation,
-          address,
-          city,
-          state,
-          postal_code,
-          created_at,
-          updated_at
-        `)
+        .select('*')
         .eq('id', userId)
         .single();
 
-      const { data: userData, error: userError } = await Promise.race([
-        userDataPromise,
-        timeoutPromise
-      ]) as any;
-
-      console.log('Resultado da query:', { 
-        userData: userData ? 'Dados encontrados' : 'Nenhum dado', 
-        userError: userError ? {
-          message: userError.message,
-          details: userError.details,
-          hint: userError.hint,
-          code: userError.code
-        } : null
+      console.log('📊 Resultado da query users:', { 
+        hasData: !!userData,
+        hasError: !!userError,
+        errorMessage: userError?.message,
+        errorCode: userError?.code,
+        userId: userId
       });
 
       if (userError) {
-        console.error('Erro detalhado ao buscar dados do usuário:', {
-          message: userError.message,
-          details: userError.details,
-          hint: userError.hint,
-          code: userError.code,
-          userId,
-          sessionExists: !!session
-        });
+        // Garantir que sempre temos dados válidos para logar
+        const errorInfo = {
+          message: userError.message || 'Sem mensagem de erro',
+          code: userError.code || 'Sem código de erro',
+          details: userError.details || 'Sem detalhes',
+          hint: userError.hint || 'Sem dica',
+          userId: userId,
+          timestamp: new Date().toISOString()
+        };
+        
+        console.error('❌ Erro na query users:', errorInfo);
         
         // Verificar se é erro de JWT expirado
         if (isJWTExpiredError(userError)) {
+          console.log('🔄 JWT expirado, redirecionando...');
           await handleJWTExpired();
           return;
         }
         
         // Verificar se é erro de RLS (Row Level Security)
         if (userError.code === 'PGRST116' || userError.message?.includes('permission denied')) {
-          console.error('Erro de permissão RLS detectado');
+          console.error('❌ Erro de permissão RLS detectado');
           setError('Erro de permissão: Verifique se você tem acesso aos dados');
           setLoading(false);
           return;
@@ -380,7 +362,7 @@ export function useAuth() {
         
         // Verificar se é erro de registro não encontrado
         if (userError.code === 'PGRST116' || userError.message?.includes('No rows found')) {
-          console.error('Usuário não encontrado na tabela users');
+          console.error('❌ Usuário não encontrado na tabela users');
           setError('Perfil de usuário não encontrado. Tente fazer login novamente.');
           setLoading(false);
           return;
@@ -388,31 +370,37 @@ export function useAuth() {
         
         setError(`Erro ao carregar dados do usuário: ${userError.message || 'Erro desconhecido'}`);
         setLoading(false);
-      } else if (!userData) {
-        console.error('Dados do usuário retornaram null/undefined');
+        return;
+      }
+
+      if (!userData) {
+        console.error('❌ Dados do usuário retornaram null/undefined');
         setError('Dados do usuário não encontrados');
         setLoading(false);
-      } else {
-        console.log('Dados do usuário carregados com sucesso:', {
-          id: userData.id,
-          role: userData.role,
-          full_name: userData.full_name,
-          email: userData.email
-        });
-        setUserData(userData);
-        setStoredUserData(userData);
-        setLoading(false);
+        return;
       }
+
+      console.log('✅ Dados do usuário carregados com sucesso:', {
+        id: userData.id,
+        role: userData.role,
+        full_name: userData.full_name,
+        email: userData.email
+      });
+
+      setUserData(userData);
+      setStoredUserData(userData);
+      setLoading(false);
+      
     } catch (fetchError) {
-      console.error('Erro ao buscar dados do usuário:', {
-        error: fetchError,
+      console.error('💥 Erro inesperado em fetchUserData:', {
         message: fetchError instanceof Error ? fetchError.message : 'Erro desconhecido',
-        stack: fetchError instanceof Error ? fetchError.stack : undefined,
-        userId
+        name: fetchError instanceof Error ? fetchError.name : 'Erro genérico',
+        stack: fetchError instanceof Error ? fetchError.stack : 'Stack não disponível'
       });
       
       // Verificar se é erro de JWT expirado
       if (isJWTExpiredError(fetchError)) {
+        console.log('🔄 JWT expirado (catch), redirecionando...');
         await handleJWTExpired();
         return;
       }
@@ -506,7 +494,14 @@ export function useAuth() {
         clearStoredSession();
       }
     } catch (error) {
-      console.error('Erro na inicialização da autenticação:', error);
+      const sessionErrorInfo = {
+        error,
+        message: error instanceof Error ? error.message : 'Erro desconhecido',
+        stack: error instanceof Error ? error.stack : undefined,
+        timestamp: new Date().toISOString()
+      };
+      
+      console.error('Erro na inicialização da autenticação:', sessionErrorInfo);
       
       // Verificar se é erro de JWT expirado
       if (isJWTExpiredError(error)) {
@@ -573,7 +568,12 @@ export function useAuth() {
       setUserData(null);
       setError(null);
     } catch (error) {
-      console.error('Erro ao fazer logout:', error);
+      const logoutErrorInfo = {
+        message: error instanceof Error ? error.message : 'Erro desconhecido',
+        stack: error instanceof Error ? error.stack : undefined
+      };
+      
+      console.error('Erro ao fazer logout:', logoutErrorInfo);
       setError('Erro ao fazer logout');
     } finally {
       setLoading(false);
@@ -595,7 +595,6 @@ export function useAuth() {
           profile_image,
           whatsapp_number,
           area_of_operation,
-          address,
           city,
           state,
           postal_code,
@@ -616,7 +615,12 @@ export function useAuth() {
         setStoredUserData(userData);
       }
     } catch (error) {
-      console.error('Erro ao atualizar dados do usuário:', error);
+      const refreshErrorInfo = {
+        message: error instanceof Error ? error.message : 'Erro desconhecido',
+        stack: error instanceof Error ? error.stack : undefined
+      };
+      
+      console.error('Erro ao atualizar dados do usuário:', refreshErrorInfo);
       
       // Verificar se é erro de JWT expirado
       if (isJWTExpiredError(error)) {
