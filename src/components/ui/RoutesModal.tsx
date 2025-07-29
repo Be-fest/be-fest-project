@@ -17,8 +17,8 @@ const routes = [
   {
     title: 'Área do Cliente',
     routes: [
-      { name: 'Minhas Festas', path: '/minhas-festas' },
-      { name: 'Detalhes da Festa', path: '/minhas-festas/1' },
+          { name: 'Minhas Festas', path: '/perfil?tab=minhas-festas' },
+    { name: 'Detalhes da Festa', path: '/perfil?tab=minhas-festas&eventId=1' },
       { name: 'Pagamento', path: '/pagamento' },
     ]
   },

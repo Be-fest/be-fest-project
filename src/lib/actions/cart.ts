@@ -410,8 +410,8 @@ export async function removeServiceFromCartAction(eventServiceId: string): Promi
       return { success: false, error: 'Erro ao remover serviço' }
     }
 
-    revalidatePath('/minhas-festas')
-    revalidatePath(`/minhas-festas/${eventService.event_id}`)
+    revalidatePath('/perfil?tab=minhas-festas')
+    revalidatePath(`/perfil?tab=minhas-festas&eventId=${eventService.event_id}`)
     return { success: true }
   } catch (error) {
     console.error('Remove service from cart failed:', error)
@@ -526,8 +526,8 @@ export async function syncCartWithDatabaseAction(cartData: {
     }
 
     console.log('Sincronização concluída com sucesso, eventId:', eventId);
-    revalidatePath('/minhas-festas')
-    revalidatePath(`/minhas-festas/${eventId}`)
+    revalidatePath('/perfil?tab=minhas-festas')
+    revalidatePath(`/perfil?tab=minhas-festas&eventId=${eventId}`)
     return { success: true, data: { eventId } }
   } catch (error) {
     console.error('Sync cart with database failed:', error)
@@ -608,8 +608,8 @@ export async function cleanDuplicateServicesAction(eventId: string): Promise<Act
 
     console.log(`${duplicateIds.length} serviços duplicados removidos com sucesso`)
     
-    revalidatePath('/minhas-festas')
-    revalidatePath(`/minhas-festas/${eventId}`)
+    revalidatePath('/perfil?tab=minhas-festas')
+    revalidatePath(`/perfil?tab=minhas-festas&eventId=${eventId}`)
     
     return { success: true, data: { removedCount: duplicateIds.length } }
   } catch (error) {

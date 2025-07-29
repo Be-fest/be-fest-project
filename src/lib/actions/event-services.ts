@@ -649,7 +649,7 @@ export async function recalculateServicePriceAction(eventServiceId: string): Pro
 
     revalidatePath('/perfil')
     revalidatePath('/dashboard/prestador')
-    revalidatePath(`/minhas-festas/${existingEventService.event_id}`)
+            revalidatePath(`/perfil?tab=minhas-festas&eventId=${existingEventService.event_id}`)
     
     return { 
       success: true, 
@@ -708,7 +708,7 @@ export async function recalculateAllEventServicesAction(eventId: string): Promis
 
     revalidatePath('/perfil')
     revalidatePath('/dashboard/prestador')
-    revalidatePath(`/minhas-festas/${eventId}`)
+          revalidatePath(`/perfil?tab=minhas-festas&eventId=${eventId}`)
     
     return { 
       success: true, 

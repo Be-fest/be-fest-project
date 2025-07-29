@@ -392,7 +392,7 @@ export default function DashboardPage() {
                           Ativo
                         </span>
                         <Link
-                          href={`/minhas-festas/${event.id}`}
+                          href={`/perfil?tab=minhas-festas&eventId=${event.id}`}
                           className="text-[#F71875] hover:text-[#E6006F] transition-colors"
                         >
                           <MdArrowForward />

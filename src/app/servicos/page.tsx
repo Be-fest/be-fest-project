@@ -139,8 +139,8 @@ const ServicesGrid = ({ services, selectedParty }: {
         
         // Navegar para a página da festa após um pequeno delay
         setTimeout(() => {
-          console.log('🔄 Navegando para:', `/minhas-festas/${selectedParty.id}`);
-          router.push(`/minhas-festas/${selectedParty.id}`);
+                  console.log('🔄 Navegando para:', `/perfil?tab=minhas-festas&eventId=${selectedParty.id}`);
+        router.push(`/perfil?tab=minhas-festas&eventId=${selectedParty.id}`);
         }, 1500);
       } else {
         console.error('❌ Erro ao adicionar serviço:', result.error);

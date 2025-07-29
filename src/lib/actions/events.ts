@@ -302,7 +302,7 @@ export async function createEventAction(formData: FormData): Promise<ActionResul
       return { success: false, error: 'Erro ao criar evento' }
     }
 
-    revalidatePath('/minhas-festas')
+    revalidatePath('/perfil?tab=minhas-festas')
     revalidatePath('/dashboard')
     
     return { success: true, data: event }
@@ -405,7 +405,7 @@ export async function updateEventAction(formData: FormData): Promise<ActionResul
 
     console.log('✅ [UPDATE] Evento atualizado com sucesso:', event.id);
 
-    revalidatePath('/minhas-festas')
+    revalidatePath('/perfil?tab=minhas-festas')
     revalidatePath('/dashboard')
     
     return { success: true, data: event }

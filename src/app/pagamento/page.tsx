@@ -19,7 +19,7 @@ export default function PaymentPage() {
     try {
       // Aqui você implementa a lógica de pagamento
       await new Promise(resolve => setTimeout(resolve, 2000)); // Simulando processamento
-      router.push('/minhas-festas');
+      router.push('/perfil?tab=minhas-festas');
     } catch (error) {
       console.error('Payment failed:', error);
     }

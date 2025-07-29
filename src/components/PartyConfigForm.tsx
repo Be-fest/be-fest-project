@@ -113,7 +113,7 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
         } else {
           // Para criação, redirecionar após delay
           setTimeout(() => {
-            router.push(`/minhas-festas/${result.data!.id}`);
+            router.push(`/perfil?tab=minhas-festas&eventId=${result.data!.id}`);
             onComplete();
           }, 1000);
         }

@@ -29,7 +29,7 @@ export function PaymentForm({ services, totalValue, onSubmit }: PaymentFormProps
   return (
     <div className="w-full space-y-6 md:space-y-8">
       <Link
-        href="/minhas-festas"
+        href="/perfil?tab=minhas-festas"
         className="inline-block mb-4 md:mb-6"
       >
         <motion.div

@@ -23,7 +23,6 @@ export async function middleware(request: NextRequest) {
 
   // Rotas que precisam de autenticação
   const protectedRoutes = [
-    '/minhas-festas',
     '/dashboard',
     '/perfil',
     '/pagamento',

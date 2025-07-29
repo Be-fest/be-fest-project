@@ -402,7 +402,7 @@ export default function ProfileClient({ user, events, stats }: ProfileClientProp
                           </div>
                         </div>
                         <Link
-                          href={`/minhas-festas/${event.id}`}
+                          href={`/perfil?tab=minhas-festas&eventId=${event.id}`}
                           className="px-4 py-2 bg-[#FF0080]/10 text-[#FF0080] hover:bg-[#FF0080] hover:text-white rounded-xl font-medium transition-all duration-200"
                         >
                           Ver Detalhes
@@ -493,7 +493,7 @@ export default function ProfileClient({ user, events, stats }: ProfileClientProp
                         </div>
                       </div>
                       <Link
-                        href={`/minhas-festas/${event.id}`}
+                        href={`/perfil?tab=minhas-festas&eventId=${event.id}`}
                         className="px-4 py-2 bg-[#FF0080]/10 text-[#FF0080] hover:bg-[#FF0080] hover:text-white rounded-xl font-medium transition-all duration-200"
                       >
                         Ver Detalhes

@@ -215,7 +215,7 @@ export default function ServiceDetailsPage() {
     }
     
     // Se estiver logado e tem festa selecionada, redirecionar para minhas festas
-    router.push('/minhas-festas');
+            router.push('/perfil?tab=minhas-festas');
   };
 
   if (loading || authLoading) {

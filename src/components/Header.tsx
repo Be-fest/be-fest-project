@@ -442,7 +442,7 @@ function HomeHeader() {
             ) : (
               <>
                 <Link 
-                  href="/minhas-festas"
+                  href="/perfil?tab=minhas-festas"
                   onClick={() => setIsMenuOpen(false)}
                   className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
                 >

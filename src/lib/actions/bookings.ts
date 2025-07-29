@@ -281,8 +281,8 @@ export async function createBookingAction(formData: FormData): Promise<ActionRes
       return { success: false, error: 'Erro ao criar reserva' }
     }
 
-    revalidatePath('/minhas-festas')
-    revalidatePath(`/minhas-festas/${validatedData.event_id}`)
+    revalidatePath('/perfil?tab=minhas-festas')
+    revalidatePath(`/perfil?tab=minhas-festas&eventId=${validatedData.event_id}`)
     revalidatePath('/dashboard/prestador')
     
     return { success: true, data: booking }
@@ -387,8 +387,8 @@ export async function updateBookingAction(formData: FormData): Promise<ActionRes
       return { success: false, error: 'Erro ao atualizar reserva' }
     }
 
-    revalidatePath('/minhas-festas')
-    revalidatePath(`/minhas-festas/${existingBooking.event_id}`)
+    revalidatePath('/perfil?tab=minhas-festas')
+    revalidatePath(`/perfil?tab=minhas-festas&eventId=${existingBooking.event_id}`)
     revalidatePath('/dashboard/prestador')
     
     return { success: true, data: booking }
@@ -464,8 +464,8 @@ export async function updateBookingStatusAction(
       return { success: false, error: 'Erro ao atualizar status da reserva' }
     }
 
-    revalidatePath('/minhas-festas')
-    revalidatePath(`/minhas-festas/${existingBooking.event_id}`)
+    revalidatePath('/perfil?tab=minhas-festas')
+    revalidatePath(`/perfil?tab=minhas-festas&eventId=${existingBooking.event_id}`)
     revalidatePath('/dashboard/prestador')
     
     return { success: true, data: booking }
@@ -517,7 +517,7 @@ export async function deleteBookingAction(bookingId: string): Promise<ActionResu
       return { success: false, error: 'Erro ao cancelar reserva' }
     }
 
-    revalidatePath('/minhas-festas')
+    revalidatePath('/perfil?tab=minhas-festas')
     revalidatePath('/dashboard/prestador')
     
     return { success: true }
