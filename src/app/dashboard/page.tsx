@@ -148,22 +148,22 @@ export default function DashboardPage() {
       textColor: 'text-blue-600'
     },
     {
-      title: 'Publicados',
-      value: events.filter(e => e.status === 'published').length,
+      title: 'Total de Eventos',
+      value: events.length,
       icon: MdCheckCircle,
       bgColor: 'bg-green-50',
       textColor: 'text-green-600'
     },
     {
-      title: 'Aguardando Pagamento',
-      value: events.filter(e => e.status === 'waiting_payment').length,
+      title: 'Eventos Ativos',
+      value: events.length,
       icon: MdPendingActions,
       bgColor: 'bg-yellow-50',
       textColor: 'text-yellow-600'
     },
     {
-      title: 'Realizados',
-      value: events.filter(e => e.status === 'completed').length,
+      title: 'Eventos Realizados',
+      value: events.length,
       icon: MdTrendingUp,
       bgColor: 'bg-purple-50',
       textColor: 'text-purple-600'
@@ -388,8 +388,8 @@ export default function DashboardPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(event.status)}`}>
-                          {getStatusLabel(event.status)}
+                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          Ativo
                         </span>
                         <Link
                           href={`/minhas-festas/${event.id}`}

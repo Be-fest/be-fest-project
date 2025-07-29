@@ -136,7 +136,7 @@ const DashboardTab = () => {
   
   // Calcular próximo evento
   const upcomingEvents = events.filter(e => 
-    e.status === 'published' && new Date(e.event_date) > new Date()
+    new Date(e.event_date) > new Date()
   ).sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
   
   const nextEventDays = upcomingEvents.length > 0 
@@ -153,7 +153,7 @@ const DashboardTab = () => {
     },
     {
       title: 'Eventos à Realizar',
-      value: activeEvents.toString(),
+      value: events.length.toString(),
       icon: MdCalendarToday,
       color: 'text-green-600',
       bgColor: 'bg-green-50'
@@ -167,7 +167,7 @@ const DashboardTab = () => {
     },
     {
       title: 'Eventos Realizados',
-      value: completedEvents.toString(),
+      value: events.length.toString(),
       icon: MdCheckCircle,
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-50'
@@ -410,9 +410,7 @@ const MinhasFestasTab = ({ onShowPartyDetails }: { onShowPartyDetails?: (eventId
     const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (event.description && event.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (event.location && event.location.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesStatus = statusFilter === 'all' || 
-      (statusFilter === 'null' && event.status === null) ||
-      (statusFilter !== 'null' && event.status === statusFilter);
+    const matchesStatus = statusFilter === 'all';
     return matchesSearch && matchesStatus;
   });
 
@@ -482,22 +480,22 @@ const MinhasFestasTab = ({ onShowPartyDetails }: { onShowPartyDetails?: (eventId
       textColor: 'text-blue-600'
     },
     {
-      title: 'Publicadas',
-      value: events.filter(e => e.status === 'published').length,
+      title: 'Eventos Ativos',
+      value: events.length,
       icon: MdCheckCircle,
       bgColor: 'bg-green-50',
       textColor: 'text-green-600'
     },
     {
-      title: 'Aguardando Pagamento',
-      value: events.filter(e => e.status === 'waiting_payment').length,
+      title: 'Eventos Pendentes',
+      value: events.length,
       icon: MdHistory,
       bgColor: 'bg-yellow-50',
       textColor: 'text-yellow-600'
     },
     {
-      title: 'Realizadas',
-      value: events.filter(e => e.status === 'completed').length,
+      title: 'Eventos Realizados',
+      value: events.length,
       icon: MdTrendingUp,
       bgColor: 'bg-purple-50',
       textColor: 'text-purple-600'

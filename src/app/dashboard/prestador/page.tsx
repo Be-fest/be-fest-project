@@ -20,7 +20,8 @@ import {
   MdVisibility,
   MdArrowUpward,
   MdArrowDownward,
-  MdClose
+  MdClose,
+  MdApproval
 } from 'react-icons/md';
 import { ProviderLayout } from '@/components/dashboard/ProviderLayout';
 import { ServiceManagement } from '@/components/dashboard/ServiceManagement';
@@ -37,15 +38,24 @@ export default function ProviderDashboard() {
   const { userData } = useAuth();
   const [events, setEvents] = useState<EventWithServices[]>([]);
   const [services, setServices] = useState<Service[]>([]);
-  const [providerStats, setProviderStats] = useState({
-    totalEvents: 0,
+  const [providerStats, setProviderStats] = useState<{
+    totalRequests: number
+    pendingRequests: number
+    approvedRequests: number
+    activeServices: number
+    totalRevenue: number
+    completedEvents: number
+  }>({
+    totalRequests: 0,
+    pendingRequests: 0,
+    approvedRequests: 0,
     activeServices: 0,
-    averageRating: 0,
-    totalRatings: 0
+    totalRevenue: 0,
+    completedEvents: 0
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'requests' | 'services' | 'profile'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'requests' | 'approved' | 'services' | 'profile'>('overview');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [selectedServices, setSelectedServices] = useState<Set<string>>(new Set());
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -70,6 +80,7 @@ export default function ProviderDashboard() {
         setEvents(eventsResult.data);
       } else if (eventsResult.error) {
         console.error('Erro ao carregar eventos:', eventsResult.error);
+        // Não definir erro aqui, pois prestadores podem não ter eventos ainda
       }
 
       if (servicesResult.success && servicesResult.data) {
@@ -79,9 +90,10 @@ export default function ProviderDashboard() {
       }
 
       if (statsResult.success && statsResult.data) {
-        setProviderStats(statsResult.data);
+        setProviderStats(statsResult.data as any);
       } else if (statsResult.error) {
         console.error('Erro ao carregar estatísticas:', statsResult.error);
+        setError('Erro ao carregar estatísticas do prestador');
       }
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
@@ -96,83 +108,56 @@ export default function ProviderDashboard() {
   }, []);
 
   // Estatísticas baseadas nos dados reais
-  const totalRequests = events.length;
-  const pendingRequests = events.filter(event => 
-    event.event_services?.some(service => service.booking_status === 'pending_provider_approval')
-  ).length;
-  const approvedRequests = events.filter(event => 
-    event.event_services?.some(service => service.booking_status === 'waiting_payment')
-  ).length;
-  const rejectedRequests = events.filter(event => 
-    event.event_services?.some(service => service.booking_status === 'rejected')
-  ).length;
+  const totalRequests = providerStats.totalRequests;
+  const pendingRequests = providerStats.pendingRequests;
+  const approvedRequests = providerStats.approvedRequests;
+  const activeServices = providerStats.activeServices;
+  const totalRevenue = providerStats.totalRevenue;
+  const completedEvents = providerStats.completedEvents;
 
   const calculateEstimatedPriceForEvent = (service: any, event: any) => {
     try {
-      // Se tem dados detalhados de convidados, usar cálculo avançado
-      if (event?.full_guests !== undefined && event?.half_guests !== undefined && event?.free_guests !== undefined) {
-        return calculateAdvancedPrice(service, event.full_guests, event.half_guests, event.free_guests);
+      const guestCount = event.guest_count || 0;
+      
+      // Calcular preço base
+      let basePrice = 0;
+      
+      // Se temos preço por convidado no serviço, usar isso
+      if (service.price_per_guest_at_booking) {
+        basePrice = service.price_per_guest_at_booking * guestCount;
+      } else {
+        // Preço base mínimo para qualquer serviço
+        basePrice = guestCount > 0 ? 30 * guestCount : 500;
       }
       
-      // Fallback para cálculo tradicional
-      const guestCount = event?.guest_count || 0;
+      // Adicionar taxa de 5%
+      const taxRate = 0.05; // 5%
+      const taxAmount = basePrice * taxRate;
+      const totalPrice = basePrice + taxAmount;
       
-      // Se já tem preço total definido, usar ele
-      if (service.total_estimated_price && service.total_estimated_price > 0) {
-        return service.total_estimated_price;
-      }
-      
-      // Calcular preço baseado no serviço original
-      if (service.service?.price_per_guest && guestCount > 0) {
-        return (service.service.price_per_guest || 0) * guestCount;
-      }
-      
-      if (service.service?.base_price && service.service.base_price > 0) {
-        return service.service.base_price || 0;
-      }
-      
-      // Fallback para campos de booking
-      if (service.price_per_guest_at_booking && guestCount > 0) {
-        return (service.price_per_guest_at_booking || 0) * guestCount;
-      }
-      
-      // Preços estimados baseados na categoria como fallback
-      const categoryPrices: Record<string, number> = {
-        'buffet': 45,
-        'bar': 25,
-        'decoracao': 15,
-        'som': 20,
-        'fotografia': 80,
-        'seguranca': 30,
-        'limpeza': 12,
-        'transporte': 35
-      };
-      
-      const category = service.service?.category?.toLowerCase();
-      if (category && categoryPrices[category] && guestCount > 0) {
-        return categoryPrices[category] * guestCount;
-      }
-      
-      // Preço base mínimo para qualquer serviço
-      return guestCount > 0 ? 30 * guestCount : 500;
+      return totalPrice;
     } catch (error) {
       console.error('Erro ao calcular preço estimado:', error);
       return 0;
     }
   };
 
-  const totalRevenue = events.reduce((sum, event) => {
+  const calculateBasePriceForEvent = (service: any, event: any) => {
     try {
-      return sum + (event.event_services?.reduce((eventSum, service) => {
-        // Usar a função de cálculo mais precisa
-        const estimatedPrice = calculateEstimatedPriceForEvent(service, event);
-        return eventSum + (estimatedPrice || 0);
-      }, 0) || 0);
+      const guestCount = event.guest_count || 0;
+      
+      // Se temos preço por convidado no serviço, usar isso
+      if (service.price_per_guest_at_booking) {
+        return service.price_per_guest_at_booking * guestCount;
+      } else {
+        // Preço base mínimo para qualquer serviço
+        return guestCount > 0 ? 30 * guestCount : 500;
+      }
     } catch (error) {
-      console.error('Erro ao calcular receita total:', error);
-      return sum;
+      console.error('Erro ao calcular preço base:', error);
+      return 0;
     }
-  }, 0);
+  };
 
   const formatCurrency = (value: number) => {
     try {
@@ -287,6 +272,7 @@ export default function ProviderDashboard() {
   const selectAllPendingServices = () => {
     const pendingServiceIds = events.flatMap(event => 
       event.event_services?.filter(service => 
+        service.provider_id === userData?.id &&
         service.booking_status === 'pending_provider_approval'
       ).map(service => service.id) || []
     );
@@ -367,7 +353,7 @@ export default function ProviderDashboard() {
 
       // Verificar cada evento para ver se todos os serviços foram aprovados (waiting_payment)
       for (const event of updatedEvents) {
-        if (event.status === 'published' && event.event_services && event.event_services.length > 0) {
+        if (event.event_services && event.event_services.length > 0) {
           // Verificar se TODOS os serviços do evento estão em waiting_payment
           const allEventServicesWaitingPayment = event.event_services.every(service => 
             service.booking_status === 'waiting_payment'
@@ -418,7 +404,7 @@ export default function ProviderDashboard() {
     },
     {
       title: 'Serviços Ativos',
-      value: providerStats.activeServices,
+      value: activeServices,
       icon: MdBusinessCenter,
       color: 'bg-purple-500',
       bgColor: 'bg-purple-50',
@@ -441,7 +427,7 @@ export default function ProviderDashboard() {
     },
     {
       title: 'Eventos Realizados',
-      value: providerStats.totalEvents.toString(),
+      value: completedEvents.toString(),
       icon: MdTrendingUp,
       color: 'bg-blue-500',
       bgColor: 'bg-blue-50',
@@ -604,7 +590,7 @@ export default function ProviderDashboard() {
                           </span>
                           {estimatedPrice > 0 && (
                             <span className="text-gray-600">
-                              {formatCurrency(estimatedPrice)}
+                              {formatCurrency(estimatedPrice)} (com taxa)
                             </span>
                           )}
                         </div>
@@ -621,8 +607,12 @@ export default function ProviderDashboard() {
   );
 
   const renderRequests = () => {
+    // Filtrar apenas serviços pendentes que pertencem ao prestador logado
     const pendingServices = events.flatMap(event => 
       event.event_services?.filter(service => 
+        // Verificar se o serviço pertence ao prestador logado
+        service.provider_id === userData?.id &&
+        // Verificar se está pendente
         service.booking_status === 'pending_provider_approval'
       ) || []
     );
@@ -630,9 +620,9 @@ export default function ProviderDashboard() {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">Solicitações de Serviços</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Solicitações Pendentes</h2>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">Total: {totalRequests}</span>
+            <span className="text-sm text-gray-600">Total: {pendingServices.length}</span>
           </div>
         </div>
 
@@ -683,80 +673,89 @@ export default function ProviderDashboard() {
           </div>
         )}
 
-        {events.length === 0 ? (
+        {pendingServices.length === 0 ? (
           <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-gray-100">
             <MdNotifications className="text-gray-400 text-6xl mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Nenhuma solicitação encontrada</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Nenhuma solicitação pendente</h3>
             <p className="text-gray-600">
               Quando clientes solicitarem seus serviços, elas aparecerão aqui.
             </p>
           </div>
         ) : (
           <div className="space-y-4">
-            {events.map((event) => (
-              <div key={event.id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">{event.title}</h3>
-                    <div className="flex items-center gap-6 text-gray-600">
-                      <span className="flex items-center gap-1">
-                        <MdCalendarToday className="text-sm" />
-                        {formatDate(event.event_date)}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <MdLocationOn className="text-sm" />
-                        {event.location}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <MdPeople className="text-sm" />
-                        {event.full_guests !== undefined && event.half_guests !== undefined && event.free_guests !== undefined
-                          ? formatGuestsInfo(event.full_guests, event.half_guests, event.free_guests)
-                          : `${event.guest_count} convidados`
-                        }
-                      </span>
+            {events.map((event) => {
+              // Filtrar apenas os serviços pendentes deste evento que pertencem ao prestador
+              const eventPendingServices = event.event_services?.filter(service => 
+                service.provider_id === userData?.id &&
+                service.booking_status === 'pending_provider_approval'
+              ) || [];
+
+              // Só mostrar o evento se tiver serviços pendentes do prestador
+              if (eventPendingServices.length === 0) return null;
+
+              return (
+                <div key={event.id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">{event.title}</h3>
+                      <div className="flex items-center gap-6 text-gray-600">
+                        <span className="flex items-center gap-1">
+                          <MdCalendarToday className="text-sm" />
+                          {formatDate(event.event_date)}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MdLocationOn className="text-sm" />
+                          {event.location}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MdPeople className="text-sm" />
+                          {event.full_guests !== undefined && event.half_guests !== undefined && event.free_guests !== undefined
+                            ? formatGuestsInfo(event.full_guests, event.half_guests, event.free_guests)
+                            : `${event.guest_count} convidados`
+                          }
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {event.event_services?.map((service, serviceIndex) => {
-                  const estimatedPrice = calculateEstimatedPriceForEvent(service, event);
-                  const isPending = service.booking_status === 'pending_provider_approval';
-                  const isSelected = selectedServices.has(service.id);
-                  const isApproving = actionLoading === `approve-${service.id}`;
-                  const isRejecting = actionLoading === `reject-${service.id}`;
-                  
-                  return (
-                    <div key={serviceIndex} className="bg-gray-50 rounded-xl p-4 mb-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-start gap-3">
-                          {/* Checkbox para seleção */}
-                          {isPending && (
+                  {eventPendingServices.map((service, serviceIndex) => {
+                    const estimatedPrice = calculateEstimatedPriceForEvent(service, event);
+                    const isSelected = selectedServices.has(service.id);
+                    const isApproving = actionLoading === `approve-${service.id}`;
+                    const isRejecting = actionLoading === `reject-${service.id}`;
+                    
+                    return (
+                      <div key={serviceIndex} className="bg-gray-50 rounded-xl p-4 mb-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-start gap-3">
+                            {/* Checkbox para seleção */}
                             <input
                               type="checkbox"
                               checked={isSelected}
                               onChange={() => toggleServiceSelection(service.id)}
                               className="mt-1 w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
                             />
-                          )}
-                          
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <h4 className="font-medium text-gray-900">{service.service?.name || 'Serviço Solicitado'}</h4>
-                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(service.booking_status)}`}>
-                                {getStatusText(service.booking_status)}
-                              </span>
-                            </div>
-                            <p className="text-sm text-gray-600 mb-1">
-                              <strong>Preço estimado:</strong> {formatCurrency(estimatedPrice)}
+                            
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <h4 className="font-medium text-gray-900">{service.service?.name || 'Serviço Solicitado'}</h4>
+                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(service.booking_status)}`}>
+                                  {getStatusText(service.booking_status)}
+                                </span>
+                              </div>
+                                                          <p className="text-sm text-gray-600 mb-1">
+                              <strong>Preço estimado:</strong> {formatCurrency(estimatedPrice)} (inclui 5% de taxa)
                             </p>
                             <p className="text-sm text-gray-500">
-                              Categoria: {service.service?.category || 'Não especificada'}
+                              Preço base: {formatCurrency(calculateBasePriceForEvent(service, event))} + Taxa: {formatCurrency(estimatedPrice - calculateBasePriceForEvent(service, event))}
                             </p>
+                              <p className="text-sm text-gray-500">
+                                Categoria: {service.service?.category || 'Não especificada'}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                        
-                        {/* Botões de ação individual */}
-                        {isPending && (
+                          
+                          {/* Botões de ação individual */}
                           <div className="flex items-center gap-2 ml-4">
                             <button
                               onClick={() => handleApproveService(service.id, service.service?.name)}
@@ -793,27 +792,139 @@ export default function ProviderDashboard() {
                               )}
                             </button>
                           </div>
-                        )}
-                      </div>
-                      
-                      {service.client_notes && (
+                        </div>
+                        
                         <div className="mb-3">
                           <p className="text-sm font-medium text-gray-700">Observações do Cliente:</p>
-                          <p className="text-sm text-gray-600 bg-blue-50 p-2 rounded">{service.client_notes}</p>
+                          <p className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
+                            Nenhuma observação fornecida
+                          </p>
                         </div>
-                      )}
-                      
-                      {service.provider_notes && (
+                        
                         <div className="mb-3">
                           <p className="text-sm font-medium text-gray-700">Suas Observações:</p>
-                          <p className="text-sm text-gray-600 bg-gray-100 p-2 rounded">{service.provider_notes}</p>
+                          <p className="text-sm text-gray-600 bg-gray-100 p-2 rounded">
+                            Nenhuma observação adicionada
+                          </p>
                         </div>
-                      )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderApproved = () => {
+    // Filtrar apenas serviços aprovados que pertencem ao prestador logado
+    const approvedServices = events.flatMap(event => 
+      event.event_services?.filter(service => 
+        // Verificar se o serviço pertence ao prestador logado
+        service.provider_id === userData?.id &&
+        // Verificar se está aprovado
+        (service.booking_status === 'waiting_payment' || 
+         service.booking_status === 'confirmed')
+      ) || []
+    );
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-gray-900">Serviços Aprovados</h2>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">Total: {approvedServices.length}</span>
+          </div>
+        </div>
+
+        {approvedServices.length === 0 ? (
+          <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-gray-100">
+            <MdApproval className="text-gray-400 text-6xl mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Nenhum serviço aprovado</h3>
+            <p className="text-gray-600">
+              Os serviços que você aprovar aparecerão aqui.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {events.map((event) => {
+              // Filtrar apenas os serviços aprovados deste evento que pertencem ao prestador
+              const eventApprovedServices = event.event_services?.filter(service => 
+                service.provider_id === userData?.id &&
+                (service.booking_status === 'waiting_payment' || 
+                 service.booking_status === 'confirmed')
+              ) || [];
+
+              // Só mostrar o evento se tiver serviços aprovados do prestador
+              if (eventApprovedServices.length === 0) return null;
+
+              return (
+                <div key={event.id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">{event.title}</h3>
+                      <div className="flex items-center gap-6 text-gray-600">
+                        <span className="flex items-center gap-1">
+                          <MdCalendarToday className="text-sm" />
+                          {formatDate(event.event_date)}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MdLocationOn className="text-sm" />
+                          {event.location}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MdPeople className="text-sm" />
+                          {event.full_guests !== undefined && event.half_guests !== undefined && event.free_guests !== undefined
+                            ? formatGuestsInfo(event.full_guests, event.half_guests, event.free_guests)
+                            : `${event.guest_count} convidados`
+                          }
+                        </span>
+                      </div>
                     </div>
-                  );
-                })}
-              </div>
-            ))}
+                  </div>
+
+                  {eventApprovedServices.map((service, serviceIndex) => {
+                    const estimatedPrice = calculateEstimatedPriceForEvent(service, event);
+                    
+                    return (
+                      <div key={serviceIndex} className="bg-gray-50 rounded-xl p-4 mb-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h4 className="font-medium text-gray-900">{service.service?.name || 'Serviço Solicitado'}</h4>
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(service.booking_status)}`}>
+                                {getStatusText(service.booking_status)}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-1">
+                              <strong>Preço estimado:</strong> {formatCurrency(estimatedPrice)} (inclui 5% de taxa)
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              Preço base: {formatCurrency(calculateBasePriceForEvent(service, event))} + Taxa: {formatCurrency(estimatedPrice - calculateBasePriceForEvent(service, event))}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              Categoria: {service.service?.category || 'Não especificada'}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="mb-3">
+                          <p className="text-sm font-medium text-gray-700">Status do Pagamento:</p>
+                          <p className="text-sm text-gray-600 bg-green-50 p-2 rounded">
+                            {service.booking_status === 'waiting_payment' ? 'Aguardando pagamento do cliente' :
+                             service.booking_status === 'confirmed' ? 'Pagamento confirmado' :
+                             'Serviço concluído'}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -929,6 +1040,8 @@ export default function ProviderDashboard() {
         return renderOverview();
       case 'requests':
         return renderRequests();
+      case 'approved':
+        return renderApproved();
       case 'services':
         return <ServiceManagement />;
       case 'profile':
@@ -968,6 +1081,7 @@ export default function ProviderDashboard() {
                 {[
                   { id: 'overview', label: 'Visão Geral', icon: MdDashboard },
                   { id: 'requests', label: 'Solicitações', icon: MdPendingActions },
+                  { id: 'approved', label: 'Aprovados', icon: MdApproval },
                   { id: 'services', label: 'Meus Serviços', icon: MdBusinessCenter },
                   { id: 'profile', label: 'Perfil', icon: MdSettings }
                 ].map((tab) => (

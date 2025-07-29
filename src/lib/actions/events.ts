@@ -133,13 +133,12 @@ export async function getProviderEventsAction(): Promise<ActionResult<EventWithS
       .from('events')
       .select(`
         *,
-        event_services!inner(
+        event_services(
           id,
           service_id,
           provider_id,
-          price,
-          guest_count,
-          notes,
+          price_per_guest_at_booking,
+          total_estimated_price,
           booking_status,
           created_at,
           updated_at,
@@ -148,11 +147,9 @@ export async function getProviderEventsAction(): Promise<ActionResult<EventWithS
             name,
             description,
             category,
-            base_price,
-            price_per_guest,
+            images_urls,
             min_guests,
-            max_guests,
-            images_urls
+            max_guests
           )
         )
       `)

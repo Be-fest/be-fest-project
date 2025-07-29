@@ -571,56 +571,101 @@ export async function searchServicesAction(searchTerm: string): Promise<ActionRe
 
 // Novo: Action para buscar estatísticas do prestador
 export async function getProviderStatsAction(): Promise<ActionResult<{
-  totalEvents: number;
-  activeServices: number;
-  averageRating: number;
-  totalRatings: number;
+  totalRequests: number
+  pendingRequests: number
+  approvedRequests: number
+  activeServices: number
+  totalRevenue: number
+  completedEvents: number
 }>> {
   try {
+    console.log('📊 [GET_PROVIDER_STATS] Buscando estatísticas do prestador');
+    
     const user = await getCurrentUser()
     const supabase = await createServerClient()
     
-    // Buscar total de eventos onde o prestador participou
-    const { count: eventsCount, error: eventsError } = await supabase
-      .from('event_services')
-      .select('*', { count: 'exact', head: true })
-      .eq('provider_id', user.id)
-      .eq('booking_status', 'approved')
+    // Verificar se o usuário é um prestador
+    const { data: userData } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single()
 
-    if (eventsError) {
-      console.error('Error fetching events count:', eventsError)
+    if (!userData || userData.role !== 'provider') {
+      return { 
+        success: false, 
+        error: 'Apenas prestadores podem acessar estas estatísticas' 
+      }
     }
 
-    // Buscar total de serviços ativos
-    const { count: servicesCount, error: servicesError } = await supabase
+    // Buscar serviços ativos do prestador
+    const { data: activeServices, error: servicesError } = await supabase
       .from('services')
-      .select('*', { count: 'exact', head: true })
+      .select('id')
       .eq('provider_id', user.id)
       .eq('is_active', true)
-      .eq('status', 'active')
 
     if (servicesError) {
-      console.error('Error fetching services count:', servicesError)
+      console.error('❌ [GET_PROVIDER_STATS] Erro ao buscar serviços ativos:', servicesError);
     }
 
-    // Para avaliações, vamos usar valores padrão por enquanto já que não temos uma tabela de reviews ainda
-    // Você pode implementar isso quando tiver uma tabela de avaliações/reviews
+    // Buscar event_services do prestador
+    const { data: eventServices, error: eventServicesError } = await supabase
+      .from('event_services')
+      .select(`
+        id,
+        booking_status,
+        total_estimated_price,
+        event:events(
+          id,
+          title,
+          event_date
+        )
+      `)
+      .eq('provider_id', user.id)
+
+    if (eventServicesError) {
+      console.error('❌ [GET_PROVIDER_STATS] Erro ao buscar event_services:', eventServicesError);
+    }
+
+    // Calcular estatísticas
+    const totalRequests = eventServices?.length || 0
+    const pendingRequests = eventServices?.filter(es => es.booking_status === 'pending_provider_approval').length || 0
+    const approvedRequests = eventServices?.filter(es => es.booking_status === 'waiting_payment').length || 0
+    const activeServicesCount = activeServices?.length || 0
+    
+    // Calcular receita total estimada
+    const totalRevenue = eventServices?.reduce((sum, es) => {
+      return sum + (es.total_estimated_price || 0)
+    }, 0) || 0
+
+    // Eventos realizados (com status confirmed ou completed)
+    const completedEvents = eventServices?.filter(es => 
+      es.booking_status === 'confirmed' || es.booking_status === 'completed'
+    ).length || 0
+
     const stats = {
-      totalEvents: Number(eventsCount) || 0,
-      activeServices: Number(servicesCount) || 0,
-      averageRating: 0, // Implementar quando tiver sistema de avaliações
-      totalRatings: 0   // Implementar quando tiver sistema de avaliações
+      totalRequests,
+      pendingRequests,
+      approvedRequests,
+      activeServices: activeServicesCount,
+      totalRevenue,
+      completedEvents
     }
 
-    return { success: true, data: stats }
+    console.log('✅ [GET_PROVIDER_STATS] Estatísticas calculadas:', stats);
+    return { 
+      success: true, 
+      data: stats 
+    }
   } catch (error) {
-    console.error('Provider stats fetch failed:', error)
+    console.error('💥 [GET_PROVIDER_STATS] Erro inesperado:', error);
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : 'Erro ao buscar estatísticas' 
+      error: 'Erro inesperado ao buscar estatísticas do prestador' 
     }
   }
-} 
+}
 
 // Upload de imagem para o Supabase Storage
 export async function uploadServiceImageAction(formData: FormData): Promise<ActionResult<string>> {
