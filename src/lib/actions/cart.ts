@@ -174,30 +174,45 @@ export async function addServiceToCartAction(serviceData: {
   client_notes?: string | null
 }): Promise<ActionResult<EventService>> {
   try {
+    console.log('🚀 addServiceToCartAction iniciado com:', serviceData);
+    
     const user = await getCurrentUser()
+    console.log('👤 Usuário autenticado:', user.id);
+    
     const supabase = await createServerClient()
 
     const validatedData = addServiceToCartSchema.parse(serviceData)
+    console.log('✅ Dados validados:', validatedData);
 
     // Verificar se o evento pertence ao usuário
-    const { data: event } = await supabase
+    const { data: event, error: eventError } = await supabase
       .from('events')
       .select('client_id')
       .eq('id', validatedData.event_id)
       .single()
 
+    console.log('📅 Evento encontrado:', event, 'Erro:', eventError);
+
+    if (eventError) {
+      console.error('❌ Erro ao buscar evento:', eventError);
+      return { success: false, error: 'Evento não encontrado' }
+    }
+
     if (!event || event.client_id !== user.id) {
+      console.error('❌ Evento não pertence ao usuário:', { eventClientId: event?.client_id, userId: user.id });
       return { success: false, error: 'Evento não encontrado ou acesso negado' }
     }
 
     // Verificar se o serviço já foi adicionado ao evento (incluindo provider_id)
-    const { data: existingService } = await supabase
+    const { data: existingService, error: existingError } = await supabase
       .from('event_services')
       .select('*')
       .eq('event_id', validatedData.event_id)
       .eq('service_id', validatedData.service_id)
       .eq('provider_id', validatedData.provider_id)
       .single()
+
+    console.log('🔍 Serviço existente:', existingService, 'Erro:', existingError);
 
     if (existingService) {
       console.log('✅ Serviço já existe, retornando existente:', existingService.id);
@@ -206,35 +221,114 @@ export async function addServiceToCartAction(serviceData: {
     }
 
     // Buscar dados do serviço para calcular preços
-    const { data: service } = await supabase
+    const { data: service, error: serviceError } = await supabase
       .from('services')
-      .select('base_price, price_per_guest')
+      .select('min_guests, max_guests')
       .eq('id', validatedData.service_id)
       .single()
 
-    if (!service) {
+    console.log('🔧 Dados do serviço:', service, 'Erro:', serviceError);
+
+    if (serviceError || !service) {
+      console.error('❌ Serviço não encontrado:', serviceError);
       return { success: false, error: 'Serviço não encontrado' }
+    }
+
+    // Buscar dados do evento para calcular o preço baseado no número de convidados
+    const { data: eventData, error: eventDataError } = await supabase
+      .from('events')
+      .select('full_guests, half_guests')
+      .eq('id', validatedData.event_id)
+      .single()
+
+    console.log('📅 Dados do evento:', eventData, 'Erro:', eventDataError);
+
+    if (eventDataError || !eventData) {
+      console.error('❌ Dados do evento não encontrados:', eventDataError);
+      return { success: false, error: 'Dados do evento não encontrados' }
+    }
+
+    // Calcular o preço baseado nos tiers de convidados
+    const totalGuests = (eventData.full_guests || 0) + (eventData.half_guests || 0);
+    
+    // Buscar tiers de preço do serviço
+    const { data: guestTiers, error: tiersError } = await supabase
+      .from('service_guest_tiers')
+      .select('*')
+      .eq('service_id', validatedData.service_id)
+      .order('min_total_guests', { ascending: true })
+
+    console.log('💰 Tiers de preço:', guestTiers, 'Erro:', tiersError);
+
+    if (tiersError) {
+      console.error('❌ Erro ao buscar tiers de preço:', tiersError);
+      return { success: false, error: 'Erro ao calcular preço do serviço' }
+    }
+
+    // Encontrar o tier apropriado baseado no total de convidados
+    let pricePerGuest = 0;
+    
+    if (guestTiers && guestTiers.length > 0) {
+      // Encontrar o tier que se aplica ao número total de convidados
+      const applicableTier = guestTiers.find(tier => {
+        const minGuests = tier.min_total_guests;
+        const maxGuests = tier.max_total_guests || Infinity;
+        return totalGuests >= minGuests && totalGuests <= maxGuests;
+      });
+      
+      if (applicableTier) {
+        pricePerGuest = applicableTier.base_price_per_adult;
+      } else {
+        // Se não encontrou tier específico, usar o primeiro disponível
+        pricePerGuest = guestTiers[0].base_price_per_adult;
+      }
+    } else {
+      console.error('❌ Nenhum tier de preço encontrado para o serviço');
+      return { success: false, error: 'Preços não configurados para este serviço' }
     }
 
     console.log('🆕 Criando novo event_service:', {
       event_id: validatedData.event_id,
       service_id: validatedData.service_id,
-      provider_id: validatedData.provider_id
+      provider_id: validatedData.provider_id,
+      price_per_guest_at_booking: pricePerGuest,
+      total_estimated_price: pricePerGuest * totalGuests,
+      booking_status: 'pending_provider_approval'
     });
 
-    // Criar novo event_service
+    // Criar o event_service
     const { data: eventService, error } = await supabase
       .from('event_services')
       .insert({
         event_id: validatedData.event_id,
         service_id: validatedData.service_id,
         provider_id: validatedData.provider_id,
-        price_per_guest_at_booking: service.price_per_guest || service.base_price,
-        client_notes: validatedData.client_notes,
-        booking_status: 'pending_provider_approval'
+        price_per_guest_at_booking: pricePerGuest, // Usar a coluna correta da tabela
+        total_estimated_price: pricePerGuest * totalGuests, // Calcular preço total estimado
+        booking_status: 'pending_provider_approval' // Usar o enum correto
       })
       .select()
       .single()
+
+    console.log('📝 Resultado da inserção:', { 
+      success: !!eventService, 
+      eventService: eventService ? {
+        id: eventService.id,
+        event_id: eventService.event_id,
+        service_id: eventService.service_id,
+        provider_id: eventService.provider_id,
+        price_per_guest_at_booking: eventService.price_per_guest_at_booking,
+        total_estimated_price: eventService.total_estimated_price,
+        booking_status: eventService.booking_status,
+        created_at: eventService.created_at
+      } : null,
+      error: error ? {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      } : null
+    });
 
     if (error) {
       console.error('❌ Error creating event service:', error)
@@ -260,11 +354,25 @@ export async function addServiceToCartAction(serviceData: {
     }
 
     console.log('✅ Event service criado com sucesso:', eventService.id);
-    revalidatePath('/perfil')
-    revalidatePath(`/minhas-festas/${validatedData.event_id}`)
+    
+    // Verificar se o serviço foi realmente inserido
+    const { data: verifyService, error: verifyError } = await supabase
+      .from('event_services')
+      .select('*')
+      .eq('event_id', validatedData.event_id)
+      .eq('service_id', validatedData.service_id)
+      .eq('provider_id', validatedData.provider_id)
+      .single();
+    
+    console.log('🔍 Verificação pós-inserção:', {
+      encontrado: !!verifyService,
+      service: verifyService,
+      error: verifyError
+    });
+    
     return { success: true, data: eventService }
   } catch (error) {
-    console.error('Add service to cart failed:', error)
+    console.error('💥 Add service to cart failed:', error)
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Erro ao adicionar serviço' 
@@ -302,8 +410,8 @@ export async function removeServiceFromCartAction(eventServiceId: string): Promi
       return { success: false, error: 'Erro ao remover serviço' }
     }
 
-    revalidatePath('/minhas-festas')
-    revalidatePath(`/minhas-festas/${eventService.event_id}`)
+    revalidatePath('/perfil?tab=minhas-festas')
+    revalidatePath(`/perfil?tab=minhas-festas&eventId=${eventService.event_id}`)
     return { success: true }
   } catch (error) {
     console.error('Remove service from cart failed:', error)
@@ -418,8 +526,8 @@ export async function syncCartWithDatabaseAction(cartData: {
     }
 
     console.log('Sincronização concluída com sucesso, eventId:', eventId);
-    revalidatePath('/minhas-festas')
-    revalidatePath(`/minhas-festas/${eventId}`)
+    revalidatePath('/perfil?tab=minhas-festas')
+    revalidatePath(`/perfil?tab=minhas-festas&eventId=${eventId}`)
     return { success: true, data: { eventId } }
   } catch (error) {
     console.error('Sync cart with database failed:', error)
@@ -500,8 +608,8 @@ export async function cleanDuplicateServicesAction(eventId: string): Promise<Act
 
     console.log(`${duplicateIds.length} serviços duplicados removidos com sucesso`)
     
-    revalidatePath('/minhas-festas')
-    revalidatePath(`/minhas-festas/${eventId}`)
+    revalidatePath('/perfil?tab=minhas-festas')
+    revalidatePath(`/perfil?tab=minhas-festas&eventId=${eventId}`)
     
     return { success: true, data: { removedCount: duplicateIds.length } }
   } catch (error) {

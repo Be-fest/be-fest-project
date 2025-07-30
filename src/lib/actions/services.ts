@@ -10,11 +10,8 @@ const createServiceSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres').max(100, 'Nome deve ter no máximo 100 caracteres'),
   description: z.string().optional(),
   category: z.string().min(1, 'Categoria é obrigatória'),
-  base_price: z.coerce.number().min(0, 'Preço base deve ser maior ou igual a 0'),
-  price_per_guest: z.coerce.number().min(0, 'Preço por convidado deve ser maior ou igual a 0').optional().nullable(),
-  min_guests: z.coerce.number().min(0, 'Número mínimo de convidados deve ser maior ou igual a 0').optional(),
-  max_guests: z.coerce.number().min(1, 'Número máximo de convidados deve ser maior que 0').optional().nullable(),
-  images_urls: z.array(z.string().url('URL da imagem inválida')).optional()
+  images_urls: z.array(z.string().url('URL da imagem inválida')).optional(),
+  is_active: z.boolean().optional()
 })
 
 const updateServiceSchema = z.object({
@@ -22,11 +19,7 @@ const updateServiceSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres').max(100, 'Nome deve ter no máximo 100 caracteres').optional(),
   description: z.string().optional().nullable(),
   category: z.string().min(1, 'Categoria é obrigatória').optional(),
-  base_price: z.coerce.number().min(0, 'Preço base deve ser maior ou igual a 0').optional(),
-  price_per_guest: z.coerce.number().min(0, 'Preço por convidado deve ser maior ou igual a 0').optional().nullable(),
-  min_guests: z.coerce.number().min(0, 'Número mínimo de convidados deve ser maior ou igual a 0').optional(),
-  max_guests: z.coerce.number().min(1, 'Número máximo de convidados deve ser maior que 0').optional().nullable(),
-  images_urls: z.array(z.string().url('URL da imagem inválida')).optional(),
+  images_urls: z.array(z.string()).optional(),
   status: z.enum(['active', 'inactive', 'pending_approval']).optional(),
   is_active: z.boolean().optional()
 })
@@ -133,9 +126,7 @@ export async function getServiceByIdAction(serviceId: string): Promise<ActionRes
           profile_image,
           area_of_operation
         ),
-        guest_tiers:service_guest_tiers (*),
-        age_pricing_rules:service_age_pricing_rules (*),
-        date_surcharges:service_date_surcharges (*)
+        guest_tiers:service_guest_tiers (*)
       `)
       .eq('id', serviceId)
       .single()
@@ -155,7 +146,7 @@ export async function getServiceByIdAction(serviceId: string): Promise<ActionRes
   }
 }
 
-export async function getProviderServicesAction(): Promise<ActionResult<(Service & { guest_tiers?: any[] })[]>> {
+export async function getProviderServicesAction(): Promise<ActionResult<ServiceWithDetails[]>> {
   try {
     const user = await getCurrentUser()
     const supabase = await createServerClient()
@@ -164,13 +155,7 @@ export async function getProviderServicesAction(): Promise<ActionResult<(Service
       .from('services')
       .select(`
         *,
-        service_guest_tiers (
-          id,
-          min_total_guests,
-          max_total_guests,
-          base_price_per_adult,
-          tier_description
-        )
+        guest_tiers:service_guest_tiers(*)
       `)
       .eq('provider_id', user.id)
       .order('created_at', { ascending: false })
@@ -180,13 +165,7 @@ export async function getProviderServicesAction(): Promise<ActionResult<(Service
       return { success: false, error: 'Erro ao buscar seus serviços' }
     }
 
-    // Transformar o resultado para incluir guest_tiers
-    const servicesWithTiers = services?.map(service => ({
-      ...service,
-      guest_tiers: service.service_guest_tiers || []
-    })) || []
-
-    return { success: true, data: servicesWithTiers }
+    return { success: true, data: services }
   } catch (error) {
     console.error('Provider services fetch failed:', error)
     return { 
@@ -204,11 +183,8 @@ export async function createServiceAction(formData: FormData): Promise<ActionRes
       name: formData.get('name') as string,
       description: formData.get('description') as string || null,
       category: formData.get('category') as string,
-      base_price: formData.get('base_price') as string,
-      price_per_guest: formData.get('price_per_guest') as string || null,
-      min_guests: formData.get('min_guests') as string || '0',
-      max_guests: formData.get('max_guests') as string || null,
-      images_urls: formData.getAll('images_urls').filter(url => url) as string[]
+      images_urls: formData.getAll('images_urls').filter(url => url) as string[],
+      is_active: formData.get('is_active') === 'true'
     }
 
     const validatedData = createServiceSchema.parse(rawData)
@@ -229,7 +205,9 @@ export async function createServiceAction(formData: FormData): Promise<ActionRes
       ...validatedData,
       provider_id: user.id,
       status: 'active',
-      is_active: true
+      is_active: validatedData.is_active ?? true,
+      min_guests: 0,
+      max_guests: null
     }
 
     const { data: service, error } = await supabase
@@ -243,38 +221,7 @@ export async function createServiceAction(formData: FormData): Promise<ActionRes
       return { success: false, error: 'Erro ao criar serviço' }
     }
 
-    // Salvar regras de pricing por idade se fornecidas
-    const pricingRulesData = formData.get('pricing_rules') as string
-    if (pricingRulesData) {
-      try {
-        const pricingRules = JSON.parse(pricingRulesData)
-        
-        if (Array.isArray(pricingRules) && pricingRules.length > 0) {
-                     const pricingRulesInsert = pricingRules.map((rule: any) => ({
-             service_id: service.id,
-             rule_description: String(rule.rule_description),
-             age_min_years: Number(rule.age_min_years),
-             age_max_years: rule.age_max_years ? Number(rule.age_max_years) : null,
-             pricing_method: String(rule.pricing_method) as any,
-             value: Number(rule.value)
-           } as any))
-
-          const { error: pricingRulesError } = await supabase
-            .from('service_age_pricing_rules')
-            .insert(pricingRulesInsert)
-
-          if (pricingRulesError) {
-            console.error('Error creating pricing rules:', pricingRulesError)
-            // Não falhar a criação do serviço por causa das regras de pricing
-          }
-        }
-      } catch (parseError) {
-        console.error('Error parsing pricing rules:', parseError)
-        // Não falhar a criação do serviço por causa das regras de pricing
-      }
-    }
-
-    // Salvar faixas de preços por convidados se fornecidas
+    // Salvar faixas de preço por número de convidados
     const guestTiersData = formData.get('guest_tiers') as string
     if (guestTiersData) {
       try {
@@ -286,7 +233,7 @@ export async function createServiceAction(formData: FormData): Promise<ActionRes
             min_total_guests: Number(tier.min_total_guests),
             max_total_guests: tier.max_total_guests ? Number(tier.max_total_guests) : null,
             base_price_per_adult: Number(tier.base_price_per_adult),
-            tier_description: tier.tier_description || null
+            tier_description: String(tier.tier_description)
           }))
 
           const { error: guestTiersError } = await supabase
@@ -295,12 +242,12 @@ export async function createServiceAction(formData: FormData): Promise<ActionRes
 
           if (guestTiersError) {
             console.error('Error creating guest tiers:', guestTiersError)
-            // Não falhar a criação do serviço por causa das faixas de preços
+            // Não falhar a criação do serviço por causa das faixas de preço
           }
         }
       } catch (parseError) {
         console.error('Error parsing guest tiers:', parseError)
-        // Não falhar a criação do serviço por causa das faixas de preços
+        // Não falhar a criação do serviço por causa das faixas de preço
       }
     }
 
@@ -333,10 +280,6 @@ export async function updateServiceAction(formData: FormData): Promise<ActionRes
       name: formData.get('name') as string,
       description: formData.get('description') as string || null,
       category: formData.get('category') as string,
-      base_price: formData.get('base_price') as string,
-      price_per_guest: formData.get('price_per_guest') as string || null,
-      min_guests: formData.get('min_guests') as string,
-      max_guests: formData.get('max_guests') as string || null,
       images_urls: formData.getAll('images_urls').filter(url => url) as string[],
       status: (formData.get('status') as string) || undefined,
       is_active: formData.get('is_active') === 'true'
@@ -374,15 +317,7 @@ export async function updateServiceAction(formData: FormData): Promise<ActionRes
     if (validatedData.category !== undefined) {
       updateData.category = validatedData.category
     }
-    if (validatedData.base_price !== undefined) {
-      updateData.base_price = validatedData.base_price
-    }
-    if (validatedData.min_guests !== undefined) {
-      updateData.min_guests = validatedData.min_guests
-    }
-    if (validatedData.max_guests !== undefined) {
-      updateData.max_guests = validatedData.max_guests === null ? undefined : validatedData.max_guests
-    }
+
     if (validatedData.is_active !== undefined) {
       updateData.is_active = validatedData.is_active
     }
@@ -402,60 +337,26 @@ export async function updateServiceAction(formData: FormData): Promise<ActionRes
       return { success: false, error: 'Erro ao atualizar serviço' }
     }
 
-    // Atualizar regras de pricing por idade se fornecidas
-    const pricingRulesData = formData.get('pricing_rules') as string
-    if (pricingRulesData) {
-      try {
-        const pricingRules = JSON.parse(pricingRulesData)
-        
-        // Primeiro, remover as regras existentes
-        await supabase
-          .from('service_age_pricing_rules')
-          .delete()
-          .eq('service_id', service.id)
-        
-        if (Array.isArray(pricingRules) && pricingRules.length > 0) {
-          const pricingRulesInsert = pricingRules.map((rule: any) => ({
-            service_id: service.id,
-            rule_description: String(rule.rule_description),
-            age_min_years: Number(rule.age_min_years),
-            age_max_years: rule.age_max_years ? Number(rule.age_max_years) : null,
-            pricing_method: String(rule.pricing_method) as any,
-            value: Number(rule.value)
-          }))
-
-          const { error: pricingRulesError } = await supabase
-            .from('service_age_pricing_rules')
-            .insert(pricingRulesInsert)
-
-          if (pricingRulesError) {
-            console.error('Error updating pricing rules:', pricingRulesError)
-          }
-        }
-      } catch (parseError) {
-        console.error('Error parsing pricing rules:', parseError)
-      }
-    }
-
-    // Atualizar faixas de preços por convidados se fornecidas
+    // Atualizar faixas de preço por número de convidados
     const guestTiersData = formData.get('guest_tiers') as string
     if (guestTiersData) {
       try {
         const guestTiers = JSON.parse(guestTiersData)
         
-        // Primeiro, remover as faixas existentes
-        await supabase
-          .from('service_guest_tiers')
-          .delete()
-          .eq('service_id', service.id)
-        
         if (Array.isArray(guestTiers) && guestTiers.length > 0) {
+          // Primeiro, deletar todas as faixas existentes
+          await supabase
+            .from('service_guest_tiers')
+            .delete()
+            .eq('service_id', validatedData.id)
+
+          // Depois, inserir as novas faixas
           const guestTiersInsert = guestTiers.map((tier: any) => ({
-            service_id: service.id,
+            service_id: validatedData.id,
             min_total_guests: Number(tier.min_total_guests),
             max_total_guests: tier.max_total_guests ? Number(tier.max_total_guests) : null,
             base_price_per_adult: Number(tier.base_price_per_adult),
-            tier_description: tier.tier_description || null
+            tier_description: String(tier.tier_description)
           }))
 
           const { error: guestTiersError } = await supabase
@@ -464,10 +365,12 @@ export async function updateServiceAction(formData: FormData): Promise<ActionRes
 
           if (guestTiersError) {
             console.error('Error updating guest tiers:', guestTiersError)
+            // Não falhar a atualização do serviço por causa das faixas de preço
           }
         }
       } catch (parseError) {
         console.error('Error parsing guest tiers:', parseError)
+        // Não falhar a atualização do serviço por causa das faixas de preço
       }
     }
 
@@ -561,6 +464,44 @@ export async function deleteServiceAction(serviceId: string): Promise<ActionResu
       return { success: false, error: 'Não é possível excluir serviço com reservas ativas' }
     }
 
+    // Verificar se o serviço tem event_services ativos
+    const { data: activeEventServices } = await supabase
+      .from('event_services')
+      .select('id')
+      .eq('service_id', serviceId)
+              .in('booking_status', ['pending_provider_approval', 'approved', 'completed'])
+      .limit(1)
+
+    if (activeEventServices && activeEventServices.length > 0) {
+      return { success: false, error: 'Não é possível excluir serviço com solicitações ativas' }
+    }
+
+    // Excluir registros relacionados primeiro (em ordem de dependência)
+    
+    // 1. Excluir service_guest_tiers
+    const { error: guestTiersError } = await supabase
+      .from('service_guest_tiers')
+      .delete()
+      .eq('service_id', serviceId)
+
+    if (guestTiersError) {
+      console.error('Error deleting service guest tiers:', guestTiersError)
+      return { success: false, error: 'Erro ao excluir faixas de preço do serviço' }
+    }
+
+    // 2. Excluir event_services (apenas os que não estão ativos)
+    const { error: eventServicesError } = await supabase
+      .from('event_services')
+      .delete()
+      .eq('service_id', serviceId)
+              .not('booking_status', 'in', '(pending_provider_approval,approved,completed)')
+
+    if (eventServicesError) {
+      console.error('Error deleting event services:', eventServicesError)
+      // Não falhar aqui, pois pode não ter event_services
+    }
+
+    // 3. Finalmente, excluir o serviço
     const { error } = await supabase
       .from('services')
       .delete()
@@ -611,7 +552,8 @@ export async function getPublicServicesAction(filters?: {
           logo_url,
           profile_image,
           area_of_operation
-        )
+        ),
+        guest_tiers:service_guest_tiers (*)
       `)
       .eq('is_active', true)
       .eq('status', 'active')
@@ -665,56 +607,101 @@ export async function searchServicesAction(searchTerm: string): Promise<ActionRe
 
 // Novo: Action para buscar estatísticas do prestador
 export async function getProviderStatsAction(): Promise<ActionResult<{
-  totalEvents: number;
-  activeServices: number;
-  averageRating: number;
-  totalRatings: number;
+  totalRequests: number
+  pendingRequests: number
+  approvedRequests: number
+  activeServices: number
+  totalRevenue: number
+  completedEvents: number
 }>> {
   try {
+    console.log('📊 [GET_PROVIDER_STATS] Buscando estatísticas do prestador');
+    
     const user = await getCurrentUser()
     const supabase = await createServerClient()
     
-    // Buscar total de eventos onde o prestador participou
-    const { count: eventsCount, error: eventsError } = await supabase
-      .from('event_services')
-      .select('*', { count: 'exact', head: true })
-      .eq('provider_id', user.id)
-      .eq('booking_status', 'approved')
+    // Verificar se o usuário é um prestador
+    const { data: userData } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single()
 
-    if (eventsError) {
-      console.error('Error fetching events count:', eventsError)
+    if (!userData || userData.role !== 'provider') {
+      return { 
+        success: false, 
+        error: 'Apenas prestadores podem acessar estas estatísticas' 
+      }
     }
 
-    // Buscar total de serviços ativos
-    const { count: servicesCount, error: servicesError } = await supabase
+    // Buscar serviços ativos do prestador
+    const { data: activeServices, error: servicesError } = await supabase
       .from('services')
-      .select('*', { count: 'exact', head: true })
+      .select('id')
       .eq('provider_id', user.id)
       .eq('is_active', true)
-      .eq('status', 'active')
 
     if (servicesError) {
-      console.error('Error fetching services count:', servicesError)
+      console.error('❌ [GET_PROVIDER_STATS] Erro ao buscar serviços ativos:', servicesError);
     }
 
-    // Para avaliações, vamos usar valores padrão por enquanto já que não temos uma tabela de reviews ainda
-    // Você pode implementar isso quando tiver uma tabela de avaliações/reviews
+    // Buscar event_services do prestador
+    const { data: eventServices, error: eventServicesError } = await supabase
+      .from('event_services')
+      .select(`
+        id,
+        booking_status,
+        total_estimated_price,
+        event:events(
+          id,
+          title,
+          event_date
+        )
+      `)
+      .eq('provider_id', user.id)
+
+    if (eventServicesError) {
+      console.error('❌ [GET_PROVIDER_STATS] Erro ao buscar event_services:', eventServicesError);
+    }
+
+    // Calcular estatísticas
+    const totalRequests = eventServices?.length || 0
+    const pendingRequests = eventServices?.filter(es => es.booking_status === 'pending_provider_approval').length || 0
+          const approvedRequests = eventServices?.filter(es => es.booking_status === 'approved').length || 0
+    const activeServicesCount = activeServices?.length || 0
+    
+    // Calcular receita total estimada
+    const totalRevenue = eventServices?.reduce((sum, es) => {
+      return sum + (es.total_estimated_price || 0)
+    }, 0) || 0
+
+    // Eventos realizados (com status confirmed ou completed)
+    const completedEvents = eventServices?.filter(es => 
+              es.booking_status === 'completed'
+    ).length || 0
+
     const stats = {
-      totalEvents: Number(eventsCount) || 0,
-      activeServices: Number(servicesCount) || 0,
-      averageRating: 0, // Implementar quando tiver sistema de avaliações
-      totalRatings: 0   // Implementar quando tiver sistema de avaliações
+      totalRequests,
+      pendingRequests,
+      approvedRequests,
+      activeServices: activeServicesCount,
+      totalRevenue,
+      completedEvents
     }
 
-    return { success: true, data: stats }
+    console.log('✅ [GET_PROVIDER_STATS] Estatísticas calculadas:', stats);
+    return { 
+      success: true, 
+      data: stats 
+    }
   } catch (error) {
-    console.error('Provider stats fetch failed:', error)
+    console.error('💥 [GET_PROVIDER_STATS] Erro inesperado:', error);
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : 'Erro ao buscar estatísticas' 
+      error: 'Erro inesperado ao buscar estatísticas do prestador' 
     }
   }
-} 
+}
 
 // Upload de imagem para o Supabase Storage
 export async function uploadServiceImageAction(formData: FormData): Promise<ActionResult<string>> {

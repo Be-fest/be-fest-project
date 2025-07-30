@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import {
   MdDashboard,
@@ -35,21 +35,23 @@ import {
   MdStar,
   MdVisibility,
   MdDownload,
-  MdDelete
+  MdDelete,
+  MdClose
 } from 'react-icons/md';
 import { useAuth } from '@/hooks/useAuth';
 import { ClientLayout } from '@/components/client/ClientLayout';
 import { ClientAuthGuard } from '@/components/ClientAuthGuard';
 import { NewPartyModal } from '@/components/NewPartyModal';
 import { getClientEventsAction, deleteEventAction } from '@/lib/actions/events';
-import { getEventServicesAction } from '@/lib/actions/event-services';
-import { Event, EventStatus } from '@/types/database';
+import { getClientEventServicesAction } from '@/lib/actions/event-services';
+import { Event, EventServiceWithDetails } from '@/types/database';
 import ProfileClient from '@/components/profile/ProfileClient';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { useToast } from '@/hooks/useToast';
-import { EditProfileModal } from '@/components/modals/EditProfileModal';
-import { ChangePasswordModal } from '@/components/modals/ChangePasswordModal';
-import { DeleteAccountModal } from '@/components/modals/DeleteAccountModal';
+import { PersonalInfoForm } from '@/components/profile/PersonalInfoForm';
+import { AddressForm } from '@/components/profile/AddressForm';
+import { PasswordForm } from '@/components/profile/PasswordForm';
+import { PartyDetailsTab } from '@/components/profile/PartyDetailsTab';
 
 interface Tab {
   id: string;
@@ -66,11 +68,11 @@ const tabs: Tab[] = [
 // Componente Dashboard
 const DashboardTab = () => {
   const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(false); // Changed from true to false
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadEvents = async () => {
-      setLoading(false); // Keep loading state false to prevent UI flicker
+      setLoading(true);
       const result = await getClientEventsAction();
       if (result.success && result.data) {
         setEvents(result.data);
@@ -130,13 +132,11 @@ const DashboardTab = () => {
   ];
 
   // Calcular estatísticas reais
-  const activeEvents = events.filter(e => e.status === 'published').length;
-  const completedEvents = events.filter(e => e.status === 'completed').length;
   const totalEvents = events.length;
   
   // Calcular próximo evento
   const upcomingEvents = events.filter(e => 
-    e.status === 'published' && new Date(e.event_date) > new Date()
+    new Date(e.event_date) > new Date()
   ).sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
   
   const nextEventDays = upcomingEvents.length > 0 
@@ -152,8 +152,8 @@ const DashboardTab = () => {
       bgColor: 'bg-blue-50'
     },
     {
-      title: 'Eventos Ativos',
-      value: activeEvents.toString(),
+      title: 'Eventos à Realizar',
+      value: events.length.toString(),
       icon: MdCalendarToday,
       color: 'text-green-600',
       bgColor: 'bg-green-50'
@@ -167,12 +167,74 @@ const DashboardTab = () => {
     },
     {
       title: 'Eventos Realizados',
-      value: completedEvents.toString(),
+      value: events.length.toString(),
       icon: MdCheckCircle,
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-50'
     }
   ];
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        {/* Header Skeleton */}
+        <div className="text-center space-y-4">
+          <div className="h-8 w-48 bg-gray-300 rounded-lg animate-pulse mx-auto"></div>
+          <div className="h-5 w-96 bg-gray-200 rounded animate-pulse mx-auto"></div>
+        </div>
+
+        {/* Stats Cards Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-gray-300 rounded-xl"></div>
+                <div className="space-y-2">
+                  <div className="h-6 w-16 bg-gray-300 rounded"></div>
+                  <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Quick Links Skeleton */}
+        <div className="space-y-6">
+          <div className="h-6 w-32 bg-gray-300 rounded animate-pulse mx-auto"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
+                <div className="flex items-start gap-4">
+                  <div className="w-14 h-14 bg-gray-300 rounded-xl"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-5 w-28 bg-gray-300 rounded"></div>
+                    <div className="h-4 w-full bg-gray-200 rounded"></div>
+                  </div>
+                </div>
+                <div className="h-1 bg-gray-200 rounded-full mt-4"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Recent Activity Skeleton */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-pulse">
+          <div className="h-6 w-40 bg-gray-300 rounded mb-4"></div>
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                <div className="w-10 h-10 bg-gray-300 rounded-full"></div>
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-48 bg-gray-300 rounded"></div>
+                  <div className="h-3 w-20 bg-gray-200 rounded"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -285,10 +347,10 @@ const DashboardTab = () => {
 };
 
 // Componente Minhas Festas
-const MinhasFestasTab = () => {
+const MinhasFestasTab = ({ onShowPartyDetails }: { onShowPartyDetails?: (eventId: string) => void }) => {
   const [events, setEvents] = useState<Event[]>([]);
-  const [eventServices, setEventServices] = useState<Record<string, any[]>>({});
-  const [loading, setLoading] = useState(false); // Changed from true to false
+  const [eventServices, setEventServices] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
   const [isNewPartyModalOpen, setNewPartyModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'published' | 'waiting_payment' | 'completed' | 'cancelled' | 'null'>('all');
@@ -299,43 +361,35 @@ const MinhasFestasTab = () => {
 
   const loadEvents = async () => {
     console.log('📥 [PROFILE] Carregando eventos do cliente...');
-    setLoading(false); // Keep loading state false to prevent UI flicker
+    setLoading(true);
     
     try {
-      const result = await getClientEventsAction();
-      console.log('📋 [PROFILE] Resultado do carregamento:', result);
+      const [eventsResult, servicesResult] = await Promise.all([
+        getClientEventsAction(),
+        getClientEventServicesAction()
+      ]);
       
-      if (result.success && result.data) {
-        console.log('✅ [PROFILE] Eventos carregados com sucesso:', result.data.length, 'eventos');
-        setEvents(result.data);
+      console.log('📋 [PROFILE] Resultado do carregamento:', eventsResult);
+      
+      if (eventsResult.success && eventsResult.data) {
+        console.log('✅ [PROFILE] Eventos carregados com sucesso:', eventsResult.data.length, 'eventos');
+        setEvents(eventsResult.data);
         
-        // Carregar serviços para cada evento
-        const servicesData: Record<string, any[]> = {};
-        for (const event of result.data) {
-          try {
-            const servicesResult = await getEventServicesAction({ event_id: event.id });
-            if (servicesResult.success && servicesResult.data) {
-              servicesData[event.id] = servicesResult.data;
-            } else {
-              servicesData[event.id] = [];
-            }
-          } catch (error) {
-            console.error(`❌ [PROFILE] Erro ao carregar serviços do evento ${event.id}:`, error);
-            servicesData[event.id] = [];
-          }
+        // Contar serviços por evento
+        if (servicesResult.success && servicesResult.data) {
+          const serviceCount: Record<string, number> = {};
+          servicesResult.data.forEach((service: EventServiceWithDetails) => {
+            serviceCount[service.event_id] = (serviceCount[service.event_id] || 0) + 1;
+          });
+          setEventServices(serviceCount);
         }
-        setEventServices(servicesData);
       } else {
-        console.error('❌ [PROFILE] Erro ao carregar eventos:', result.error);
+        console.error('❌ [PROFILE] Erro ao carregar eventos:', eventsResult.error);
         setEvents([]);
-        setLoading(false);
-        setEventServices({});
       }
     } catch (error) {
       console.error('💥 [PROFILE] Erro inesperado ao carregar eventos:', error);
       setEvents([]);
-      setLoading(false);
-      setEventServices({});
     } finally {
       setLoading(false);
     }
@@ -356,15 +410,13 @@ const MinhasFestasTab = () => {
     const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (event.description && event.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (event.location && event.location.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesStatus = statusFilter === 'all' || 
-      (statusFilter === 'null' && event.status === null) ||
-      (statusFilter !== 'null' && event.status === statusFilter);
+    const matchesStatus = statusFilter === 'all';
     return matchesSearch && matchesStatus;
   });
 
   const handleCreatePartySuccess = () => {
     setNewPartyModalOpen(false);
-    loadEvents(); // Isso já recarregará tanto os eventos quanto os serviços
+    loadEvents();
   };
 
   const handleDeleteEvent = (event: Event) => {
@@ -380,8 +432,7 @@ const MinhasFestasTab = () => {
 
     console.log('🗑️ [PROFILE] Iniciando exclusão da festa:', {
       id: eventToDelete.id,
-      title: eventToDelete.title,
-      status: eventToDelete.status
+      title: eventToDelete.title
     });
 
     try {
@@ -409,43 +460,7 @@ const MinhasFestasTab = () => {
     setEventToDelete(null);
   };
 
-  const getStatusColor = (status: EventStatus) => {
-    switch (status) {
-      case 'draft':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-      case 'published':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'waiting_payment':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'completed':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case null:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getStatusIcon = (status: EventStatus) => {
-    switch (status) {
-      case 'draft':
-        return <MdEdit className="text-gray-600" />;
-      case 'published':
-        return <MdCheckCircle className="text-green-600" />;
-      case 'waiting_payment':
-        return <MdError className="text-yellow-600" />;
-      case 'completed':
-        return <MdCheckCircle className="text-blue-600" />;
-      case 'cancelled':
-        return <MdError className="text-red-600" />;
-      case null:
-        return <MdInfo className="text-gray-600" />;
-      default:
-        return <MdInfo className="text-gray-600" />;
-    }
-  };
+  // Funções de status removidas - a coluna status não existe mais na tabela events
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
@@ -464,27 +479,121 @@ const MinhasFestasTab = () => {
       textColor: 'text-blue-600'
     },
     {
-      title: 'Publicadas',
-      value: events.filter(e => e.status === 'published').length,
+      title: 'Eventos Ativos',
+      value: events.length,
       icon: MdCheckCircle,
       bgColor: 'bg-green-50',
       textColor: 'text-green-600'
     },
     {
-      title: 'Aguardando Pagamento',
-      value: events.filter(e => e.status === 'waiting_payment').length,
+      title: 'Eventos Pendentes',
+      value: events.length,
       icon: MdHistory,
       bgColor: 'bg-yellow-50',
       textColor: 'text-yellow-600'
     },
     {
-      title: 'Realizadas',
-      value: events.filter(e => e.status === 'completed').length,
+      title: 'Eventos Realizados',
+      value: events.length,
       icon: MdTrendingUp,
       bgColor: 'bg-purple-50',
       textColor: 'text-purple-600'
     }
   ];
+
+  // Mostrar loading apenas durante o carregamento inicial dos dados
+  if (loading && !events.length) {
+    return (
+      <div className="animate-pulse space-y-8">
+        <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-white rounded-lg p-6 shadow-sm">
+              <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
+              <div className="space-y-3">
+                <div className="h-4 bg-gray-200 rounded w-full"></div>
+                <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        {/* Header Skeleton */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+          <div className="space-y-2">
+            <div className="h-8 w-48 bg-gray-300 rounded-lg animate-pulse"></div>
+            <div className="h-5 w-96 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+          <div className="h-12 w-32 bg-gray-300 rounded-xl animate-pulse"></div>
+        </div>
+
+        {/* Stats Cards Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-gray-300 rounded-xl"></div>
+                <div className="space-y-2">
+                  <div className="h-6 w-16 bg-gray-300 rounded"></div>
+                  <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Search and Filter Skeleton */}
+        <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 animate-pulse">
+          <div className="flex flex-col lg:flex-row gap-4">
+            <div className="flex-1 h-12 bg-gray-300 rounded-xl"></div>
+            <div className="flex items-center gap-3">
+              <div className="w-5 h-5 bg-gray-300 rounded"></div>
+              <div className="h-12 w-32 bg-gray-300 rounded-xl"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Events Cards Skeleton */}
+        <div className="grid gap-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100 animate-pulse">
+              <div className="h-56 bg-gray-300"></div>
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-5 h-5 bg-gray-300 rounded"></div>
+                    <div className="h-4 w-32 bg-gray-300 rounded"></div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-5 h-5 bg-gray-300 rounded"></div>
+                    <div className="h-4 w-20 bg-gray-300 rounded"></div>
+                  </div>
+                </div>
+                <div className="h-4 w-full bg-gray-200 rounded mb-2"></div>
+                <div className="h-4 w-3/4 bg-gray-200 rounded mb-6"></div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 bg-gray-300 rounded"></div>
+                    <div className="h-4 w-24 bg-gray-300 rounded"></div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-24 bg-gray-300 rounded-lg"></div>
+                    <div className="h-8 w-32 bg-gray-300 rounded-lg"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -509,27 +618,7 @@ const MinhasFestasTab = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => (
-          <motion.div
-            key={stat.title}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: index * 0.1 }}
-            className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100"
-          >
-            <div className="flex items-center gap-4">
-              <div className={`w-14 h-14 ${stat.bgColor} rounded-xl flex items-center justify-center`}>
-                <stat.icon className={`text-xl ${stat.textColor}`} />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                <p className="text-gray-600 text-sm font-medium">{stat.title}</p>
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+      {/* REMOVIDO: Bloco de cards de estatísticas duplicados */}
 
       {/* Search and Filter */}
       <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
@@ -584,8 +673,7 @@ const MinhasFestasTab = () => {
                   <span className="font-medium">{formatDate(event.event_date)}</span>
                 </div>
               </div>
-              <div className="absolute top-4 right-4">
-              </div>
+             
             </div>
 
             <div className="p-6">
@@ -609,16 +697,17 @@ const MinhasFestasTab = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm text-gray-500">
                   <MdWorkOutline className="text-lg" />
-                  <span>{(eventServices[event.id] || []).length} serviços contratados</span>
+                  <span>{eventServices[event.id] || 0} serviços contratados</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Link
-                    href={`/minhas-festas/${event.id}`}
+                  <button
+                    onClick={() => onShowPartyDetails?.(event.id)}
                     className="bg-[#F71875] hover:bg-[#E6006F] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                   >
                     <MdListAlt className="text-lg" />
                     Ver Detalhes
-                  </Link>
+                  </button>
+                  
                 </div>
               </div>
             </div>
@@ -686,26 +775,18 @@ Esta ação não pode ser desfeita. Apenas festas em rascunho ou canceladas pode
 
 // Componente Configurações
 const ConfiguracoesTab = () => {
-  const [loading, setLoading] = useState(false); // Changed from true to false
-  const [modals, setModals] = useState({
-    editProfile: false,
-    changePassword: false,
-    deleteAccount: false
-  });
-  const { userData } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [activeForm, setActiveForm] = useState<'personal' | 'address' | 'password' | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
-    // Removed the simulated loading timer
-    setLoading(false);
+    // Simular carregamento inicial
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1000);
+
+    return () => clearTimeout(timer);
   }, []);
-
-  const openModal = (modalName: keyof typeof modals) => {
-    setModals(prev => ({ ...prev, [modalName]: true }));
-  };
-
-  const closeModal = (modalName: keyof typeof modals) => {
-    setModals(prev => ({ ...prev, [modalName]: false }));
-  };
 
   const settingsGroups = [
     {
@@ -713,23 +794,81 @@ const ConfiguracoesTab = () => {
       icon: MdAccountCircle,
       items: [
         { 
+          id: 'personal',
           label: 'Informações Pessoais', 
           description: 'Nome, email, telefone',
-          onClick: () => openModal('editProfile')
+          onClick: () => setActiveForm('personal')
         },
         { 
+          id: 'address',
+          label: 'Endereço', 
+          description: 'Local padrão para eventos',
+          onClick: () => setActiveForm('address')
+        },
+        { 
+          id: 'password',
           label: 'Senha', 
           description: 'Alterar senha de acesso',
-          onClick: () => openModal('changePassword')
+          onClick: () => setActiveForm('password')
         }
       ]
     }
   ];
 
-  const handleProfileUpdateSuccess = () => {
-    // A página será revalidada automaticamente pelo action
-    window.location.reload();
-  };
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        {/* Header Skeleton */}
+        <div className="text-center space-y-4">
+          <div className="h-8 w-48 bg-gray-300 rounded-lg animate-pulse mx-auto"></div>
+          <div className="h-5 w-96 bg-gray-200 rounded animate-pulse mx-auto"></div>
+        </div>
+
+        {/* Settings Groups Skeleton */}
+        <div className="space-y-6">
+          {[1, 2].map((i) => (
+            <div key={i} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-pulse">
+              <div className="p-6 bg-gray-50 border-b border-gray-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gray-300 rounded-xl"></div>
+                  <div className="h-6 w-24 bg-gray-300 rounded"></div>
+                </div>
+              </div>
+              <div className="divide-y divide-gray-100">
+                {[1, 2, 3].map((j) => (
+                  <div key={j} className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="h-5 w-40 bg-gray-300 rounded mb-2"></div>
+                        <div className="h-4 w-56 bg-gray-200 rounded"></div>
+                      </div>
+                      <div className="w-4 h-4 bg-gray-300 rounded"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Account Actions Skeleton */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-pulse">
+          <div className="h-6 w-32 bg-gray-300 rounded mb-4"></div>
+          <div className="space-y-4">
+            <div className="w-full p-4 rounded-xl bg-gray-50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="h-4 w-24 bg-gray-300 rounded mb-2"></div>
+                  <div className="h-3 w-48 bg-gray-200 rounded"></div>
+                </div>
+                <div className="w-6 h-6 bg-gray-300 rounded"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -761,9 +900,9 @@ const ConfiguracoesTab = () => {
             </div>
             
             <div className="divide-y divide-gray-100">
-              {group.items.map((item, itemIndex) => (
+              {group.items.map((item) => (
                 <div
-                  key={item.label}
+                  key={item.id}
                   onClick={item.onClick}
                   className="p-6 hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
                 >
@@ -793,10 +932,7 @@ const ConfiguracoesTab = () => {
           Ações da Conta
         </h4>
         <div className="space-y-4">
-          <button 
-            onClick={() => openModal('deleteAccount')}
-            className="w-full text-left p-4 rounded-xl hover:bg-red-50 transition-colors duration-200"
-          >
+          <button className="w-full text-left p-4 rounded-xl hover:bg-red-50 transition-colors duration-200">
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-red-600">Excluir Conta</p>
@@ -810,24 +946,52 @@ const ConfiguracoesTab = () => {
         </div>
       </div>
 
-      {/* Modals */}
-      <EditProfileModal
-        isOpen={modals.editProfile}
-        onClose={() => closeModal('editProfile')}
-        userData={userData || {}}
-        onSuccess={handleProfileUpdateSuccess}
-      />
+      {/* Forms Modals */}
+      <AnimatePresence>
+        {activeForm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 backdrop-blur-md bg-white/20 z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+            >
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    {activeForm === 'personal' && 'Informações Pessoais'}
+                    {activeForm === 'address' && 'Endereço'}
+                    {activeForm === 'password' && 'Alterar Senha'}
+                  </h2>
+                  <button
+                    onClick={() => setActiveForm(null)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <MdClose className="text-2xl" />
+                  </button>
+                </div>
 
-      <ChangePasswordModal
-        isOpen={modals.changePassword}
-        onClose={() => closeModal('changePassword')}
-      />
+                {activeForm === 'personal' && (
+                  <PersonalInfoForm onClose={() => setActiveForm(null)} />
+                )}
 
-      <DeleteAccountModal
-        isOpen={modals.deleteAccount}
-        onClose={() => closeModal('deleteAccount')}
-        userName={userData?.full_name || userData?.organization_name || 'usuário'}
-      />
+                {activeForm === 'address' && (
+                  <AddressForm onClose={() => setActiveForm(null)} />
+                )}
+
+                {activeForm === 'password' && (
+                  <PasswordForm onClose={() => setActiveForm(null)} />
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -835,31 +999,98 @@ const ConfiguracoesTab = () => {
 // Componente principal
 function ProfilePageContent() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const { user, userData, loading: authLoading } = useAuth();
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const { user, loading } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
 
   useEffect(() => {
     const tab = searchParams.get('tab') || 'dashboard';
+    const eventId = searchParams.get('eventId');
+    
     setActiveTab(tab);
+    if (eventId) {
+      setSelectedEventId(eventId);
+    }
   }, [searchParams]);
 
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
+    setSelectedEventId(null); // Limpar seleção de evento ao mudar de tab
     const newUrl = tabId === 'dashboard' ? '/perfil' : `/perfil?tab=${tabId}`;
     router.push(newUrl);
   };
+
+  const handleShowPartyDetails = (eventId: string) => {
+    setSelectedEventId(eventId);
+    setActiveTab('minhas-festas');
+    router.push(`/perfil?tab=minhas-festas&eventId=${eventId}`);
+  };
+
+  const handleBackToMinhasFestas = () => {
+    setSelectedEventId(null);
+    router.push('/perfil?tab=minhas-festas');
+  };
+
+  if (loading) {
+    return (
+      <ClientAuthGuard requiredRole="client">
+        <ClientLayout>
+          <div className="space-y-8">
+            {/* Tab Navigation Skeleton */}
+            <div className="border-b border-gray-200">
+              <nav className="flex space-x-8">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="py-4 px-1 animate-pulse">
+                    <div className="h-5 w-24 bg-gray-300 rounded"></div>
+                  </div>
+                ))}
+              </nav>
+            </div>
+
+            {/* Tab Content Skeleton */}
+            <div className="mt-8 space-y-8">
+              {/* Header Skeleton */}
+              <div className="text-center space-y-4">
+                <div className="h-8 w-48 bg-gray-300 rounded-lg animate-pulse mx-auto"></div>
+                <div className="h-5 w-96 bg-gray-200 rounded animate-pulse mx-auto"></div>
+              </div>
+
+              {/* Cards Skeleton */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-gray-300 rounded-xl"></div>
+                      <div className="space-y-2">
+                        <div className="h-6 w-16 bg-gray-300 rounded"></div>
+                        <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </ClientLayout>
+      </ClientAuthGuard>
+    );
+  }
 
   const renderTabContent = () => {
     switch (activeTab) {
       case 'dashboard':
         return <DashboardTab />;
       case 'minhas-festas':
-        return (
-          <Suspense fallback={<div>Loading...</div>}>
-            <MinhasFestasTab />
-          </Suspense>
-        );
+        if (selectedEventId) {
+          return (
+            <PartyDetailsTab 
+              eventId={selectedEventId} 
+              onBack={handleBackToMinhasFestas} 
+            />
+          );
+        }
+        return <MinhasFestasTab onShowPartyDetails={handleShowPartyDetails} />;
       case 'configuracoes':
         return <ConfiguracoesTab />;
       default:
@@ -909,8 +1140,49 @@ function ProfilePageContent() {
 
 export default function ProfilePage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={
+      <ClientAuthGuard requiredRole="client">
+        <ClientLayout>
+          <div className="space-y-8">
+            {/* Tab Navigation Skeleton */}
+            <div className="border-b border-gray-200">
+              <nav className="flex space-x-8">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="py-4 px-1 animate-pulse">
+                    <div className="h-5 w-24 bg-gray-300 rounded"></div>
+                  </div>
+                ))}
+              </nav>
+            </div>
+
+            {/* Tab Content Skeleton */}
+            <div className="mt-8 space-y-8">
+              {/* Header Skeleton */}
+              <div className="text-center space-y-4">
+                <div className="h-8 w-48 bg-gray-300 rounded-lg animate-pulse mx-auto"></div>
+                <div className="h-5 w-96 bg-gray-200 rounded animate-pulse mx-auto"></div>
+              </div>
+
+              {/* Cards Skeleton */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-gray-300 rounded-xl"></div>
+                      <div className="space-y-2">
+                        <div className="h-6 w-16 bg-gray-300 rounded"></div>
+                        <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </ClientLayout>
+      </ClientAuthGuard>
+    }>
       <ProfilePageContent />
     </Suspense>
   );
-}
+} 

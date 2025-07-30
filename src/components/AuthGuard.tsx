@@ -1,103 +1,119 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
+import { User } from '@supabase/supabase-js';
+import { AuthErrorFallback } from './ui/AuthErrorFallback';
 
 interface AuthGuardProps {
   children: React.ReactNode;
-  requiredRole?: "client" | "provider" | "admin";
+  requiredRole?: string;
   redirectTo?: string;
 }
 
-export function AuthGuard({
-  children,
-  requiredRole,
-  redirectTo = "/auth/login",
-}: AuthGuardProps) {
+export function AuthGuard({ children, requiredRole, redirectTo = '/auth/login' }: AuthGuardProps) {
+  const [user, setUser] = useState<User | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
+  const checkAuth = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('Erro ao verificar sessão:', error);
+        setError('Erro ao verificar autenticação');
+        setLoading(false);
+        return;
+      }
+
+      if (!session) {
+        router.push(redirectTo);
+        return;
+      }
+
+      setUser(session.user);
+
+      // Buscar dados do usuário na tabela users
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+
+      if (userError) {
+        console.error('Erro ao buscar dados do usuário:', userError);
+        
+        // Se não encontrar o usuário na tabela, pode ser que ainda não foi criado
+        // Vamos assumir que é um cliente por padrão
+        setUserRole('client');
+      } else {
+        setUserRole(userData.role);
+      }
+
+      // Verificar se o usuário tem o papel necessário
+      if (requiredRole && userData?.role !== requiredRole) {
+        console.log('Usuário não tem o papel necessário:', {
+          required: requiredRole,
+          actual: userData?.role
+        });
+        router.push('/acesso-negado');
+        return;
+      }
+
+      setLoading(false);
+    } catch (error) {
+      console.error('Erro inesperado no AuthGuard:', error);
+      setError('Erro inesperado na verificação de autenticação');
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        // Se não tem sessão, redireciona para login
-        if (!session?.user) {
-          router.push('/auth/login');
-          setLoading(false);
-          return;
-        }
-
-        if (session?.user) {
-          setIsAuthorized(true);
-          setLoading(false);
-        }
-
-        if (!requiredRole) {
-          setIsAuthorized(true);
-          setLoading(false);
-          return;
-        }
-
-        // Verifica role se necessário
-        const { data: userData } = await supabase
-          .from("users")
-          .select("role")
-          .eq("id", session.user.id)
-          .single();
-
-        const userRole = userData?.role || "client";
-
-        if (userRole !== requiredRole) {
-          router.push("/dashboard");
-          return;
-        }
-
-        setLoading(false);
-        setIsAuthorized(true);
-      } catch (error) {
-        setLoading(false);
-        router.push(redirectTo);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     checkAuth();
+  }, [requiredRole]);
 
-    // Escuta mudanças na autenticação
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_OUT" || !session) {
-        setLoading(false);
-        setIsAuthorized(false);
-        router.push(redirectTo);
-      } else if (event === "SIGNED_IN" && session) {
-        checkAuth();
-      }
-    });
+  const handleRetry = async () => {
+    await checkAuth();
+  };
 
-    return () => subscription.unsubscribe();
-  }, []);
+  const handleLogout = () => {
+    router.push(redirectTo);
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FFF6FB] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#F71875] border-t-transparent rounded-full animate-spin"></div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando...</p>
+        </div>
       </div>
     );
   }
 
-  if (!isAuthorized) {
-    return null;
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <AuthErrorFallback 
+          error={error} 
+          onRetry={handleRetry}
+          onLogout={handleLogout}
+        />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null; // Redirecionamento em andamento
   }
 
   return <>{children}</>;
-}
+} 

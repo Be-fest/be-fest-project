@@ -1,17 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { MdArrowBack, MdSearch, MdStar, MdLocationOn, MdWarning, MdTune, MdClose } from 'react-icons/md';
+import { MdArrowBack, MdSearch, MdStar, MdLocationOn, MdWarning, MdTune, MdClose, MdAdd } from 'react-icons/md';
 import { Categories } from '@/components/Categories';
 import { getPublicServicesAction } from '@/lib/actions/services';
+import { addServiceToCartAction } from '@/lib/actions/cart';
 import { ServiceWithProvider } from '@/types/database';
 import { Header } from '@/components/Header';
 import { ServicesSkeleton } from '@/components/ui';
 import { SafeHTML } from '@/components/ui/SafeHTML';
-import { useToast } from '@/hooks/useToast';
+import { formatMinimumPrice } from '@/utils/formatters';
+import { formatMinimumPriceWithFee } from '@/utils/pricingUtils';
+import { useToastGlobal } from '@/contexts/GlobalToastContext';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
 
 // Skeleton Components para a página de serviços
 const SearchSkeleton = () => (
@@ -26,7 +31,7 @@ const SearchSkeleton = () => (
     </div>
 
     {/* Categories Skeleton */}
-    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
       {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
         <div key={i} className="bg-white rounded-xl p-4 shadow-sm animate-pulse">
           <div className="w-16 h-16 bg-gray-300 rounded-lg mx-auto mb-3"></div>
@@ -42,6 +47,10 @@ const ServicesGrid = ({ services, selectedParty }: {
   services: ServiceWithProvider[];
   selectedParty: { id: string; name: string } | null;
 }) => {
+  const toast = useToastGlobal();
+  const router = useRouter();
+  const { user } = useAuth();
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -50,20 +59,92 @@ const ServicesGrid = ({ services, selectedParty }: {
   };
 
   const getServicePrice = (service: ServiceWithProvider) => {
-    if (service.base_price && service.base_price > 0) {
-      return service.base_price;
+    if (service.guest_tiers && service.guest_tiers.length > 0) {
+      return service.guest_tiers[0].base_price_per_adult || 0;
     }
-    return service.price_per_guest || 0;
+    return 0; // Se não tem tiers, retorna 0
   };
 
   const getPriceLabel = (service: ServiceWithProvider) => {
-    if (service.base_price && service.base_price > 0) {
-      return formatPrice(service.base_price);
+    // Se tem tiers de preço, usar o preço mínimo com taxa de 5%
+    if (service.guest_tiers && service.guest_tiers.length > 0) {
+      const minPrice = formatMinimumPriceWithFee(service.guest_tiers);
+      return `A partir de ${minPrice}`;
     }
-    if (service.price_per_guest && service.price_per_guest > 0) {
-      return `${formatPrice(service.price_per_guest)} por pessoa`;
-    }
+    
+    // Se não tem tiers de preço, mostrar preço sob consulta
     return 'Preço sob consulta';
+  };
+
+  const handleAddServiceDirectly = async (service: ServiceWithProvider) => {
+    console.log('🔄 Iniciando adição de serviço:', {
+      serviceId: service.id,
+      serviceName: service.name,
+      providerId: service.provider_id,
+      selectedParty: selectedParty
+    });
+
+    // Verificar se o usuário está logado
+    if (!user) {
+      console.log('❌ Usuário não logado');
+      toast.error(
+        'Login necessário',
+        'Você precisa fazer login para adicionar serviços às suas festas'
+      );
+      
+      // Redirecionar para login com returnUrl
+      const currentUrl = window.location.href;
+      router.push(`/auth/login?returnUrl=${encodeURIComponent(currentUrl)}`);
+      return;
+    }
+    
+    // Se estiver logado mas não tem festa selecionada, redirecionar para perfil
+    if (!selectedParty) {
+      console.log('❌ Nenhuma festa selecionada');
+      toast.info(
+        'Selecione uma festa',
+        'Você será redirecionado para selecionar uma festa'
+      );
+      
+      // Redirecionar para perfil
+      router.push('/perfil');
+      return;
+    }
+    
+    // Se estiver logado e tem festa selecionada, adicionar o serviço
+    try {
+      console.log('✅ Dados válidos, chamando addServiceToCartAction...');
+      
+      const result = await addServiceToCartAction({
+        event_id: selectedParty.id,
+        service_id: service.id,
+        provider_id: service.provider_id,
+        client_notes: null
+      });
+
+      console.log('📋 Resultado da action:', result);
+
+      if (result.success) {
+        console.log('✅ Serviço adicionado com sucesso!');
+        toast.success(
+          'Serviço adicionado!',
+          `${service.name} foi adicionado à sua festa "${selectedParty.name}".`,
+          3000
+        );
+        
+        // Navegar para a página da festa após um pequeno delay
+        setTimeout(() => {
+                  console.log('🔄 Navegando para:', `/perfil?tab=minhas-festas&eventId=${selectedParty.id}`);
+        router.push(`/perfil?tab=minhas-festas&eventId=${selectedParty.id}`);
+        }, 1500);
+      } else {
+        console.error('❌ Erro ao adicionar serviço:', result.error);
+        toast.error('Erro', result.error || 'Erro ao adicionar serviço.', 3000);
+      }
+    } catch (error) {
+      console.error('💥 Erro inesperado ao adicionar serviço:', error);
+      toast.error('Erro', 'Erro inesperado ao adicionar serviço.', 3000);
+    }
   };
 
   return (
@@ -77,7 +158,7 @@ const ServicesGrid = ({ services, selectedParty }: {
           className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
         >
           {/* Imagem do serviço */}
-          <div className="h-48 bg-gray-200 overflow-hidden">
+          <div className="relative h-48 bg-gray-200 overflow-hidden">
             <img
               src={service.images_urls?.[0] || service.provider?.profile_image || service.provider?.logo_url || '/be-fest-provider-logo.png'}
               alt={service.name}
@@ -87,19 +168,11 @@ const ServicesGrid = ({ services, selectedParty }: {
 
           {/* Conteúdo do card */}
           <div className="p-6">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex-1">
-                <h3 className="text-xl font-bold text-gray-900 mb-1">{service.name}</h3>
-                <p className="text-gray-600 text-sm">
-                  por {service.provider?.organization_name || service.provider?.full_name || 'Prestador'}
-                </p>
-              </div>
-              <div className="flex items-center text-yellow-500">
-                <MdStar className="text-lg mr-1" />
-                <span className="text-sm font-medium text-gray-700">
-                  5.0
-                </span>
-              </div>
+            <div className="mb-3">
+              <h3 className="text-xl font-bold text-gray-900 mb-1">{service.name}</h3>
+              <p className="text-gray-600 text-sm">
+                por {service.provider?.organization_name || service.provider?.full_name || 'Prestador'}
+              </p>
             </div>
 
             {/* Categoria */}
@@ -124,24 +197,30 @@ const ServicesGrid = ({ services, selectedParty }: {
               <div className="text-[#FF0080] font-bold text-lg">
                 {getPriceLabel(service)}
               </div>
-              <div className="flex items-center text-gray-500 text-sm">
-                <MdLocationOn className="mr-1" />
-                <span>{service.provider?.area_of_operation || 'São Paulo'}</span>
-              </div>
             </div>
 
             {/* Botões de ação */}
-            <div className="flex flex-col gap-2">
+            <div className="flex gap-2">
               <Link
                 href={selectedParty 
                   ? `/servicos/${service.id}?partyId=${selectedParty.id}&partyName=${encodeURIComponent(selectedParty.name)}`
                   : `/servicos/${service.id}`
                 }
-                className="w-full bg-[#FF0080] hover:bg-[#E6006F] text-white py-3 px-4 rounded-lg transition-colors duration-200 font-medium text-center block"
+                className="flex-1 bg-[#FF0080] hover:bg-[#E6006F] text-white py-3 px-4 rounded-lg transition-colors duration-200 font-medium text-center block"
               >
                 Ver Cardápio
               </Link>
               
+              {/* Botão de adicionar diretamente - sempre adiciona à festa */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => handleAddServiceDirectly(service)}
+                className="bg-[#FF0080] hover:bg-[#E6006F] text-white w-12 h-12 rounded-full transition-colors duration-200 shadow-lg flex items-center justify-center"
+                title="Adicionar à festa"
+              >
+                <MdAdd className="text-xl" />
+              </motion.button>
             </div>
           </div>
         </motion.div>
@@ -152,7 +231,6 @@ const ServicesGrid = ({ services, selectedParty }: {
 
 export default function ServicesPage() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const [services, setServices] = useState<ServiceWithProvider[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -161,9 +239,6 @@ export default function ServicesPage() {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
   const [selectedParty, setSelectedParty] = useState<{ id: string; name: string } | null>(null);
-
-  // Get toast function from useToast hook instead of react-toastify
-  const { toast } = useToast();
 
   // Detectar se estamos adicionando serviços para uma festa
   useEffect(() => {
@@ -202,14 +277,11 @@ export default function ServicesPage() {
 
         if (result.success && result.data) {
           setServices(result.data);
-          setLoading(false);
         } else {
           setError(result.error || 'Erro ao carregar serviços');
-          setLoading(false);
         }
       } catch (err) {
         setError('Erro ao carregar serviços');
-        setLoading(false);
         console.error('Error fetching services:', err);
       } finally {
         setLoading(false);
@@ -416,7 +488,7 @@ export default function ServicesPage() {
                 <MdWarning className="text-red-500 text-4xl mx-auto mb-4" />
                 <p className="text-red-600 mb-4">{error}</p>
                 <button
-                  onClick={() => router.refresh()}
+                  onClick={() => window.location.reload()}
                   className="px-4 py-2 bg-[#FF0080] text-white rounded-lg hover:bg-[#E6006F] transition-colors"
                 >
                   Tentar novamente
@@ -457,5 +529,4 @@ export default function ServicesPage() {
       </div>
     </>
   );
-}
-
+} 

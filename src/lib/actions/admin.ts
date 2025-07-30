@@ -15,6 +15,30 @@ export interface AdminStats {
   totalClients: number;
   totalServices: number;
   totalEvents: number;
+  // Novas estatísticas
+  totalEventServices: number;
+  totalBookings: number;
+  totalRevenue: number;
+  averageEventValue: number;
+  eventsByStatus: {
+    draft: number;
+    published: number;
+    waiting_payment: number;
+    completed: number;
+    cancelled: number;
+  };
+  eventServicesByStatus: {
+    pending_provider_approval: number;
+    approved: number;
+    rejected: number;
+    cancelled: number;
+  };
+  recentActivity: {
+    newEvents: number;
+    newServices: number;
+    newProviders: number;
+    newClients: number;
+  };
 }
 
 export interface AdminEvent {
@@ -93,6 +117,55 @@ export async function getAdminStatsAction(): Promise<ActionResult<AdminStats>> {
       .from('events')
       .select('*', { count: 'exact', head: true });
 
+    // Buscar total de event_services
+    const { count: eventServicesCount } = await supabase
+      .from('event_services')
+      .select('*', { count: 'exact', head: true });
+
+    // Buscar total de bookings
+    const { count: bookingsCount } = await supabase
+      .from('bookings')
+      .select('*', { count: 'exact', head: true });
+
+    // Buscar eventos por status
+    const { data: eventsByStatusData } = await supabase
+      .from('events')
+      .select('status');
+
+    const eventsByStatus = {
+      draft: 0,
+      published: 0,
+      waiting_payment: 0,
+      completed: 0,
+      cancelled: 0
+    };
+
+    eventsByStatusData?.forEach(event => {
+      const status = event.status as keyof typeof eventsByStatus;
+      if (status in eventsByStatus) {
+        eventsByStatus[status]++;
+      }
+    });
+
+    // Buscar event_services por status
+    const { data: eventServicesByStatusData } = await supabase
+      .from('event_services')
+      .select('booking_status');
+
+    const eventServicesByStatus = {
+      pending_provider_approval: 0,
+      approved: 0,
+      rejected: 0,
+      cancelled: 0
+    };
+
+    eventServicesByStatusData?.forEach(es => {
+      const status = es.booking_status as keyof typeof eventServicesByStatus;
+      if (status in eventServicesByStatus) {
+        eventServicesByStatus[status]++;
+      }
+    });
+
     // Calcular receita mensal (soma dos valores estimados de eventos aprovados no mês atual)
     const currentMonth = new Date();
     const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
@@ -107,6 +180,43 @@ export async function getAdminStatsAction(): Promise<ActionResult<AdminStats>> {
 
     const monthlyRevenue = monthlyRevenueData?.reduce((sum, item) => sum + (item.total_estimated_price || 0), 0) || 0;
 
+    // Calcular receita total
+    const { data: totalRevenueData } = await supabase
+      .from('event_services')
+      .select('total_estimated_price')
+      .eq('booking_status', 'approved');
+
+    const totalRevenue = totalRevenueData?.reduce((sum, item) => sum + (item.total_estimated_price || 0), 0) || 0;
+
+    // Calcular valor médio por evento
+    const averageEventValue = (activeEventsCount || 0) > 0 ? totalRevenue / (activeEventsCount || 1) : 0;
+
+    // Buscar atividade recente (últimos 7 dias)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const { count: newEventsCount } = await supabase
+      .from('events')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', sevenDaysAgo.toISOString());
+
+    const { count: newServicesCount } = await supabase
+      .from('services')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', sevenDaysAgo.toISOString());
+
+    const { count: newProvidersCount } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+      .eq('role', 'provider')
+      .gte('created_at', sevenDaysAgo.toISOString());
+
+    const { count: newClientsRecentCount } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+      .eq('role', 'client')
+      .gte('created_at', sevenDaysAgo.toISOString());
+
     const stats: AdminStats = {
       totalActiveEvents: activeEventsCount || 0,
       totalPendingRequests: pendingRequestsCount || 0,
@@ -116,6 +226,18 @@ export async function getAdminStatsAction(): Promise<ActionResult<AdminStats>> {
       totalClients: clientsCount || 0,
       totalServices: servicesCount || 0,
       totalEvents: eventsCount || 0,
+      totalEventServices: eventServicesCount || 0,
+      totalBookings: bookingsCount || 0,
+      totalRevenue: totalRevenue,
+      averageEventValue: averageEventValue,
+      eventsByStatus,
+      eventServicesByStatus,
+      recentActivity: {
+        newEvents: newEventsCount || 0,
+        newServices: newServicesCount || 0,
+        newProviders: newProvidersCount || 0,
+        newClients: newClientsRecentCount || 0,
+      },
     };
 
     return { success: true, data: stats };
@@ -367,6 +489,126 @@ export async function getAllServicesAction(): Promise<ActionResult<Array<{
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Erro ao buscar serviços' 
+    };
+  }
+} 
+
+export async function getAllEventServicesAction(): Promise<ActionResult<Array<{
+  id: string;
+  event_id: string;
+  service_id: string;
+  provider_id: string;
+  event_title: string;
+  event_date: string;
+  event_location: string;
+  event_status: string;
+  client_name: string;
+  client_email: string;
+  client_whatsapp: string;
+  service_name: string;
+  service_category: string;
+  service_description: string;
+  provider_name: string;
+  provider_email: string;
+  provider_whatsapp: string;
+  provider_organization: string;
+  booking_status: string;
+  price_per_guest_at_booking: number;
+  total_estimated_price: number;
+  guest_count: number;
+  created_at: string;
+  updated_at: string;
+}>>> {
+  try {
+    const supabase = createClient();
+    
+    const { data: eventServices, error } = await supabase
+      .from('event_services')
+      .select(`
+        id,
+        event_id,
+        service_id,
+        provider_id,
+        booking_status,
+        price_per_guest_at_booking,
+        total_estimated_price,
+        created_at,
+        updated_at,
+        event:events (
+          id,
+          title,
+          event_date,
+          location,
+          status,
+          guest_count,
+          client:users!client_id (
+            id,
+            full_name,
+            email,
+            whatsapp_number
+          )
+        ),
+        service:services (
+          id,
+          name,
+          category,
+          description,
+          provider:users!provider_id (
+            id,
+            full_name,
+            email,
+            whatsapp_number,
+            organization_name
+          )
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching event services:', error);
+      return { success: false, error: error.message };
+    }
+
+    const formattedEventServices = eventServices?.map(es => {
+      const event = es.event as any;
+      const service = es.service as any;
+      const client = event?.client as any;
+      const provider = service?.provider as any;
+
+      return {
+        id: es.id,
+        event_id: es.event_id,
+        service_id: es.service_id,
+        provider_id: es.provider_id,
+        event_title: event?.title || 'N/A',
+        event_date: event?.event_date || 'N/A',
+        event_location: event?.location || 'N/A',
+        event_status: event?.status || 'N/A',
+        client_name: client?.full_name || 'N/A',
+        client_email: client?.email || 'N/A',
+        client_whatsapp: client?.whatsapp_number || 'Não informado',
+        service_name: service?.name || 'N/A',
+        service_category: service?.category || 'N/A',
+        service_description: service?.description || 'N/A',
+        provider_name: provider?.organization_name || provider?.full_name || 'N/A',
+        provider_email: provider?.email || 'N/A',
+        provider_whatsapp: provider?.whatsapp_number || 'Não informado',
+        provider_organization: provider?.organization_name || 'N/A',
+        booking_status: es.booking_status || 'pending_provider_approval',
+        price_per_guest_at_booking: es.price_per_guest_at_booking || 0,
+        total_estimated_price: es.total_estimated_price || 0,
+        guest_count: event?.guest_count || 0,
+        created_at: es.created_at,
+        updated_at: es.updated_at,
+      };
+    }) || [];
+
+    return { success: true, data: formattedEventServices };
+  } catch (error) {
+    console.error('Event services fetch failed:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Erro ao buscar serviços de eventos' 
     };
   }
 } 

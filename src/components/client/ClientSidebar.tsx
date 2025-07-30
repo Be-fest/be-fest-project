@@ -41,7 +41,7 @@ export function ClientSidebar({
     {
       label: 'Dashboard',
       icon: MdDashboard,
-      path: '/dashboard',
+      path: '/perfil',
       description: 'Visão geral'
     },
     {

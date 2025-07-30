@@ -13,9 +13,9 @@
 }
 
 .theme-admin {
-  --color-primary: #FF0080;
-  --color-primary-dark: #e60073;
-  --color-primary-light: #ff4da6;
+  --color-primary: #FF4DA6;
+  --color-primary-dark: #e64495;
+  --color-primary-light: #ff80c4;
   --color-text-title: #3d001e;
   --color-text-secondary: #8D8D8D;
   --color-bg-light: #FFFBFD;

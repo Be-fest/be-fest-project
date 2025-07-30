@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -17,11 +17,11 @@ interface PartyConfigFormProps {
 }
 
 const partySchema = z.object({
-  title: z.string().min(3, 'Nome do evento deve ter pelo menos 3 caracteres'),
-  description: z.string().optional(),
+  title: z.string().min(2, 'Nome do evento deve ter pelo menos 2 caracteres'),
+  description: z.string().optional().nullable(),
   event_date: z.string().min(1, 'Data é obrigatória'),
-  start_time: z.string().optional(),
-  location: z.string().min(5, 'Endereço deve ter pelo menos 5 caracteres').optional(),
+  start_time: z.string().optional().nullable(),
+  location: z.string().optional().nullable(),
   full_guests: z.number().min(0, 'Número de convidados inteira deve ser 0 ou maior'),
   half_guests: z.number().min(0, 'Número de convidados meia deve ser 0 ou maior'),
   free_guests: z.number().min(0, 'Número de convidados gratuitos deve ser 0 ou maior'),
@@ -43,135 +43,20 @@ const partySchema = z.object({
 
 type PartyFormData = z.infer<typeof partySchema>;
 
-// Chave do localStorage para dados do formulário
-const FORM_STORAGE_KEY = 'party-form-draft';
-
-// Função para salvar dados no localStorage
-const saveFormData = (data: Partial<PartyFormData>) => {
-  try {
-    localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(data));
-  } catch (error) {
-    console.warn('Erro ao salvar dados do formulário:', error);
-  }
-};
-
-// Função para carregar dados do localStorage
-const loadFormData = (): Partial<PartyFormData> | null => {
-  try {
-    const stored = localStorage.getItem(FORM_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : null;
-  } catch (error) {
-    console.warn('Erro ao carregar dados do formulário:', error);
-    return null;
-  }
-};
-
-// Função para limpar dados do localStorage
-const clearFormData = () => {
-  try {
-    localStorage.removeItem(FORM_STORAGE_KEY);
-  } catch (error) {
-    console.warn('Erro ao limpar dados do formulário:', error);
-  }
-};
-
 export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfigFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const router = useRouter();
   const toast = useToastGlobal();
-  
-  // Carregar dados salvos do localStorage se não houver initialData e não for edição
-  const getDefaultValues = (): PartyFormData => {
-    const defaultValues: PartyFormData = {
-      title: '',
-      description: '',
-      event_date: '',
-      start_time: '',
-      location: '',
-      full_guests: 0,
-      half_guests: 0,
-      free_guests: 0,
-    };
-
-    // Se for edição, use initialData
-    if (eventId && initialData) {
-      return { ...defaultValues, ...initialData };
-    }
-
-    // Se não for edição, tente carregar do localStorage
-    if (!eventId) {
-      const savedData = loadFormData();
-      if (savedData) {
-        return { ...defaultValues, ...savedData };
-      }
-    }
-
-    return initialData || defaultValues;
-  };
   
   const {
     register,
     handleSubmit,
     watch,
     formState: { errors },
-    reset,
   } = useForm<PartyFormData>({
     resolver: zodResolver(partySchema),
-    defaultValues: getDefaultValues(),
-  });
-
-  // Observar mudanças no formulário para auto-salvar
-  const watchedValues = watch();
-
-  // Effect para auto-salvar dados no localStorage (apenas para criação)
-  useEffect(() => {
-    if (!eventId && !loading) {
-      // Verificar se há mudanças nos dados
-      const defaultValues = {
-        title: '',
-        description: '',
-        event_date: '',
-        start_time: '',
-        location: '',
-        full_guests: 0,
-        half_guests: 0,
-        free_guests: 0,
-      };
-
-      const hasChanges = Object.keys(watchedValues).some(key => {
-        const currentValue = watchedValues[key as keyof PartyFormData];
-        const defaultValue = defaultValues[key as keyof PartyFormData];
-        return currentValue !== defaultValue && currentValue !== '' && currentValue !== 0;
-      });
-
-      setHasUnsavedChanges(hasChanges);
-
-      // Auto-salvar apenas se houver mudanças
-      if (hasChanges) {
-        const timeoutId = setTimeout(() => {
-          saveFormData(watchedValues);
-        }, 1000); // Auto-salvar após 1 segundo de inatividade
-
-        return () => clearTimeout(timeoutId);
-      }
-    }
-  }, [watchedValues, eventId, loading]);
-
-  // Função para limpar dados salvos ao completar com sucesso
-  const handleFormSuccess = () => {
-    if (!eventId) {
-      clearFormData();
-    }
-    setHasUnsavedChanges(false);
-    onComplete();
-  };
-
-  // Função para limpar dados salvos manualmente
-  const handleClearSavedData = () => {
-    clearFormData();
-    reset({
+    defaultValues: initialData || {
       title: '',
       description: '',
       event_date: '',
@@ -180,26 +65,8 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
       full_guests: 0,
       half_guests: 0,
       free_guests: 0,
-    });
-    setHasUnsavedChanges(false);
-    toast.success('Dados salvos foram limpos');
-  };
-
-  // Mostrar notificação se dados foram recuperados
-  useEffect(() => {
-    if (!eventId && !initialData) {
-      const savedData = loadFormData();
-      if (savedData && Object.keys(savedData).length > 0) {
-        const hasValidData = Object.values(savedData).some(value => 
-          value !== '' && value !== 0 && value !== null && value !== undefined
-        );
-        
-        if (hasValidData) {
-          toast.success('Dados anteriores foram recuperados', 'Seus dados salvos foram restaurados automaticamente');
-        }
-      }
-    }
-  }, [eventId, initialData, toast]);
+    },
+  });
 
   const onSubmit = async (data: PartyFormData) => {
     setLoading(true);
@@ -241,13 +108,13 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
 
         // Redirecionar ou simplesmente completar
         if (eventId) {
-          // Para edição, só chamar handleFormSuccess
-          handleFormSuccess();
+          // Para edição, só chamar onComplete
+          onComplete();
         } else {
           // Para criação, redirecionar após delay
           setTimeout(() => {
-            router.push(`/minhas-festas/${result.data!.id}`);
-            handleFormSuccess();
+            router.push(`/perfil?tab=minhas-festas&eventId=${result.data!.id}`);
+            onComplete();
           }, 1000);
         }
       } else {
@@ -276,32 +143,24 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
   const halfGuests = watch('half_guests');
   const freeGuests = watch('free_guests');
   const totalGuests = calculateGuestCount(fullGuests, halfGuests, freeGuests);
+  const startTime = watch('start_time');
+
+  // Função para calcular horário de término
+  const calculateEndTime = (startTime: string | null | undefined) => {
+    if (!startTime) return null;
+    
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const startDate = new Date();
+    startDate.setHours(hours, minutes, 0, 0);
+    
+    const endDate = new Date(startDate.getTime() + (5 * 60 * 60 * 1000)); // +5 horas
+    return endDate.toTimeString().slice(0, 5);
+  };
+
+  const endTime = calculateEndTime(startTime);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
-      {/* Indicador de auto-salvamento para criação */}
-      {!eventId && hasUnsavedChanges && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-          <p className="text-blue-700 text-sm flex items-center">
-            <span className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></span>
-            Dados salvos automaticamente
-          </p>
-        </div>
-      )}
-
-      {/* Botão para limpar dados salvos (apenas para criação) */}
-      {!eventId && hasUnsavedChanges && (
-        <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={handleClearSavedData}
-            className="text-gray-500 hover:text-gray-700 text-sm underline"
-          >
-            Limpar dados salvos
-          </button>
-        </div>
-      )}
-
       {/* Nome do Evento */}
       <div>
         <label className="block text-sm font-semibold text-[#520029] mb-2">
@@ -366,6 +225,19 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
           {errors.start_time && (
             <p className="text-red-500 text-sm mt-1">{errors.start_time.message}</p>
           )}
+          {startTime && endTime && (
+            <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>O evento comumente acaba às {endTime}</strong>
+              </p>
+              <p className="text-xs text-blue-600 mt-1">
+                <strong>Duração de 5 horas</strong>
+              </p>
+              <p className="text-xs text-blue-600 mt-1">
+                Consulte a duração do serviço. Horas extras são negociadas diretamente com o prestador.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -398,7 +270,7 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
           {/* Inteira */}
           <div className="space-y-2">
             <label className="block text-xs font-medium text-green-600">
-              Inteira (13+ anos)
+              Inteira (De 12 anos em diante)
             </label>
             <input
               type="number"
@@ -419,7 +291,7 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
           {/* Meia */}
           <div className="space-y-2">
             <label className="block text-xs font-medium text-blue-600">
-              Meia (6-12 anos)
+              Meia (De 6 a 11 anos de Idade)
             </label>
             <input
               type="number"
@@ -440,7 +312,7 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
           {/* Free */}
           <div className="space-y-2">
             <label className="block text-xs font-medium text-orange-600">
-              Gratuito (0-5 anos)
+              Grátis (De 0 a 5 anos de Idade)
             </label>
             <input
               type="number"
@@ -467,7 +339,7 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
             <p className="text-xs text-gray-500 mt-1">
               {fullGuests > 0 && `${fullGuests} inteira`}
               {halfGuests > 0 && `${fullGuests > 0 ? ', ' : ''}${halfGuests} meia`}
-              {freeGuests > 0 && `${(fullGuests > 0 || halfGuests > 0) ? ', ' : ''}${freeGuests} gratuito`}
+              {freeGuests > 0 && `${(fullGuests > 0 || halfGuests > 0) ? ', ' : ''}${freeGuests} grátis`}
             </p>
           </div>
         )}

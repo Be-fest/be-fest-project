@@ -4,17 +4,28 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MdEdit, MdDelete, MdVisibility, MdVisibilityOff } from 'react-icons/md';
 import { ServiceFormModal } from './ServiceFormModal';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { getProviderServicesAction, toggleServiceStatusAction, deleteServiceAction } from '@/lib/actions/services';
-import { Service } from '@/types/database';
+import { Service, ServiceWithDetails, GuestTier } from '@/types/database';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
 import { SafeHTML } from '@/components/ui';
 import { useServiceImage, invalidateServiceImagesCache } from '@/hooks/useImagePreloader';
+import { calculateMinPrice, formatPrice } from '@/utils/pricingUtils';
 
 export function ServiceManagement() {
-  const [services, setServices] = useState<(Service & { guest_tiers?: any[] })[]>([]);
+  const [services, setServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingService, setEditingService] = useState<(Service & { guest_tiers?: any[] }) | null>(null);
+  const [editingService, setEditingService] = useState<any | null>(null);
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    serviceId: string | null;
+    serviceName: string;
+  }>({
+    isOpen: false,
+    serviceId: null,
+    serviceName: '',
+  });
   const toast = useToastGlobal();
 
   // Carregar serviços do prestador
@@ -44,36 +55,60 @@ export function ServiceManagement() {
     setIsModalOpen(true);
   };
 
-  const handleEditService = (service: Service & { guest_tiers?: any[] }) => {
+  const handleEditService = (service: any) => {
     setEditingService(service);
     setIsModalOpen(true);
   };
 
-  const handleDeleteService = async (serviceId: string) => {
+  const handleDeleteService = (serviceId: string) => {
     const serviceToDelete = services.find(s => s.id === serviceId);
-    
-    if (confirm('Tem certeza que deseja excluir este serviço?')) {
-      const result = await deleteServiceAction(serviceId);
-      if (result.success) {
-        setServices(services.filter(s => s.id !== serviceId));
-        
-        // Toast de sucesso
-        toast.success(
-          'Serviço excluído!',
-          `O serviço "${serviceToDelete?.name}" foi excluído com sucesso.`,
-          4000
-        );
-      } else {
-        const errorMessage = result.error || 'Erro ao excluir serviço';
-        
-        // Toast de erro
-        toast.error(
-          'Erro ao excluir serviço',
-          errorMessage,
-          5000
-        );
-      }
+    if (serviceToDelete) {
+      setDeleteModal({
+        isOpen: true,
+        serviceId,
+        serviceName: serviceToDelete.name,
+      });
     }
+  };
+
+  const confirmDeleteService = async () => {
+    if (!deleteModal.serviceId) return;
+    
+    const result = await deleteServiceAction(deleteModal.serviceId);
+    if (result.success) {
+      setServices(services.filter(s => s.id !== deleteModal.serviceId));
+      
+      // Toast de sucesso
+      toast.success(
+        'Serviço excluído!',
+        `O serviço "${deleteModal.serviceName}" foi excluído com sucesso.`,
+        4000
+      );
+    } else {
+      const errorMessage = result.error || 'Erro ao excluir serviço';
+      
+      // Toast de erro
+      toast.error(
+        'Erro ao excluir serviço',
+        errorMessage,
+        5000
+      );
+    }
+    
+    // Fechar modal
+    setDeleteModal({
+      isOpen: false,
+      serviceId: null,
+      serviceName: '',
+    });
+  };
+
+  const cancelDeleteService = () => {
+    setDeleteModal({
+      isOpen: false,
+      serviceId: null,
+      serviceName: '',
+    });
   };
 
   const toggleServiceStatus = async (serviceId: string) => {
@@ -138,20 +173,18 @@ export function ServiceManagement() {
   return (
     <div className="space-y-6">
       {/* Header com botão de adicionar */}
-      <div className="mb-8 flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-[#520029] mb-2">Meus Serviços</h2>
-          <p className="text-gray-600">Gerencie seus serviços e preços</p>
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-2xl font-bold text-[#520029]">Meus Serviços</h2>
+          <button
+            onClick={handleAddService}
+            className="bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-6 py-2 rounded-lg font-medium transition-colors shadow-sm hover:shadow-md flex items-center gap-2"
+          >
+            <span className="text-lg">+</span>
+            Adicionar Serviço
+          </button>
         </div>
-        <button
-          onClick={handleAddService}
-          className="bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-sm hover:shadow-md flex items-center gap-2"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Adicionar Serviço
-        </button>
+        <p className="text-gray-600">Gerencie seus serviços e preços</p>
       </div>
 
       {/* Empty State */}
@@ -234,41 +267,45 @@ export function ServiceManagement() {
                 </div>
                 
                 <div className="space-y-2 mb-5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col">
-                      {service.guest_tiers && service.guest_tiers.length > 0 ? (
-                        <div className="space-y-1">
-                          <span className="text-[#A502CA] font-bold text-sm">Faixas de Preços:</span>
-                          {service.guest_tiers.slice(0, 2).map((tier, index) => (
-                            <div key={index} className="text-xs text-gray-600">
-                              {tier.min_total_guests}-{tier.max_total_guests || '+'} pessoas: R$ {(tier.base_price_per_adult * 1.05).toFixed(2)}
-                            </div>
-                          ))}
-                          {service.guest_tiers.length > 2 && (
-                            <div className="text-xs text-gray-500">
-                              +{service.guest_tiers.length - 2} faixas...
-                            </div>
-                          )}
+                  {(() => {
+                    const minPriceInfo = calculateMinPrice(service);
+                    return (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[#A502CA] font-bold text-lg">
+                            {formatPrice(minPriceInfo.price)}
+                          </span>
+                          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                            {service.category}
+                          </span>
                         </div>
-                      ) : (
-                        <span className="text-[#A502CA] font-bold text-lg">
-                          R$ {service.base_price.toFixed(2)}
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                      {service.category}
-                    </span>
-                  </div>
-                  
-                  {(service.min_guests > 0 || service.max_guests) && (
-                    <div className="text-xs text-gray-500">
-                      {service.min_guests > 0 && `Mín: ${service.min_guests}`}
-                      {service.min_guests > 0 && service.max_guests && ' • '}
-                      {service.max_guests && `Máx: ${service.max_guests}`}
-                      {' convidados'}
-                    </div>
-                  )}
+                        
+                        {/* Mostrar informação sobre faixas de preço se existirem */}
+                        {minPriceInfo.hasTiers && (
+                          <div className="text-sm text-gray-600">
+                            A partir de {minPriceInfo.minGuests} convidados
+                          </div>
+                        )}
+                        
+                        {/* Mostrar preço por convidado apenas se não houver faixas */}
+                        {!minPriceInfo.hasTiers && service.price_per_guest && (
+                          <div className="text-sm text-gray-600">
+                            + {formatPrice(service.price_per_guest)}/convidado
+                          </div>
+                        )}
+                        
+                        {/* Informações de capacidade */}
+                        {(minPriceInfo.minGuests > 0 || minPriceInfo.maxGuests) && (
+                          <div className="text-xs text-gray-500">
+                            {minPriceInfo.minGuests > 0 && `Mín: ${minPriceInfo.minGuests}`}
+                            {minPriceInfo.minGuests > 0 && minPriceInfo.maxGuests && ' • '}
+                            {minPriceInfo.maxGuests && `Máx: ${minPriceInfo.maxGuests}`}
+                            {' convidados'}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
 
                 {/* Action Buttons - Reorganizados */}
@@ -310,6 +347,18 @@ export function ServiceManagement() {
           />
         )}
       </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteModal.isOpen}
+        title="Excluir Serviço"
+        message={`Tem certeza que deseja excluir o serviço "${deleteModal.serviceName}"? Esta ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        confirmVariant="danger"
+        onConfirm={confirmDeleteService}
+        onCancel={cancelDeleteService}
+      />
     </div>
   );
 }

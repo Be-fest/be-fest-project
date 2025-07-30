@@ -17,8 +17,8 @@ const routes = [
   {
     title: 'Área do Cliente',
     routes: [
-      { name: 'Minhas Festas', path: '/minhas-festas' },
-      { name: 'Detalhes da Festa', path: '/minhas-festas/1' },
+          { name: 'Minhas Festas', path: '/perfil?tab=minhas-festas' },
+    { name: 'Detalhes da Festa', path: '/perfil?tab=minhas-festas&eventId=1' },
       { name: 'Pagamento', path: '/pagamento' },
     ]
   },
@@ -71,7 +71,7 @@ export function RoutesModal() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsOpen(false)}
-              className="fixed inset-0 bg-black bg-opacity-50 z-50"
+              className="fixed inset-0 backdrop-blur-md bg-white/20 z-50"
             />
 
             {/* Modal Content */}

@@ -1,10 +1,20 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
+import { 
+  isJWTExpiredError, 
+  isNetworkError, 
+  isPermissionError, 
+  isNotFoundError,
+  getFriendlyErrorMessage,
+  shouldRetry,
+  getRetryDelay,
+  safeLogError
+} from '@/utils/errorUtils';
 
 interface UserData {
   id: string;
@@ -14,18 +24,82 @@ interface UserData {
   organization_name: string | null;
   profile_image: string | null;
   whatsapp_number: string | null;
-  cpf: string | null;
-  cnpj: string | null;
   area_of_operation: string | null;
+  city: string | null;
+  state: string | null;
+  postal_code: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
-// Função para verificar se o erro é de JWT expirado
-const isJWTExpiredError = (error: any): boolean => {
-  return (
-    error?.code === 'PGRST301' ||
-    error?.message?.includes('JWT expired') ||
-    error?.message?.includes('jwt expired')
-  );
+// Funções para gerenciar localStorage
+const getStoredSession = () => {
+  if (typeof window === 'undefined') return null;
+  
+  try {
+    const sessionData = localStorage.getItem('be-fest-session');
+    if (!sessionData) return null;
+    
+    const parsed = JSON.parse(sessionData);
+    const now = Date.now();
+    
+    // Verificar se a sessão não expirou (24 horas)
+    if (parsed.expiresAt && now > parsed.expiresAt) {
+      localStorage.removeItem('be-fest-session');
+      localStorage.removeItem('be-fest-user-data');
+      return null;
+    }
+    
+    return parsed;
+  } catch (error) {
+    console.error('Erro ao ler sessão do localStorage:', error);
+    localStorage.removeItem('be-fest-session');
+    localStorage.removeItem('be-fest-user-data');
+    return null;
+  }
+};
+
+const setStoredSession = (session: any) => {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const sessionData = {
+      ...session,
+      expiresAt: Date.now() + (24 * 60 * 60 * 1000) // 24 horas
+    };
+    localStorage.setItem('be-fest-session', JSON.stringify(sessionData));
+  } catch (error) {
+    console.error('Erro ao salvar sessão no localStorage:', error);
+  }
+};
+
+const clearStoredSession = () => {
+  if (typeof window === 'undefined') return;
+  
+  localStorage.removeItem('be-fest-session');
+  localStorage.removeItem('be-fest-user-data');
+};
+
+const getStoredUserData = (): UserData | null => {
+  if (typeof window === 'undefined') return null;
+  
+  try {
+    const userData = localStorage.getItem('be-fest-user-data');
+    return userData ? JSON.parse(userData) : null;
+  } catch (error) {
+    console.error('Erro ao ler dados do usuário do localStorage:', error);
+    return null;
+  }
+};
+
+const setStoredUserData = (userData: UserData) => {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    localStorage.setItem('be-fest-user-data', JSON.stringify(userData));
+  } catch (error) {
+    console.error('Erro ao salvar dados do usuário no localStorage:', error);
+  }
 };
 
 export function useAuth() {
@@ -37,18 +111,19 @@ export function useAuth() {
   const toast = useToastGlobal();
   const supabase = createClient();
   
-  // Ref para prevenir múltiplos toasts de sessão expirada
   const sessionExpiredToastShownRef = useRef(false);
-  
-  // Ref para prevenir múltiplas chamadas de getInitialSession
-  const initialSessionLoadedRef = useRef(false);
-  
-  // Ref para prevenir múltiplas chamadas de fetchUserData
-  const fetchingUserDataRef = useRef(false);
+  const retryCountRef = useRef(0);
+  const maxRetries = 3;
 
-  // Função para lidar com JWT expirado
-  const handleJWTExpired = useCallback(async () => {
-    // Prevenir múltiplos toasts
+  console.log('useAuth: Estado atual', { 
+    user: !!user, 
+    userData: !!userData, 
+    loading, 
+    error,
+    retryCount: retryCountRef.current
+  });
+
+  const handleJWTExpired = async () => {
     if (sessionExpiredToastShownRef.current) {
       return;
     }
@@ -56,113 +131,316 @@ export function useAuth() {
     sessionExpiredToastShownRef.current = true;
     
     try {
-      // Mostrar toast de sessão expirada
       toast.warning(
         'Sessão Expirada',
         'Sua sessão expirou. Você será redirecionado para fazer login novamente.',
         6000
       );
 
-      // Fazer logout
+      clearStoredSession();
+      
       await supabase.auth.signOut();
       setUser(null);
       setUserData(null);
       setError(null);
+      retryCountRef.current = 0;
       
-      // Aguardar um pouco para o usuário ver o toast
       setTimeout(() => {
-        // Usar localStorage como fallback
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('sessionExpired', 'true');
-          router.push('/auth/login');
-        }
+        router.push('/auth/login');
       }, 2000);
       
     } catch (logoutError) {
-      console.error('Erro ao fazer logout após JWT expirado:', logoutError);
+      safeLogError('Erro ao fazer logout após JWT expirado:', logoutError);
       
-      // Mostrar toast de erro
       toast.error(
         'Erro de Sessão',
         'Houve um problema ao encerrar sua sessão. Você será redirecionado para o login.',
         4000
       );
       
-      // Forçar redirecionamento mesmo se o logout falhar
       setTimeout(() => {
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('sessionExpired', 'true');
-          window.location.href = '/auth/login';
-        }
+        router.push('/auth/login');
       }, 2000);
     }
-  }, [supabase, router, toast]);
+  };
 
-  // Função para buscar dados do usuário
-  const fetchUserData = useCallback(async (userId: string) => {
-    // Prevenir múltiplas chamadas simultâneas
-    if (fetchingUserDataRef.current) {
-      return;
-    }
-    
-    fetchingUserDataRef.current = true;
-    
+  // Função para verificar e criar usuário se necessário
+  const ensureUserExists = async (userId: string, email: string): Promise<boolean> => {
     try {
-      const { data: userData, error: userError } = await supabase
+      console.log('🔍 Verificando se usuário existe na tabela users...');
+      
+      const { data: existingUser, error: fetchError } = await supabase
         .from('users')
-        .select('id, role, full_name, email, organization_name, profile_image, whatsapp_number, cpf, cnpj, area_of_operation')
+        .select('id')
         .eq('id', userId)
         .single();
 
-      if (userError) {
-        console.error('Erro ao buscar dados do usuário:', userError);
+      console.log('📊 Resultado da verificação:', { 
+        hasUser: !!existingUser, 
+        hasError: !!fetchError,
+        errorMessage: fetchError?.message 
+      });
+
+      if (fetchError && fetchError.code === 'PGRST116') {
+        // Usuário não existe, criar registro
+        console.log('🆕 Usuário não encontrado, criando registro...');
         
-        // Verificar se é erro de JWT expirado
-        if (isJWTExpiredError(userError)) {
-          handleJWTExpired();
-          return;
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert({
+            id: userId,
+            role: 'client',
+            email: email,
+            full_name: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+        if (insertError) {
+          safeLogError('❌ Erro ao criar usuário:', insertError);
+          return false;
         }
-        
-        setError('Erro ao carregar dados do usuário');
+
+        console.log('✅ Usuário criado com sucesso');
+        return true;
+      } else if (fetchError) {
+        safeLogError('❌ Erro ao verificar usuário:', fetchError);
+        return false;
       } else {
-        setUserData(userData);
-        setError(null); // Limpar erro em caso de sucesso
+        console.log('✅ Usuário já existe na tabela');
+        return true;
       }
-    } catch (fetchError) {
-      console.error('Erro ao buscar dados do usuário:', fetchError);
+    } catch (error) {
+      safeLogError('💥 Erro inesperado ao verificar/criar usuário:', error);
+      return false;
+    }
+  };
+
+  const fetchUserData = async (userId: string, retryAttempt = 0): Promise<void> => {
+    try {
+      console.log(`🔄 fetchUserData iniciado para userId: ${userId} (tentativa ${retryAttempt + 1})`);
       
-      // Verificar se é erro de JWT expirado
-      if (isJWTExpiredError(fetchError)) {
-        handleJWTExpired();
+      // Verificar se o userId é válido
+      if (!userId || userId === 'undefined' || userId === 'null') {
+        console.error('❌ ID do usuário inválido:', userId);
+        setError('ID do usuário inválido');
+        setLoading(false);
         return;
       }
       
-      setError('Erro ao carregar dados do usuário');
-    } finally {
-      fetchingUserDataRef.current = false;
+      // Verificar se o usuário está autenticado
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        safeLogError('❌ Erro ao verificar sessão:', sessionError);
+        
+        if (isJWTExpiredError(sessionError)) {
+          await handleJWTExpired();
+          return;
+        }
+        
+        setError('Erro ao verificar autenticação');
+        setLoading(false);
+        return;
+      }
+      
+      if (!session) {
+        console.log('ℹ️ Nenhuma sessão encontrada');
+        setUser(null);
+        setUserData(null);
+        clearStoredSession();
+        setLoading(false);
+        return;
+      }
+
+      console.log('✅ Sessão válida encontrada para usuário:', session.user.id);
+
+      // Verificar se o usuário da sessão corresponde ao userId
+      if (session.user.id !== userId) {
+        console.error('❌ ID da sessão não corresponde ao userId:', {
+          sessionUserId: session.user.id,
+          requestedUserId: userId
+        });
+        setError('Inconsistência na autenticação');
+        setLoading(false);
+        return;
+      }
+
+      // Verificar se o usuário existe na tabela users
+      const userExists = await ensureUserExists(userId, session.user.email || '');
+      if (!userExists) {
+        console.error('❌ Falha ao verificar/criar usuário na tabela');
+        
+        if (shouldRetry(null, retryAttempt, maxRetries)) {
+          const delay = getRetryDelay(retryAttempt);
+          console.log(`🔄 Tentando novamente em ${delay}ms... (${retryAttempt + 1}/${maxRetries})`);
+          setTimeout(() => {
+            fetchUserData(userId, retryAttempt + 1);
+          }, delay);
+          return;
+        }
+        
+        setError('Erro ao acessar dados do usuário');
+        setLoading(false);
+        return;
+      }
+
+      console.log('🔍 Buscando dados do usuário na tabela users...');
+      
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      console.log('📊 Resultado da query users:', { 
+        hasData: !!userData,
+        hasError: !!userError,
+        errorMessage: userError?.message,
+        errorCode: userError?.code,
+        userId: userId
+      });
+
+      if (userError) {
+        safeLogError('❌ Erro na query users:', userError);
+        
+        // Verificar se é erro de JWT expirado
+        if (isJWTExpiredError(userError)) {
+          console.log('🔄 JWT expirado, redirecionando...');
+          await handleJWTExpired();
+          return;
+        }
+        
+        // Verificar se deve tentar novamente
+        if (shouldRetry(userError, retryAttempt, maxRetries)) {
+          const delay = getRetryDelay(retryAttempt);
+          console.log(`🔄 Tentando novamente em ${delay}ms... (${retryAttempt + 1}/${maxRetries})`);
+          setTimeout(() => {
+            fetchUserData(userId, retryAttempt + 1);
+          }, delay);
+          return;
+        }
+        
+        setError(getFriendlyErrorMessage(userError));
+        setLoading(false);
+        return;
+      }
+
+      if (!userData) {
+        console.error('❌ Dados do usuário retornaram null/undefined');
+        
+        if (shouldRetry(null, retryAttempt, maxRetries)) {
+          const delay = getRetryDelay(retryAttempt);
+          console.log(`🔄 Dados nulos, tentando novamente em ${delay}ms... (${retryAttempt + 1}/${maxRetries})`);
+          setTimeout(() => {
+            fetchUserData(userId, retryAttempt + 1);
+          }, delay);
+          return;
+        }
+        
+        setError('Dados do usuário não encontrados');
+        setLoading(false);
+        return;
+      }
+
+      console.log('✅ Dados do usuário carregados com sucesso:', {
+        id: userData.id,
+        role: userData.role,
+        full_name: userData.full_name,
+        email: userData.email
+      });
+
+      setUserData(userData);
+      setStoredUserData(userData);
+      setError(null);
+      retryCountRef.current = 0;
+      setLoading(false);
+      
+    } catch (fetchError) {
+      safeLogError('💥 Erro inesperado em fetchUserData:', fetchError);
+      
+      // Verificar se é erro de JWT expirado
+      if (isJWTExpiredError(fetchError)) {
+        console.log('🔄 JWT expirado (catch), redirecionando...');
+        await handleJWTExpired();
+        return;
+      }
+      
+      // Verificar se deve tentar novamente
+      if (shouldRetry(fetchError, retryAttempt, maxRetries)) {
+        const delay = getRetryDelay(retryAttempt);
+        console.log(`🔄 Tentando novamente em ${delay}ms... (${retryAttempt + 1}/${maxRetries})`);
+        setTimeout(() => {
+          fetchUserData(userId, retryAttempt + 1);
+        }, delay);
+        return;
+      }
+      
+      setError(getFriendlyErrorMessage(fetchError));
+      setLoading(false);
     }
-  }, [supabase, handleJWTExpired]);
+  };
 
   // Função para obter sessão inicial
-  const getInitialSession = useCallback(async () => {
-    // Prevenir múltiplas chamadas
-    if (initialSessionLoadedRef.current) {
-      return;
-    }
-    
-    initialSessionLoadedRef.current = true;
-    
+  const getInitialSession = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      // Primeiro, tentar carregar dados do localStorage
+      const storedSession = getStoredSession();
+      const storedUserData = getStoredUserData();
+
+      if (storedSession && storedUserData) {
+        console.log('Carregando sessão do localStorage');
+        setUser(storedSession.user);
+        setUserData(storedUserData);
+        setLoading(false);
+        
+        // Verificar se a sessão ainda é válida no Supabase
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError || !session) {
+          console.log('Sessão do localStorage inválida, fazendo logout');
+          clearStoredSession();
+          setUser(null);
+          setUserData(null);
+          setLoading(false);
+          return;
+        }
+        
+        // Atualizar dados do usuário se necessário
+        if (session.user.id === storedUserData.id) {
+          await fetchUserData(session.user.id);
+        } else {
+          console.log('ID do usuário mudou, recarregando dados');
+          setUser(session.user);
+          await fetchUserData(session.user.id);
+        }
+        return;
+      }
+
+      // Se não há dados no localStorage, verificar no Supabase
+      console.log('Verificando sessão no Supabase');
+      
+      // Timeout de segurança: 10 segundos
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Timeout na verificação de autenticação'));
+        }, 10000);
+      });
+
+      const sessionPromise = supabase.auth.getSession();
+      
+      const { data: { session }, error: sessionError } = await Promise.race([
+        sessionPromise,
+        timeoutPromise
+      ]) as any;
       
       if (sessionError) {
         // Verificar se é erro de JWT expirado
         if (isJWTExpiredError(sessionError)) {
-          handleJWTExpired();
-          setLoading(false);
+          await handleJWTExpired();
           return;
         }
         
@@ -173,58 +451,69 @@ export function useAuth() {
 
       if (session?.user) {
         setUser(session.user);
-        setLoading(false);
+        setStoredSession(session);
         await fetchUserData(session.user.id);
       } else {
         setUser(null);
         setUserData(null);
-        setLoading(false);
+        clearStoredSession();
       }
     } catch (error) {
-      // Verificar se é erro de JWT expirado
-      if (isJWTExpiredError(error)) {
-        handleJWTExpired();
-        setLoading(false);
-        return;
+      const sessionErrorInfo = {
+        error,
+        message: error instanceof Error ? error.message : 'Erro desconhecido',
+        stack: error instanceof Error ? error.stack : undefined,
+        timestamp: new Date().toISOString()
+      };
+      
+      console.error('💥 Erro inesperado em getInitialSession:', sessionErrorInfo);
+      
+      // Verificar se é erro de rede
+      if (isNetworkError(error)) {
+        setError('Erro de conexão. Verifique sua internet e tente novamente.');
+      } else {
+        setError('Erro ao inicializar autenticação');
       }
       
-      setError('Erro inesperado na autenticação');
-    } finally {
       setLoading(false);
     }
-  }, [supabase, handleJWTExpired, fetchUserData]);
+  };
 
   // Effect para sessão inicial
   useEffect(() => {
-    // Adicionar timeout de segurança para evitar loading infinito
-    const timeoutId = setTimeout(() => {
-      if (loading) {
-        console.warn('Loading timeout - forçando loading = false');
-        setLoading(false);
-      }
-    }, 10000); // 10 segundos
-
     getInitialSession();
-
-    return () => {
-      clearTimeout(timeoutId);
-    };
-  }, []); // Dependência vazia para rodar apenas uma vez
+  }, []);
 
   // Effect para escutar mudanças na autenticação
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('useAuth: Auth state change', { event, session: !!session });
+        
         if (event === 'SIGNED_OUT' || !session) {
+          console.log('useAuth: Usuário deslogado');
           setUser(null);
           setUserData(null);
           setError(null);
-          initialSessionLoadedRef.current = false; // Reset flag
+          clearStoredSession();
+          setLoading(false);
         } else if (event === 'SIGNED_IN' && session) {
+          console.log('useAuth: Usuário logado');
           setUser(session.user);
+          setStoredSession(session);
           await fetchUserData(session.user.id);
           // Reset flag para permitir novos toasts de sessão expirada
           sessionExpiredToastShownRef.current = false;
+          setLoading(false);
+        } else if (event === 'TOKEN_REFRESHED') {
+          console.log('useAuth: Token atualizado');
+          if (session) {
+            setStoredSession(session);
+          }
+          setLoading(false);
+        } else {
+          console.log('useAuth: Outro evento de auth', event);
+          setLoading(false);
         }
       }
     );
@@ -232,20 +521,81 @@ export function useAuth() {
     return () => {
       subscription.unsubscribe();
     };
-  }, []); // Dependência vazia, as funções são estáveis
+  }, []);
 
   const signOut = async () => {
     try {
       setLoading(true);
+      
+      console.log('🔴 Iniciando logout do useAuth...');
+      
+      // Limpar dados do localStorage
+      clearStoredSession();
+      
+      // Fazer logout no Supabase
       await supabase.auth.signOut();
+      
+      // Limpar estado
       setUser(null);
       setUserData(null);
       setError(null);
-      setLoading(false);
+      
+      console.log('✅ Logout realizado com sucesso no useAuth');
+      
+      // Forçar redirecionamento
+      if (typeof window !== 'undefined') {
+        window.location.href = '/auth/login?reason=useauth_logout';
+      }
+      
     } catch (error) {
-      console.error('Erro ao fazer logout:', error);
-      setLoading(false);
+      const logoutErrorInfo = {
+        message: error instanceof Error ? error.message : 'Erro desconhecido',
+        stack: error instanceof Error ? error.stack : undefined
+      };
+      
+      console.error('❌ Erro ao fazer logout no useAuth:', logoutErrorInfo);
       setError('Erro ao fazer logout');
+      
+      // Mesmo com erro, tentar redirecionamento
+      if (typeof window !== 'undefined') {
+        window.location.href = '/auth/login?reason=useauth_error';
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signIn = async (email: string, password: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('Tentando fazer login com:', email);
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (error) {
+        console.error('Erro no login:', error);
+        throw new Error(error.message);
+      }
+      
+      if (data.user) {
+        console.log('Login realizado com sucesso para usuário:', data.user.id);
+        setUser(data.user);
+        
+        // Buscar dados do usuário
+        await fetchUserData(data.user.id);
+      }
+      
+      return data;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido no login';
+      console.error('Erro no login:', errorMessage);
+      setError(errorMessage);
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -255,9 +605,25 @@ export function useAuth() {
     if (!user) return;
     
     try {
+      console.log('🔄 Atualizando dados do usuário...');
+      
       const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('id, role, full_name, email, organization_name, profile_image, whatsapp_number, cpf, cnpj, area_of_operation')
+        .select(`
+          id,
+          role,
+          full_name,
+          email,
+          organization_name,
+          profile_image,
+          whatsapp_number,
+          area_of_operation,
+          city,
+          state,
+          postal_code,
+          created_at,
+          updated_at
+        `)
         .eq('id', user.id)
         .single();
 
@@ -265,22 +631,38 @@ export function useAuth() {
         // Verificar se é erro de JWT expirado
         if (isJWTExpiredError(userError)) {
           await handleJWTExpired();
-          setLoading(false);
           return;
         }
-      } else {
-        setLoading(false);
-        setUserData(userData);
-      }
-    } catch (error) {
-      console.error('Erro ao atualizar dados do usuário:', error);
-      
-      // Verificar se é erro de JWT expirado
-      if (isJWTExpiredError(error)) {
-        await handleJWTExpired();
+        
+        // Verificar se é erro de rede
+        if (isNetworkError(userError)) {
+          console.error('❌ Erro de rede ao atualizar dados do usuário');
+          setError('Erro de conexão ao atualizar dados');
+          return;
+        }
+        
+        console.error('❌ Erro ao atualizar dados do usuário:', userError);
+        setError('Erro ao atualizar dados do usuário');
         return;
       }
+
+      if (userData) {
+        console.log('✅ Dados do usuário atualizados com sucesso');
+        setUserData(userData);
+        setStoredUserData(userData);
+        setError(null);
+      }
+    } catch (error) {
+      console.error('💥 Erro inesperado ao atualizar dados do usuário:', error);
+      setError('Erro inesperado ao atualizar dados');
     }
+  };
+
+  const setupAuthHeaders = () => {
+    // Função para configurar headers de autenticação se necessário
+    return {
+      'Content-Type': 'application/json',
+    };
   };
 
   return {
@@ -288,11 +670,9 @@ export function useAuth() {
     userData,
     loading,
     error,
+    signIn,
     signOut,
     refreshUserData,
-    isAuthenticated: !!user,
-    isClient: userData?.role === 'client',
-    isProvider: userData?.role === 'provider',
-    isAdmin: userData?.role === 'admin',
+    setupAuthHeaders,
   };
 } 

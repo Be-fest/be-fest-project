@@ -1,138 +1,221 @@
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 
-CREATE TABLE public.bookings (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  event_id uuid NOT NULL,
-  service_id uuid NOT NULL,
-  status USER-DEFINED DEFAULT 'pending'::booking_status,
-  price numeric NOT NULL,
-  guest_count integer NOT NULL,
-  notes text,
-  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  CONSTRAINT bookings_pkey PRIMARY KEY (id),
-  CONSTRAINT bookings_service_id_fkey FOREIGN KEY (service_id) REFERENCES public.services(id),
-  CONSTRAINT bookings_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.events(id)
-);
-CREATE TABLE public.categories (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  name text NOT NULL,
-  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  CONSTRAINT categories_pkey PRIMARY KEY (id)
-);
-CREATE TABLE public.event_services (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  event_id uuid NOT NULL,
-  service_id uuid NOT NULL,
-  provider_id uuid NOT NULL,
-  price_per_guest_at_booking numeric,
-  befest_fee_at_booking numeric,
-  total_estimated_price numeric,
-  provider_notes text,
-  client_notes text,
-  booking_status USER-DEFINED DEFAULT 'pending_provider_approval'::event_service_status,
-  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  CONSTRAINT event_services_pkey PRIMARY KEY (id),
-  CONSTRAINT event_services_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.events(id),
-  CONSTRAINT event_services_service_id_fkey FOREIGN KEY (service_id) REFERENCES public.services(id)
-);
-CREATE TABLE public.events (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  client_id uuid NOT NULL,
-  title text NOT NULL,
-  description text,
-  event_date date NOT NULL,
-  start_time time without time zone,
-  location text,
-  guest_count integer DEFAULT 0,
-  budget numeric,
-  status USER-DEFINED DEFAULT 'draft'::event_status,
-  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  CONSTRAINT events_pkey PRIMARY KEY (id)
-);
-CREATE TABLE public.service_age_pricing_rules (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  service_id uuid NOT NULL,
-  rule_description text NOT NULL,
-  age_min_years integer NOT NULL,
-  age_max_years integer,
-  pricing_method text CHECK (pricing_method = ANY (ARRAY['fixed'::text, 'percentage'::text])),
-  value numeric NOT NULL,
-  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  CONSTRAINT service_age_pricing_rules_pkey PRIMARY KEY (id),
-  CONSTRAINT service_age_pricing_rules_service_id_fkey FOREIGN KEY (service_id) REFERENCES public.services(id)
-);
-CREATE TABLE public.service_date_surcharges (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  service_id uuid NOT NULL,
-  surcharge_description text NOT NULL,
-  start_date date NOT NULL,
-  end_date date NOT NULL,
-  surcharge_type text CHECK (surcharge_type = ANY (ARRAY['fixed'::text, 'percentage'::text])),
-  surcharge_value numeric NOT NULL,
-  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  CONSTRAINT service_date_surcharges_pkey PRIMARY KEY (id),
-  CONSTRAINT service_date_surcharges_service_id_fkey FOREIGN KEY (service_id) REFERENCES public.services(id)
-);
-CREATE TABLE public.service_guest_tiers (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  service_id uuid NOT NULL,
-  min_total_guests integer NOT NULL,
-  max_total_guests integer,
-  base_price_per_adult numeric NOT NULL,
-  tier_description text,
-  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  CONSTRAINT service_guest_tiers_pkey PRIMARY KEY (id),
-  CONSTRAINT service_guest_tiers_service_id_fkey FOREIGN KEY (service_id) REFERENCES public.services(id)
-);
-CREATE TABLE public.services (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  provider_id uuid NOT NULL,
-  name text NOT NULL,
-  description text,
-  category text NOT NULL,
-  images_urls ARRAY,
-  base_price numeric NOT NULL,
-  price_per_guest numeric,
-  min_guests integer DEFAULT 0,
-  max_guests integer,
-  status USER-DEFINED DEFAULT 'active'::service_status,
-  is_active boolean DEFAULT true,
-  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  CONSTRAINT services_pkey PRIMARY KEY (id)
-);
-CREATE TABLE public.subcategories (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  category_id uuid NOT NULL,
-  name text NOT NULL,
-  icon_url text,
-  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  CONSTRAINT subcategories_pkey PRIMARY KEY (id),
-  CONSTRAINT subcategories_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.categories(id)
-);
-CREATE TABLE public.users (
-  id uuid NOT NULL,
-  role USER-DEFINED NOT NULL DEFAULT 'client'::user_role,
+-- Create users table
+create table users (
+  id uuid references auth.users on delete cascade primary key,
+  role text not null check (role in ('client', 'provider', 'admin')),
   full_name text,
   email text,
   organization_name text,
   cnpj text,
-  cpf text,
   whatsapp_number text,
   logo_url text,
   area_of_operation text,
-  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  coordenates jsonb,
-  CONSTRAINT users_pkey PRIMARY KEY (id),
-  CONSTRAINT users_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
+  address text,
+  city text,
+  state text,
+  postal_code text,
+  profile_image text,
+  is_active boolean default true,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- Create services table
+create table services (
+  id uuid default uuid_generate_v4() primary key,
+  provider_id uuid references users(id) on delete cascade not null,
+  name text not null,
+  description text,
+  category text not null,
+  base_price numeric(10,2) not null,
+  price_per_guest numeric(10,2),
+  min_guests integer,
+  max_guests integer,
+  images_urls text[],
+  status text default 'draft' check (status in ('draft', 'published', 'archived')),
+  is_active boolean default true,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Create events table
+create table events (
+  id uuid default uuid_generate_v4() primary key,
+  client_id uuid references users(id) on delete cascade not null,
+  title text not null,
+  description text,
+  event_date date not null,
+  start_time time without time zone,
+  location text,
+  guest_count integer,
+  full_guests integer default 0,
+  half_guests integer default 0,
+  free_guests integer default 0,
+  budget numeric(10,2),
+  status text default 'draft' check (status in ('draft', 'pending', 'confirmed', 'completed', 'cancelled')),
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Create event_services table
+create table event_services (
+  id uuid default uuid_generate_v4() primary key,
+  event_id uuid references events(id) on delete cascade not null,
+  service_id uuid references services(id) on delete cascade not null,
+  provider_id uuid references users(id) on delete cascade not null,
+  price numeric(10,2) not null,
+  guest_count integer,
+  notes text,
+  status text default 'pending' check (status in ('pending', 'waiting_payment', 'confirmed', 'completed', 'cancelled')),
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Create categories table
+create table categories (
+  id uuid default uuid_generate_v4() primary key,
+  name text not null,
+  description text,
+  icon_url text,
+  is_active boolean default true,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Create service_guest_tiers table
+create table service_guest_tiers (
+  id uuid default uuid_generate_v4() primary key,
+  service_id uuid references services(id) on delete cascade not null,
+  min_total_guests integer not null,
+  max_total_guests integer,
+  base_price_per_adult numeric(10,2) not null,
+  tier_description text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Create service_pricing_rules table
+create table service_pricing_rules (
+  id uuid default uuid_generate_v4() primary key,
+  service_id uuid references services(id) on delete cascade not null,
+  guest_type text not null check (guest_type in ('adult', 'child', 'baby')),
+  min_age integer,
+  max_age integer,
+  price_multiplier numeric(3,2) not null,
+  rule_description text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Create RLS policies
+alter table users enable row level security;
+alter table services enable row level security;
+alter table events enable row level security;
+alter table event_services enable row level security;
+alter table categories enable row level security;
+alter table service_guest_tiers enable row level security;
+alter table service_pricing_rules enable row level security;
+
+-- Users policies
+create policy "Users can read their own profile"
+  on users for select
+  using (auth.uid() = id);
+
+create policy "Users can update their own profile"
+  on users for update
+  using (auth.uid() = id);
+
+-- Services policies
+create policy "Anyone can read active services"
+  on services for select
+  using (is_active = true);
+
+create policy "Providers can CRUD their own services"
+  on services for all
+  using (auth.uid() = provider_id);
+
+-- Events policies
+create policy "Clients can read their own events"
+  on events for select
+  using (auth.uid() = client_id);
+
+create policy "Clients can create events"
+  on events for insert
+  with check (auth.uid() = client_id);
+
+create policy "Clients can update their own events"
+  on events for update
+  using (auth.uid() = client_id);
+
+-- Event services policies
+create policy "Clients can read their event services"
+  on event_services for select
+  using (exists (
+    select 1 from events
+    where events.id = event_id
+    and events.client_id = auth.uid()
+  ));
+
+create policy "Providers can read their event services"
+  on event_services for select
+  using (provider_id = auth.uid());
+
+create policy "Clients can create event services"
+  on event_services for insert
+  with check (exists (
+    select 1 from events
+    where events.id = event_id
+    and events.client_id = auth.uid()
+  ));
+
+create policy "Providers can update their event services"
+  on event_services for update
+  using (provider_id = auth.uid());
+
+-- Categories policies
+create policy "Anyone can read categories"
+  on categories for select
+  using (true);
+
+-- Service guest tiers policies
+create policy "Anyone can read service guest tiers"
+  on service_guest_tiers for select
+  using (true);
+
+create policy "Providers can CRUD their service guest tiers"
+  on service_guest_tiers for all
+  using (exists (
+    select 1 from services
+    where services.id = service_id
+    and services.provider_id = auth.uid()
+  ));
+
+-- Service pricing rules policies
+create policy "Anyone can read service pricing rules"
+  on service_pricing_rules for select
+  using (true);
+
+create policy "Providers can CRUD their service pricing rules"
+  on service_pricing_rules for all
+  using (exists (
+    select 1 from services
+    where services.id = service_id
+    and services.provider_id = auth.uid()
+  ));
+
+-- Create functions
+create or replace function public.handle_new_user()
+returns trigger as $$
+begin
+  insert into public.users (id, role, email)
+  values (new.id, 'client', new.email);
+  return new;
+end;
+$$ language plpgsql security definer;
+
+-- Create triggers
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();

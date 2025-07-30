@@ -28,24 +28,59 @@ import { Event, EventStatus } from '@/types/database';
 
 export default function DashboardPage() {
   const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(false); // Changed from true to false
+  const [loading, setLoading] = useState(true);
   const [isNewPartyModalOpen, setNewPartyModalOpen] = useState(false);
 
   const loadEvents = async () => {
-    setLoading(false); // Keep loading state false to prevent UI flicker
+    setLoading(true);
     const result = await getClientEventsAction();
     if (result.success && result.data) {
       setEvents(result.data);
-      setLoading(false);
     }
     setLoading(false);
   };
 
   useEffect(() => {
     loadEvents();
-    setLoading(false);
   }, []);
 
+  const getStatusColor = (status: EventStatus) => {
+    switch (status) {
+      case 'draft':
+        return 'bg-gray-100 text-gray-800';
+      case 'published':
+        return 'bg-green-100 text-green-800';
+      case 'waiting_payment':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'completed':
+        return 'bg-blue-100 text-blue-800';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800';
+      case null:
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusLabel = (status: EventStatus) => {
+    switch (status) {
+      case 'draft':
+        return 'Rascunho';
+      case 'published':
+        return 'Publicado';
+      case 'waiting_payment':
+        return 'Aguardando Pagamento';
+      case 'completed':
+        return 'Realizado';
+      case 'cancelled':
+        return 'Cancelado';
+      case null:
+        return 'Sem Status';
+      default:
+        return status || 'Sem Status';
+    }
+  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
@@ -113,22 +148,22 @@ export default function DashboardPage() {
       textColor: 'text-blue-600'
     },
     {
-      title: 'Publicados',
-      value: events.filter(e => e.status === 'published').length,
+      title: 'Total de Eventos',
+      value: events.length,
       icon: MdCheckCircle,
       bgColor: 'bg-green-50',
       textColor: 'text-green-600'
     },
     {
-      title: 'Aguardando Pagamento',
-      value: events.filter(e => e.status === 'waiting_payment').length,
+      title: 'Eventos Ativos',
+      value: events.length,
       icon: MdPendingActions,
       bgColor: 'bg-yellow-50',
       textColor: 'text-yellow-600'
     },
     {
-      title: 'Realizados',
-      value: events.filter(e => e.status === 'completed').length,
+      title: 'Eventos Realizados',
+      value: events.length,
       icon: MdTrendingUp,
       bgColor: 'bg-purple-50',
       textColor: 'text-purple-600'
@@ -141,6 +176,83 @@ export default function DashboardPage() {
     setNewPartyModalOpen(false);
     loadEvents();
   };
+
+  if (loading) {
+    return (
+      <ClientAuthGuard requiredRole="client">
+        <ClientLayout>
+          <div className="space-y-8">
+            {/* Header Skeleton */}
+            <div className="text-center space-y-4">
+              <div className="h-8 w-48 bg-gray-300 rounded-lg animate-pulse mx-auto"></div>
+              <div className="h-5 w-96 bg-gray-200 rounded animate-pulse mx-auto"></div>
+            </div>
+
+            {/* Stats Cards Skeleton */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-gray-300 rounded-xl"></div>
+                    <div className="space-y-2">
+                      <div className="h-6 w-16 bg-gray-300 rounded"></div>
+                      <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Quick Actions Skeleton */}
+            <div className="space-y-6">
+              <div className="h-6 w-32 bg-gray-300 rounded animate-pulse"></div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 bg-gray-300 rounded-xl"></div>
+                      <div className="flex-1 space-y-2">
+                        <div className="h-5 w-28 bg-gray-300 rounded"></div>
+                        <div className="h-4 w-full bg-gray-200 rounded"></div>
+                      </div>
+                      <div className="w-5 h-5 bg-gray-300 rounded"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Recent Events Skeleton */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="h-6 w-32 bg-gray-300 rounded animate-pulse"></div>
+                <div className="h-4 w-20 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-gray-300 rounded-xl"></div>
+                        <div className="space-y-2">
+                          <div className="h-5 w-32 bg-gray-300 rounded"></div>
+                          <div className="h-4 w-48 bg-gray-200 rounded"></div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="h-6 w-20 bg-gray-300 rounded-full"></div>
+                        <div className="w-5 h-5 bg-gray-300 rounded"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </ClientLayout>
+      </ClientAuthGuard>
+    );
+  }
 
   return (
     <ClientAuthGuard requiredRole="client">
@@ -276,9 +388,11 @@ export default function DashboardPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                       
+                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          Ativo
+                        </span>
                         <Link
-                          href={`/minhas-festas/${event.id}`}
+                          href={`/perfil?tab=minhas-festas&eventId=${event.id}`}
                           className="text-[#F71875] hover:text-[#E6006F] transition-colors"
                         >
                           <MdArrowForward />
@@ -323,4 +437,4 @@ export default function DashboardPage() {
       </ClientLayout>
     </ClientAuthGuard>
   );
-}
+} 

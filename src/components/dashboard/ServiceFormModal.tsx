@@ -1,276 +1,192 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { MdClose, MdAttachMoney, MdGroup, MdAdd, MdEdit, MdRemove, MdCloudUpload, MdImage } from 'react-icons/md';
-import { Input, Button, Select, TipTapEditor } from '@/components/ui';
-import { createServiceAction, updateServiceAction, uploadServiceImageAction, deleteServiceImageAction } from '@/lib/actions/services';
+import { Input, Button, TipTapEditor } from '@/components/ui';
+import { createServiceAction, updateServiceAction, uploadServiceImageAction, deleteServiceImageAction, getSubcategoriesAction } from '@/lib/actions/services';
 import { invalidateServiceImagesCache } from '@/hooks/useImagePreloader';
-import { Service } from '@/types/database';
-import { useEffect, useRef } from 'react';
+import { Service, ServiceWithDetails, ServiceGuestTier, Subcategory } from '@/types/database';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
 
 interface ServiceFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  service?: (Service & { guest_tiers?: GuestTier[] }) | null;
-  onSubmit: () => void;
+  service?: ServiceWithDetails | null;
+  onSubmit: (formData: FormData) => void;
 }
 
-interface PricingRule {
-  rule_description: string;
-  age_min_years: number;
-  age_max_years: number | null;
-  pricing_method: 'fixed' | 'percentage';
-  value: number;
-}
-
-interface GuestTier {
+// Definição do tipo para faixa de convidados
+export type GuestTier = {
   id?: string;
   min_total_guests: number;
   max_total_guests: number | null;
   base_price_per_adult: number;
-  tier_description: string | null;
-}
+  tier_description: string;
+};
 
 export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: ServiceFormModalProps) {
   const toast = useToastGlobal();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Estados do formulário
   const [formData, setFormData] = useState({
     name: service?.name || '',
     description: service?.description || '',
     category: service?.category || '',
-    min_guests: service?.min_guests?.toString() || '0',
-    max_guests: service?.max_guests?.toString() || '',
-    images_urls: service?.images_urls || [],
     is_active: service?.is_active ?? true,
-    // Campos de pricing por idade
-    pricing_rules: [
-      {
-        rule_description: 'Preço Inteira (13+ anos)',
-        age_min_years: 13,
-        age_max_years: null,
-        pricing_method: 'percentage' as const,
-        value: 100
-      },
-      {
-        rule_description: 'Preço Meia (6-12 anos)',
-        age_min_years: 6,
-        age_max_years: 12,
-        pricing_method: 'percentage' as const,
-        value: 50
-      },
-      {
-        rule_description: 'Gratuito (0-5 anos)',
-        age_min_years: 0,
-        age_max_years: 5,
-        pricing_method: 'percentage' as const,
-        value: 0
-      }
-    ] as PricingRule[],
-    // Faixas de preços por número de convidados
-    guest_tiers: [
-      {
-        min_total_guests: 30,
-        max_total_guests: 70,
-        base_price_per_adult: 0,
-        tier_description: '30-70 Convidados'
-      },
-      {
-        min_total_guests: 71,
-        max_total_guests: 100,
-        base_price_per_adult: 0,
-        tier_description: '71-100 Convidados'
-      },
-      {
-        min_total_guests: 101,
-        max_total_guests: 120,
-        base_price_per_adult: 0,
-        tier_description: '101-120 Convidados'
-      },
-      {
-        min_total_guests: 121,
-        max_total_guests: 150,
-        base_price_per_adult: 0,
-        tier_description: '121-150 Convidados'
-      }
-    ] as GuestTier[]
+    images_urls: service?.images_urls || []
   });
 
-  const [categories, setCategories] = useState<string[]>([
-    // Subcategorias de COMIDA E BEBIDA
-    'Buffet', 'Buffet de Pizzas', 'Churrasco', 'Confeitaria', 'Estações de Festa', 'Open-Bar', 'Chopp',
-    // Subcategorias de ENTRETENIMENTO  
-    'Música', 'DJ', 'Animação',
-    // Subcategorias de ESPAÇO
-    'Salão de Festas', 'Espaço ao Ar Livre', 'Casa de Eventos',
-    // Subcategorias de ORGANIZAÇÃO
-    'Decoração', 'Fotografia', 'Segurança', 'Limpeza'
-  ]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-
   const [uploadingImage, setUploadingImage] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Carregar categorias do banco
+  // Estado para as faixas de preço
+  const [guestTiers, setGuestTiers] = useState<GuestTier[]>([]);
+  const [tiersError, setTiersError] = useState<string | null>(null);
+
+  // Estado para subcategorias
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [loadingSubcategories, setLoadingSubcategories] = useState(false);
+
+  // Carregar subcategorias quando o modal abrir
   useEffect(() => {
-    // Usando categorias hardcoded por enquanto
-    const loadCategories = async () => {
-      setCategories([
-        // Subcategorias de COMIDA E BEBIDA
-        'Buffet', 'Buffet de Pizzas', 'Churrasco', 'Confeitaria', 'Estações de Festa', 'Open-Bar', 'Chopp',
-        // Subcategorias de ENTRETENIMENTO  
-        'Música', 'DJ', 'Animação',
-        // Subcategorias de ESPAÇO
-        'Salão de Festas', 'Espaço ao Ar Livre', 'Casa de Eventos',
-        // Subcategorias de ORGANIZAÇÃO
-        'Decoração', 'Fotografia', 'Segurança', 'Limpeza'
-      ]);
-    };
-    
     if (isOpen) {
-      loadCategories();
+      loadSubcategories();
     }
   }, [isOpen]);
 
-  // Reset form when modal opens/closes or service changes
+  // Função para carregar subcategorias
+  const loadSubcategories = async () => {
+    setLoadingSubcategories(true);
+    try {
+      const result = await getSubcategoriesAction();
+      if (result.success && result.data) {
+        setSubcategories(result.data);
+      } else {
+        console.error('Erro ao carregar subcategorias:', result.error);
+        toast.error('Erro', 'Não foi possível carregar as categorias disponíveis.', 5000);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar subcategorias:', error);
+      toast.error('Erro', 'Erro inesperado ao carregar categorias.', 5000);
+    } finally {
+      setLoadingSubcategories(false);
+    }
+  };
+
+  // Carregar faixas existentes ao editar
   useEffect(() => {
-    if (isOpen) {
-      setFormData({
-        name: service?.name || '',
-        description: service?.description || '',
-        category: service?.category || '',
-        min_guests: service?.min_guests?.toString() || '0',
-        max_guests: service?.max_guests?.toString() || '',
-        images_urls: service?.images_urls || [],
-        is_active: service?.is_active ?? true,
-        pricing_rules: [
-          {
-            rule_description: 'Preço Inteira (13+ anos)',
-            age_min_years: 13,
-            age_max_years: null,
-            pricing_method: 'percentage' as const,
-            value: 100
-          },
-          {
-            rule_description: 'Preço Meia (6-12 anos)',
-            age_min_years: 6,
-            age_max_years: 12,
-            pricing_method: 'percentage' as const,
-            value: 50
-          },
-          {
-            rule_description: 'Gratuito (0-5 anos)',
-            age_min_years: 0,
-            age_max_years: 5,
-            pricing_method: 'percentage' as const,
-            value: 0
-          }
-        ],
-        // Inicializar guest_tiers com dados do serviço ou valores padrão
-        guest_tiers: service?.guest_tiers || [
-          {
-            min_total_guests: 30,
-            max_total_guests: 70,
-            base_price_per_adult: 0,
-            tier_description: '30-70 Convidados'
-          },
-          {
-            min_total_guests: 71,
-            max_total_guests: 100,
-            base_price_per_adult: 0,
-            tier_description: '71-100 Convidados'
-          },
-          {
-            min_total_guests: 101,
-            max_total_guests: 120,
-            base_price_per_adult: 0,
-            tier_description: '101-120 Convidados'
-          },
-          {
-            min_total_guests: 121,
-            max_total_guests: 150,
-            base_price_per_adult: 0,
-            tier_description: '121-150 Convidados'
-          }
-        ]
-      });
-      setErrors({});
-    }
-  }, [isOpen, service]);
-
-  // Função para adicionar uma nova faixa de preços
-  const addGuestTier = () => {
-    const lastTier = formData.guest_tiers[formData.guest_tiers.length - 1];
-    const newMinGuests = lastTier ? (lastTier.max_total_guests || lastTier.min_total_guests) + 1 : 30;
-    
-    setFormData(prev => ({
-      ...prev,
-      guest_tiers: [
-        ...prev.guest_tiers,
-        {
-          min_total_guests: newMinGuests,
-          max_total_guests: newMinGuests + 30,
-          base_price_per_adult: 0,
-          tier_description: `${newMinGuests}-${newMinGuests + 30} Convidados`
-        }
-      ]
-    }));
-  };
-
-  // Função para remover uma faixa de preços
-  const removeGuestTier = (index: number) => {
-    if (formData.guest_tiers.length > 1) {
-      setFormData(prev => ({
-        ...prev,
-        guest_tiers: prev.guest_tiers.filter((_, i) => i !== index)
-      }));
-    }
-  };
-
-  // Função para atualizar uma faixa de preços
-  const updateGuestTier = (index: number, field: keyof GuestTier, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      guest_tiers: prev.guest_tiers.map((tier, i) => 
-        i === index ? { ...tier, [field]: value } : tier
-      )
-    }));
-  };
-
-  // Função para calcular preço com taxa Be Fest
-  const calculatePriceWithBeFestFee = (basePrice: number) => {
-    return basePrice * 1.05; // 5% de taxa
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const newErrors: Record<string, string> = {};
-    
-    if (!formData.name.trim()) newErrors.name = 'Nome é obrigatório';
-    if (!formData.category) newErrors.category = 'Categoria é obrigatória';
-    
-    // Validar guest_tiers
-    if (!formData.guest_tiers || formData.guest_tiers.length === 0) {
-      newErrors.guest_tiers = 'Pelo menos uma faixa de preços é obrigatória';
+    if (service && service.guest_tiers && service.guest_tiers.length > 0) {
+      setGuestTiers(
+        service.guest_tiers.map(tier => ({
+          id: tier.id,
+          min_total_guests: tier.min_total_guests,
+          max_total_guests: tier.max_total_guests,
+          base_price_per_adult: tier.base_price_per_adult,
+          tier_description: tier.tier_description || `${tier.min_total_guests}-${tier.max_total_guests || '∞'} Convidados`
+        })).sort((a, b) => a.min_total_guests - b.min_total_guests)
+      );
     } else {
-      const hasValidTier = formData.guest_tiers.some(tier => tier.base_price_per_adult > 0);
-      if (!hasValidTier) {
-        newErrors.guest_tiers = 'Pelo menos uma faixa deve ter preço maior que zero';
+      // Faixa padrão para novos serviços
+      setGuestTiers([{
+        min_total_guests: 1,
+        max_total_guests: 50,
+        base_price_per_adult: 100,
+        tier_description: '1-50 Convidados'
+      }]);
+    }
+  }, [service]);
+
+  // Validação das faixas
+  useEffect(() => {
+    if (guestTiers.length === 0) {
+      setTiersError('Adicione pelo menos uma faixa de preço.');
+      return;
+    }
+
+    // Ordenação automática
+    const sorted = [...guestTiers].sort((a, b) => a.min_total_guests - b.min_total_guests);
+    
+    // Checar gaps e sobreposição
+    for (let i = 0; i < sorted.length; i++) {
+      const tier = sorted[i];
+      
+      // Validar min < max
+      if (tier.max_total_guests && tier.min_total_guests >= tier.max_total_guests) {
+        setTiersError(`Na faixa ${i + 1}, o mínimo deve ser menor que o máximo.`);
+        return;
+      }
+      
+      // Validar gaps e sobreposição (exceto para a última faixa que pode ter max_total_guests null)
+      if (i > 0) {
+        const prev = sorted[i - 1];
+        const prevMax = prev.max_total_guests || 999;
+        if (prevMax + 1 !== tier.min_total_guests) {
+          setTiersError(`Gap ou sobreposição entre as faixas ${i} e ${i + 1}.`);
+          return;
+        }
       }
     }
     
-    if (formData.min_guests && parseInt(formData.min_guests) < 0) {
-      newErrors.min_guests = 'Número mínimo de convidados deve ser maior ou igual a 0';
+    setTiersError(null);
+  }, [guestTiers]);
+
+  // Adicionar nova faixa
+  const handleAddTier = () => {
+    let min = 1;
+    if (guestTiers.length > 0) {
+      const last = guestTiers[guestTiers.length - 1];
+      min = (last.max_total_guests || 999) + 1;
     }
-    if (formData.max_guests && parseInt(formData.max_guests) < 1) {
-      newErrors.max_guests = 'Número máximo de convidados deve ser maior que 0';
+    
+    setGuestTiers([
+      ...guestTiers,
+      {
+        min_total_guests: min,
+        max_total_guests: min + 49,
+        base_price_per_adult: 100,
+        tier_description: `${min}-${min + 49} Convidados`,
+      },
+    ]);
+  };
+
+  // Remover faixa
+  const handleRemoveTier = (index: number) => {
+    if (guestTiers.length <= 1) {
+      toast.error('Erro', 'Deve haver pelo menos uma faixa de preço.', 3000);
+      return;
     }
-    if (formData.min_guests && formData.max_guests && 
-        parseInt(formData.min_guests) > parseInt(formData.max_guests)) {
-      newErrors.max_guests = 'Número máximo deve ser maior que o mínimo';
+    setGuestTiers(guestTiers.filter((_, i) => i !== index));
+  };
+
+  // Atualizar campo de uma faixa
+  const handleTierChange = (index: number, field: keyof GuestTier, value: any) => {
+    const newTiers = [...guestTiers];
+    newTiers[index] = { ...newTiers[index], [field]: value };
+    
+    // Atualizar descrição automaticamente
+    if (field === 'min_total_guests' || field === 'max_total_guests') {
+      const min = newTiers[index].min_total_guests;
+      const max = newTiers[index].max_total_guests;
+      newTiers[index].tier_description = `${min}${max ? '-' + max : '+'} Convidados`;
+    }
+    
+    setGuestTiers(newTiers);
+  };
+
+  // Submissão do formulário
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validações básicas
+    const newErrors: Record<string, string> = {};
+    if (!formData.name.trim()) newErrors.name = 'Nome é obrigatório';
+    if (!formData.category) newErrors.category = 'Categoria é obrigatória';
+    if (tiersError) {
+      toast.error('Erro nas faixas de preço', tiersError, 5000);
+      return;
     }
     
     if (Object.keys(newErrors).length > 0) {
@@ -287,40 +203,19 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
         formDataToSend.append('id', service.id);
       }
       
+      // Dados básicos do serviço
       formDataToSend.append('name', formData.name.trim());
       formDataToSend.append('description', formData.description.trim());
       formDataToSend.append('category', formData.category);
-      
-      // Calcular base_price a partir da primeira faixa de guest_tiers
-      const firstTier = formData.guest_tiers.find(tier => tier.base_price_per_adult > 0);
-      const basePrice = firstTier ? firstTier.base_price_per_adult.toString() : '0';
-      formDataToSend.append('base_price', basePrice);
-      
-      // Não enviar price_per_guest pois agora usamos apenas guest_tiers
-      formDataToSend.append('price_per_guest', '0');
-      
-      formDataToSend.append('min_guests', formData.min_guests || '0');
-      
-      if (formData.max_guests) {
-        formDataToSend.append('max_guests', formData.max_guests);
-      }
-      
-      formData.images_urls.forEach(url => {
-        formDataToSend.append('images_urls', url);
-      });
-      
       formDataToSend.append('is_active', formData.is_active.toString());
       
-      // Adicionar status apenas para atualização (serviços existentes)
-      if (service) {
-        formDataToSend.append('status', service.status || 'active');
+      // Adicionar faixas de preço
+      formDataToSend.append('guest_tiers', JSON.stringify(guestTiers));
+      
+      // Adicionar imagens
+      if (formData.images_urls.length > 0) {
+        formDataToSend.append('images_urls', JSON.stringify(formData.images_urls));
       }
-      
-      // Adicionar regras de pricing por idade
-      formDataToSend.append('pricing_rules', JSON.stringify(formData.pricing_rules));
-      
-      // Adicionar faixas de preços por convidados
-      formDataToSend.append('guest_tiers', JSON.stringify(formData.guest_tiers));
       
       const result = service 
         ? await updateServiceAction(formDataToSend)
@@ -336,7 +231,8 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
           4000
         );
         
-        onSubmit();
+        onSubmit(formDataToSend);
+        onClose(); // Fechar modal após sucesso
       } else {
         const errorMessage = result.error || 'Erro ao salvar serviço';
         setErrors({ general: errorMessage });
@@ -368,12 +264,6 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
-  };
-
-  const handlePricingRuleChange = (index: number, field: string, value: any) => {
-    const newRules = [...formData.pricing_rules];
-    newRules[index] = { ...newRules[index], [field]: value };
-    setFormData(prev => ({ ...prev, pricing_rules: newRules }));
   };
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -436,15 +326,15 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 backdrop-blur-md bg-white/20 z-50 flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
-        className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
+        <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white z-10">
           <h2 className="text-xl font-bold text-[#520029]">
             {service ? 'Editar Serviço' : 'Adicionar Novo Serviço'}
           </h2>
@@ -495,11 +385,15 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
               className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A502CA] ${
                 errors.category ? 'border-red-500' : 'border-gray-300'
               }`}
-              disabled={loading}
+              disabled={loading || loadingSubcategories}
             >
-              <option value="">Selecione uma categoria</option>
-              {categories.map(category => (
-                <option key={category} value={category}>{category}</option>
+              <option value="">
+                {loadingSubcategories ? 'Carregando categorias...' : 'Selecione uma categoria'}
+              </option>
+              {subcategories.map(subcategory => (
+                <option key={subcategory.id} value={subcategory.name}>
+                  {subcategory.name}
+                </option>
               ))}
             </select>
             {errors.category && <p className="text-red-500 text-xs mt-1">{errors.category}</p>}
@@ -519,230 +413,75 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
             />
           </div>
 
-          {/* Regras de Preços por Idade */}
-          <div>
+          {/* Nova seção de faixas de preço */}
+          <div className="mt-6">
             <label className="block text-sm font-medium text-[#520029] mb-4">
-              Regras de Preços por Idade
+              Faixas de Preços por Número de Convidados
             </label>
             <div className="space-y-4">
-              {formData.pricing_rules.map((rule, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">
-                        Idade Mín. (anos)
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={rule.age_min_years}
-                        onChange={(e) => handlePricingRuleChange(index, 'age_min_years', parseInt(e.target.value))}
-                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                        disabled={loading}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">
-                        Idade Máx. (anos)
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={rule.age_max_years || ''}
-                        onChange={(e) => handlePricingRuleChange(index, 'age_max_years', e.target.value ? parseInt(e.target.value) : null)}
-                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                        placeholder="Sem limite"
-                        disabled={loading}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">
-                        Valor (%)
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={rule.value}
-                        onChange={(e) => handlePricingRuleChange(index, 'value', parseFloat(e.target.value))}
-                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                        placeholder="100"
-                        disabled={loading}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Faixas de Preços por Número de Convidados */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <label className="block text-sm font-medium text-[#520029]">
-                Tabela de Preços por Faixas de Convidados *
-              </label>
-              <button
-                type="button"
-                onClick={addGuestTier}
-                className="bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-3 py-1 rounded text-sm flex items-center gap-1"
-                disabled={loading}
-              >
-                <MdAdd className="text-sm" />
-                Adicionar Faixa
-              </button>
-            </div>
-            
-            {errors.guest_tiers && <p className="text-red-500 text-xs mb-2">{errors.guest_tiers}</p>}
-            
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
-              <p className="text-sm text-yellow-800">
-                <strong>💡 Importante:</strong> Aos preços será automaticamente adicionada a taxa de 5% da Be Fest. 
-                Por exemplo: se você definir R$ 130,00, o cliente verá R$ 136,50 (já com a taxa incluída).
-                A taxa é oculta do cliente - ele só vê o preço final.
-              </p>
-            </div>
-
-            {/* Exemplo de visualização da tabela para o cliente */}
-            {formData.guest_tiers.some(tier => tier.base_price_per_adult > 0) && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                <h4 className="text-sm font-semibold text-blue-800 mb-3">
-                  📋 Prévia - Como o cliente verá a tabela de preços:
-                </h4>
-                <div className="space-y-2">
-                  {formData.guest_tiers
-                    .filter(tier => tier.base_price_per_adult > 0)
-                    .map((tier, index) => (
-                      <div key={index} className="flex justify-between text-sm">
-                        <span className="text-blue-700">
-                          • De {tier.min_total_guests} {tier.max_total_guests ? `a ${tier.max_total_guests}` : '+'} convidados:
-                        </span>
-                        <span className="font-semibold text-blue-800">
-                          R$ {calculatePriceWithBeFestFee(tier.base_price_per_adult).toFixed(2)}
-                        </span>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-4">
-              {formData.guest_tiers.map((tier, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">
-                        Mín. Convidados
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={tier.min_total_guests}
-                        onChange={(e) => updateGuestTier(index, 'min_total_guests', parseInt(e.target.value))}
-                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                        disabled={loading}
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">
-                        Máx. Convidados
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={tier.max_total_guests || ''}
-                        onChange={(e) => updateGuestTier(index, 'max_total_guests', e.target.value ? parseInt(e.target.value) : null)}
-                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                        placeholder="Sem limite"
-                        disabled={loading}
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">
-                        Preço/Convidado (R$)
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={tier.base_price_per_adult}
-                        onChange={(e) => updateGuestTier(index, 'base_price_per_adult', parseFloat(e.target.value) || 0)}
-                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                        disabled={loading}
-                      />
-                      <p className="text-xs text-green-600 mt-1">
-                        Cliente verá: R$ {calculatePriceWithBeFestFee(tier.base_price_per_adult).toFixed(2)}
-                      </p>
-                    </div>
-                    
-                    <div className="flex items-end">
-                      {formData.guest_tiers.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeGuestTier(index)}
-                          className="bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded text-sm"
-                          disabled={loading}
-                        >
-                          <MdRemove className="text-sm" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="mt-2">
+              {guestTiers.map((tier, idx) => (
+                <div key={idx} className="border rounded-lg p-4 flex flex-col md:flex-row md:items-end gap-2 md:gap-4 bg-gray-50">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Min. Convidados</label>
                     <input
-                      type="text"
-                      value={tier.tier_description || ''}
-                      onChange={(e) => updateGuestTier(index, 'tier_description', e.target.value)}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                      placeholder="Descrição da faixa (ex: Festa Pequena)"
-                      disabled={loading}
+                      type="number"
+                      min={1}
+                      value={tier.min_total_guests}
+                      onChange={e => handleTierChange(idx, 'min_total_guests', parseInt(e.target.value) || 1)}
+                      className="w-24 px-2 py-1 border border-gray-300 rounded text-sm"
                     />
                   </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Max. Convidados</label>
+                    <input
+                      type="number"
+                      min={tier.min_total_guests + 1}
+                      value={tier.max_total_guests || ''}
+                      onChange={e => handleTierChange(idx, 'max_total_guests', e.target.value ? parseInt(e.target.value) : null)}
+                      className="w-24 px-2 py-1 border border-gray-300 rounded text-sm"
+                      placeholder="∞"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Preço por Adulto (R$)</label>
+                    <input
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      value={tier.base_price_per_adult}
+                      onChange={e => handleTierChange(idx, 'base_price_per_adult', parseFloat(e.target.value) || 0)}
+                      className="w-32 px-2 py-1 border border-gray-300 rounded text-sm"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Descrição</label>
+                    <input
+                      type="text"
+                      value={tier.tier_description}
+                      onChange={e => handleTierChange(idx, 'tier_description', e.target.value)}
+                      className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveTier(idx)}
+                    className="text-red-600 hover:underline ml-2 mt-2 md:mt-0"
+                    disabled={guestTiers.length <= 1}
+                  >
+                    Remover
+                  </button>
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* Número de Convidados */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-[#520029] mb-2">
-                Mín. Convidados
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={formData.min_guests}
-                onChange={(e) => handleInputChange('min_guests', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A502CA] ${
-                  errors.min_guests ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="0"
-                disabled={loading}
-              />
-              {errors.min_guests && <p className="text-red-500 text-xs mt-1">{errors.min_guests}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-[#520029] mb-2">
-                Máx. Convidados
-              </label>
-              <input
-                type="number"
-                min="1"
-                value={formData.max_guests}
-                onChange={(e) => handleInputChange('max_guests', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A502CA] ${
-                  errors.max_guests ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Sem limite"
-                disabled={loading}
-              />
-              {errors.max_guests && <p className="text-red-500 text-xs mt-1">{errors.max_guests}</p>}
-            </div>
+            <button
+              type="button"
+              onClick={handleAddTier}
+              className="mt-4 px-4 py-2 bg-[#A502CA] text-white rounded-lg hover:bg-[#8B02A8] transition-colors flex items-center gap-2"
+            >
+              <MdAdd className="text-lg" />
+              Adicionar Faixa de Preço
+            </button>
+            {tiersError && <p className="text-red-600 text-xs mt-2">{tiersError}</p>}
           </div>
 
           {/* Upload de Imagens */}
@@ -827,7 +566,7 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
           </div>
 
           {/* Botões */}
-          <div className="flex justify-end gap-3 pt-6 border-t">
+          <div className="flex justify-end gap-3 pt-6 border-t sticky bottom-0 bg-white">
             <button
               type="button"
               onClick={onClose}
@@ -839,7 +578,7 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
             <button
               type="submit"
               className="px-6 py-2 bg-[#A502CA] text-white rounded-lg hover:bg-[#8B02A8] transition-colors disabled:opacity-50"
-              disabled={loading || uploadingImage}
+              disabled={loading || uploadingImage || !!tiersError}
             >
               {loading ? 'Salvando...' : (service ? 'Atualizar' : 'Criar Serviço')}
             </button>
@@ -849,3 +588,4 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
     </div>
   );
 }
+

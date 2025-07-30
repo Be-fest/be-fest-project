@@ -11,12 +11,11 @@ export default function AcessoNegadoPage() {
   const { userData } = useAuth();
   const [countdown, setCountdown] = useState(5);
 
+  // Timer para o countdown
   useEffect(() => {
-    // Redirecionar automaticamente após 5 segundos
     const timer = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
-          router.push('/dashboard/prestador');
           return 0;
         }
         return prev - 1;
@@ -24,7 +23,14 @@ export default function AcessoNegadoPage() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [router]);
+  }, []);
+
+  // Redirecionamento separado quando countdown chega a 0
+  useEffect(() => {
+    if (countdown === 0) {
+      router.push('/dashboard/prestador');
+    }
+  }, [countdown, router]);
 
   const handleGoToDashboard = () => {
     router.push('/dashboard/prestador');

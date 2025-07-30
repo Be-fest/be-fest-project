@@ -1,12 +1,53 @@
 import { createBrowserClient } from '@supabase/ssr';
 import { Database } from '@/types/database';
 
+let supabaseClient: ReturnType<typeof createBrowserClient<Database>> | null = null;
+
 export const createClient = () => {
-    return createBrowserClient<Database>(
+    if (supabaseClient) return supabaseClient;
+
+    supabaseClient = createBrowserClient<Database>(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            auth: {
+                storage: {
+                    getItem: (key: string) => {
+                        if (typeof window === 'undefined') return null;
+                        try {
+                            const item = localStorage.getItem(key);
+                            return item ? JSON.parse(item) : null;
+                        } catch (error) {
+                            console.error('Erro ao ler do localStorage:', error);
+                            return null;
+                        }
+                    },
+                    setItem: (key: string, value: string) => {
+                        if (typeof window === 'undefined') return;
+                        try {
+                            localStorage.setItem(key, value);
+                        } catch (error) {
+                            console.error('Erro ao salvar no localStorage:', error);
+                        }
+                    },
+                    removeItem: (key: string) => {
+                        if (typeof window === 'undefined') return;
+                        try {
+                            localStorage.removeItem(key);
+                        } catch (error) {
+                            console.error('Erro ao remover do localStorage:', error);
+                        }
+                    }
+                },
+                autoRefreshToken: true,
+                persistSession: true,
+                detectSessionInUrl: true
+            }
+        }
     );
-}
+
+    return supabaseClient;
+};
 
 export const supabase = createClient();
 

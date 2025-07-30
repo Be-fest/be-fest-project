@@ -13,8 +13,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/prestadores') ||
     pathname.startsWith('/servicos') ||
     pathname.startsWith('/prestador/') ||
-    pathname.startsWith('/debug-cookies') ||
-    pathname.startsWith('/test-session') ||
+    pathname.startsWith('/super-admin') ||
     pathname === '/favicon.ico' ||
     pathname.includes('.')
   ) {
@@ -23,42 +22,54 @@ export async function middleware(request: NextRequest) {
 
   // Rotas que precisam de autenticação
   const protectedRoutes = [
-    '/minhas-festas',
     '/dashboard',
     '/perfil',
     '/pagamento',
     '/admin'
   ];
 
+  // Rotas que precisam de super-admin
+  const superAdminRoutes = [
+    '/admin/cadastrar-admin'
+  ];
+
   // Verificar se a rota atual é protegida
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
+  const isSuperAdminRoute = superAdminRoutes.some(route => pathname.startsWith(route));
   
   if (!isProtectedRoute) {
     return NextResponse.next();
   }
 
-  // Verificação de autenticação baseada em cookies do Supabase
+  // Verificação híbrida: cookies do Supabase + header customizado para localStorage
   const cookies = request.cookies;
   
-  // Buscar cookies do Supabase (formato padrão: sb-{projectid}-auth-token)
+  // Procurar por cookies específicos do Supabase
+  const authTokenCookie = cookies.get('sb-auth-token');
+  const accessTokenCookie = cookies.get('sb-access-token');
+  
+  // Buscar qualquer cookie que comece com sb- e contenha informações de auth
   const supabaseCookies = Array.from(cookies.getAll()).filter(cookie => 
-    cookie.name.includes('auth-token') &&
+    cookie.name.startsWith('sb-') && 
     cookie.value && 
     cookie.value !== 'null' && 
     cookie.value !== 'undefined' &&
-    cookie.value.length > 20 // Token válido deve ter conteúdo substancial
+    cookie.value.length > 10 // Cookie válido deve ter conteúdo substancial
   );
   
-  // Se não há cookies de autenticação válidos, redirecionar para login
-  if (supabaseCookies.length === 0) {
-    console.log(`Middleware: Nenhum cookie de auth válido encontrado para ${pathname}`);
+  // Verificar header customizado que pode ser enviado pelo cliente
+  const localStorageAuth = request.headers.get('x-localstorage-auth');
+  
+  // Se não há cookies de autenticação válidos E não há header de localStorage, redirecionar para login
+  if (supabaseCookies.length === 0 && !authTokenCookie && !accessTokenCookie && !localStorageAuth) {
+    console.log(`Middleware: Nenhuma autenticação válida encontrada para ${pathname}`);
     const redirectUrl = new URL('/auth/login', request.url);
     redirectUrl.searchParams.set('redirectTo', pathname);
     redirectUrl.searchParams.set('reason', 'unauthorized');
     return NextResponse.redirect(redirectUrl);
   }
 
-  console.log(`Middleware: Cookies de auth encontrados para ${pathname}, permitindo acesso`);
+  console.log(`Middleware: Autenticação encontrada para ${pathname}, permitindo acesso`);
   return NextResponse.next();
 }
 

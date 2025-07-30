@@ -1,47 +1,78 @@
 'use client';
 
-import { useOptimizedAuth } from '@/hooks/useOptimizedAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { useToastGlobal } from '@/contexts/GlobalToastContext';
 
 interface FastAuthGuardProps {
   children: React.ReactNode;
-  requiredRole?: 'client' | 'provider' | 'admin';
+  requiredRole?: string;
   redirectTo?: string;
 }
 
-export function FastAuthGuard({ 
+export default function FastAuthGuard({ 
   children, 
   requiredRole, 
   redirectTo = '/auth/login' 
 }: FastAuthGuardProps) {
-  const { user, userRole, loading, isAuthenticated } = useOptimizedAuth(requiredRole);
+  const { user, userData, loading } = useAuth();
   const router = useRouter();
+  const toast = useToastGlobal();
+
+  // Computed properties based on user and userData
+  const isAuthenticated = !!user && !!userData;
+  const isClient = userData?.role === 'client';
+  const isProvider = userData?.role === 'provider';
+  const isAdmin = userData?.role === 'admin';
 
   useEffect(() => {
-    if (loading) return;
+    if (!loading) {
+      if (!isAuthenticated) {
+        toast.error('Acesso Negado', 'Você precisa fazer login para acessar esta página');
+        router.push(redirectTo);
+        return;
+      }
 
-    if (!isAuthenticated) {
-      router.push(`${redirectTo}?redirectTo=${window.location.pathname}`);
-      return;
-    }
+      if (requiredRole) {
+        const hasRequiredRole = 
+          (requiredRole === 'client' && isClient) ||
+          (requiredRole === 'provider' && isProvider) ||
+          (requiredRole === 'admin' && isAdmin);
 
-    if (requiredRole && userRole !== requiredRole) {
-      router.push('/acesso-negado');
-      return;
+        if (!hasRequiredRole) {
+          toast.error('Acesso Negado', 'Você não tem permissão para acessar esta página');
+          router.push('/acesso-negado');
+          return;
+        }
+      }
     }
-  }, [isAuthenticated, userRole, requiredRole, loading, router, redirectTo]);
+  }, [loading, isAuthenticated, isClient, isProvider, isAdmin, requiredRole, router, redirectTo, toast]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FFF6FB] flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-[#F71875] border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF0080] mx-auto"></div>
+          <p className="mt-4 text-gray-600">Carregando...</p>
+        </div>
       </div>
     );
   }
 
-  if (!isAuthenticated || (requiredRole && userRole !== requiredRole)) {
+  if (!isAuthenticated) {
     return null;
+  }
+
+  if (requiredRole) {
+    const hasRequiredRole = 
+      (requiredRole === 'client' && isClient) ||
+      (requiredRole === 'provider' && isProvider) ||
+      (requiredRole === 'admin' && isAdmin);
+
+    if (!hasRequiredRole) {
+      return null;
+    }
   }
 
   return <>{children}</>;

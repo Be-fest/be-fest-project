@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   MdSettings,
@@ -16,16 +16,59 @@ import {
 } from 'react-icons/md';
 import { ClientLayout } from '@/components/client/ClientLayout';
 import { ClientAuthGuard } from '@/components/ClientAuthGuard';
+import { PersonalInfoForm } from '@/components/profile/PersonalInfoForm';
+import { AddressForm } from '@/components/profile/AddressForm';
+import { PasswordForm } from '@/components/profile/PasswordForm';
+import { BaseModal } from '@/components/ui/BaseModal';
+
+interface SettingsItemBase {
+  label: string;
+  description: string;
+}
+
+interface ClickableSettingsItem extends SettingsItemBase {
+  onClick: () => void;
+}
+
+interface NonClickableSettingsItem extends SettingsItemBase {
+  onClick?: never;
+}
+
+type SettingsItem = ClickableSettingsItem | NonClickableSettingsItem;
+
+interface SettingsGroup {
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  items: SettingsItem[];
+}
 
 export default function ConfiguracoesPage() {
-  const settingsGroups = [
+  const [activeModal, setActiveModal] = useState<'personal' | 'address' | 'password' | null>(null);
+
+  const handleCloseModal = () => {
+    setActiveModal(null);
+  };
+
+  const settingsGroups: SettingsGroup[] = [
     {
       title: 'Conta',
       icon: MdAccountCircle,
       items: [
-        { label: 'Informações Pessoais', description: 'Nome, email, telefone' },
-        { label: 'Endereço', description: 'Local padrão para eventos' },
-        { label: 'Senha', description: 'Alterar senha de acesso' }
+        { 
+          label: 'Informações Pessoais', 
+          description: 'Nome, email, telefone',
+          onClick: () => setActiveModal('personal')
+        },
+        { 
+          label: 'Endereço', 
+          description: 'Local padrão para eventos',
+          onClick: () => setActiveModal('address')
+        },
+        { 
+          label: 'Senha', 
+          description: 'Alterar senha de acesso',
+          onClick: () => setActiveModal('password')
+        }
       ]
     },
     {
@@ -90,11 +133,12 @@ export default function ConfiguracoesPage() {
                   </div>
                 </div>
                 
-                <div className="divide-y divide-gray-100">
-                  {group.items.map((item, itemIndex) => (
+                <div>
+                  {group.items.map((item) => (
                     <div
                       key={item.label}
-                      className="p-6 hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
+                      onClick={'onClick' in item ? item.onClick : undefined}
+                      className={`p-6 hover:bg-gray-50 transition-colors duration-200 ${'onClick' in item ? 'cursor-pointer' : 'cursor-default'}`}
                     >
                       <div className="flex items-center justify-between">
                         <div>
@@ -105,9 +149,11 @@ export default function ConfiguracoesPage() {
                             {item.description}
                           </p>
                         </div>
-                        <div className="text-gray-400">
-                          →
-                        </div>
+                        {'onClick' in item && (
+                          <div className="text-gray-400">
+                            →
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -115,39 +161,32 @@ export default function ConfiguracoesPage() {
               </motion.div>
             ))}
           </div>
-
-          {/* Account Actions */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">
-              Ações da Conta
-            </h3>
-            <div className="space-y-4">
-              <button className="w-full text-left p-4 rounded-xl hover:bg-gray-50 transition-colors duration-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-900">Exportar Dados</p>
-                    <p className="text-sm text-gray-600">Baixar uma cópia dos seus dados</p>
-                  </div>
-                  <div className="text-blue-600">
-                    ↓
-                  </div>
-                </div>
-              </button>
-              
-              <button className="w-full text-left p-4 rounded-xl hover:bg-red-50 transition-colors duration-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-red-600">Excluir Conta</p>
-                    <p className="text-sm text-gray-600">Remover permanentemente sua conta</p>
-                  </div>
-                  <div className="text-red-600">
-                    ⚠️
-                  </div>
-                </div>
-              </button>
-            </div>
-          </div>
         </div>
+
+        {/* Modals */}
+        <BaseModal
+          isOpen={activeModal === 'personal'}
+          onClose={handleCloseModal}
+          title="Informações Pessoais"
+        >
+          <PersonalInfoForm onClose={handleCloseModal} />
+        </BaseModal>
+
+        <BaseModal
+          isOpen={activeModal === 'address'}
+          onClose={handleCloseModal}
+          title="Endereço"
+        >
+          <AddressForm onClose={handleCloseModal} />
+        </BaseModal>
+
+        <BaseModal
+          isOpen={activeModal === 'password'}
+          onClose={handleCloseModal}
+          title="Alterar Senha"
+        >
+          <PasswordForm onClose={handleCloseModal} />
+        </BaseModal>
       </ClientLayout>
     </ClientAuthGuard>
   );

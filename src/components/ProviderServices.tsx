@@ -80,7 +80,7 @@ export function ProviderServices({ services, providerId }: ProviderServicesProps
                   </p>
                   <div className="flex items-center justify-between">
                     <span className="text-xl font-bold text-[#FF0080]">
-                      R$ {item.price.toFixed(2)}
+                      R$ {(item.price || 0).toFixed(2)}
                     </span>                    <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}

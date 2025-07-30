@@ -10,7 +10,7 @@ export type Json =
 export type UserRole = 'client' | 'provider' | 'admin'
 export type EventStatus = 'draft' | 'published' | 'completed' | 'cancelled' | 'waiting_payment' | null
 export type ServiceStatus = 'active' | 'inactive' | 'pending_approval'
-export type EventServiceStatus = 'pending_provider_approval' | 'waiting_payment' | 'confirmed' | 'rejected' | 'cancelled'
+export type EventServiceStatus = 'pending_provider_approval' | 'approved' | 'in_progress' | 'completed' | 'cancelled' | 'waiting_payment'
 export type BookingStatus = 'pending' | 'waiting_payment' | 'confirmed' | 'paid' | 'completed' | 'cancelled'
 export type PricingMethod = 'fixed' | 'percentage'
 export type SurchargeType = 'fixed' | 'percentage'
@@ -32,6 +32,9 @@ export interface Database {
           logo_url: string | null
           profile_image: string | null
           area_of_operation: string | null
+          city: string | null
+          state: string | null
+          postal_code: string | null
           coordenates: Json | null
           created_at: string
           updated_at: string
@@ -48,6 +51,9 @@ export interface Database {
           logo_url?: string | null
           profile_image?: string | null
           area_of_operation?: string | null
+          city?: string | null
+          state?: string | null
+          postal_code?: string | null
           coordenates?: Json | null
           created_at?: string
           updated_at?: string
@@ -64,6 +70,9 @@ export interface Database {
           logo_url?: string | null
           profile_image?: string | null
           area_of_operation?: string | null
+          city?: string | null
+          state?: string | null
+          postal_code?: string | null
           coordenates?: Json | null
           created_at?: string
           updated_at?: string
@@ -128,8 +137,6 @@ export interface Database {
           full_guests: number
           half_guests: number
           free_guests: number
-          budget: number | null
-          status: EventStatus
           created_at: string
           updated_at: string
         }
@@ -145,8 +152,6 @@ export interface Database {
           full_guests?: number
           half_guests?: number
           free_guests?: number
-          budget?: number | null
-          status?: EventStatus
           created_at?: string
           updated_at?: string
         }
@@ -162,8 +167,6 @@ export interface Database {
           full_guests?: number
           half_guests?: number
           free_guests?: number
-          budget?: number | null
-          status?: EventStatus
           created_at?: string
           updated_at?: string
         }
@@ -176,12 +179,11 @@ export interface Database {
           description: string | null
           category: string
           images_urls: string[] | null
-          base_price: number
-          price_per_guest: number | null
           min_guests: number
           max_guests: number | null
           status: ServiceStatus
           is_active: boolean
+          platform_fee_percentage: number | null
           created_at: string
           updated_at: string
         }
@@ -192,12 +194,11 @@ export interface Database {
           description?: string | null
           category: string
           images_urls?: string[] | null
-          base_price: number
-          price_per_guest?: number | null
           min_guests?: number
           max_guests?: number | null
           status?: ServiceStatus
           is_active?: boolean
+          platform_fee_percentage?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -208,12 +209,11 @@ export interface Database {
           description?: string | null
           category?: string
           images_urls?: string[] | null
-          base_price?: number
-          price_per_guest?: number | null
           min_guests?: number
           max_guests?: number | null
           status?: ServiceStatus
           is_active?: boolean
+          platform_fee_percentage?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -327,10 +327,7 @@ export interface Database {
           service_id: string
           provider_id: string
           price_per_guest_at_booking: number | null
-          befest_fee_at_booking: number | null
           total_estimated_price: number | null
-          provider_notes: string | null
-          client_notes: string | null
           booking_status: EventServiceStatus
           created_at: string
           updated_at: string
@@ -341,10 +338,7 @@ export interface Database {
           service_id: string
           provider_id: string
           price_per_guest_at_booking?: number | null
-          befest_fee_at_booking?: number | null
           total_estimated_price?: number | null
-          provider_notes?: string | null
-          client_notes?: string | null
           booking_status?: EventServiceStatus
           created_at?: string
           updated_at?: string
@@ -355,10 +349,7 @@ export interface Database {
           service_id?: string
           provider_id?: string
           price_per_guest_at_booking?: number | null
-          befest_fee_at_booking?: number | null
           total_estimated_price?: number | null
-          provider_notes?: string | null
-          client_notes?: string | null
           booking_status?: EventServiceStatus
           created_at?: string
           updated_at?: string
@@ -436,7 +427,22 @@ export type Event = Database['public']['Tables']['events']['Row']
 export type EventInsert = Database['public']['Tables']['events']['Insert']
 export type EventUpdate = Database['public']['Tables']['events']['Update']
 
-export type Service = Database['public']['Tables']['services']['Row']
+export interface Service {
+  id: string;
+  provider_id: string;
+  name: string;
+  description: string | null;
+  category: string;
+  images_urls: string[] | null;
+  min_guests: number;
+  max_guests: number | null;
+  status: ServiceStatus;
+  is_active: boolean;
+  platform_fee_percentage: number | null;
+  created_at: string;
+  updated_at: string;
+  guest_tiers?: GuestTier[]; // Faixas de preço por convidados
+}
 export type ServiceInsert = Database['public']['Tables']['services']['Insert']
 export type ServiceUpdate = Database['public']['Tables']['services']['Update']
 
@@ -463,13 +469,12 @@ export type BookingUpdate = Database['public']['Tables']['bookings']['Update']
 // Extended types with relationships
 export type ServiceWithProvider = Service & {
   provider: Pick<User, 'id' | 'full_name' | 'organization_name' | 'logo_url' | 'profile_image' | 'area_of_operation'>
+  guest_tiers?: ServiceGuestTier[]
 }
 
 export type ServiceWithDetails = Service & {
   provider: Pick<User, 'id' | 'full_name' | 'organization_name' | 'logo_url' | 'profile_image' | 'area_of_operation'>
   guest_tiers: ServiceGuestTier[]
-  age_pricing_rules: ServiceAgePricingRule[]
-  date_surcharges: ServiceDateSurcharge[]
 }
 
 export type EventWithServices = Event & {
@@ -488,4 +493,14 @@ export type EventServiceWithDetails = EventService & {
 export type BookingWithDetails = Booking & {
   event: Pick<Event, 'id' | 'title' | 'event_date' | 'location' | 'client_id'>
   service: ServiceWithProvider
+} 
+
+// Adiciona o tipo GuestTier conforme a tabela service_guest_tiers
+export interface GuestTier {
+  id?: string;
+  service_id?: string;
+  min_total_guests: number;
+  max_total_guests: number;
+  base_price_per_adult: number;
+  tier_description: string;
 } 

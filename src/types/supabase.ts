@@ -40,7 +40,7 @@ export interface Database {
           id: string
           provider_notes: string | null
           client_notes: string | null
-          booking_status: 'pending_provider_approval' | 'approved' | 'rejected' | 'cancelled'
+          booking_status: 'pending_provider_approval' | 'approved' | 'in_progress' | 'completed' | 'cancelled'
           created_at: string
           updated_at: string
         }
@@ -54,7 +54,7 @@ export interface Database {
           id?: string
           provider_notes?: string | null
           client_notes?: string | null
-          booking_status?: 'pending_provider_approval' | 'approved' | 'rejected' | 'cancelled'
+          booking_status?: 'pending_provider_approval' | 'approved' | 'in_progress' | 'completed' | 'cancelled'
           created_at?: string
           updated_at?: string
         }
@@ -68,7 +68,7 @@ export interface Database {
           id?: string
           provider_notes?: string | null
           client_notes?: string | null
-          booking_status?: 'pending_provider_approval' | 'approved' | 'rejected' | 'cancelled'
+          booking_status?: 'pending_provider_approval' | 'approved' | 'in_progress' | 'completed' | 'cancelled'
           created_at?: string
           updated_at?: string
         }
@@ -280,43 +280,49 @@ export interface Database {
       users: {
         Row: {
           id: string
-          role: 'client' | 'provider'
+          role: 'client' | 'provider' | 'admin'
           full_name: string | null
           email: string | null
           organization_name: string | null
           cnpj: string | null
-          cpf: string | null
           whatsapp_number: string | null
           logo_url: string | null
           area_of_operation: string | null
+          city: string | null
+          state: string | null
+          postal_code: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
           id: string
-          role?: 'client' | 'provider'
+          role?: 'client' | 'provider' | 'admin'
           full_name?: string | null
           email?: string | null
           organization_name?: string | null
           cnpj?: string | null
-          cpf?: string | null
           whatsapp_number?: string | null
           logo_url?: string | null
           area_of_operation?: string | null
+          city?: string | null
+          state?: string | null
+          postal_code?: string | null
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
-          role?: 'client' | 'provider'
+          role?: 'client' | 'provider' | 'admin'
           full_name?: string | null
           email?: string | null
           organization_name?: string | null
           cnpj?: string | null
-          cpf?: string | null
           whatsapp_number?: string | null
           logo_url?: string | null
           area_of_operation?: string | null
+          city?: string | null
+          state?: string | null
+          postal_code?: string | null
           created_at?: string
           updated_at?: string
         }

@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { MdEdit, MdSave, MdCancel, MdCloudUpload, MdWarning, MdRemove, MdImage } from 'react-icons/md';
-import { createClient } from '@/lib/supabase/client';
 import { getProviderStatsAction } from '@/lib/actions/services';
 import { uploadProfileImageAction, deleteProfileImageAction, updateProviderProfileAction } from '@/lib/actions/auth';
 import { User } from '@/types/database';
@@ -11,26 +10,29 @@ import { ProviderProfileSkeleton } from '@/components/ui';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
 import { invalidateServiceImagesCache } from '@/hooks/useImagePreloader';
 import AreaOfOperationSelect from '@/components/ui/AreaOfOperationSelect';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ProviderStats {
-  totalEvents: number;
+  totalRequests: number;
+  pendingRequests: number;
+  approvedRequests: number;
   activeServices: number;
-  averageRating: number;
-  totalRatings: number;
+  totalRevenue: number;
+  completedEvents: number;
 }
 
 export function ProviderProfile() {
+  const { user, userData, loading: authLoading } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
   const [stats, setStats] = useState<ProviderStats>({
-    totalEvents: 0,
+    totalRequests: 0,
+    pendingRequests: 0,
+    approvedRequests: 0,
     activeServices: 0,
-    averageRating: 0,
-    totalRatings: 0
+    totalRevenue: 0,
+    completedEvents: 0
   });
-  const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -42,72 +44,51 @@ export function ProviderProfile() {
     email: '',
     whatsapp_number: '',
     area_of_operation: '',
-    cnpj: '',
     profile_image: '',
   });
 
+  // Atualizar formData quando userData mudar
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const supabase = createClient();
-        
-        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-        
-        if (authError || !authUser) {
-          setError('Usuário não autenticado');
-          return;
-        }
-
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', authUser.id)
-          .single();
-
-        if (userError) {
-          setError('Erro ao carregar dados do usuário');
-          return;
-        }
-
-        setUser(userData);
-        setFormData({
-          organization_name: userData.organization_name || '',
-          full_name: userData.full_name || '',
-          email: userData.email || '',
-          whatsapp_number: userData.whatsapp_number || '',
-          area_of_operation: userData.area_of_operation || '',
-          cnpj: userData.cnpj || '',
-          profile_image: userData.profile_image || '',
-        });
-      } catch (err) {
-        setError('Erro ao carregar perfil');
-        console.error('Error loading user profile:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserData();
-  }, []);
+    if (userData) {
+      console.log('✅ [PROVIDER_PROFILE] Dados do usuário atualizados:', userData);
+      setFormData({
+        organization_name: userData.organization_name || '',
+        full_name: userData.full_name || '',
+        email: userData.email || '',
+        whatsapp_number: userData.whatsapp_number || '',
+        area_of_operation: userData.area_of_operation || '',
+        profile_image: userData.profile_image || '',
+      });
+    }
+  }, [userData]);
 
   useEffect(() => {
     const fetchStats = async () => {
+      console.log('🔍 [PROVIDER_PROFILE] Iniciando busca de estatísticas');
       try {
         const result = await getProviderStatsAction();
+        console.log('📊 [PROVIDER_PROFILE] Resultado das estatísticas:', result);
         if (result.success && result.data) {
           setStats(result.data);
+        } else {
+          console.error('❌ [PROVIDER_PROFILE] Erro ao buscar estatísticas:', result.error);
         }
       } catch (err) {
-        console.error('Error loading stats:', err);
+        console.error('💥 [PROVIDER_PROFILE] Erro inesperado ao buscar estatísticas:', err);
       } finally {
+        console.log('✅ [PROVIDER_PROFILE] Finalizando busca de estatísticas');
         setStatsLoading(false);
       }
     };
 
-    if (user) {
+    // Só buscar estatísticas se o usuário estiver carregado e não houver erro
+    if (userData && !authLoading) {
+      console.log('👤 [PROVIDER_PROFILE] Usuário encontrado, buscando estatísticas');
       fetchStats();
+    } else {
+      console.log('⏳ [PROVIDER_PROFILE] Aguardando carregamento do usuário - userData:', !!userData, 'authLoading:', authLoading);
     }
-  }, [user]);
+  }, [userData, authLoading]);
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -182,7 +163,6 @@ export function ProviderProfile() {
         full_name: 'Nome do proprietário é obrigatório',
         whatsapp_number: 'WhatsApp é obrigatório',
         area_of_operation: 'Área de atuação é obrigatória',
-        cnpj: 'CNPJ é obrigatório'
       };
 
       const errors: string[] = [];
@@ -215,25 +195,25 @@ export function ProviderProfile() {
         setIsEditing(false);
         
         // Atualizar dados do usuário local
-        const supabase = createClient();
-        const { data: updatedUser } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', user?.id)
-          .single();
+        // const supabase = createClient(); // This line is removed as per the new_code
+        // const { data: updatedUser } = await supabase // This line is removed as per the new_code
+        //   .from('users') // This line is removed as per the new_code
+        //   .select('*') // This line is removed as per the new_code
+        //   .eq('id', user?.id) // This line is removed as per the new_code
+        //   .single(); // This line is removed as per the new_code
           
-        if (updatedUser) {
-          setUser(updatedUser);
-          setFormData({
-            organization_name: updatedUser.organization_name || '',
-            full_name: updatedUser.full_name || '',
-            email: updatedUser.email || '',
-            whatsapp_number: updatedUser.whatsapp_number || '',
-            area_of_operation: updatedUser.area_of_operation || '',
-            cnpj: updatedUser.cnpj || '',
-            profile_image: updatedUser.profile_image || '',
-          });
-        }
+        // if (updatedUser) { // This line is removed as per the new_code
+        //   setUser(updatedUser); // This line is removed as per the new_code
+        //   setFormData({ // This line is removed as per the new_code
+        //     organization_name: updatedUser.organization_name || '', // This line is removed as per the new_code
+        //     full_name: updatedUser.full_name || '', // This line is removed as per the new_code
+        //     email: updatedUser.email || '', // This line is removed as per the new_code
+        //     whatsapp_number: updatedUser.whatsapp_number || '', // This line is removed as per the new_code
+        //     area_of_operation: updatedUser.area_of_operation || '', // This line is removed as per the new_code
+        //     cnpj: updatedUser.cnpj || '', // This line is removed as per the new_code
+        //     profile_image: updatedUser.profile_image || '', // This line is removed as per the new_code
+        //   }); // This line is removed as per the new_code
+        // } // This line is removed as per the new_code
       } else {
         toast.error('Erro ao salvar', result.error || 'Não foi possível salvar as alterações', 5000);
       }
@@ -246,30 +226,37 @@ export function ProviderProfile() {
   };
 
   const handleCancel = () => {
-    if (user) {
+    if (userData) {
       setFormData({
-        organization_name: user.organization_name || '',
-        full_name: user.full_name || '',
-        email: user.email || '',
-        whatsapp_number: user.whatsapp_number || '',
-        area_of_operation: user.area_of_operation || '',
-        cnpj: user.cnpj || '',
-        profile_image: user.profile_image || '',
+        organization_name: userData.organization_name || '',
+        full_name: userData.full_name || '',
+        email: userData.email || '',
+        whatsapp_number: userData.whatsapp_number || '',
+        area_of_operation: userData.area_of_operation || '',
+        profile_image: userData.profile_image || '',
       });
     }
     setIsEditing(false);
   };
 
-  if (loading) {
+  if (authLoading) {
+    console.log('⏳ [PROVIDER_PROFILE] Mostrando skeleton - authLoading:', authLoading);
     return <ProviderProfileSkeleton />;
   }
 
-  if (error || !user) {
+  if (!userData) {
+    console.log('❌ [PROVIDER_PROFILE] Mostrando erro - userData:', !!userData);
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <MdWarning className="text-red-500 text-4xl mb-4" />
         <h3 className="text-lg font-semibold text-gray-900 mb-2">Erro ao carregar perfil</h3>
-        <p className="text-gray-600">{error || 'Não foi possível carregar as informações do perfil'}</p>
+        <p className="text-gray-600">{'Não foi possível carregar as informações do perfil'}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-4 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+        >
+          Tentar novamente
+        </button>
       </div>
     );
   }
@@ -458,26 +445,6 @@ export function ProviderProfile() {
             )}
           </div>
 
-          {/* CNPJ */}
-          <div>
-            <label className="block text-sm font-medium text-[#520029] mb-2">
-              CNPJ *
-            </label>
-            {isEditing ? (
-              <input
-                type="text"
-                value={formData.cnpj}
-                onChange={(e) => handleInputChange('cnpj', e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A502CA] focus:border-transparent"
-                placeholder="00.000.000/0000-00"
-              />
-            ) : (
-              <div className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
-                <span className="text-gray-900">{formData.cnpj || 'Não informado'}</span>
-              </div>
-            )}
-          </div>
-
           {/* Área de Atuação */}
           <div>
             <label className="block text-sm font-medium text-[#520029] mb-2">
@@ -518,19 +485,16 @@ export function ProviderProfile() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
               <p className="text-2xl font-bold text-[#A502CA]">
-                {stats.averageRating > 0 ? stats.averageRating.toFixed(1) : '-'}
+                {stats.totalRequests}
               </p>
-              <p className="text-sm text-gray-600">Avaliação Média</p>
-              {stats.averageRating === 0 && (
-                <p className="text-xs text-gray-400 mt-1">Ainda sem avaliações</p>
-              )}
+              <p className="text-sm text-gray-600">Total de Pedidos</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-[#A502CA]">{stats.totalRatings}</p>
-              <p className="text-sm text-gray-600">Total de Avaliações</p>
+              <p className="text-2xl font-bold text-[#A502CA]">{stats.pendingRequests}</p>
+              <p className="text-sm text-gray-600">Pedidos Pendentes</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-[#A502CA]">{stats.totalEvents}</p>
+              <p className="text-2xl font-bold text-[#A502CA]">{stats.completedEvents}</p>
               <p className="text-sm text-gray-600">Eventos Realizados</p>
             </div>
             <div className="text-center">

@@ -52,28 +52,18 @@ function UserDropdown({ user, userType }: UserDropdownProps) {
       
       console.log('🔴 Iniciando logout do Header...');
       
-      // Timeout de segurança
-      const timeoutId = setTimeout(() => {
-        console.warn('⚠️ Timeout de logout no header, forçando redirecionamento...');
-        window.location.href = '/auth/login?reason=header_timeout';
-      }, 8000);
-      
-      // Usar função utilitária de logout
+      // Usar função utilitária de logout melhorada
       const { performLogout } = await import('@/lib/logout');
       await performLogout('header_dropdown');
       
-      // Se chegou até aqui, forçar redirecionamento
-      clearTimeout(timeoutId);
-      setTimeout(() => {
-        window.location.href = '/auth/login?reason=header_manual';
-      }, 1000);
+      // Se chegou até aqui sem redirecionar, forçar redirecionamento manual
+      console.warn('⚠️ Logout concluído mas ainda na página, forçando redirecionamento...');
+      window.location.href = '/auth/login?reason=header_manual';
       
     } catch (error) {
       console.error('❌ Erro durante logout do header:', error);
       // Mesmo com erro, forçar redirecionamento
-      setTimeout(() => {
-        window.location.href = '/auth/login?reason=header_error';
-      }, 500);
+      window.location.href = '/auth/login?reason=header_error';
     }
   };
 
@@ -301,7 +291,7 @@ function HomeHeader() {
               href="/servicos"
               className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
             >
-              Categorias
+              Serviços
             </Link>
             <ScrollLink 
               to="como-funciona" 
@@ -331,22 +321,7 @@ function HomeHeader() {
                 )}
               </>
             ) : (
-              <>
-                <Link 
-                  href="/minhas-festas"
-                  onClick={() => setIsMenuOpen(false)}
-                  className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
-                >
-                  New Fest
-                </Link>
-                <ScrollLink 
-                  to="contatos" 
-                  smooth={true} 
-                  duration={500} 
-                  className="text-gray-600 hover:text-[#FF0080] transition-colors cursor-pointer font-poppins"
-                >
-                  Contatos
-                </ScrollLink>
+              <> 
                 <Link 
                   href="/prestadores" 
                   className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
@@ -409,7 +384,7 @@ function HomeHeader() {
               className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
               onClick={() => setIsMenuOpen(false)}
             >
-              Categorias
+              Serviços
             </Link>
             <ScrollLink 
               to="como-funciona" 
@@ -446,7 +421,7 @@ function HomeHeader() {
                   onClick={() => setIsMenuOpen(false)}
                 >
                   <div className="w-6 h-6 bg-[#FF0080] rounded-full flex items-center justify-center text-white text-xs font-medium">
-                    {user.email?.charAt(0).toUpperCase()}
+                    U
                   </div>
                   <span>Minha Área</span>
                 </Link>
@@ -457,7 +432,7 @@ function HomeHeader() {
             ) : (
               <>
                 <Link 
-                  href="/minhas-festas"
+                  href="/perfil?tab=minhas-festas"
                   onClick={() => setIsMenuOpen(false)}
                   className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
                 >

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSuperAdmin } from '@/hooks/useSuperAdmin';
 import { 
   MdDashboard, 
   MdReceipt, 
@@ -30,6 +31,7 @@ interface AdminSidebarProps {
 export function AdminSidebar({ onClose }: AdminSidebarProps) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { isSuperAdmin } = useSuperAdmin();
   
   const menuItems: MenuItem[] = [
     {
@@ -57,6 +59,8 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
       badge: undefined
     }
   ];
+
+
 
   const handleLogout = async () => {
     try {
@@ -107,7 +111,7 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
               transition={{ duration: 0.2 }}
               className="flex items-center gap-3"
             >
-              <div className="w-10 h-10 bg-gradient-to-br from-[#FF0080] to-[#A502CA] rounded-xl flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#FF4DA6] to-[#A502CA] rounded-xl flex items-center justify-center">
                 <span className="text-white font-bold text-lg">A</span>
               </div>
               <div>
@@ -124,7 +128,7 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="w-10 h-10 bg-gradient-to-br from-[#FF0080] to-[#A502CA] rounded-xl flex items-center justify-center mx-auto"
+              className="w-10 h-10 bg-gradient-to-br from-[#FF4DA6] to-[#A502CA] rounded-xl flex items-center justify-center mx-auto"
             >
               <span className="text-white font-bold text-lg">A</span>
             </motion.div>
@@ -183,7 +187,7 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
               className={`
                 group relative flex items-center p-3 rounded-xl transition-all duration-200
                 ${isActive 
-                  ? 'bg-gradient-to-r from-[#FF0080] to-[#A502CA] text-white shadow-lg' 
+                  ? 'bg-gradient-to-r from-[#FF4DA6] to-[#A502CA] text-white shadow-lg' 
                   : 'text-gray-600 hover:bg-gray-50 hover:text-[#A502CA]'
                 }
                 ${isCollapsed ? 'justify-center' : 'justify-between'}

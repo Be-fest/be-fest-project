@@ -9,6 +9,7 @@ import { User, ServiceWithProvider } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { useServiceImage } from '@/hooks/useImagePreloader';
+import { calculatePriceWithFee } from '@/utils/pricingUtils';
 
 interface PageProps {
   params: Promise<{
@@ -81,7 +82,7 @@ const convertToProviderData = (provider: User, services: ServiceWithProvider[]) 
       id: service.id, // Manter o ID real do serviço
       name: service.name,
       description: service.description || 'Serviço de qualidade para sua festa',
-      price: service.base_price,
+      price: calculatePriceWithFee(service.guest_tiers?.[0]?.base_price_per_adult || 0), // Aplicar taxa de 5%
       image: service.images_urls?.[0],
       providerId: service.provider_id // Adicionar providerId real
     });

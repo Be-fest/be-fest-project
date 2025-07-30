@@ -272,7 +272,6 @@ export default function ClientesPage() {
                   <th className="text-left p-4 font-medium text-gray-600 text-sm hidden sm:table-cell">Email</th>
                   <th className="text-left p-4 font-medium text-gray-600 text-sm hidden lg:table-cell">WhatsApp</th>
                   <th className="text-left p-4 font-medium text-gray-600 text-sm hidden lg:table-cell">Data Cadastro</th>
-                  <th className="text-left p-4 font-medium text-gray-600 text-sm">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -312,11 +311,6 @@ export default function ClientesPage() {
                     <td className="p-4 hidden lg:table-cell">
                       <span className="text-sm text-gray-600">
                         {formatDate(client.created_at)}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                        Ativo
                       </span>
                     </td>
                   </motion.tr>

@@ -6,6 +6,7 @@ import { MdCalendarToday, MdGroup, MdCheckCircle, MdCalculate, MdInfo, MdWarning
 import { getServicesAction } from '@/lib/actions/services';
 import { ServiceWithProvider } from '@/types/database';
 import { SafeHTML } from '@/components/ui';
+import { calculateMinPrice, formatPrice, calculatePriceWithFee } from '@/utils/pricingUtils';
 
 interface ProviderBudgetProps {
   providerId: string;
@@ -82,6 +83,7 @@ export function ProviderBudget({ providerId }: ProviderBudgetProps) {
       }));
     } else {
       // Adiciona o serviço
+      const minPriceInfo = calculateMinPrice(service);
       setFormData(prev => ({
         ...prev,
         selectedServices: [
@@ -89,7 +91,7 @@ export function ProviderBudget({ providerId }: ProviderBudgetProps) {
           {
             serviceId: service.id,
             serviceName: service.name,
-            price: service.price_per_guest || 0
+            price: minPriceInfo.price
           }
         ]
       }));
@@ -325,7 +327,7 @@ export function ProviderBudget({ providerId }: ProviderBudgetProps) {
                                 />
                               </div>
                               <p className="font-bold text-[#FF0080]">
-                                R$ {(service.price_per_guest || 0).toFixed(2)} por pessoa
+                                R$ {calculatePriceWithFee(service.guest_tiers?.[0]?.base_price_per_adult || 0).toFixed(2)} por pessoa
                               </p>
                             </div>
                             <div className="flex items-center gap-3">
@@ -357,7 +359,7 @@ export function ProviderBudget({ providerId }: ProviderBudgetProps) {
 
                         {/* Modal de detalhes do serviço */}
                         {showServiceDetails === service.id && (
-                          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={hideDetails}>
+                          <div className="fixed inset-0 backdrop-blur-md bg-white/20 z-50 flex items-center justify-center" onClick={hideDetails}>
                             <motion.div
                               initial={{ opacity: 0, scale: 0.9 }}
                               animate={{ opacity: 1, scale: 1 }}
@@ -372,23 +374,33 @@ export function ProviderBudget({ providerId }: ProviderBudgetProps) {
                                   fallback="Sem descrição"
                                 />
                               </div>
-                              <p className="font-semibold text-[#FF0080] mb-4">
-                                R$ {(service.price_per_guest || 0).toFixed(2)} por pessoa
-                              </p>
-                              
-                              <div className="bg-white p-4 rounded-lg mb-4 border border-gray-200">
-                                <div className="text-sm text-[#6E5963] space-y-2">
-                                  <p><strong>Preço base:</strong> R$ {service.base_price.toFixed(2)}</p>
-                                  {service.min_guests && (
-                                    <p><strong>Mínimo de convidados:</strong> {service.min_guests}</p>
-                                  )}
-                                  {service.max_guests && (
-                                    <p><strong>Máximo de convidados:</strong> {service.max_guests}</p>
-                                  )}
-                                  <p><strong>Status:</strong> {service.status === 'active' ? 'Ativo' : 'Inativo'}</p>
-                                  <p><strong>Prestador:</strong> {service.provider?.organization_name || service.provider?.full_name || 'Não informado'}</p>
-                                </div>
-                              </div>
+                              {(() => {
+                                const minPriceInfo = calculateMinPrice(service);
+                                return (
+                                  <>
+                                    <p className="font-semibold text-[#FF0080] mb-4">
+                                      {formatPrice(minPriceInfo.price)} por pessoa
+                                    </p>
+                                    
+                                    <div className="bg-white p-4 rounded-lg mb-4 border border-gray-200">
+                                      <div className="text-sm text-[#6E5963] space-y-2">
+                                        <p><strong>Preço base:</strong> {formatPrice(minPriceInfo.price)}</p>
+                                        {minPriceInfo.hasTiers && (
+                                          <p><strong>Faixa de preço:</strong> A partir de {minPriceInfo.minGuests} convidados</p>
+                                        )}
+                                        {minPriceInfo.minGuests > 0 && (
+                                          <p><strong>Mínimo de convidados:</strong> {minPriceInfo.minGuests}</p>
+                                        )}
+                                                                                {minPriceInfo.maxGuests && (
+                                          <p><strong>Máximo de convidados:</strong> {minPriceInfo.maxGuests}</p>
+                                        )}
+                                        <p><strong>Status:</strong> {service.status === 'active' ? 'Ativo' : 'Inativo'}</p>
+                                        <p><strong>Prestador:</strong> {service.provider?.organization_name || service.provider?.full_name || 'Não informado'}</p>
+                                      </div>
+                                    </div>
+                                  </>
+                                );
+                              })()}
                               
                               <button
                                 onClick={hideDetails}

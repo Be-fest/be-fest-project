@@ -108,6 +108,9 @@ export function LoginForm() {
 
   // Mensagem de query da URL
   const queryMessage = searchParams.get('message');
+  
+  // Pegar returnUrl da URL
+  const returnUrl = searchParams.get('returnUrl');
 
   const handleUserTypeChange = useCallback((type: "client" | "service_provider") => {
     setUserType(type);
@@ -236,6 +239,11 @@ export function LoginForm() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
       >
+        {/* Campo hidden para returnUrl */}
+        {returnUrl && (
+          <input type="hidden" name="returnUrl" value={returnUrl} />
+        )}
+        
         {queryMessage && (
           <motion.div 
             initial={{ opacity: 0, y: -10 }}
