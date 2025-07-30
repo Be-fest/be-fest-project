@@ -527,6 +527,8 @@ export function useAuth() {
     try {
       setLoading(true);
       
+      console.log('🔴 Iniciando logout do useAuth...');
+      
       // Limpar dados do localStorage
       clearStoredSession();
       
@@ -538,15 +540,26 @@ export function useAuth() {
       setUserData(null);
       setError(null);
       
-      console.log('Logout realizado com sucesso');
+      console.log('✅ Logout realizado com sucesso no useAuth');
+      
+      // Forçar redirecionamento
+      if (typeof window !== 'undefined') {
+        window.location.href = '/auth/login?reason=useauth_logout';
+      }
+      
     } catch (error) {
       const logoutErrorInfo = {
         message: error instanceof Error ? error.message : 'Erro desconhecido',
         stack: error instanceof Error ? error.stack : undefined
       };
       
-      console.error('Erro ao fazer logout:', logoutErrorInfo);
+      console.error('❌ Erro ao fazer logout no useAuth:', logoutErrorInfo);
       setError('Erro ao fazer logout');
+      
+      // Mesmo com erro, tentar redirecionamento
+      if (typeof window !== 'undefined') {
+        window.location.href = '/auth/login?reason=useauth_error';
+      }
     } finally {
       setLoading(false);
     }

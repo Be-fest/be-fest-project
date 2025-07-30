@@ -52,28 +52,18 @@ function UserDropdown({ user, userType }: UserDropdownProps) {
       
       console.log('🔴 Iniciando logout do Header...');
       
-      // Timeout de segurança
-      const timeoutId = setTimeout(() => {
-        console.warn('⚠️ Timeout de logout no header, forçando redirecionamento...');
-        window.location.href = '/auth/login?reason=header_timeout';
-      }, 8000);
-      
-      // Usar função utilitária de logout
+      // Usar função utilitária de logout melhorada
       const { performLogout } = await import('@/lib/logout');
       await performLogout('header_dropdown');
       
-      // Se chegou até aqui, forçar redirecionamento
-      clearTimeout(timeoutId);
-      setTimeout(() => {
-        window.location.href = '/auth/login?reason=header_manual';
-      }, 1000);
+      // Se chegou até aqui sem redirecionar, forçar redirecionamento manual
+      console.warn('⚠️ Logout concluído mas ainda na página, forçando redirecionamento...');
+      window.location.href = '/auth/login?reason=header_manual';
       
     } catch (error) {
       console.error('❌ Erro durante logout do header:', error);
       // Mesmo com erro, forçar redirecionamento
-      setTimeout(() => {
-        window.location.href = '/auth/login?reason=header_error';
-      }, 500);
+      window.location.href = '/auth/login?reason=header_error';
     }
   };
 

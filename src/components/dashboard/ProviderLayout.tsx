@@ -19,12 +19,19 @@ export function ProviderLayout({ children }: ProviderLayoutProps) {
 
   const handleLogout = async () => {
     try {
+      console.log('🔴 Iniciando logout do ProviderLayout...');
+      
       const { performLogout } = await import('@/lib/logout');
       await performLogout('provider_layout');
+      
+      // Se chegou até aqui sem redirecionar, forçar redirecionamento manual
+      console.warn('⚠️ Logout concluído mas ainda na página, forçando redirecionamento...');
+      window.location.href = '/auth/login?reason=provider_manual';
+      
     } catch (error) {
-      console.error('Erro durante logout do provider layout:', error);
-      // Fallback
-      window.location.href = '/auth/login?reason=general_error';
+      console.error('❌ Erro durante logout do provider layout:', error);
+      // Mesmo com erro, forçar redirecionamento
+      window.location.href = '/auth/login?reason=provider_error';
     }
   };
 
