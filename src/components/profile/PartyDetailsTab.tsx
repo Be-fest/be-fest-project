@@ -146,7 +146,7 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
 
   const selectAllWaitingPayment = () => {
     const waitingPaymentServices = eventServices
-      .filter(service => service.booking_status === 'waiting_payment')
+              .filter(service => service.booking_status === 'waiting_payment')
       .map(service => service.id);
     setSelectedServices(new Set(waitingPaymentServices));
   };
@@ -193,6 +193,9 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
       pending_provider_approval: { label: 'Aguardando Aprovação do Prestador', color: 'bg-yellow-100 text-yellow-700', icon: MdSchedule },
       waiting_payment: { label: 'Aguardando Pagamento', color: 'bg-orange-100 text-orange-700', icon: MdPayment },
       confirmed: { label: 'Confirmado', color: 'bg-green-100 text-green-700', icon: MdCheckCircle },
+      approved: { label: 'Aprovado', color: 'bg-green-100 text-green-700', icon: MdCheckCircle },
+      completed: { label: 'Concluído', color: 'bg-purple-100 text-purple-700', icon: MdCheckCircle },
+      in_progress: { label: 'Em Andamento', color: 'bg-blue-100 text-blue-700', icon: MdSchedule },
       rejected: { label: 'Rejeitado', color: 'bg-red-100 text-red-700', icon: MdClose },
       cancelled: { label: 'Cancelado', color: 'bg-gray-100 text-gray-700', icon: MdClose },
     }[booking_status] || { label: 'Desconhecido', color: 'bg-gray-100 text-gray-700', icon: MdWarning };
@@ -446,7 +449,7 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
                             <motion.button
                               whileHover={{ scale: 1.02 }}
                               whileTap={{ scale: 0.98 }}
-                              onClick={() => router.push(`/pagamento?eventId=${eventId}&services=${service.service_id}`)}
+                              onClick={() => router.push(`/pagamento?eventId=${eventId}&services=${service.id}`)}
                               className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 text-sm"
                             >
                               <MdPayment className="text-lg" />
@@ -457,7 +460,7 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
                               className={`px-3 py-2 text-sm rounded-lg transition-colors ${
                                 selectedServices.has(service.id)
                                   ? 'bg-green-100 text-green-700 border border-green-300'
-                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                  : 'bg-gray-200'
                               }`}
                             >
                               {selectedServices.has(service.id) ? 'Selecionado' : 'Selecionar'}
@@ -465,7 +468,25 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
                           </div>
                         )}
 
-                        {service.booking_status === 'confirmed' && (
+                        {service.booking_status === 'approved' && (
+                          <div className="flex items-center gap-2">
+                            <div className="text-sm text-green-600 font-medium">
+                              Pagamento confirmado - Prestador notificado
+                            </div>
+                            <button
+                              onClick={() => toggleServiceSelection(service.id)}
+                              className={`px-3 py-2 text-sm rounded-lg transition-colors ${
+                                selectedServices.has(service.id)
+                                  ? 'bg-green-100 text-green-700 border border-green-300'
+                                  : 'bg-gray-200'
+                              }`}
+                            >
+                              {selectedServices.has(service.id) ? 'Selecionado' : 'Selecionar'}
+                            </button>
+                          </div>
+                        )}
+
+                        {service.booking_status === 'completed' && (
                           <>
                             <button
                               onClick={() => {
@@ -488,7 +509,7 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
                           </>
                         )}
 
-                        {service.booking_status === 'rejected' && (
+                        {service.booking_status === 'cancelled' && (
                           <Link
                             href="/servicos"
                             className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
@@ -513,7 +534,7 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
                         )}
 
                         {/* Botão de remoção para todos os status */}
-                        {service.booking_status !== 'confirmed' && (
+                        {service.booking_status !== 'completed' && (
                           <button
                             onClick={() => {
                               setServiceToCancel(service.id);

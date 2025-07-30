@@ -21,7 +21,9 @@ import {
   MdArrowUpward,
   MdArrowDownward,
   MdClose,
-  MdApproval
+  MdApproval,
+  MdPayment,
+  MdWhatsapp
 } from 'react-icons/md';
 import { ProviderLayout } from '@/components/dashboard/ProviderLayout';
 import { ServiceManagement } from '@/components/dashboard/ServiceManagement';
@@ -55,7 +57,7 @@ export default function ProviderDashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'requests' | 'approved' | 'services' | 'profile'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'requests' | 'approved' | 'paid' | 'services' | 'profile'>('overview');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [selectedServices, setSelectedServices] = useState<Set<string>>(new Set());
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -297,11 +299,11 @@ export default function ProviderDashboard() {
       const results = await Promise.all(
         idsToProcess.map(async (id) => {
           if (type === 'approve') {
-            // Para aprovação, muda o status para waiting_payment
-            return await updateEventServiceStatusAction(id, 'waiting_payment');
+            // Para aprovação, muda o status para approved
+            return await updateEventServiceStatusAction(id, 'approved');
           } else {
             // Para rejeição
-            return await updateEventServiceStatusAction(id, 'rejected', 'Serviço rejeitado');
+            return await updateEventServiceStatusAction(id, 'cancelled', 'Serviço rejeitado');
           }
         })
       );
@@ -356,7 +358,7 @@ export default function ProviderDashboard() {
         if (event.event_services && event.event_services.length > 0) {
           // Verificar se TODOS os serviços do evento estão em waiting_payment
           const allEventServicesWaitingPayment = event.event_services.every(service => 
-            service.booking_status === 'waiting_payment'
+            service.booking_status === 'approved'
           );
 
           if (allEventServicesWaitingPayment) {
@@ -826,8 +828,8 @@ export default function ProviderDashboard() {
         // Verificar se o serviço pertence ao prestador logado
         service.provider_id === userData?.id &&
         // Verificar se está aprovado
-        (service.booking_status === 'waiting_payment' || 
-         service.booking_status === 'confirmed')
+        (service.booking_status === 'approved' || 
+         service.booking_status === 'completed')
       ) || []
     );
 
@@ -854,8 +856,8 @@ export default function ProviderDashboard() {
               // Filtrar apenas os serviços aprovados deste evento que pertencem ao prestador
               const eventApprovedServices = event.event_services?.filter(service => 
                 service.provider_id === userData?.id &&
-                (service.booking_status === 'waiting_payment' || 
-                 service.booking_status === 'confirmed')
+                (service.booking_status === 'approved' || 
+                 service.booking_status === 'completed')
               ) || [];
 
               // Só mostrar o evento se tiver serviços aprovados do prestador
@@ -914,10 +916,153 @@ export default function ProviderDashboard() {
                         <div className="mb-3">
                           <p className="text-sm font-medium text-gray-700">Status do Pagamento:</p>
                           <p className="text-sm text-gray-600 bg-green-50 p-2 rounded">
-                            {service.booking_status === 'waiting_payment' ? 'Aguardando pagamento do cliente' :
-                             service.booking_status === 'confirmed' ? 'Pagamento confirmado' :
+                            {service.booking_status === 'approved' ? 'Aguardando pagamento do cliente' :
+                             service.booking_status === 'completed' ? 'Pagamento confirmado' :
                              'Serviço concluído'}
                           </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderPaid = () => {
+    // Filtrar apenas serviços pagos que pertencem ao prestador logado
+    const paidServices = events.flatMap(event => 
+      event.event_services?.filter(service => 
+        // Verificar se o serviço pertence ao prestador logado
+        service.provider_id === userData?.id &&
+        // Verificar se está concluído (pago)
+        service.booking_status === 'completed'
+      ) || []
+    );
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-gray-900">Serviços Pagos</h2>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">Total: {paidServices.length}</span>
+          </div>
+        </div>
+
+        {paidServices.length === 0 ? (
+          <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-gray-100">
+            <MdPayment className="text-gray-400 text-6xl mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Nenhum serviço pago</h3>
+            <p className="text-gray-600">
+              Os serviços que foram pagos e você precisa prestar aparecerão aqui.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {events.map((event) => {
+              // Filtrar apenas os serviços pagos deste evento que pertencem ao prestador
+              const eventPaidServices = event.event_services?.filter(service => 
+                service.provider_id === userData?.id &&
+                service.booking_status === 'completed'
+              ) || [];
+
+              // Só mostrar o evento se tiver serviços pagos do prestador
+              if (eventPaidServices.length === 0) return null;
+
+              return (
+                <div key={event.id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">{event.title}</h3>
+                      <div className="flex items-center gap-6 text-gray-600">
+                        <span className="flex items-center gap-1">
+                          <MdCalendarToday className="text-sm" />
+                          {formatDate(event.event_date)}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MdLocationOn className="text-sm" />
+                          {event.location}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MdPeople className="text-sm" />
+                          {event.full_guests !== undefined && event.half_guests !== undefined && event.free_guests !== undefined
+                            ? formatGuestsInfo(event.full_guests, event.half_guests, event.free_guests)
+                            : `${event.guest_count} convidados`
+                          }
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {eventPaidServices.map((service, serviceIndex) => {
+                    const estimatedPrice = calculateEstimatedPriceForEvent(service, event);
+                    
+                    return (
+                      <div key={serviceIndex} className="bg-green-50 rounded-xl p-4 mb-4 border border-green-200">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h4 className="font-medium text-gray-900">{service.service?.name || 'Serviço Solicitado'}</h4>
+                              <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                                <MdCheckCircle className="inline w-3 h-3 mr-1" />
+                                Pago e Confirmado
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-1">
+                              <strong>Valor recebido:</strong> {formatCurrency(estimatedPrice)} (inclui 5% de taxa)
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              Preço base: {formatCurrency(calculateBasePriceForEvent(service, event))} + Taxa: {formatCurrency(estimatedPrice - calculateBasePriceForEvent(service, event))}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              Categoria: {service.service?.category || 'Não especificada'}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="mb-3">
+                          <p className="text-sm font-medium text-gray-700">Status do Serviço:</p>
+                          <p className="text-sm text-green-700 bg-green-100 p-2 rounded">
+                            <MdPayment className="inline w-4 h-4 mr-1" />
+                            Pagamento confirmado - Preste o serviço no dia do evento
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <MdEvent className="text-lg" />
+                            <span>Evento em: {formatDate(event.event_date)}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <MdLocationOn className="text-lg" />
+                            <span>{event.location}</span>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 flex items-center gap-3">
+                          <a
+                            href={`https://wa.me/5511999999999?text=Olá! Sou o prestador do serviço ${service.service?.name} para o evento ${event.title} em ${formatDate(event.event_date)}. Gostaria de confirmar os detalhes.`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm font-medium"
+                          >
+                            <MdWhatsapp className="text-lg" />
+                            Contatar Cliente
+                          </a>
+                          <button
+                            onClick={() => {
+                              // Aqui você pode implementar a lógica para marcar como concluído
+                              console.log('Marcar serviço como concluído:', service.id);
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
+                          >
+                            <MdCheckCircle className="text-lg" />
+                            Marcar como Concluído
+                          </button>
                         </div>
                       </div>
                     );
@@ -1042,6 +1187,8 @@ export default function ProviderDashboard() {
         return renderRequests();
       case 'approved':
         return renderApproved();
+      case 'paid':
+        return renderPaid();
       case 'services':
         return <ServiceManagement />;
       case 'profile':
@@ -1082,6 +1229,7 @@ export default function ProviderDashboard() {
                   { id: 'overview', label: 'Visão Geral', icon: MdDashboard },
                   { id: 'requests', label: 'Solicitações', icon: MdPendingActions },
                   { id: 'approved', label: 'Aprovados', icon: MdApproval },
+                  { id: 'paid', label: 'Serviços Pagos', icon: MdPayment },
                   { id: 'services', label: 'Meus Serviços', icon: MdBusinessCenter },
                   { id: 'profile', label: 'Perfil', icon: MdSettings }
                 ].map((tab) => (

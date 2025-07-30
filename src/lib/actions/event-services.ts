@@ -16,7 +16,7 @@ const updateEventServiceSchema = z.object({
   id: z.string().uuid('ID inválido'),
   price_per_guest_at_booking: z.coerce.number().min(0, 'Preço por convidado deve ser maior ou igual a 0').optional().nullable(),
   total_estimated_price: z.coerce.number().min(0, 'Preço total deve ser maior ou igual a 0').optional().nullable(),
-  booking_status: z.enum(['pending_provider_approval', 'waiting_payment', 'confirmed', 'rejected', 'cancelled']).optional()
+  booking_status: z.enum(['pending_provider_approval', 'approved', 'in_progress', 'completed', 'cancelled']).optional()
 })
 
 // Result types
@@ -574,7 +574,7 @@ export async function deleteEventServiceAction(eventServiceId: string): Promise<
     }
 
     // Não permitir cancelamento de orçamentos já confirmados
-    if (existingEventService.booking_status === 'confirmed') {
+    if (existingEventService.booking_status === 'completed') {
       return { success: false, error: 'Não é possível cancelar orçamentos já confirmados' }
     }
 

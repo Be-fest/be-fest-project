@@ -17,10 +17,12 @@ export default function PaymentPage() {
   const [loadingData, setLoadingData] = useState(true);
   const [paymentData, setPaymentData] = useState<PaymentLinkResponse | null>(null);
   const [generatingPayment, setGeneratingPayment] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'waiting_payment' | 'confirmed' | 'paid' | 'completed' | 'cancelled'>('waiting_payment');
   const toast = useToastGlobal();
 
   const eventId = searchParams.get('eventId');
   const serviceIdsParam = searchParams.get('services');
+  const statusParam = searchParams.get('status');
   const serviceIds = serviceIdsParam 
     ? serviceIdsParam.split(',').map(id => id.trim()).filter(id => id !== '')
     : [];
@@ -29,6 +31,17 @@ export default function PaymentPage() {
   console.log('  - eventId:', eventId);
   console.log('  - serviceIdsParam:', serviceIdsParam);
   console.log('  - serviceIds processados:', serviceIds);
+  console.log('  - statusParam:', statusParam);
+
+  // Atualizar status do pagamento baseado no parâmetro da URL
+  useEffect(() => {
+    if (statusParam) {
+      const validStatuses = ['pending', 'waiting_payment', 'confirmed', 'paid', 'completed', 'cancelled'];
+      if (validStatuses.includes(statusParam)) {
+        setPaymentStatus(statusParam as any);
+      }
+    }
+  }, [statusParam]);
 
   useEffect(() => {
     const fetchEventData = async () => {
@@ -43,7 +56,7 @@ export default function PaymentPage() {
         if (result.success && result.data) {
           // Filtrar apenas os serviços que estão aguardando pagamento
           const waitingPaymentServices = result.data.filter(
-            service => service.booking_status === 'waiting_payment'
+            service => service.booking_status === 'approved'
           );
           
           setServices(waitingPaymentServices);
@@ -162,7 +175,7 @@ export default function PaymentPage() {
   // Se temos dados do pagamento da API, usar eles
   const displayServices = paymentData?.services?.map(service => ({
     name: service.name,
-    provider: service.provider.email || 'Prestador não informado',
+    provider: service.provider.name || 'Prestador não informado',
   })) || formattedServices;
 
   const displayTotalValue = paymentData?.pricing?.total || totalValue;
@@ -219,6 +232,7 @@ export default function PaymentPage() {
             onSubmit={handlePayment}
             loading={loading}
             paymentData={paymentData}
+            paymentStatus={paymentStatus}
           />
         </div>
       </div>

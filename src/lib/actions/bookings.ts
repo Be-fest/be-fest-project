@@ -241,7 +241,7 @@ export async function createBookingAction(formData: FormData): Promise<ActionRes
       .select('id, booking_status')
       .eq('event_id', validatedData.event_id)
       .eq('service_id', validatedData.service_id)
-      .eq('booking_status', 'confirmed')
+      .eq('booking_status', 'completed')
       .single()
 
     if (!eventService) {
@@ -548,7 +548,7 @@ export async function createBookingFromEventServiceAction(eventServiceId: string
         service:services (id)
       `)
       .eq('id', eventServiceId)
-      .eq('booking_status', 'confirmed')
+      .eq('booking_status', 'completed')
       .single()
 
     if (!eventService) {

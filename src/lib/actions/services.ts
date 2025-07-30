@@ -469,7 +469,7 @@ export async function deleteServiceAction(serviceId: string): Promise<ActionResu
       .from('event_services')
       .select('id')
       .eq('service_id', serviceId)
-      .in('booking_status', ['pending_provider_approval', 'approved', 'confirmed'])
+              .in('booking_status', ['pending_provider_approval', 'approved', 'completed'])
       .limit(1)
 
     if (activeEventServices && activeEventServices.length > 0) {
@@ -494,7 +494,7 @@ export async function deleteServiceAction(serviceId: string): Promise<ActionResu
       .from('event_services')
       .delete()
       .eq('service_id', serviceId)
-      .not('booking_status', 'in', '(pending_provider_approval,approved,confirmed)')
+              .not('booking_status', 'in', '(pending_provider_approval,approved,completed)')
 
     if (eventServicesError) {
       console.error('Error deleting event services:', eventServicesError)
@@ -667,7 +667,7 @@ export async function getProviderStatsAction(): Promise<ActionResult<{
     // Calcular estatísticas
     const totalRequests = eventServices?.length || 0
     const pendingRequests = eventServices?.filter(es => es.booking_status === 'pending_provider_approval').length || 0
-    const approvedRequests = eventServices?.filter(es => es.booking_status === 'waiting_payment').length || 0
+          const approvedRequests = eventServices?.filter(es => es.booking_status === 'approved').length || 0
     const activeServicesCount = activeServices?.length || 0
     
     // Calcular receita total estimada
@@ -677,7 +677,7 @@ export async function getProviderStatsAction(): Promise<ActionResult<{
 
     // Eventos realizados (com status confirmed ou completed)
     const completedEvents = eventServices?.filter(es => 
-      es.booking_status === 'confirmed' || es.booking_status === 'completed'
+              es.booking_status === 'completed'
     ).length || 0
 
     const stats = {

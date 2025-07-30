@@ -328,7 +328,7 @@ export async function loginAction(formData: FormData): Promise<ActionResult> {
       const url = new URL(returnUrl, process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000')
       const allowedHosts = [
         'localhost:3000',
-        'localhost:3001',
+        'https://be-fest-api.onrender.com',
         process.env.NEXT_PUBLIC_SITE_URL?.replace(/^https?:\/\//, '') || ''
       ]
       

@@ -63,7 +63,7 @@ export interface PaymentError {
 function getApiBaseUrl(): string {
   // Em desenvolvimento, usar localhost na porta 3001
   if (process.env.NODE_ENV === 'development') {
-    return 'http://localhost:3001';
+    return 'https://be-fest-api.onrender.com';
   }
   
   // Em produção, usar a URL configurada ou fallback
