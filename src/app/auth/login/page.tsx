@@ -106,19 +106,6 @@ function LoginContent() {
           )}
           <LoginForm />
           
-          {/* Link para admin login */}
-          <div className="mt-4 text-center">
-            <p className="text-sm text-gray-600">
-              É administrador?{' '}
-              <a 
-                href="/auth/admin-login" 
-                className="text-[#F71875] hover:text-[#E6006F] underline font-medium"
-              >
-                Acessar painel administrativo
-              </a>
-            </p>
-          </div>
-          
           {/* Link para debug de cookies */}
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
