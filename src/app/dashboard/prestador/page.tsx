@@ -15,9 +15,9 @@ import {
   MdLocationOn,
   MdPeople,
   MdNotifications,
-  MdAdd,
+  // MdAdd,
   MdSettings,
-  MdVisibility,
+  // MdVisibility,
   MdArrowUpward,
   MdArrowDownward,
   MdClose,
@@ -130,10 +130,10 @@ export default function ProviderDashboard() {
         basePrice = guestCount > 0 ? 30 * guestCount : 500;
       }
       
-      // Adicionar taxa de 5%
+      // Adicionar taxa de 5% e arredondar para cima
       const taxRate = 0.05; // 5%
       const taxAmount = basePrice * taxRate;
-      const totalPrice = basePrice + taxAmount;
+      const totalPrice = Math.ceil(basePrice + taxAmount);
       
       return totalPrice;
     } catch (error) {

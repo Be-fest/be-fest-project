@@ -13,6 +13,7 @@ import { Header } from '@/components/Header';
 import { ServicesSkeleton } from '@/components/ui';
 import { SafeHTML } from '@/components/ui/SafeHTML';
 import { formatMinimumPrice } from '@/utils/formatters';
+import { formatMinimumPriceWithFee } from '@/utils/pricingUtils';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
@@ -65,9 +66,9 @@ const ServicesGrid = ({ services, selectedParty }: {
   };
 
   const getPriceLabel = (service: ServiceWithProvider) => {
-    // Se tem tiers de preço, usar o preço mínimo
+    // Se tem tiers de preço, usar o preço mínimo com taxa de 5%
     if (service.guest_tiers && service.guest_tiers.length > 0) {
-      const minPrice = formatMinimumPrice(service.guest_tiers);
+      const minPrice = formatMinimumPriceWithFee(service.guest_tiers);
       return `A partir de ${minPrice}`;
     }
     

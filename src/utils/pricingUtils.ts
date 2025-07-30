@@ -90,4 +90,31 @@ export function getFormattedTiers(service: any): string[] {
     
     return `${range} convidados: ${formatPrice(tier.base_price_per_adult)}/adulto`;
   });
+}
+
+// Função para calcular preço com taxa de 5% (para exibição no lado do cliente)
+export function calculatePriceWithFee(price: number): number {
+  const taxRate = 0.05; // 5%
+  const taxAmount = price * taxRate;
+  return Math.ceil(price + taxAmount);
+}
+
+// Função para formatar preço mínimo com taxa de 5% (para exibição no lado do cliente)
+export function formatMinimumPriceWithFee(guestTiers: GuestTier[]): string {
+  if (!guestTiers || guestTiers.length === 0) {
+    return 'Preço sob consulta';
+  }
+
+  // Ordenar faixas por min_total_guests e pegar a primeira (menor quantidade)
+  const sortedTiers = [...guestTiers].sort((a, b) => a.min_total_guests - b.min_total_guests);
+  const minTier = sortedTiers[0];
+
+  if (!minTier) {
+    return 'Preço sob consulta';
+  }
+
+  const basePrice = minTier.base_price_per_adult;
+  const priceWithFee = Math.ceil(calculatePriceWithFee(basePrice));
+  
+  return formatPrice(priceWithFee);
 } 

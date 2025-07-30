@@ -137,24 +137,30 @@ export const calculateEventServicePrice = (
   const fullGuests = eventData.full_guests || 0;
   const halfGuests = eventData.half_guests || 0;
   
+  let calculatedPrice = 0;
+  
   // Primeiro, tentar usar o preço por convidado
   if (serviceData.price_per_guest && serviceData.price_per_guest > 0) {
-    return calculateServiceTotalValue(fullGuests, halfGuests, serviceData.price_per_guest);
+    calculatedPrice = calculateServiceTotalValue(fullGuests, halfGuests, serviceData.price_per_guest);
   }
-  
   // Se não tem preço por convidado, usar preço base
-  if (serviceData.base_price && serviceData.base_price > 0) {
-    return serviceData.base_price;
+  else if (serviceData.base_price && serviceData.base_price > 0) {
+    calculatedPrice = serviceData.base_price;
   }
-  
   // Último recurso: usar preço de fallback ou calcular baseado em estimativa
-  if (fallbackPrice && fallbackPrice > 0) {
-    return calculateServiceTotalValue(fullGuests, halfGuests, fallbackPrice);
+  else if (fallbackPrice && fallbackPrice > 0) {
+    calculatedPrice = calculateServiceTotalValue(fullGuests, halfGuests, fallbackPrice);
+  }
+  // Preço mínimo de emergência
+  else {
+    const totalGuests = fullGuests + halfGuests;
+    calculatedPrice = totalGuests > 0 ? Math.max(500, totalGuests * 30) : 500;
   }
   
-  // Preço mínimo de emergência
-  const totalGuests = fullGuests + halfGuests;
-  return totalGuests > 0 ? Math.max(500, totalGuests * 30) : 500;
+  // Aplicar taxa de 5% para exibição no lado do cliente e arredondar para cima
+  const taxRate = 0.05; // 5%
+  const taxAmount = calculatedPrice * taxRate;
+  return Math.ceil(calculatedPrice + taxAmount);
 };
 
 /**
@@ -174,47 +180,53 @@ export const calculateCorrectServicePrice = (
   const fullGuests = eventData.full_guests || 0;
   const halfGuests = eventData.half_guests || 0;
   
+  let calculatedPrice = 0;
+  
   // Prioridade 1: Se já tem total_estimated_price calculado, usar ele
   if (eventServiceData.total_estimated_price && eventServiceData.total_estimated_price > 0) {
-    return eventServiceData.total_estimated_price;
+    calculatedPrice = eventServiceData.total_estimated_price;
   }
-  
   // Prioridade 2: Se tem price_per_guest_at_booking, usar a fórmula correta
-  if (eventServiceData.price_per_guest_at_booking && eventServiceData.price_per_guest_at_booking > 0) {
-    return calculateServiceTotalValue(fullGuests, halfGuests, eventServiceData.price_per_guest_at_booking);
+  else if (eventServiceData.price_per_guest_at_booking && eventServiceData.price_per_guest_at_booking > 0) {
+    calculatedPrice = calculateServiceTotalValue(fullGuests, halfGuests, eventServiceData.price_per_guest_at_booking);
   }
-  
   // Prioridade 3: Se tem dados do serviço original
-  if (serviceData) {
+  else if (serviceData) {
     if (serviceData.price_per_guest && serviceData.price_per_guest > 0) {
-      return calculateServiceTotalValue(fullGuests, halfGuests, serviceData.price_per_guest);
-    }
-    
-    if (serviceData.base_price && serviceData.base_price > 0) {
-      return serviceData.base_price;
+      calculatedPrice = calculateServiceTotalValue(fullGuests, halfGuests, serviceData.price_per_guest);
+    } else if (serviceData.base_price && serviceData.base_price > 0) {
+      calculatedPrice = serviceData.base_price;
     }
   }
   
-  // Fallback: Preços estimados baseados na categoria
-  const categoryPrices: Record<string, number> = {
-    'buffet': 130,
-    'bar': 25,
-    'decoracao': 15,
-    'som': 20,
-    'fotografia': 80,
-    'seguranca': 30,
-    'limpeza': 12,
-    'transporte': 35,
-    'comida e bebida': 130,
-    'decoração': 15,
-    'entretenimento': 35,
-    'espaço': 100,
-    'outros': 30
-  };
+  // Se não encontrou nenhum preço, usar fallback
+  if (calculatedPrice === 0) {
+    // Fallback: Preços estimados baseados na categoria
+    const categoryPrices: Record<string, number> = {
+      'buffet': 130,
+      'bar': 25,
+      'decoracao': 15,
+      'som': 20,
+      'fotografia': 80,
+      'seguranca': 30,
+      'limpeza': 12,
+      'transporte': 35,
+      'comida e bebida': 130,
+      'decoração': 15,
+      'entretenimento': 35,
+      'espaço': 100,
+      'outros': 30
+    };
+    
+    // Preço base mínimo para qualquer serviço
+    const totalGuests = fullGuests + halfGuests;
+    calculatedPrice = totalGuests > 0 ? Math.max(500, totalGuests * 30) : 500;
+  }
   
-  // Preço base mínimo para qualquer serviço
-  const totalGuests = fullGuests + halfGuests;
-  return totalGuests > 0 ? Math.max(500, totalGuests * 30) : 500;
+  // Aplicar taxa de 5% para exibição no lado do cliente
+  const taxRate = 0.05; // 5%
+  const taxAmount = calculatedPrice * taxRate;
+  return Math.ceil(calculatedPrice + taxAmount);
 };
 
 // Função para calcular preços baseado na lógica de full_guests e half_guests
@@ -228,53 +240,58 @@ export const calculateAdvancedPrice = (
   const normalizedFullGuests = fullGuests || 0;
   const normalizedHalfGuests = halfGuests || 0;
   
+  let calculatedPrice = 0;
+  
   // Prioridade 1: Se já tem preço total definido, usar ele
   if (service.total_estimated_price && service.total_estimated_price > 0) {
-    return service.total_estimated_price;
+    calculatedPrice = service.total_estimated_price;
   }
-  
   // Prioridade 2: Usar preço por convidado no booking (já calculado pelo sistema)
-  if (service.price_per_guest_at_booking && service.price_per_guest_at_booking > 0) {
-    return calculateServiceTotalValue(normalizedFullGuests, normalizedHalfGuests, service.price_per_guest_at_booking);
+  else if (service.price_per_guest_at_booking && service.price_per_guest_at_booking > 0) {
+    calculatedPrice = calculateServiceTotalValue(normalizedFullGuests, normalizedHalfGuests, service.price_per_guest_at_booking);
   }
-  
   // Prioridade 3: Usar preço por convidado do serviço (services.price_per_guest)
-  if (service.service?.price_per_guest && service.service.price_per_guest > 0) {
-    return calculateServiceTotalValue(normalizedFullGuests, normalizedHalfGuests, service.service.price_per_guest);
+  else if (service.service?.price_per_guest && service.service.price_per_guest > 0) {
+    calculatedPrice = calculateServiceTotalValue(normalizedFullGuests, normalizedHalfGuests, service.service.price_per_guest);
   }
-  
   // Prioridade 4: Se tem preço base definido
-  if (service.service?.base_price && service.service.base_price > 0) {
-    return service.service.base_price;
+  else if (service.service?.base_price && service.service.base_price > 0) {
+    calculatedPrice = service.service.base_price;
   }
-  
   // Fallback: Preços estimados baseados na categoria
-  const categoryPrices: Record<string, number> = {
-    'buffet': 130,
-    'bar': 25,
-    'decoracao': 15,
-    'som': 20,
-    'fotografia': 80,
-    'seguranca': 30,
-    'limpeza': 12,
-    'transporte': 35,
-    'comida e bebida': 130,
-    'decoração': 15,
-    'entretenimento': 35,
-    'espaço': 100,
-    'outros': 30
-  };
-  
-  const category = service.service?.category?.toLowerCase() || service.category?.toLowerCase();
-  const categoryPrice = categoryPrices[category] || 30;
-  
-  if (categoryPrice > 0) {
-    return calculateServiceTotalValue(normalizedFullGuests, normalizedHalfGuests, categoryPrice);
+  else {
+    const categoryPrices: Record<string, number> = {
+      'buffet': 130,
+      'bar': 25,
+      'decoracao': 15,
+      'som': 20,
+      'fotografia': 80,
+      'seguranca': 30,
+      'limpeza': 12,
+      'transporte': 35,
+      'comida e bebida': 130,
+      'decoração': 15,
+      'entretenimento': 35,
+      'espaço': 100,
+      'outros': 30
+    };
+    
+    const category = service.service?.category?.toLowerCase() || service.category?.toLowerCase();
+    const categoryPrice = categoryPrices[category] || 30;
+    
+    if (categoryPrice > 0) {
+      calculatedPrice = calculateServiceTotalValue(normalizedFullGuests, normalizedHalfGuests, categoryPrice);
+    } else {
+      // Último recurso: preço base mínimo
+      const totalGuests = normalizedFullGuests + normalizedHalfGuests;
+      calculatedPrice = totalGuests > 0 ? Math.max(500, totalGuests * 30) : 500;
+    }
   }
   
-  // Último recurso: preço base mínimo
-  const totalGuests = normalizedFullGuests + normalizedHalfGuests;
-  return totalGuests > 0 ? Math.max(500, totalGuests * 30) : 500;
+  // Aplicar taxa de 5% para exibição no lado do cliente
+  const taxRate = 0.05; // 5%
+  const taxAmount = calculatedPrice * taxRate;
+  return Math.ceil(calculatedPrice + taxAmount);
 };
 
 // Função para calcular preços considerando apenas guest_count total (para compatibilidade)
@@ -282,55 +299,65 @@ export const calculateEstimatedPrice = (
   service: any,
   guestCount: number
 ): number => {
+  let calculatedPrice = 0;
+  
   // Se já tem preço total definido, usar ele
   if (service.total_estimated_price && service.total_estimated_price > 0) {
-    return service.total_estimated_price;
+    calculatedPrice = service.total_estimated_price;
   }
-  
   // Prioridade 1: Usar preço por convidado do serviço (services.price_per_guest)
-  let pricePerGuest = 0;
-  if (service.service?.price_per_guest && service.service.price_per_guest > 0) {
-    pricePerGuest = Number(service.service.price_per_guest);
-  }
-  // Prioridade 2: Usar preço por convidado no booking
-  else if (service.price_per_guest_at_booking && service.price_per_guest_at_booking > 0) {
-    pricePerGuest = Number(service.price_per_guest_at_booking);
+  else {
+    let pricePerGuest = 0;
+    if (service.service?.price_per_guest && service.service.price_per_guest > 0) {
+      pricePerGuest = Number(service.service.price_per_guest);
+    }
+    // Prioridade 2: Usar preço por convidado no booking
+    else if (service.price_per_guest_at_booking && service.price_per_guest_at_booking > 0) {
+      pricePerGuest = Number(service.price_per_guest_at_booking);
+    }
+    
+    // Se encontrou um preço por convidado, calcular (assumindo todos como full_guests para compatibilidade)
+    if (pricePerGuest > 0 && guestCount > 0) {
+      calculatedPrice = pricePerGuest * guestCount;
+    }
+    // Prioridade 3: Se tem preço base definido
+    else if (service.service?.base_price && service.service.base_price > 0) {
+      calculatedPrice = service.service.base_price;
+    }
+    // Fallback: Preços estimados baseados na categoria
+    else {
+      const categoryPrices: Record<string, number> = {
+        'buffet': 45,
+        'bar': 25,
+        'decoracao': 15,
+        'som': 20,
+        'fotografia': 80,
+        'seguranca': 30,
+        'limpeza': 12,
+        'transporte': 35,
+        'comida e bebida': 45,
+        'decoração': 15,
+        'entretenimento': 35,
+        'espaço': 100,
+        'outros': 30
+      };
+      
+      const category = service.service?.category?.toLowerCase() || service.category?.toLowerCase();
+      const categoryPrice = categoryPrices[category] || 30;
+      
+      if (categoryPrice > 0 && guestCount > 0) {
+        calculatedPrice = categoryPrice * guestCount;
+      } else {
+        // Preço base mínimo para qualquer serviço
+        calculatedPrice = guestCount > 0 ? Math.max(500, guestCount * 30) : 500;
+      }
+    }
   }
   
-  // Se encontrou um preço por convidado, calcular (assumindo todos como full_guests para compatibilidade)
-  if (pricePerGuest > 0 && guestCount > 0) {
-    return pricePerGuest * guestCount;
-  }
-  
-  // Prioridade 3: Se tem preço base definido
-  if (service.service?.base_price && service.service.base_price > 0) {
-    return service.service.base_price;
-  }
-  
-  // Fallback: Preços estimados baseados na categoria
-  const categoryPrices: Record<string, number> = {
-    'buffet': 45,
-    'bar': 25,
-    'decoracao': 15,
-    'som': 20,
-    'fotografia': 80,
-    'seguranca': 30,
-    'limpeza': 12,
-    'transporte': 35,
-    'comida e bebida': 45,
-    'decoração': 15,
-    'entretenimento': 35,
-    'espaço': 100,
-    'outros': 30
-  };
-  
-  const category = service.service?.category?.toLowerCase() || service.category?.toLowerCase();
-  if (category && categoryPrices[category] && guestCount > 0) {
-    return categoryPrices[category] * guestCount;
-  }
-  
-  // Preço base mínimo para qualquer serviço
-  return guestCount > 0 ? Math.max(500, guestCount * 30) : 500;
+  // Aplicar taxa de 5% para exibição no lado do cliente
+  const taxRate = 0.05; // 5%
+  const taxAmount = calculatedPrice * taxRate;
+  return Math.ceil(calculatedPrice + taxAmount);
 };
 
 // Função para formatar informações de convidados
@@ -386,17 +413,21 @@ export const formatMinimumPrice = (guestTiers: any[], basePrice?: number): strin
   const minPrice = calculateMinimumPrice(guestTiers);
   
   if (minPrice && minPrice > 0) {
+    // Aplicar taxa de 5% para exibição no lado do cliente e arredondar para cima
+    const priceWithFee = Math.ceil(minPrice * 1.05);
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
-    }).format(minPrice);
+    }).format(priceWithFee);
   }
   
   if (basePrice && basePrice > 0) {
+    // Aplicar taxa de 5% para exibição no lado do cliente e arredondar para cima
+    const priceWithFee = Math.ceil(basePrice * 1.05);
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
-    }).format(basePrice);
+    }).format(priceWithFee);
   }
   
   return 'Preço sob consulta';

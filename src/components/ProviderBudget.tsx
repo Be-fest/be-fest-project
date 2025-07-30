@@ -6,7 +6,7 @@ import { MdCalendarToday, MdGroup, MdCheckCircle, MdCalculate, MdInfo, MdWarning
 import { getServicesAction } from '@/lib/actions/services';
 import { ServiceWithProvider } from '@/types/database';
 import { SafeHTML } from '@/components/ui';
-import { calculateMinPrice, formatPrice } from '@/utils/pricingUtils';
+import { calculateMinPrice, formatPrice, calculatePriceWithFee } from '@/utils/pricingUtils';
 
 interface ProviderBudgetProps {
   providerId: string;
@@ -327,7 +327,7 @@ export function ProviderBudget({ providerId }: ProviderBudgetProps) {
                                 />
                               </div>
                               <p className="font-bold text-[#FF0080]">
-                                R$ {(service.guest_tiers?.[0]?.base_price_per_adult || 0).toFixed(2)} por pessoa
+                                R$ {calculatePriceWithFee(service.guest_tiers?.[0]?.base_price_per_adult || 0).toFixed(2)} por pessoa
                               </p>
                             </div>
                             <div className="flex items-center gap-3">

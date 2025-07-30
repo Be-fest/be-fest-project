@@ -464,6 +464,44 @@ export async function deleteServiceAction(serviceId: string): Promise<ActionResu
       return { success: false, error: 'Não é possível excluir serviço com reservas ativas' }
     }
 
+    // Verificar se o serviço tem event_services ativos
+    const { data: activeEventServices } = await supabase
+      .from('event_services')
+      .select('id')
+      .eq('service_id', serviceId)
+      .in('booking_status', ['pending_provider_approval', 'approved', 'confirmed'])
+      .limit(1)
+
+    if (activeEventServices && activeEventServices.length > 0) {
+      return { success: false, error: 'Não é possível excluir serviço com solicitações ativas' }
+    }
+
+    // Excluir registros relacionados primeiro (em ordem de dependência)
+    
+    // 1. Excluir service_guest_tiers
+    const { error: guestTiersError } = await supabase
+      .from('service_guest_tiers')
+      .delete()
+      .eq('service_id', serviceId)
+
+    if (guestTiersError) {
+      console.error('Error deleting service guest tiers:', guestTiersError)
+      return { success: false, error: 'Erro ao excluir faixas de preço do serviço' }
+    }
+
+    // 2. Excluir event_services (apenas os que não estão ativos)
+    const { error: eventServicesError } = await supabase
+      .from('event_services')
+      .delete()
+      .eq('service_id', serviceId)
+      .not('booking_status', 'in', '(pending_provider_approval,approved,confirmed)')
+
+    if (eventServicesError) {
+      console.error('Error deleting event services:', eventServicesError)
+      // Não falhar aqui, pois pode não ter event_services
+    }
+
+    // 3. Finalmente, excluir o serviço
     const { error } = await supabase
       .from('services')
       .delete()

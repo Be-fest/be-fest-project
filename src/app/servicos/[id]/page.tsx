@@ -22,6 +22,7 @@ import { getServiceByIdAction } from '@/lib/actions/services';
 import { ServiceWithProvider, ServiceWithDetails } from '@/types/database';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
 import { formatMinimumPrice } from '@/utils/formatters';
+import { formatMinimumPriceWithFee } from '@/utils/pricingUtils';
 import { useAuth } from '@/hooks/useAuth';
 import { addServiceToCartAction } from '@/lib/actions/cart';
 
@@ -98,9 +99,9 @@ export default function ServiceDetailsPage() {
   const getPriceInfo = () => {
     if (!service) return null;
     
-    // Se tem tiers de preço, usar o preço mínimo
+    // Se tem tiers de preço, usar o preço mínimo com taxa de 5%
     if (service.guest_tiers && service.guest_tiers.length > 0) {
-      const minPrice = formatMinimumPrice(service.guest_tiers);
+      const minPrice = formatMinimumPriceWithFee(service.guest_tiers);
       return {
         price: `A partir de ${minPrice}`,
         unit: ''
@@ -108,11 +109,6 @@ export default function ServiceDetailsPage() {
     }
     
     // Se não tem tiers de preço, mostrar preço sob consulta
-    return {
-      price: 'Preço sob consulta',
-      unit: ''
-    };
-    
     return {
       price: 'Preço sob consulta',
       unit: ''

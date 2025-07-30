@@ -128,6 +128,32 @@ export async function getProviderEventsAction(): Promise<ActionResult<EventWithS
     const user = await getCurrentUser()
     const supabase = await createServerClient()
     
+    // Primeiro, buscar os IDs dos eventos que têm serviços do prestador atual
+    const { data: eventServices, error: eventServicesError } = await supabase
+      .from('event_services')
+      .select('event_id')
+      .eq('provider_id', user.id)
+      .not('event_id', 'is', null)
+
+    if (eventServicesError) {
+      console.error('❌ [GET_PROVIDER_EVENTS] Erro ao buscar event_services:', eventServicesError);
+      return { 
+        success: false, 
+        error: 'Erro ao buscar eventos do prestador' 
+      }
+    }
+
+    // Extrair IDs únicos dos eventos
+    const eventIds = [...new Set(eventServices?.map(es => es.event_id) || [])]
+    
+    if (eventIds.length === 0) {
+      console.log('📥 [GET_PROVIDER_EVENTS] Nenhum evento encontrado para o prestador');
+      return { 
+        success: true, 
+        data: [] 
+      }
+    }
+
     // Buscar eventos que têm serviços do prestador
     const { data: events, error } = await supabase
       .from('events')
@@ -153,7 +179,7 @@ export async function getProviderEventsAction(): Promise<ActionResult<EventWithS
           )
         )
       `)
-      .eq('event_services.provider_id', user.id)
+      .in('id', eventIds)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -164,10 +190,16 @@ export async function getProviderEventsAction(): Promise<ActionResult<EventWithS
       }
     }
 
-    console.log('✅ [GET_PROVIDER_EVENTS] Eventos encontrados:', events?.length || 0);
+    // Filtrar apenas os event_services do prestador atual
+    const filteredEvents = events?.map(event => ({
+      ...event,
+      event_services: event.event_services?.filter((es: any) => es.provider_id === user.id) || []
+    })).filter(event => event.event_services.length > 0) || []
+
+    console.log('✅ [GET_PROVIDER_EVENTS] Eventos encontrados:', filteredEvents.length);
     return { 
       success: true, 
-      data: events || [] 
+      data: filteredEvents 
     }
   } catch (error) {
     console.error('💥 [GET_PROVIDER_EVENTS] Erro inesperado:', error);
