@@ -342,7 +342,7 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
                           <motion.button
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
-                            onClick={() => router.push(`/pagamento?eventId=${eventId}&services=${service.id}`)}
+                            onClick={() => router.push(`/pagamento?eventId=${eventId}&services=${service.service_id}`)}
                             className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 text-sm"
                           >
                             <MdPayment className="text-lg" />
@@ -388,13 +388,6 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
                             <div className="text-sm text-gray-500 italic">
                               Aguardando resposta do prestador...
                             </div>
-                            <Link
-                              href="/servicos"
-                              className="flex items-center gap-1 px-3 py-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg text-sm font-medium transition-colors"
-                            >
-                              <MdSearch className="text-base" />
-                              Buscar Alternativo
-                            </Link>
                           </div>
                         )}
 

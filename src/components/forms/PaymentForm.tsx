@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
+import { PaymentLinkResponse } from '@/lib/services/payment';
 
 interface PaymentFormProps {
   services: Array<{
@@ -10,20 +11,45 @@ interface PaymentFormProps {
   }>;
   totalValue: number;
   onSubmit: () => void;
+  loading?: boolean;
+  paymentData?: PaymentLinkResponse | null;
 }
 
-export function PaymentForm({ services, totalValue, onSubmit }: PaymentFormProps) {
-  const [loading, setLoading] = useState(false);
+export function PaymentForm({ services, totalValue, onSubmit, loading: externalLoading, paymentData }: PaymentFormProps) {
+  const [internalLoading, setInternalLoading] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+
+  // Usar loading externo se fornecido, senão usar interno
+  const loading = externalLoading !== undefined ? externalLoading : internalLoading;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLoading(true);
+    
+    // Se não há loading externo, gerenciar internamente
+    if (externalLoading === undefined) {
+      setInternalLoading(true);
+    }
+    
     try {
       await onSubmit();
     } finally {
-      setLoading(false);
+      // Se não há loading externo, parar o interno
+      if (externalLoading === undefined) {
+        setInternalLoading(false);
+      }
     }
+  };
+
+  // Formatar data do evento
+  const formatEventDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('pt-BR');
+  };
+
+  // Formatar hora do evento
+  const formatEventTime = (timeString: string | null) => {
+    if (!timeString) return '';
+    return timeString.substring(0, 5); // Remove segundos
   };
 
   return (
@@ -79,6 +105,99 @@ export function PaymentForm({ services, totalValue, onSubmit }: PaymentFormProps
         </div>
       </motion.div>
 
+      {showDetails && (
+        <motion.div
+          className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          {/* Detalhes do Evento */}
+          {paymentData?.event && (
+            <div className="mb-6">
+              <h3 className="font-medium text-[#520029] text-sm md:text-base mb-3">Detalhes do Evento:</h3>
+              <div className="space-y-2 text-sm">
+                <p><span className="font-medium">Evento:</span> {paymentData.event.title}</p>
+                <p><span className="font-medium">Data:</span> {formatEventDate(paymentData.event.event_date)}</p>
+                {paymentData.event.start_time && (
+                  <p><span className="font-medium">Horário:</span> {formatEventTime(paymentData.event.start_time)}</p>
+                )}
+                {paymentData.event.location && (
+                  <p><span className="font-medium">Local:</span> {paymentData.event.location}</p>
+                )}
+                <p><span className="font-medium">Convidados:</span> {paymentData.event.total_guests} convidados</p>
+                <div className="mt-2 space-y-1">
+                  <div className="flex items-center gap-2 text-xs">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span className="text-gray-600">{paymentData.event.full_guests} inteira</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                    <span className="text-gray-600">{paymentData.event.half_guests} meias</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                    <span className="text-gray-600">{paymentData.event.free_guests} free</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Serviços */}
+          <div className="mb-6">
+            <h3 className="font-medium text-[#520029] text-sm md:text-base mb-3">Serviços incluídos:</h3>
+            <div className="space-y-3">
+              {paymentData?.services ? (
+                paymentData.services.map((service, index) => (
+                  <div key={index} className="flex justify-between items-start py-3 border-b border-gray-100 last:border-b-0">
+                    <div className="flex-1">
+                      <p className="font-medium text-[#520029] text-sm">{service.name}</p>
+                      <p className="text-gray-500 text-xs mt-1">
+                        <span className="font-medium">Categoria:</span> {service.category}
+                      </p>
+                      <p className="text-gray-500 text-xs mt-1">
+                        <span className="font-medium">Preço:</span> R$ {service.price_per_guest.toFixed(2)} por convidado
+                      </p>
+                      <p className="text-gray-500 text-xs mt-1">
+                        <span className="font-medium">Prestador:</span> {service.provider.name}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-[#520029] text-sm">
+                        R$ {service.service_value.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                services.map((service, index) => (
+                  <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
+                    <div>
+                      <p className="font-medium text-[#520029] text-sm">{service.name}</p>
+                      <p className="text-gray-500 text-xs">{service.provider}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Resumo Financeiro */}
+          {paymentData?.pricing && (
+            <div className="border-t pt-4">
+              <h3 className="font-medium text-[#520029] text-sm md:text-base mb-3">Resumo Financeiro:</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between font-bold text-base pt-2 border-t">
+                  <span>Total:</span>
+                  <span>R$ {paymentData.pricing.total.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </motion.div>
+      )}
+
       <motion.div
         className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100"
         initial={{ opacity: 0, y: 20 }}
@@ -98,7 +217,7 @@ export function PaymentForm({ services, totalValue, onSubmit }: PaymentFormProps
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#F71875] hover:bg-[#E6006F] text-white font-medium py-3 md:py-4 px-6 md:px-8 rounded-xl transition-colors relative overflow-hidden group text-sm md:text-base"
+            className="w-full bg-[#F71875] hover:bg-[#E6006F] text-white font-medium py-3 md:py-4 px-6 md:px-8 rounded-xl transition-colors relative overflow-hidden group text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span className="relative z-10">
               {loading ? 'Processando...' : 'Pagar'}

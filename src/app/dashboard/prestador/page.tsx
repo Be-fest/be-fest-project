@@ -32,7 +32,7 @@ import { getProviderServicesAction, getProviderStatsAction } from '@/lib/actions
 import { updateEventServiceStatusAction, updateEventServiceAction } from '@/lib/actions/event-services';
 import { EventWithServices, Service } from '@/types/database';
 import { useAuth } from '@/hooks/useAuth';
-import { calculateAdvancedPrice, formatGuestsInfo } from '@/utils/formatters';
+import { formatGuestsInfo } from '@/utils/formatters';
 
 export default function ProviderDashboard() {
   const { userData } = useAuth();
