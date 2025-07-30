@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSuperAdmin } from '@/hooks/useSuperAdmin';
 import { 
   MdDashboard, 
   MdReceipt, 
@@ -30,6 +31,7 @@ interface AdminSidebarProps {
 export function AdminSidebar({ onClose }: AdminSidebarProps) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { isSuperAdmin } = useSuperAdmin();
   
   const menuItems: MenuItem[] = [
     {
@@ -57,6 +59,8 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
       badge: undefined
     }
   ];
+
+
 
   const handleLogout = async () => {
     try {

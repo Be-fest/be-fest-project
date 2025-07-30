@@ -13,8 +13,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/prestadores') ||
     pathname.startsWith('/servicos') ||
     pathname.startsWith('/prestador/') ||
-    pathname.startsWith('/debug-cookies') ||
-    pathname.startsWith('/test-session') ||
+    pathname.startsWith('/super-admin') ||
     pathname === '/favicon.ico' ||
     pathname.includes('.')
   ) {
@@ -29,8 +28,14 @@ export async function middleware(request: NextRequest) {
     '/admin'
   ];
 
+  // Rotas que precisam de super-admin
+  const superAdminRoutes = [
+    '/admin/cadastrar-admin'
+  ];
+
   // Verificar se a rota atual é protegida
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
+  const isSuperAdminRoute = superAdminRoutes.some(route => pathname.startsWith(route));
   
   if (!isProtectedRoute) {
     return NextResponse.next();
