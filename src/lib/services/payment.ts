@@ -45,8 +45,8 @@ export interface Pricing {
 
 export interface PaymentLinkResponse {
   preference_id: string;
-  init_point: string;
-  sandbox_init_point: string;
+  init_point: string; // Link de produção - sempre usado
+  sandbox_init_point: string; // Link de sandbox - não usado mais
   event: EventDetails;
   services: ServiceDetail[];
   pricing: Pricing;
@@ -125,10 +125,8 @@ export async function generatePaymentLink(
 
 // Função para redirecionar para o pagamento
 export function redirectToPayment(paymentData: PaymentLinkResponse) {
-  // Em desenvolvimento, usar sandbox_init_point
-  const paymentUrl = process.env.NODE_ENV === 'production' 
-    ? paymentData.init_point 
-    : paymentData.sandbox_init_point;
+  // Sempre usar o link de produção (init_point)
+  const paymentUrl = paymentData.init_point;
   
   console.log('🔗 Redirecionando para:', paymentUrl);
   window.location.href = paymentUrl;

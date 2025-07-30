@@ -23,6 +23,8 @@ import {
   MdWhatsapp,
   MdCheckCircle,
   MdSchedule,
+  MdCheckBox,
+  MdCheckBoxOutlineBlank,
 } from 'react-icons/md';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PartyConfigForm } from '@/components/PartyConfigForm';
@@ -48,6 +50,8 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
   const [error, setError] = useState<string | null>(null);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [serviceToCancel, setServiceToCancel] = useState<string | null>(null);
+  const [selectedServices, setSelectedServices] = useState<Set<string>>(new Set());
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
 
 
 
@@ -125,6 +129,46 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
       style: 'currency',
       currency: 'BRL',
     }).format(price);
+  };
+
+  // Funções para seleção múltipla
+  const toggleServiceSelection = (serviceId: string) => {
+    setSelectedServices(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(serviceId)) {
+        newSet.delete(serviceId);
+      } else {
+        newSet.add(serviceId);
+      }
+      return newSet;
+    });
+  };
+
+  const selectAllWaitingPayment = () => {
+    const waitingPaymentServices = eventServices
+      .filter(service => service.booking_status === 'waiting_payment')
+      .map(service => service.id);
+    setSelectedServices(new Set(waitingPaymentServices));
+  };
+
+  const clearSelection = () => {
+    setSelectedServices(new Set());
+  };
+
+  const getSelectedServicesTotal = () => {
+    return eventServices
+      .filter(service => selectedServices.has(service.id))
+      .reduce((total, service) => {
+        return total + calculateAdvancedPrice(service, event?.full_guests || 0, event?.half_guests || 0, event?.free_guests || 0);
+      }, 0);
+  };
+
+  const handlePaySelectedServices = () => {
+    const selectedServiceIds = Array.from(selectedServices);
+    if (selectedServiceIds.length > 0) {
+      const serviceIdsParam = selectedServiceIds.join(',');
+      router.push(`/pagamento?eventId=${eventId}&services=${serviceIdsParam}`);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -296,14 +340,57 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
       {/* Services */}
       <div className="bg-white rounded-lg shadow-sm p-6">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">Serviços</h3>
-          <Link
-            href={`/servicos?partyId=${eventId}&partyName=${encodeURIComponent(event.title)}`}
-            className="flex items-center gap-2 px-4 py-2 bg-[#A502CA] text-white rounded-lg hover:bg-[#8B0A9E] transition-colors"
-          >
-            <MdAdd className="text-lg" />
-            Adicionar Serviço
-          </Link>
+          <div className="flex items-center gap-3">
+            <h3 className="text-lg font-semibold text-gray-900">Serviços</h3>
+            {selectedServices.size > 0 && (
+              <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                {selectedServices.size} selecionado{selectedServices.size > 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {/* Controles de seleção múltipla */}
+            {eventServices.some(service => service.booking_status === 'waiting_payment') && (
+              <>
+                {selectedServices.size > 0 ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">
+                      {selectedServices.size} serviço{selectedServices.size > 1 ? 's' : ''} selecionado{selectedServices.size > 1 ? 's' : ''}
+                    </span>
+                    <button
+                      onClick={clearSelection}
+                      className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      Limpar
+                    </button>
+                    <button
+                      onClick={handlePaySelectedServices}
+                      className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm font-medium"
+                    >
+                      <MdPayment className="text-lg" />
+                      Pagar Selecionados ({formatPrice(getSelectedServicesTotal())})
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={selectAllWaitingPayment}
+                      className="px-3 py-1 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                    >
+                      Selecionar Todos para Pagamento
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+            <Link
+              href={`/servicos?partyId=${eventId}&partyName=${encodeURIComponent(event.title)}`}
+              className="flex items-center gap-2 px-4 py-2 bg-[#A502CA] text-white rounded-lg hover:bg-[#8B0A9E] transition-colors"
+            >
+              <MdAdd className="text-lg" />
+              Adicionar Serviço
+            </Link>
+          </div>
         </div>
         
         {eventServices.length > 0 ? (
@@ -311,11 +398,27 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
             {eventServices.map((service) => (
               <div
                 key={service.id}
-                className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+                className={`p-4 border rounded-lg hover:shadow-md transition-shadow ${
+                  selectedServices.has(service.id) 
+                    ? 'border-green-500 bg-green-50' 
+                    : 'border-gray-200'
+                }`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-4 flex-1">
-
+                    {/* Checkbox para seleção */}
+                    {service.booking_status === 'waiting_payment' && (
+                      <button
+                        onClick={() => toggleServiceSelection(service.id)}
+                        className="mt-1 p-1 hover:bg-gray-100 rounded transition-colors"
+                      >
+                        {selectedServices.has(service.id) ? (
+                          <MdCheckBox className="w-5 h-5 text-green-600" />
+                        ) : (
+                          <MdCheckBoxOutlineBlank className="w-5 h-5 text-gray-400" />
+                        )}
+                      </button>
+                    )}
                     
                     <div className="flex-1">
                       <div className="flex items-start justify-between">
@@ -339,15 +442,27 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
                       {/* Ações específicas por status */}
                       <div className="mt-3 flex items-center gap-3">
                         {service.booking_status === 'waiting_payment' && (
-                          <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => router.push(`/pagamento?eventId=${eventId}&services=${service.service_id}`)}
-                            className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 text-sm"
-                          >
-                            <MdPayment className="text-lg" />
-                            Pagar Agora
-                          </motion.button>
+                          <div className="flex items-center gap-2">
+                            <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => router.push(`/pagamento?eventId=${eventId}&services=${service.service_id}`)}
+                              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 text-sm"
+                            >
+                              <MdPayment className="text-lg" />
+                              Pagar Agora
+                            </motion.button>
+                            <button
+                              onClick={() => toggleServiceSelection(service.id)}
+                              className={`px-3 py-2 text-sm rounded-lg transition-colors ${
+                                selectedServices.has(service.id)
+                                  ? 'bg-green-100 text-green-700 border border-green-300'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              }`}
+                            >
+                              {selectedServices.has(service.id) ? 'Selecionado' : 'Selecionar'}
+                            </button>
+                          </div>
                         )}
 
                         {service.booking_status === 'confirmed' && (
