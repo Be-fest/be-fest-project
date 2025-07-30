@@ -501,7 +501,7 @@ export async function getAllEventServicesAction(): Promise<ActionResult<Array<{
   event_title: string;
   event_date: string;
   event_location: string;
-  event_status: string;
+  service_status: string;
   client_name: string;
   client_email: string;
   client_whatsapp: string;
@@ -521,7 +521,7 @@ export async function getAllEventServicesAction(): Promise<ActionResult<Array<{
 }>>> {
   try {
     const supabase = createClient();
-    
+
     const { data: eventServices, error } = await supabase
       .from('event_services')
       .select(`
@@ -529,9 +529,9 @@ export async function getAllEventServicesAction(): Promise<ActionResult<Array<{
         event_id,
         service_id,
         provider_id,
-        booking_status,
         price_per_guest_at_booking,
         total_estimated_price,
+        booking_status,
         created_at,
         updated_at,
         event:events (
@@ -539,10 +539,8 @@ export async function getAllEventServicesAction(): Promise<ActionResult<Array<{
           title,
           event_date,
           location,
-          status,
           guest_count,
-          client:users!client_id (
-            id,
+          client:users (
             full_name,
             email,
             whatsapp_number
@@ -553,12 +551,12 @@ export async function getAllEventServicesAction(): Promise<ActionResult<Array<{
           name,
           category,
           description,
-          provider:users!provider_id (
-            id,
+          status,
+          provider:users (
             full_name,
+            organization_name,
             email,
-            whatsapp_number,
-            organization_name
+            whatsapp_number
           )
         )
       `)
@@ -583,7 +581,8 @@ export async function getAllEventServicesAction(): Promise<ActionResult<Array<{
         event_title: event?.title || 'N/A',
         event_date: event?.event_date || 'N/A',
         event_location: event?.location || 'N/A',
-        event_status: event?.status || 'N/A',
+        // event_status removido pois não existe em events
+        service_status: service?.status || 'N/A',
         client_name: client?.full_name || 'N/A',
         client_email: client?.email || 'N/A',
         client_whatsapp: client?.whatsapp_number || 'Não informado',
@@ -606,9 +605,9 @@ export async function getAllEventServicesAction(): Promise<ActionResult<Array<{
     return { success: true, data: formattedEventServices };
   } catch (error) {
     console.error('Event services fetch failed:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Erro ao buscar serviços de eventos' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Erro ao buscar serviços de eventos'
     };
   }
-} 
+}
