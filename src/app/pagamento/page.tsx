@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PaymentForm } from '@/components/forms';
 import { AuthLayout } from '@/components/AuthLayout';
@@ -9,7 +9,7 @@ import { getEventServicesAction } from '@/lib/actions/event-services';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
 import { EventServiceWithDetails } from '@/types/database';
 
-export default function PaymentPage() {
+function PaymentPageContent() {
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [services, setServices] = useState<EventServiceWithDetails[]>([]);
@@ -272,5 +272,28 @@ export default function PaymentPage() {
         </div>
       </div>
     </AuthLayout>
+  );
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense fallback={
+      <AuthLayout>
+        <div className="relative w-full px-4 sm:px-0">
+          <div className="w-full max-w-sm mx-auto sm:max-w-md">
+            <div className="animate-pulse space-y-6">
+              <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+                <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+                <div className="h-12 bg-gray-200 rounded w-full"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </AuthLayout>
+    }>
+      <PaymentPageContent />
+    </Suspense>
   );
 } 

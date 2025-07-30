@@ -121,7 +121,7 @@ export default function AdminOrders() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: 0.2 }}
-        className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4"
+        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4"
       >
         <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm border border-gray-100">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
@@ -157,6 +157,15 @@ export default function AdminOrders() {
               <p className="text-lg sm:text-2xl font-bold text-red-600">{stats.rejected}</p>
             </div>
             <div className="w-2 h-2 bg-red-400 rounded-full self-end sm:self-auto mt-2 sm:mt-0"></div>
+          </div>
+        </div>
+        <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm border border-gray-100">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex-1">
+              <p className="text-xs sm:text-sm text-gray-600">Cancelados</p>
+              <p className="text-lg sm:text-2xl font-bold text-gray-600">{stats.cancelled}</p>
+            </div>
+            <div className="w-2 h-2 bg-gray-400 rounded-full self-end sm:self-auto mt-2 sm:mt-0"></div>
           </div>
         </div>
       </motion.div>

@@ -9,7 +9,10 @@ import {
   MdPeople,
   MdRefresh,
   MdDateRange,
-  MdError
+  MdError,
+  MdPayment,
+  MdCheckCircle,
+  MdAccountBalance
 } from 'react-icons/md';
 import { StatCard } from '@/components/admin/StatCard';
 import { getAdminStatsAction } from '@/lib/actions/admin';
@@ -83,56 +86,69 @@ export default function AdminDashboard() {
     loadStats();
   }, []);
 
+  // Calcular serviços aguardando pagamento (eventos com status waiting_payment)
+  const servicesAwaitingPayment = stats.eventsByStatus.waiting_payment;
+  
+  // Calcular serviços pagos (eventos com status completed)
+  const servicesPaid = stats.eventsByStatus.completed;
+  
+  // Calcular renda estimada em taxas (assumindo 10% de taxa sobre serviços aprovados)
+  const estimatedFeeRevenue = stats.totalRevenue * 0.1;
+
   const statsCards = [
     {
-      title: 'Festas Ativas',
-      value: stats.totalActiveEvents.toString(),
-      icon: MdCelebration,
-      trend: '+12%'
+      title: 'Serviços Aguardando Pagamento',
+      value: servicesAwaitingPayment.toString(),
+      icon: MdPayment,
+      trend: '+12%',
+      color: 'text-yellow-600'
     },
     {
-      title: 'Pedidos Pendentes',
-      value: stats.totalPendingRequests.toString(),
-      icon: MdPending,
-      trend: '+5%'
+      title: 'Serviços Pagos',
+      value: servicesPaid.toString(),
+      icon: MdCheckCircle,
+      trend: '+5%',
+      color: 'text-green-600'
     },
     {
-      title: 'Faturamento Mensal',
-      value: formatCurrency(stats.monthlyRevenue),
+      title: 'Renda Estimada',
+      value: formatCurrency(stats.totalRevenue),
       icon: MdAttachMoney,
-      trend: '+8%'
+      trend: '+8%',
+      color: 'text-blue-600'
     },
     {
-      title: 'Novos Clientes',
-      value: stats.newClients.toString(),
-      icon: MdPeople,
-      trend: '+15%'
+      title: 'Renda em Taxas',
+      value: formatCurrency(estimatedFeeRevenue),
+      icon: MdAccountBalance,
+      trend: '+15%',
+      color: 'text-purple-600'
     }
   ];
 
   const additionalStatsCards = [
     {
+      title: 'Total de Clientes',
+      value: stats.totalClients.toString(),
+      icon: MdPeople,
+      color: 'text-blue-600'
+    },
+    {
+      title: 'Total de Prestadores',
+      value: stats.totalProviders.toString(),
+      icon: MdCelebration,
+      color: 'text-purple-600'
+    },
+    {
       title: 'Total de Eventos',
       value: stats.totalEvents.toString(),
-      icon: MdCelebration,
-      color: 'text-blue-600'
+      icon: MdDateRange,
+      color: 'text-green-600'
     },
     {
       title: 'Total de Serviços',
       value: stats.totalEventServices.toString(),
       icon: MdPending,
-      color: 'text-purple-600'
-    },
-    {
-      title: 'Total de Reservas',
-      value: stats.totalBookings.toString(),
-      icon: MdAttachMoney,
-      color: 'text-green-600'
-    },
-    {
-      title: 'Receita Total',
-      value: formatCurrency(stats.totalRevenue),
-      icon: MdPeople,
       color: 'text-orange-600'
     }
   ];
@@ -370,6 +386,10 @@ export default function AdminDashboard() {
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Receita Total</span>
               <span className="font-bold text-blue-600">{formatCurrency(stats.totalRevenue)}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Renda em Taxas (10%)</span>
+              <span className="font-bold text-purple-600">{formatCurrency(estimatedFeeRevenue)}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Média por Evento</span>

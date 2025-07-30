@@ -9,9 +9,10 @@ interface StatCardProps {
   icon: IconType;
   trend?: string;
   delay?: number;
+  color?: string;
 }
 
-export function StatCard({ title, value, icon: Icon, trend, delay = 0 }: StatCardProps) {
+export function StatCard({ title, value, icon: Icon, trend, delay = 0, color }: StatCardProps) {
   const isPositiveTrend = trend?.startsWith('+');
   
   return (
@@ -34,8 +35,8 @@ export function StatCard({ title, value, icon: Icon, trend, delay = 0 }: StatCar
             </p>
           )}
         </div>
-        <div className="bg-primary-light p-3 rounded-lg">
-          <Icon className="text-2xl text-white" />
+        <div className={`p-3 rounded-lg ${color ? 'bg-gray-100' : 'bg-primary-light'}`}>
+          <Icon className={`text-2xl ${color || 'text-white'}`} />
         </div>
       </div>
     </motion.div>

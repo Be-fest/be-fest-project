@@ -5,19 +5,29 @@ import { motion } from 'framer-motion';
 import { MdEdit, MdDelete, MdVisibility } from 'react-icons/md';
 import { StatusBadge } from './StatusBadge';
 import { getAllEventServicesAction } from '@/lib/actions/admin';
+import { OrderStatus } from '@/types/admin';
 
 interface EventService {
   id: string;
+  event_id: string;
+  service_id: string;
+  provider_id: string;
   event_title: string;
   event_date: string;
   event_location: string;
+  event_status: string;
   client_name: string;
   client_email: string;
+  client_whatsapp: string;
   service_name: string;
   service_category: string;
+  service_description: string;
   provider_name: string;
   provider_email: string;
+  provider_whatsapp: string;
+  provider_organization: string;
   booking_status: string;
+  price_per_guest_at_booking: number;
   total_estimated_price: number;
   guest_count: number;
   created_at: string;
@@ -84,18 +94,28 @@ export function OrdersTable({ searchTerm = '', statusFilter = 'todos' }: OrdersT
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
-  const getStatusLabel = (status: string) => {
+  const getStatusLabel = (status: string): OrderStatus => {
     switch (status) {
+      // Event service statuses
       case 'pending_provider_approval':
-        return 'pending_provider_approval';
+        return 'solicitacao_enviada';
       case 'approved':
-        return 'approved';
+        return 'confirmado';
       case 'rejected':
-        return 'rejected';
+        return 'cancelado';
       case 'cancelled':
-        return 'cancelled';
+        return 'cancelado';
+      // Event statuses
+      case 'draft':
+        return 'solicitacao_enviada';
+      case 'published':
+        return 'solicitacao_enviada';
+      case 'waiting_payment':
+        return 'aguardando_pagamento';
+      case 'completed':
+        return 'concluido';
       default:
-        return status;
+        return 'solicitacao_enviada';
     }
   };
 
@@ -126,7 +146,8 @@ export function OrdersTable({ searchTerm = '', statusFilter = 'todos' }: OrdersT
               <th className="text-left py-4 px-6 font-medium text-white">Serviço</th>
               <th className="text-left py-4 px-6 font-medium text-white">Valor</th>
               <th className="text-left py-4 px-6 font-medium text-white">Convidados</th>
-              <th className="text-left py-4 px-6 font-medium text-white">Status</th>
+              <th className="text-left py-4 px-6 font-medium text-white">Status Evento</th>
+              <th className="text-left py-4 px-6 font-medium text-white">Status Serviço</th>
               <th className="text-left py-4 px-6 font-medium text-white">Data do Evento</th>
               <th className="text-left py-4 px-6 font-medium text-white">Ações</th>
             </tr>
@@ -147,31 +168,43 @@ export function OrdersTable({ searchTerm = '', statusFilter = 'todos' }: OrdersT
                   <div>
                     <div className="font-medium text-gray-900">{es.event_title}</div>
                     <div className="text-sm text-gray-500">{es.event_location || 'Local não informado'}</div>
+                    <div className="text-xs text-gray-400">ID: {es.event_id.slice(0, 8)}...</div>
                   </div>
                 </td>
                 <td className="py-4 px-6">
                   <div>
                     <div className="font-medium text-gray-900">{es.client_name}</div>
                     <div className="text-sm text-gray-500">{es.client_email}</div>
+                    <div className="text-xs text-gray-400">{es.client_whatsapp}</div>
                   </div>
                 </td>
                 <td className="py-4 px-6">
                   <div>
                     <div className="font-medium text-gray-900">{es.provider_name}</div>
                     <div className="text-sm text-gray-500">{es.provider_email}</div>
+                    <div className="text-xs text-gray-400">{es.provider_whatsapp}</div>
                   </div>
                 </td>
                 <td className="py-4 px-6 text-gray-900">
                   <div>
                     <div className="font-medium">{es.service_name}</div>
                     <div className="text-sm text-gray-500">{es.service_category}</div>
+                    <div className="text-xs text-gray-400">ID: {es.service_id.slice(0, 8)}...</div>
                   </div>
                 </td>
                 <td className="py-4 px-6 font-medium text-gray-900">
-                  {formatCurrency(es.total_estimated_price)}
+                  <div>
+                    <div>{formatCurrency(es.total_estimated_price)}</div>
+                    <div className="text-xs text-gray-500">
+                      {formatCurrency(es.price_per_guest_at_booking)}/convidado
+                    </div>
+                  </div>
                 </td>
                 <td className="py-4 px-6 text-gray-600">
                   {es.guest_count}
+                </td>
+                <td className="py-4 px-6">
+                  <StatusBadge status={getStatusLabel(es.event_status)} />
                 </td>
                 <td className="py-4 px-6">
                   <StatusBadge status={getStatusLabel(es.booking_status)} />
@@ -214,7 +247,10 @@ export function OrdersTable({ searchTerm = '', statusFilter = 'todos' }: OrdersT
                 <span className="font-mono text-xs text-gray-500">
                   {es.id.slice(0, 8)}...
                 </span>
-                <StatusBadge status={getStatusLabel(es.booking_status)} size="sm" />
+                <div className="flex gap-1">
+                  <StatusBadge status={getStatusLabel(es.event_status)} size="sm" />
+                  <StatusBadge status={getStatusLabel(es.booking_status)} size="sm" />
+                </div>
               </div>
               <div className="flex gap-1">
                 <button className="p-2 text-gray-600 hover:text-primary hover:bg-primary-light rounded-lg transition-colors">
@@ -235,11 +271,13 @@ export function OrdersTable({ searchTerm = '', statusFilter = 'todos' }: OrdersT
                 <p className="text-xs text-gray-500 uppercase tracking-wide">Evento</p>
                 <p className="font-medium text-gray-900">{es.event_title}</p>
                 <p className="text-sm text-gray-500">{es.event_location || 'Local não informado'}</p>
+                <p className="text-xs text-gray-400">ID: {es.event_id.slice(0, 8)}...</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500 uppercase tracking-wide">Cliente</p>
                 <p className="font-medium text-gray-900">{es.client_name}</p>
                 <p className="text-sm text-gray-500">{es.client_email}</p>
+                <p className="text-xs text-gray-400">{es.client_whatsapp}</p>
               </div>
             </div>
 
@@ -249,19 +287,22 @@ export function OrdersTable({ searchTerm = '', statusFilter = 'todos' }: OrdersT
                 <p className="text-xs text-gray-500 uppercase tracking-wide">Prestador</p>
                 <p className="font-medium text-gray-900">{es.provider_name}</p>
                 <p className="text-sm text-gray-500">{es.provider_email}</p>
+                <p className="text-xs text-gray-400">{es.provider_whatsapp}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500 uppercase tracking-wide">Serviço</p>
                 <p className="text-gray-900">{es.service_name}</p>
                 <p className="text-sm text-gray-500">{es.service_category}</p>
+                <p className="text-xs text-gray-400">ID: {es.service_id.slice(0, 8)}...</p>
               </div>
             </div>
 
             {/* Detalhes */}
             <div className="flex justify-between items-center pt-2 border-t border-gray-100">
               <div>
-                <p className="text-xs text-gray-500">Valor</p>
+                <p className="text-xs text-gray-500">Valor Total</p>
                 <p className="font-semibold text-primary">{formatCurrency(es.total_estimated_price)}</p>
+                <p className="text-xs text-gray-400">{formatCurrency(es.price_per_guest_at_booking)}/convidado</p>
               </div>
               <div className="text-center">
                 <p className="text-xs text-gray-500">Convidados</p>

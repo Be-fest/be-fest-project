@@ -495,16 +495,25 @@ export async function getAllServicesAction(): Promise<ActionResult<Array<{
 
 export async function getAllEventServicesAction(): Promise<ActionResult<Array<{
   id: string;
+  event_id: string;
+  service_id: string;
+  provider_id: string;
   event_title: string;
   event_date: string;
   event_location: string;
+  event_status: string;
   client_name: string;
   client_email: string;
+  client_whatsapp: string;
   service_name: string;
   service_category: string;
+  service_description: string;
   provider_name: string;
   provider_email: string;
+  provider_whatsapp: string;
+  provider_organization: string;
   booking_status: string;
+  price_per_guest_at_booking: number;
   total_estimated_price: number;
   guest_count: number;
   created_at: string;
@@ -517,27 +526,39 @@ export async function getAllEventServicesAction(): Promise<ActionResult<Array<{
       .from('event_services')
       .select(`
         id,
+        event_id,
+        service_id,
+        provider_id,
         booking_status,
+        price_per_guest_at_booking,
         total_estimated_price,
-        guest_count,
         created_at,
         updated_at,
         event:events (
+          id,
           title,
           event_date,
           location,
+          status,
+          guest_count,
           client:users!client_id (
+            id,
             full_name,
-            email
+            email,
+            whatsapp_number
           )
         ),
         service:services (
+          id,
           name,
           category,
+          description,
           provider:users!provider_id (
+            id,
             full_name,
-            organization_name,
-            email
+            email,
+            whatsapp_number,
+            organization_name
           )
         )
       `)
@@ -548,24 +569,39 @@ export async function getAllEventServicesAction(): Promise<ActionResult<Array<{
       return { success: false, error: error.message };
     }
 
-    const formattedEventServices = eventServices?.map(es => ({
-      id: es.id,
-      event_title: (es.event as any)?.title || 'N/A',
-      event_date: (es.event as any)?.event_date || 'N/A',
-      event_location: (es.event as any)?.location || 'N/A',
-      client_name: ((es.event as any)?.client as any)?.full_name || 'N/A',
-      client_email: ((es.event as any)?.client as any)?.email || 'N/A',
-      service_name: (es.service as any)?.name || 'N/A',
-      service_category: (es.service as any)?.category || 'N/A',
-      provider_name: ((es.service as any)?.provider as any)?.organization_name || 
-                    ((es.service as any)?.provider as any)?.full_name || 'N/A',
-      provider_email: ((es.service as any)?.provider as any)?.email || 'N/A',
-      booking_status: es.booking_status || 'pending_provider_approval',
-      total_estimated_price: es.total_estimated_price || 0,
-      guest_count: es.guest_count || 0,
-      created_at: es.created_at,
-      updated_at: es.updated_at,
-    })) || [];
+    const formattedEventServices = eventServices?.map(es => {
+      const event = es.event as any;
+      const service = es.service as any;
+      const client = event?.client as any;
+      const provider = service?.provider as any;
+
+      return {
+        id: es.id,
+        event_id: es.event_id,
+        service_id: es.service_id,
+        provider_id: es.provider_id,
+        event_title: event?.title || 'N/A',
+        event_date: event?.event_date || 'N/A',
+        event_location: event?.location || 'N/A',
+        event_status: event?.status || 'N/A',
+        client_name: client?.full_name || 'N/A',
+        client_email: client?.email || 'N/A',
+        client_whatsapp: client?.whatsapp_number || 'Não informado',
+        service_name: service?.name || 'N/A',
+        service_category: service?.category || 'N/A',
+        service_description: service?.description || 'N/A',
+        provider_name: provider?.organization_name || provider?.full_name || 'N/A',
+        provider_email: provider?.email || 'N/A',
+        provider_whatsapp: provider?.whatsapp_number || 'Não informado',
+        provider_organization: provider?.organization_name || 'N/A',
+        booking_status: es.booking_status || 'pending_provider_approval',
+        price_per_guest_at_booking: es.price_per_guest_at_booking || 0,
+        total_estimated_price: es.total_estimated_price || 0,
+        guest_count: event?.guest_count || 0,
+        created_at: es.created_at,
+        updated_at: es.updated_at,
+      };
+    }) || [];
 
     return { success: true, data: formattedEventServices };
   } catch (error) {
