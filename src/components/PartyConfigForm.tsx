@@ -231,6 +231,9 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
                 <strong>O evento comumente acaba às {endTime}</strong>
               </p>
               <p className="text-xs text-blue-600 mt-1">
+                <strong>Duração de 5 horas</strong>
+              </p>
+              <p className="text-xs text-blue-600 mt-1">
                 Consulte a duração do serviço. Horas extras são negociadas diretamente com o prestador.
               </p>
             </div>
