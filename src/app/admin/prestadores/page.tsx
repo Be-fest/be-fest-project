@@ -295,7 +295,6 @@ export default function PrestadoresPage() {
                   <th className="text-left p-4 font-medium text-gray-600 text-sm hidden lg:table-cell">WhatsApp</th>
                   <th className="text-left p-4 font-medium text-gray-600 text-sm hidden lg:table-cell">Serviços</th>
                   <th className="text-left p-4 font-medium text-gray-600 text-sm hidden lg:table-cell">Data Cadastro</th>
-                  <th className="text-left p-4 font-medium text-gray-600 text-sm">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -344,15 +343,6 @@ export default function PrestadoresPage() {
                     <td className="p-4 hidden lg:table-cell">
                       <span className="text-sm text-gray-600">
                         {formatDate(provider.created_at)}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        (provider.servicesCount || 0) > 0 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {(provider.servicesCount || 0) > 0 ? 'Ativo' : 'Pendente'}
                       </span>
                     </td>
                   </motion.tr>

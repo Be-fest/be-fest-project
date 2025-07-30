@@ -102,7 +102,7 @@ export default function AdminLoginPage() {
           {/* Header */}
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center">
+              <div className="w-16 h-16 bg-gradient-to-br from-[#FF4DA6] to-[#A502CA] rounded-2xl flex items-center justify-center">
                 <MdAdminPanelSettings className="text-white text-3xl" />
               </div>
             </div>
@@ -174,7 +174,7 @@ export default function AdminLoginPage() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white py-3 rounded-xl font-medium transition-all duration-200 disabled:opacity-50"
+              className="w-full bg-gradient-to-r from-[#FF4DA6] to-[#A502CA] hover:from-[#e64495] hover:to-[#9400B8] text-white py-3 rounded-xl font-medium transition-all duration-200 disabled:opacity-50"
             >
               {loading ? (
                 <div className="flex items-center justify-center">

@@ -12,7 +12,6 @@ import {
   MdError
 } from 'react-icons/md';
 import { StatCard } from '@/components/admin/StatCard';
-import { ActivePartiesTracker } from '@/components/admin/ActivePartiesTracker';
 import { getAdminStatsAction } from '@/lib/actions/admin';
 import { AdminStats } from '@/lib/actions/admin';
 
@@ -26,6 +25,29 @@ export default function AdminDashboard() {
     totalClients: 0,
     totalServices: 0,
     totalEvents: 0,
+    totalEventServices: 0,
+    totalBookings: 0,
+    totalRevenue: 0,
+    averageEventValue: 0,
+    eventsByStatus: {
+      draft: 0,
+      published: 0,
+      waiting_payment: 0,
+      completed: 0,
+      cancelled: 0
+    },
+    eventServicesByStatus: {
+      pending_provider_approval: 0,
+      approved: 0,
+      rejected: 0,
+      cancelled: 0
+    },
+    recentActivity: {
+      newEvents: 0,
+      newServices: 0,
+      newProviders: 0,
+      newClients: 0
+    }
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,6 +107,33 @@ export default function AdminDashboard() {
       value: stats.newClients.toString(),
       icon: MdPeople,
       trend: '+15%'
+    }
+  ];
+
+  const additionalStatsCards = [
+    {
+      title: 'Total de Eventos',
+      value: stats.totalEvents.toString(),
+      icon: MdCelebration,
+      color: 'text-blue-600'
+    },
+    {
+      title: 'Total de Serviços',
+      value: stats.totalEventServices.toString(),
+      icon: MdPending,
+      color: 'text-purple-600'
+    },
+    {
+      title: 'Total de Reservas',
+      value: stats.totalBookings.toString(),
+      icon: MdAttachMoney,
+      color: 'text-green-600'
+    },
+    {
+      title: 'Receita Total',
+      value: formatCurrency(stats.totalRevenue),
+      icon: MdPeople,
+      color: 'text-orange-600'
     }
   ];
 
@@ -148,7 +197,7 @@ export default function AdminDashboard() {
         </div>
       </motion.div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards Principais */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {statsCards.map((stat, index) => (
           <StatCard
@@ -162,15 +211,187 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {/* Festas em Andamento */}
-      <ActivePartiesTracker />
+      {/* Stats Cards Adicionais */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        {additionalStatsCards.map((stat, index) => (
+          <motion.div
+            key={stat.title}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.4 + index * 0.1 }}
+            className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm font-medium">{stat.title}</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+              </div>
+              <div className={`bg-gray-100 p-3 rounded-lg ${stat.color}`}>
+                <stat.icon className="text-2xl" />
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
 
       {/* Estatísticas Adicionais */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        {/* Eventos por Status */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.6 }}
+          className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100"
+        >
+          <h3 className="text-base sm:text-lg font-semibold text-title mb-4">
+            Eventos por Status
+          </h3>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Rascunhos</span>
+              <span className="font-bold text-gray-500">{stats.eventsByStatus.draft}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Publicados</span>
+              <span className="font-bold text-blue-600">{stats.eventsByStatus.published}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Aguardando Pagamento</span>
+              <span className="font-bold text-yellow-600">{stats.eventsByStatus.waiting_payment}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Concluídos</span>
+              <span className="font-bold text-green-600">{stats.eventsByStatus.completed}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Cancelados</span>
+              <span className="font-bold text-red-600">{stats.eventsByStatus.cancelled}</span>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Serviços por Status */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.7 }}
+          className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100"
+        >
+          <h3 className="text-base sm:text-lg font-semibold text-title mb-4">
+            Serviços por Status
+          </h3>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Pendentes de Aprovação</span>
+              <span className="font-bold text-yellow-600">{stats.eventServicesByStatus.pending_provider_approval}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Aprovados</span>
+              <span className="font-bold text-green-600">{stats.eventServicesByStatus.approved}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Rejeitados</span>
+              <span className="font-bold text-red-600">{stats.eventServicesByStatus.rejected}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Cancelados</span>
+              <span className="font-bold text-gray-500">{stats.eventServicesByStatus.cancelled}</span>
+            </div>
+            <div className="pt-2 border-t">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-500">Taxa de Aprovação</span>
+                <span className="text-sm font-bold text-gray-900">
+                  {stats.totalEventServices > 0 
+                    ? Math.round((stats.eventServicesByStatus.approved / stats.totalEventServices) * 100)
+                    : 0
+                  }%
+                </span>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Atividade Recente */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.8 }}
+          className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100"
+        >
+          <h3 className="text-base sm:text-lg font-semibold text-title mb-4">
+            Atividade Recente (7 dias)
+          </h3>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Novos Eventos</span>
+              <span className="font-bold text-blue-600">{stats.recentActivity.newEvents}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Novos Serviços</span>
+              <span className="font-bold text-purple-600">{stats.recentActivity.newServices}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Novos Prestadores</span>
+              <span className="font-bold text-green-600">{stats.recentActivity.newProviders}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Novos Clientes</span>
+              <span className="font-bold text-orange-600">{stats.recentActivity.newClients}</span>
+            </div>
+            <div className="pt-2 border-t">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-500">Valor Médio por Evento</span>
+                <span className="text-sm font-bold text-gray-900">
+                  {formatCurrency(stats.averageEventValue)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Faturamento e Resumo Geral */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        {/* Faturamento */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.9 }}
+          className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100"
+        >
+          <h3 className="text-base sm:text-lg font-semibold text-title mb-4">
+            Faturamento
+          </h3>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Receita Mensal</span>
+              <span className="font-bold text-green-600">{formatCurrency(stats.monthlyRevenue)}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Receita Total</span>
+              <span className="font-bold text-blue-600">{formatCurrency(stats.totalRevenue)}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Média por Evento</span>
+              <span className="font-bold text-gray-900">{formatCurrency(stats.averageEventValue)}</span>
+            </div>
+            <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-green-500 to-green-600 rounded-full transition-all duration-1000"
+                style={{ width: `${Math.min((stats.monthlyRevenue / 100000) * 100, 100)}%` }}
+              />
+            </div>
+            <p className="text-xs text-gray-500 text-center">
+              Meta mensal: {formatCurrency(100000)}
+            </p>
+          </div>
+        </motion.div>
+
+        {/* Resumo Geral */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 1.0 }}
           className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100"
         >
           <h3 className="text-base sm:text-lg font-semibold text-title mb-4">
@@ -192,66 +413,6 @@ export default function AdminDashboard() {
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Serviços Ativos</span>
               <span className="font-bold text-gray-900">{stats.totalServices}</span>
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.7 }}
-          className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100"
-        >
-          <h3 className="text-base sm:text-lg font-semibold text-title mb-4">
-            Faturamento
-          </h3>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Receita Mensal</span>
-              <span className="font-bold text-green-600">{formatCurrency(stats.monthlyRevenue)}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Média por Evento</span>
-              <span className="font-bold text-gray-900">
-                {stats.totalActiveEvents > 0 
-                  ? formatCurrency(stats.monthlyRevenue / stats.totalActiveEvents)
-                  : 'R$ 0,00'
-                }
-              </span>
-            </div>
-            <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-green-500 to-green-600 rounded-full transition-all duration-1000"
-                style={{ width: `${Math.min((stats.monthlyRevenue / 100000) * 100, 100)}%` }}
-              />
-            </div>
-            <p className="text-xs text-gray-500 text-center">
-              Meta mensal: {formatCurrency(100000)}
-            </p>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.8 }}
-          className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100"
-        >
-          <h3 className="text-base sm:text-lg font-semibold text-title mb-4">
-            Atividade Recente
-          </h3>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Novos Clientes (30d)</span>
-              <span className="font-bold text-blue-600">{stats.newClients}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Pedidos Pendentes</span>
-              <span className="font-bold text-yellow-600">{stats.totalPendingRequests}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Eventos Ativos</span>
-              <span className="font-bold text-green-600">{stats.totalActiveEvents}</span>
             </div>
             <div className="pt-2 border-t">
               <div className="flex justify-between items-center">
