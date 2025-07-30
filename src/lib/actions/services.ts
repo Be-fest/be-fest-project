@@ -206,8 +206,6 @@ export async function createServiceAction(formData: FormData): Promise<ActionRes
       provider_id: user.id,
       status: 'active',
       is_active: validatedData.is_active ?? true,
-      base_price: 0, // Campo obrigatório mas não usado mais
-      price_per_guest: null,
       min_guests: 0,
       max_guests: null
     }

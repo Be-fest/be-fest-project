@@ -92,7 +92,7 @@ export function AuthErrorFallback({ error, onRetry, onLogout }: AuthErrorFallbac
           
           <Button
             onClick={handleLogout}
-            variant="outline"
+            variant="secondary"
             className="border-gray-300 text-gray-700 hover:bg-gray-50"
           >
             Fazer Logout

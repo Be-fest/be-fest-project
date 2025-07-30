@@ -16,9 +16,15 @@ export default function FastAuthGuard({
   requiredRole, 
   redirectTo = '/auth/login' 
 }: FastAuthGuardProps) {
-  const { user, userData, loading, isAuthenticated, isClient, isProvider, isAdmin } = useAuth();
+  const { user, userData, loading } = useAuth();
   const router = useRouter();
   const toast = useToastGlobal();
+
+  // Computed properties based on user and userData
+  const isAuthenticated = !!user && !!userData;
+  const isClient = userData?.role === 'client';
+  const isProvider = userData?.role === 'provider';
+  const isAdmin = userData?.role === 'admin';
 
   useEffect(() => {
     if (!loading) {

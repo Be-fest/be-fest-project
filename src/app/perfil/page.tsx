@@ -432,8 +432,7 @@ const MinhasFestasTab = ({ onShowPartyDetails }: { onShowPartyDetails?: (eventId
 
     console.log('🗑️ [PROFILE] Iniciando exclusão da festa:', {
       id: eventToDelete.id,
-      title: eventToDelete.title,
-      status: eventToDelete.status
+      title: eventToDelete.title
     });
 
     try {

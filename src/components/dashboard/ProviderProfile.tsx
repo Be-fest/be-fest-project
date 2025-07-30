@@ -13,20 +13,24 @@ import { invalidateServiceImagesCache } from '@/hooks/useImagePreloader';
 import AreaOfOperationSelect from '@/components/ui/AreaOfOperationSelect';
 
 interface ProviderStats {
-  totalEvents: number;
+  totalRequests: number;
+  pendingRequests: number;
+  approvedRequests: number;
   activeServices: number;
-  averageRating: number;
-  totalRatings: number;
+  totalRevenue: number;
+  completedEvents: number;
 }
 
 export function ProviderProfile() {
   const [isEditing, setIsEditing] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [stats, setStats] = useState<ProviderStats>({
-    totalEvents: 0,
+    totalRequests: 0,
+    pendingRequests: 0,
+    approvedRequests: 0,
     activeServices: 0,
-    averageRating: 0,
-    totalRatings: 0
+    totalRevenue: 0,
+    completedEvents: 0
   });
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -518,19 +522,16 @@ export function ProviderProfile() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
               <p className="text-2xl font-bold text-[#A502CA]">
-                {stats.averageRating && stats.averageRating > 0 ? stats.averageRating.toFixed(1) : '-'}
+                {stats.totalRequests}
               </p>
-              <p className="text-sm text-gray-600">Avaliação Média</p>
-              {stats.averageRating === 0 && (
-                <p className="text-xs text-gray-400 mt-1">Ainda sem avaliações</p>
-              )}
+              <p className="text-sm text-gray-600">Total de Pedidos</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-[#A502CA]">{stats.totalRatings}</p>
-              <p className="text-sm text-gray-600">Total de Avaliações</p>
+              <p className="text-2xl font-bold text-[#A502CA]">{stats.pendingRequests}</p>
+              <p className="text-sm text-gray-600">Pedidos Pendentes</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-[#A502CA]">{stats.totalEvents}</p>
+              <p className="text-2xl font-bold text-[#A502CA]">{stats.completedEvents}</p>
               <p className="text-sm text-gray-600">Eventos Realizados</p>
             </div>
             <div className="text-center">

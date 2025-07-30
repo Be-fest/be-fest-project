@@ -100,27 +100,18 @@ export default function ServiceDetailsPage() {
     
     // Se tem tiers de preço, usar o preço mínimo
     if (service.guest_tiers && service.guest_tiers.length > 0) {
-      const minPrice = formatMinimumPrice(service.guest_tiers, service.base_price);
+      const minPrice = formatMinimumPrice(service.guest_tiers);
       return {
         price: `A partir de ${minPrice}`,
         unit: ''
       };
     }
     
-    // Fallback para preços tradicionais
-    if (service.base_price && service.base_price > 0) {
-      return {
-        price: formatPrice(service.base_price),
-        unit: ''
-      };
-    }
-    
-    if (service.price_per_guest && service.price_per_guest > 0) {
-      return {
-        price: formatPrice(service.price_per_guest),
-        unit: 'por pessoa'
-      };
-    }
+    // Se não tem tiers de preço, mostrar preço sob consulta
+    return {
+      price: 'Preço sob consulta',
+      unit: ''
+    };
     
     return {
       price: 'Preço sob consulta',

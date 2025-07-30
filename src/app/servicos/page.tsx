@@ -58,26 +58,20 @@ const ServicesGrid = ({ services, selectedParty }: {
   };
 
   const getServicePrice = (service: ServiceWithProvider) => {
-    if (service.base_price && service.base_price > 0) {
-      return service.base_price;
+    if (service.guest_tiers && service.guest_tiers.length > 0) {
+      return service.guest_tiers[0].base_price_per_adult || 0;
     }
-    return service.price_per_guest || 0;
+    return 0; // Se não tem tiers, retorna 0
   };
 
   const getPriceLabel = (service: ServiceWithProvider) => {
     // Se tem tiers de preço, usar o preço mínimo
     if (service.guest_tiers && service.guest_tiers.length > 0) {
-      const minPrice = formatMinimumPrice(service.guest_tiers, service.base_price);
+      const minPrice = formatMinimumPrice(service.guest_tiers);
       return `A partir de ${minPrice}`;
     }
     
-    // Fallback para preços tradicionais
-    if (service.base_price && service.base_price > 0) {
-      return formatPrice(service.base_price);
-    }
-    if (service.price_per_guest && service.price_per_guest > 0) {
-      return `${formatPrice(service.price_per_guest)} por pessoa`;
-    }
+    // Se não tem tiers de preço, mostrar preço sob consulta
     return 'Preço sob consulta';
   };
 
