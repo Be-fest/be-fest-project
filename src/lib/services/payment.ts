@@ -59,18 +59,14 @@ export interface PaymentError {
   message: string;
 }
 
-// Função para obter a URL base da API
 function getApiBaseUrl(): string {
-  // Em desenvolvimento, usar localhost na porta 3001
   if (process.env.NODE_ENV === 'development') {
     return 'https://be-fest-api.onrender.com';
   }
   
-  // Em produção, usar a URL configurada ou fallback
-  return process.env.NEXT_PUBLIC_API_URL || 'https://api.befest.com.br';
+  return process.env.NEXT_PUBLIC_API_URL || 'https://be-fest-api.onrender.com';
 }
 
-// Função para gerar link de pagamento
 export async function generatePaymentLink(
   request: PaymentLinkRequest
 ): Promise<PaymentLinkResponse> {
@@ -79,7 +75,6 @@ export async function generatePaymentLink(
     console.log('🌐 Fazendo requisição para:', `${apiUrl}/generate-link`);
     console.log('📦 Dados enviados:', request);
     
-    // Garantir que o request está correto
     const requestBody = {
       event_id: request.event_id,
       service_ids: request.service_ids || []
@@ -87,7 +82,6 @@ export async function generatePaymentLink(
     
     console.log('🔍 Request body final:', JSON.stringify(requestBody, null, 2));
     
-    // Validar se o JSON está correto
     try {
       JSON.parse(JSON.stringify(requestBody));
       console.log('✅ JSON válido');

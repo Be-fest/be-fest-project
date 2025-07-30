@@ -409,7 +409,7 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-4 flex-1">
-                    {/* Checkbox para seleção */}
+                    {/* Checkbox para seleção - apenas para serviços aguardando pagamento */}
                     {service.booking_status === 'waiting_payment' && (
                       <button
                         onClick={() => toggleServiceSelection(service.id)}
@@ -473,16 +473,6 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
                             <div className="text-sm text-green-600 font-medium">
                               Pagamento confirmado - Prestador notificado
                             </div>
-                            <button
-                              onClick={() => toggleServiceSelection(service.id)}
-                              className={`px-3 py-2 text-sm rounded-lg transition-colors ${
-                                selectedServices.has(service.id)
-                                  ? 'bg-green-100 text-green-700 border border-green-300'
-                                  : 'bg-gray-200'
-                              }`}
-                            >
-                              {selectedServices.has(service.id) ? 'Selecionado' : 'Selecionar'}
-                            </button>
                           </div>
                         )}
 

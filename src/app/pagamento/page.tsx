@@ -54,15 +54,27 @@ export default function PaymentPage() {
         const result = await getEventServicesAction({ event_id: eventId });
         
         if (result.success && result.data) {
-          // Filtrar apenas os serviços que estão aguardando pagamento
-          const waitingPaymentServices = result.data.filter(
+          console.log('📋 Todos os event_services carregados:', result.data.map(s => ({ 
+            id: s.id, 
+            service_id: s.service_id, 
+            booking_status: s.booking_status 
+          })));
+          
+          // Por enquanto, vamos usar todos os serviços para debug
+          // Depois voltamos para filtrar apenas os aprovados
+          setServices(result.data);
+          
+          // Calcular valor total apenas dos aprovados
+          const approvedServices = result.data.filter(
             service => service.booking_status === 'approved'
           );
           
-          setServices(waitingPaymentServices);
+          console.log('📋 Serviços aprovados:', approvedServices.map(s => ({ 
+            id: s.id, 
+            service_id: s.service_id 
+          })));
           
-          // Calcular valor total
-          const total = waitingPaymentServices.reduce(
+          const total = approvedServices.reduce(
             (sum, service) => sum + (service.total_estimated_price || 0), 
             0
           );
@@ -85,12 +97,13 @@ export default function PaymentPage() {
   // Gerar dados do pagamento automaticamente quando os dados do evento carregam
   useEffect(() => {
     const generatePaymentData = async () => {
-      if (!eventId || serviceIds.length === 0 || loadingData || generatingPayment) {
+      if (!eventId || serviceIds.length === 0 || loadingData || generatingPayment || services.length === 0) {
         console.log('⏭️ Pulando geração - condições não atendidas:', {
           hasEventId: !!eventId,
           hasServiceIds: serviceIds.length > 0,
           loadingData,
-          generatingPayment
+          generatingPayment,
+          hasServices: services.length > 0
         });
         return;
       }
@@ -107,20 +120,29 @@ export default function PaymentPage() {
       try {
         console.log('🔄 Gerando dados do pagamento...');
         console.log('📋 eventId:', eventId);
-        console.log('📋 serviceIds:', serviceIds);
+        console.log('📋 serviceIds (event_service IDs):', serviceIds);
         
-        // Garantir que serviceIds é um array válido
-        const validServiceIds = serviceIds.filter(id => id && id.trim() !== '');
-        console.log('🔍 Service IDs válidos:', validServiceIds);
+        // Filtrar os serviços que correspondem aos event_service IDs fornecidos
+        const matchingServices = services.filter(service => 
+          serviceIds.includes(service.id)
+        );
         
-        if (validServiceIds.length === 0) {
+        console.log('🔍 Serviços encontrados:', matchingServices.length);
+        console.log('🔍 IDs dos event_services:', matchingServices.map(s => s.id));
+        console.log('🔍 Todos os serviços carregados:', services.map(s => ({ id: s.id, service_id: s.service_id })));
+        
+        // Extrair os service_id reais dos serviços encontrados
+        const actualServiceIds = matchingServices.map(service => service.service_id);
+        console.log('🔍 Service IDs reais extraídos:', actualServiceIds);
+        
+        if (actualServiceIds.length === 0) {
           console.error('❌ Nenhum service ID válido encontrado');
           return;
         }
         
         const paymentResponse = await generatePaymentLink({
           event_id: eventId,
-          service_ids: validServiceIds,
+          service_ids: actualServiceIds,
         });
 
         setPaymentData(paymentResponse);
@@ -134,7 +156,7 @@ export default function PaymentPage() {
     };
 
     generatePaymentData();
-  }, [eventId, serviceIds, loadingData]); // Removido paymentData das dependências para evitar recursão
+  }, [eventId, serviceIds, loadingData, services]); // Adicionado services às dependências
 
   const handlePayment = async () => {
     if (!eventId || serviceIds.length === 0) {
@@ -151,9 +173,22 @@ export default function PaymentPage() {
       }
 
       // Caso contrário, gerar novamente
+      // Filtrar os serviços que correspondem aos event_service IDs fornecidos
+      const matchingServices = services.filter(service => 
+        serviceIds.includes(service.id)
+      );
+      
+      // Extrair os service_id reais dos serviços encontrados
+      const actualServiceIds = matchingServices.map(service => service.service_id);
+      
+      if (actualServiceIds.length === 0) {
+        toast.error('Erro ao processar serviços', 'Não foi possível identificar os serviços selecionados');
+        return;
+      }
+
       const paymentResponse = await generatePaymentLink({
         event_id: eventId,
-        service_ids: serviceIds,
+        service_ids: actualServiceIds,
       });
 
       setPaymentData(paymentResponse);
