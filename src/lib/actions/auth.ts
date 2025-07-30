@@ -831,4 +831,71 @@ export async function updateProviderProfileAction(formData: FormData): Promise<A
       error: error instanceof Error ? error.message : 'Ocorreu um erro ao atualizar o perfil do prestador' 
     }
   }
+}
+
+// Esquema para alteração de senha
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Senha atual é obrigatória'),
+  newPassword: z.string().min(8, 'Nova senha deve ter pelo menos 8 caracteres'),
+  confirmPassword: z.string().min(1, 'Confirmação de senha é obrigatória')
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Nova senha e confirmação não coincidem",
+  path: ["confirmPassword"],
+})
+
+export async function changePasswordAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return { success: false, error: 'Usuário não autenticado' }
+    }
+
+    // Parse and validate form data
+    const rawData = {
+      currentPassword: formData.get('currentPassword') as string,
+      newPassword: formData.get('newPassword') as string,
+      confirmPassword: formData.get('confirmPassword') as string,
+    }
+
+    const validatedData = changePasswordSchema.parse(rawData)
+    const supabase = await createServerClient()
+
+    // Verificar senha atual
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: user.email!,
+      password: validatedData.currentPassword,
+    })
+
+    if (signInError) {
+      return { success: false, error: 'Senha atual incorreta' }
+    }
+
+    // Alterar senha
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: validatedData.newPassword
+    })
+
+    if (updateError) {
+      console.error('Error updating password:', updateError)
+      return { success: false, error: 'Erro ao alterar senha' }
+    }
+
+    return { 
+      success: true, 
+      data: { message: 'Senha alterada com sucesso!' } 
+    }
+
+  } catch (error) {
+    console.error('Change password failed:', error)
+    
+    if (error instanceof z.ZodError) {
+      const firstError = error.errors[0]
+      return { success: false, error: firstError.message }
+    }
+    
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Ocorreu um erro ao alterar a senha' 
+    }
+  }
 } 
