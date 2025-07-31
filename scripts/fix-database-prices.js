@@ -1,6 +1,6 @@
 /**
  * Script para corrigir os preços incorretos dos serviços no banco de dados
- * Executa a lógica: fullGuests * pricePerGuest + halfGuests * (pricePerGuest / 2)
+ * Executa a lógica: fullGuests * pricePerGuest + halfGuests * (pricePerGuest / 2) + 5% taxa + Math.ceil
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -17,12 +17,17 @@ if (!supabaseUrl || !supabaseServiceKey) {
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 /**
- * Calcula o valor correto de um serviço
+ * Calcula o valor correto de um serviço (base + 5% taxa + Math.ceil)
  */
 function calculateCorrectServiceValue(pricePerGuest, fullGuests, halfGuests) {
   const fullGuestsValue = fullGuests * pricePerGuest;
   const halfGuestsValue = halfGuests * (pricePerGuest / 2);
-  return fullGuestsValue + halfGuestsValue;
+  const basePrice = fullGuestsValue + halfGuestsValue;
+  
+  // Aplicar taxa de 5% e arredondar para cima
+  const taxRate = 0.05; // 5%
+  const taxAmount = basePrice * taxRate;
+  return Math.ceil(basePrice + taxAmount);
 }
 
 /**

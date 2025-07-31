@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createServerClient } from '@/lib/supabase/server'
 import { EventService, EventServiceInsert, EventServiceUpdate, EventServiceWithDetails, EventServiceStatus } from '@/types/database'
+import { calculateAdvancedPrice } from '@/utils/formatters'
 
 // Validation schemas
 const createEventServiceSchema = z.object({
@@ -112,17 +113,37 @@ async function calculateServicePrice(
     pricePerGuest = service.price_per_guest || service.base_price || 0
   }
   
-  // 4. Calcular preço total baseado em full_guests e half_guests
-  const fullGuestsPrice = fullGuests * pricePerGuest
-  const halfGuestsPrice = halfGuests * (pricePerGuest / 2)
-  const totalPrice = fullGuestsPrice + halfGuestsPrice
+  // 4. Buscar dados completos do serviço para usar no calculateAdvancedPrice
+  const { data: fullServiceData, error: fullServiceError } = await supabase
+    .from('services')
+    .select(`
+      *,
+      service_guest_tiers (*)
+    `)
+    .eq('id', serviceId)
+    .single()
+
+  if (fullServiceError || !fullServiceData) {
+    throw new Error('Erro ao buscar dados completos do serviço')
+  }
+
+  // 5. Usar o mesmo cálculo que está sendo usado no PartyDetailsTab.tsx
+  const calculatedPrice = calculateAdvancedPrice(
+    { 
+      ...fullServiceData, 
+      price_per_guest_at_booking: pricePerGuest 
+    },
+    fullGuests,
+    halfGuests,
+    0 // free_guests
+  )
   
-  // 5. Atualizar o event_service com os preços calculados
+  // 6. Atualizar o event_service com os preços calculados
   const { error: updateError } = await supabase
     .from('event_services')
     .update({
       price_per_guest_at_booking: pricePerGuest,
-      total_estimated_price: totalPrice
+      total_estimated_price: calculatedPrice // Usar o cálculo correto com taxa de 5% e Math.ceil
     })
     .eq('id', eventServiceId)
   
@@ -130,7 +151,7 @@ async function calculateServicePrice(
     throw new Error('Erro ao atualizar preços do serviço')
   }
   
-  return { pricePerGuest, totalPrice }
+  return { pricePerGuest, totalPrice: calculatedPrice }
 }
 
 // ================================================================

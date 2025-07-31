@@ -149,7 +149,6 @@ export function OrdersTable({ searchTerm = '', statusFilter = 'todos' }: OrdersT
               <th className="text-left py-4 px-6 font-medium text-white">Status Evento</th>
               <th className="text-left py-4 px-6 font-medium text-white">Status Serviço</th>
               <th className="text-left py-4 px-6 font-medium text-white">Data do Evento</th>
-              <th className="text-left py-4 px-6 font-medium text-white">Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -212,19 +211,6 @@ export function OrdersTable({ searchTerm = '', statusFilter = 'todos' }: OrdersT
                 <td className="py-4 px-6 text-gray-600">
                   {formatDate(es.event_date)}
                 </td>
-                <td className="py-4 px-6">
-                  <div className="flex gap-2">
-                    <button className="p-2 text-gray-600 hover:text-primary hover:bg-primary-light rounded-lg transition-colors">
-                      <MdVisibility className="text-lg" />
-                    </button>
-                    <button className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                      <MdEdit className="text-lg" />
-                    </button>
-                    <button className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                      <MdDelete className="text-lg" />
-                    </button>
-                  </div>
-                </td>
               </motion.tr>
             ))}
           </tbody>
@@ -242,26 +228,13 @@ export function OrdersTable({ searchTerm = '', statusFilter = 'todos' }: OrdersT
             className="bg-white border border-gray-200 rounded-lg p-4 space-y-3"
           >
             {/* Header */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs text-gray-500">
-                  {es.id.slice(0, 8)}...
-                </span>
-                <div className="flex gap-1">
-                  <StatusBadge status={getStatusLabel(es.event_status)} size="sm" />
-                  <StatusBadge status={getStatusLabel(es.booking_status)} size="sm" />
-                </div>
-              </div>
+                        <div className="flex items-center gap-2">
+              <span className="font-mono text-xs text-gray-500">
+                {es.id.slice(0, 8)}...
+              </span>
               <div className="flex gap-1">
-                <button className="p-2 text-gray-600 hover:text-primary hover:bg-primary-light rounded-lg transition-colors">
-                  <MdVisibility className="text-lg" />
-                </button>
-                <button className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                  <MdEdit className="text-lg" />
-                </button>
-                <button className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                  <MdDelete className="text-lg" />
-                </button>
+                <StatusBadge status={getStatusLabel(es.event_status)} size="sm" />
+                <StatusBadge status={getStatusLabel(es.booking_status)} size="sm" />
               </div>
             </div>
 

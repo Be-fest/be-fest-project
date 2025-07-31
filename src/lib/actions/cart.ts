@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createServerClient } from '@/lib/supabase/server'
 import type { Event, EventService } from '@/types/database'
-import { calculateGuestCount } from '@/utils/formatters'
+import { calculateGuestCount, calculateAdvancedPrice } from '@/utils/formatters'
 
 // Validation schemas
 const saveCartEventSchema = z.object({
@@ -287,12 +287,38 @@ export async function addServiceToCartAction(serviceData: {
       return { success: false, error: 'Preços não configurados para este serviço' }
     }
 
+    // Buscar dados completos do serviço para usar no calculateAdvancedPrice
+    const { data: fullServiceData, error: fullServiceError } = await supabase
+      .from('services')
+      .select(`
+        *,
+        service_guest_tiers (*)
+      `)
+      .eq('id', validatedData.service_id)
+      .single()
+
+    if (fullServiceError || !fullServiceData) {
+      console.error('❌ Erro ao buscar dados completos do serviço:', fullServiceError);
+      return { success: false, error: 'Erro ao calcular preço do serviço' }
+    }
+
+    // Usar o mesmo cálculo que está sendo usado no PartyDetailsTab.tsx
+    const calculatedPrice = calculateAdvancedPrice(
+      { 
+        ...fullServiceData, 
+        price_per_guest_at_booking: pricePerGuest 
+      },
+      eventData.full_guests || 0,
+      eventData.half_guests || 0,
+      0 // free_guests
+    );
+
     console.log('🆕 Criando novo event_service:', {
       event_id: validatedData.event_id,
       service_id: validatedData.service_id,
       provider_id: validatedData.provider_id,
       price_per_guest_at_booking: pricePerGuest,
-      total_estimated_price: pricePerGuest * totalGuests,
+      total_estimated_price: calculatedPrice, // Usar o cálculo correto com taxa de 5% e Math.ceil
       booking_status: 'pending_provider_approval'
     });
 
@@ -304,7 +330,7 @@ export async function addServiceToCartAction(serviceData: {
         service_id: validatedData.service_id,
         provider_id: validatedData.provider_id,
         price_per_guest_at_booking: pricePerGuest, // Usar a coluna correta da tabela
-        total_estimated_price: pricePerGuest * totalGuests, // Calcular preço total estimado
+        total_estimated_price: calculatedPrice, // Usar o cálculo correto com taxa de 5% e Math.ceil
         booking_status: 'pending_provider_approval' // Usar o enum correto
       })
       .select()
