@@ -213,7 +213,7 @@ export default function ProviderPage({ params }: PageProps) {
             {error || 'Prestador não encontrado'}
           </h2>
           <Link
-            href="/servicos"
+            href="/prestadores"
             className="p-2 hover:bg-gray-100 rounded-full transition-colors inline-flex items-center"
           >
             <MdArrowBack className="text-2xl text-[#F71875]" />
