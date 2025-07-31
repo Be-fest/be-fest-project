@@ -828,19 +828,13 @@ export async function getSubcategoriesAction(): Promise<ActionResult<Subcategory
 
 export async function getPublicProvidersAction(filters?: {
   search?: string
-  location?: string
   limit?: number
 }): Promise<ActionResult<Array<{
   id: string;
-  full_name: string;
   organization_name?: string;
-  email: string;
-  whatsapp_number?: string;
-  city?: string;
-  state?: string;
-  profile_image?: string;
   logo_url?: string;
-  description?: string;
+  profile_image?: string;
+  area_of_operation?: string;
   services_count: number;
   average_rating?: number;
   created_at: string;
@@ -848,35 +842,22 @@ export async function getPublicProvidersAction(filters?: {
   try {
     const supabase = await createServerClient()
     
+    // Primeiro, buscar todos os prestadores
     let query = supabase
       .from('users')
       .select(`
         id,
-        full_name,
         organization_name,
-        email,
-        whatsapp_number,
-        city,
-        state,
-        profile_image,
         logo_url,
-        description,
-        created_at,
-        services!inner (
-          id,
-          is_active
-        )
+        profile_image,
+        area_of_operation,
+        created_at
       `)
       .eq('role', 'provider')
-      .eq('services.is_active', true)
 
     // Aplicar filtros
     if (filters?.search) {
-      query = query.or(`full_name.ilike.%${filters.search}%,organization_name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`)
-    }
-
-    if (filters?.location) {
-      query = query.or(`city.ilike.%${filters.location}%,state.ilike.%${filters.location}%`)
+      query = query.or(`organization_name.ilike.%${filters.search}%,area_of_operation.ilike.%${filters.search}%`)
     }
 
     if (filters?.limit) {
@@ -890,7 +871,11 @@ export async function getPublicProvidersAction(filters?: {
       return { success: false, error: error.message }
     }
 
-    // Processar dados para incluir contagem de serviços e rating médio
+    if (!providers || providers.length === 0) {
+      return { success: true, data: [] }
+    }
+
+    // Processar dados para incluir contagem de serviços
     const processedProviders = await Promise.all(
       providers.map(async (provider) => {
         // Buscar contagem de serviços ativos
@@ -900,21 +885,14 @@ export async function getPublicProvidersAction(filters?: {
           .eq('provider_id', provider.id)
           .eq('is_active', true)
 
-
-
         return {
           id: provider.id,
-          full_name: provider.full_name,
           organization_name: provider.organization_name,
-          email: provider.email,
-          whatsapp_number: provider.whatsapp_number,
-          city: provider.city,
-          state: provider.state,
-          profile_image: provider.profile_image,
           logo_url: provider.logo_url,
-          description: provider.description,
+          profile_image: provider.profile_image,
+          area_of_operation: provider.area_of_operation,
           services_count: servicesCount || 0,
-
+          average_rating: 0, // Implementar quando tiver sistema de avaliações
           created_at: provider.created_at
         }
       })
