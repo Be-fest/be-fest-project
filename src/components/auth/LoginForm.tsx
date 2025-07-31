@@ -23,9 +23,23 @@ export function LoginForm() {
     setError('')
 
     try {
-      await signIn(formData.email, formData.password)
-      toast.success('Login realizado com sucesso!', 'Bem-vindo de volta!')
-      router.push('/dashboard')
+      const result = await signIn(formData.email, formData.password)
+      
+      if (result?.user) {
+        toast.success('Login realizado com sucesso!', 'Bem-vindo de volta!')
+        
+        // Aguardar um pouco para garantir que os dados do usuário foram carregados
+        setTimeout(() => {
+          // Redirecionar baseado no role do usuário
+          const userRole = (result as any).userData?.role || result.user.user_metadata?.role
+          
+          if (userRole === 'provider' || userRole === 'admin') {
+            router.push('/dashboard/prestador')
+          } else {
+            router.push('/dashboard')
+          }
+        }, 1000)
+      }
     } catch (err: any) {
       setError(err.message || 'Erro ao fazer login')
       toast.error('Erro no login', err.message || 'Erro ao fazer login')

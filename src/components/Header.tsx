@@ -25,7 +25,7 @@ import {
 // Componente UserDropdown
 interface UserDropdownProps {
   user: any;
-  userType: 'client' | 'service_provider' | 'admin' | null;
+  userType: 'client' | 'provider' | 'admin' | null;
 }
 
 function UserDropdown({ user, userType }: UserDropdownProps) {
@@ -74,7 +74,7 @@ function UserDropdown({ user, userType }: UserDropdownProps) {
     switch (userType) {
       case 'admin':
         return 'Administrador';
-      case 'service_provider':
+      case 'provider':
         return 'Prestador';
       case 'client':
         return 'Cliente';
@@ -143,7 +143,7 @@ function UserDropdown({ user, userType }: UserDropdownProps) {
               )}
 
               {/* Link para Dashboard se for prestador */}
-              {userType === 'service_provider' && (
+              {userType === 'provider' && (
                 <Link
                   href="/dashboard/prestador"
                   onClick={() => setIsDropdownOpen(false)}
@@ -159,20 +159,7 @@ function UserDropdown({ user, userType }: UserDropdownProps) {
                 </Link>
               )}
 
-              {/* Link para perfil para todos os usuários */}
-              <Link
-                href="/perfil"
-                onClick={() => setIsDropdownOpen(false)}
-                className="flex items-center space-x-4 px-5 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-[#FF0080]/5 hover:to-[#A502CA]/5 hover:text-[#FF0080] transition-all duration-200 group mx-2 rounded-xl"
-              >
-                <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 group-hover:bg-[#FF0080]/10 transition-colors">
-                  <MdPerson className="text-lg group-hover:text-[#FF0080]" />
-                </div>
-                <div className="flex-1">
-                  <div className="font-medium">Minha Área</div>
-                  <div className="text-xs text-gray-500">Gerencie seu perfil</div>
-                </div>
-              </Link>
+
             </div>
 
             <div className="border-t border-gray-100 p-3">
@@ -199,33 +186,61 @@ function UserDropdown({ user, userType }: UserDropdownProps) {
 export function Header() {
   const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
-  const [userType, setUserType] = useState<'client' | 'service_provider' | 'admin' | null>(null);
+  const [userType, setUserType] = useState<'client' | 'provider' | 'admin' | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true);
   const supabase = createClient();
 
   useEffect(() => {
+    let mounted = true;
+
     const getUser = async () => {
       try {
+        console.log('🔄 Header: Iniciando carregamento de usuário...');
+        
         const { data: { session } } = await supabase.auth.getSession();
         
+        if (!mounted) return;
+        
         if (session?.user) {
+          console.log('✅ Header: Sessão encontrada para usuário:', session.user.email);
           setUser(session.user);
           
           // Buscar dados do usuário
-          const { data: userData } = await supabase
+          const { data: userData, error: userError } = await supabase
             .from('users')
             .select('role')
             .eq('id', session.user.id)
             .single();
           
-          if (userData) {
-            setUserType(userData.role as 'client' | 'service_provider' | 'admin');
+          if (!mounted) return;
+          
+          if (userError) {
+            console.error('❌ Header: Erro ao buscar dados do usuário:', userError);
+            setUserType(null);
+          } else if (userData) {
+            console.log('✅ Header: Role do usuário carregado:', userData.role);
+            setUserType(userData.role as 'client' | 'provider' | 'admin');
+          } else {
+            console.log('⚠️ Header: Dados do usuário não encontrados');
+            setUserType(null);
           }
+        } else {
+          console.log('ℹ️ Header: Nenhuma sessão encontrada');
+          setUser(null);
+          setUserType(null);
         }
       } catch (error) {
-        console.error('Erro ao carregar usuário:', error);
+        console.error('❌ Header: Erro ao carregar usuário:', error);
+        if (mounted) {
+          setUser(null);
+          setUserType(null);
+        }
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+          setInitialLoad(false);
+        }
       }
     };
 
@@ -233,26 +248,46 @@ export function Header() {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔄 Header: Auth state change:', event, session?.user?.email);
+      
+      if (!mounted) return;
+      
       if (session?.user) {
         setUser(session.user);
+        setLoading(true); // Reset loading para buscar dados atualizados
         
-        const { data: userData } = await supabase
+        const { data: userData, error: userError } = await supabase
           .from('users')
           .select('role')
           .eq('id', session.user.id)
           .single();
         
-        if (userData) {
-          setUserType(userData.role as 'client' | 'service_provider' | 'admin');
+        if (!mounted) return;
+        
+        if (userError) {
+          console.error('❌ Header: Erro ao buscar dados do usuário (auth change):', userError);
+          setUserType(null);
+        } else if (userData) {
+          console.log('✅ Header: Role atualizado:', userData.role);
+          setUserType(userData.role as 'client' | 'provider' | 'admin');
+        } else {
+          setUserType(null);
         }
       } else {
+        console.log('ℹ️ Header: Usuário deslogado');
         setUser(null);
         setUserType(null);
       }
-      setLoading(false);
+      
+      if (mounted) {
+        setLoading(false);
+      }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Se estiver na rota de admin, não renderizar header (admin tem seu próprio layout)
@@ -275,11 +310,16 @@ export function Header() {
     return <ProviderHeader user={user} userType={userType} loading={loading} />;
   }
 
+  // Se ainda está carregando e é o carregamento inicial, mostrar skeleton
+  if (loading && initialLoad) {
+    return <HeaderSkeleton />;
+  }
+
   // Para outras rotas, mostrar header baseado no role do usuário
   if (user && !loading) {
     if (userType === 'admin') {
       return <AdminHeader user={user} userType={userType} />;
-    } else if (userType === 'service_provider') {
+    } else if (userType === 'provider') {
       return <ProviderHeader user={user} userType={userType} loading={loading} />;
     } else {
       return <HomeHeader user={user} userType={userType} loading={loading} />;
@@ -290,8 +330,42 @@ export function Header() {
   return <HomeHeader user={user} userType={userType} loading={loading} />;
 }
 
+// Componente Skeleton para o header durante carregamento
+function HeaderSkeleton() {
+  return (
+    <header className="w-full bg-white shadow-sm py-4 px-6 fixed top-0 z-40 transition-all duration-300">
+      <div className="max-w-7xl mx-auto flex items-center justify-between">
+        {/* Logo Skeleton */}
+        <div className="flex items-center">
+          <div className="w-32 h-8 bg-gray-200 animate-pulse rounded"></div>
+        </div>
+        
+        {/* Navigation Skeleton */}
+        <nav className="hidden md:flex items-center space-x-8">
+          <div className="w-16 h-4 bg-gray-200 animate-pulse rounded"></div>
+          <div className="w-24 h-4 bg-gray-200 animate-pulse rounded"></div>
+          <div className="w-20 h-4 bg-gray-200 animate-pulse rounded"></div>
+        </nav>
+
+        {/* Auth Buttons Skeleton */}
+        <div className="hidden md:flex items-center space-x-4">
+          <div className="w-8 h-8 bg-gray-200 animate-pulse rounded-full"></div>
+          <div className="w-16 h-4 bg-gray-200 animate-pulse rounded"></div>
+        </div>
+
+        {/* Mobile Menu Button Skeleton */}
+        <div className="md:hidden flex flex-col items-center justify-center w-6 h-6 space-y-1">
+          <div className="w-6 h-0.5 bg-gray-200 animate-pulse rounded"></div>
+          <div className="w-6 h-0.5 bg-gray-200 animate-pulse rounded"></div>
+          <div className="w-6 h-0.5 bg-gray-200 animate-pulse rounded"></div>
+        </div>
+      </div>
+    </header>
+  );
+}
+
 // Header para administradores
-function AdminHeader({ user, userType }: { user: any; userType: string | null }) {
+function AdminHeader({ user, userType }: { user: any; userType: 'client' | 'provider' | 'admin' | null }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
@@ -379,7 +453,7 @@ function AdminHeader({ user, userType }: { user: any; userType: string | null })
   );
 }
 
-function HomeHeader({ user, userType, loading }: { user: any; userType: string | null; loading: boolean }) {
+function HomeHeader({ user, userType, loading }: { user: any; userType: 'client' | 'provider' | 'admin' | null; loading: boolean }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
@@ -416,7 +490,7 @@ function HomeHeader({ user, userType, loading }: { user: any; userType: string |
             </Link>
             {user ? (
               <>
-                {userType === 'service_provider' && (
+                {userType === 'provider' && (
                   <Link 
                     href="/dashboard/prestador" 
                     className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
@@ -518,7 +592,7 @@ function HomeHeader({ user, userType, loading }: { user: any; userType: string |
             </Link>
             {user ? (
               <>
-                {userType === 'service_provider' && (
+                {userType === 'provider' && (
                   <Link 
                     href="/dashboard/prestador" 
                     className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
@@ -602,7 +676,7 @@ function HomeHeader({ user, userType, loading }: { user: any; userType: string |
 }
 
 // Header para a página de prestadores
-function ProviderHeader({ user, userType, loading }: { user: any; userType: string | null; loading: boolean }) {
+function ProviderHeader({ user, userType, loading }: { user: any; userType: 'client' | 'provider' | 'admin' | null; loading: boolean }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
@@ -618,7 +692,7 @@ function ProviderHeader({ user, userType, loading }: { user: any; userType: stri
         
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-8">
-          {user && userType === 'service_provider' ? (
+          {user && userType === 'provider' ? (
             <>
               <Link 
                 href="/dashboard/prestador"
@@ -627,10 +701,22 @@ function ProviderHeader({ user, userType, loading }: { user: any; userType: stri
                 Dashboard
               </Link>
               <Link 
-                href="/"
+                href="/servicos"
                 className="text-gray-600 hover:text-[#A502CA] transition-colors font-poppins"
               >
-                Para Clientes
+                Serviços
+              </Link>
+              <Link 
+                href="/prestadores"
+                className="text-gray-600 hover:text-[#A502CA] transition-colors font-poppins"
+              >
+                Prestadores
+              </Link>
+              <Link 
+                href="/seja-um-prestador"
+                className="text-gray-600 hover:text-[#A502CA] transition-colors font-poppins"
+              >
+                Seja um Prestador
               </Link>
             </>
           ) : user && userType === 'admin' ? (
@@ -642,21 +728,9 @@ function ProviderHeader({ user, userType, loading }: { user: any; userType: stri
                 <MdAdminPanelSettings className="text-lg" />
                 Admin
               </Link>
-              <Link 
-                href="/"
-                className="text-gray-600 hover:text-[#A502CA] transition-colors font-poppins"
-              >
-                Para Clientes
-              </Link>
             </>
           ) : (
             <>
-              <Link 
-                href="/"
-                className="text-gray-600 hover:text-[#A502CA] transition-colors font-poppins"
-              >
-                Para Clientes
-              </Link>
               <ScrollLink 
                 to="beneficios"
                 smooth={true} 
@@ -723,7 +797,7 @@ function ProviderHeader({ user, userType, loading }: { user: any; userType: stri
         transition={{ duration: 0.3 }}
       >
         <nav className="px-6 py-4 space-y-4">
-          {user && userType === 'service_provider' ? (
+          {user && userType === 'provider' ? (
             <>
               <Link 
                 href="/dashboard/prestador"
@@ -733,11 +807,25 @@ function ProviderHeader({ user, userType, loading }: { user: any; userType: stri
                 Dashboard
               </Link>
               <Link 
-                href="/"
+                href="/servicos"
                 className="block text-gray-600 hover:text-[#A502CA] transition-colors py-2"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Para Clientes
+                Serviços
+              </Link>
+              <Link 
+                href="/prestadores"
+                className="block text-gray-600 hover:text-[#A502CA] transition-colors py-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Prestadores
+              </Link>
+              <Link 
+                href="/seja-um-prestador"
+                className="block text-gray-600 hover:text-[#A502CA] transition-colors py-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Seja um Prestador
               </Link>
               <div className="pt-4 border-t border-gray-200">
                 <UserDropdown user={user} userType={userType} />
@@ -753,26 +841,12 @@ function ProviderHeader({ user, userType, loading }: { user: any; userType: stri
                 <MdAdminPanelSettings className="text-lg" />
                 Admin
               </Link>
-              <Link 
-                href="/"
-                className="block text-gray-600 hover:text-[#A502CA] transition-colors py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Para Clientes
-              </Link>
               <div className="pt-4 border-t border-gray-200">
                 <UserDropdown user={user} userType={userType} />
               </div>
             </>
           ) : (
             <>
-              <Link 
-                href="/"
-                className="block text-gray-600 hover:text-[#A502CA] transition-colors py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Para Clientes
-              </Link>
               <ScrollLink 
                 to="beneficios"
                 smooth={true} 

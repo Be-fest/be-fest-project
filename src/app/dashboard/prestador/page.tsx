@@ -15,9 +15,7 @@ import {
   MdLocationOn,
   MdPeople,
   MdNotifications,
-  // MdAdd,
   MdSettings,
-  // MdVisibility,
   MdArrowUpward,
   MdArrowDownward,
   MdClose,
@@ -37,7 +35,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { formatGuestsInfo, calculateServiceTotalValue } from '@/utils/formatters';
 
 export default function ProviderDashboard() {
-  const { userData } = useAuth();
+  const { userData, loading: authLoading, error: authError } = useAuth();
   const [events, setEvents] = useState<EventWithServices[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [providerStats, setProviderStats] = useState<{
@@ -67,6 +65,8 @@ export default function ProviderDashboard() {
   } | null>(null);
 
   const loadData = async () => {
+    if (!userData) return;
+    
     setLoading(true);
     setError(null);
     try {
@@ -104,8 +104,198 @@ export default function ProviderDashboard() {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (!authLoading && userData) {
+      loadData();
+    }
+  }, [authLoading, userData]);
+
+  // Se ainda está carregando a autenticação, mostrar loading
+  if (authLoading) {
+    return (
+      <AuthGuard requiredRole="provider">
+        <ProviderLayout>
+          <div className="min-h-screen bg-gray-50 p-6">
+            <div className="max-w-7xl mx-auto">
+              {/* Navigation Tabs Skeleton */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 mb-8 animate-pulse">
+                <div className="flex items-center gap-2">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-10 w-32 bg-gray-300 rounded-xl"></div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Welcome Banner Skeleton */}
+              <div className="bg-gray-300 rounded-2xl p-6 mb-8 animate-pulse">
+                <div className="h-6 w-64 bg-gray-400 rounded mb-2"></div>
+                <div className="h-4 w-96 bg-gray-400 rounded"></div>
+              </div>
+
+              {/* Stats Cards Skeleton */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="w-12 h-12 bg-gray-300 rounded-xl"></div>
+                      <div className="h-4 w-12 bg-gray-200 rounded"></div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-6 w-16 bg-gray-300 rounded"></div>
+                      <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </ProviderLayout>
+      </AuthGuard>
+    );
+  }
+
+  // Se há erro de autenticação, mostrar erro
+  if (authError) {
+    return (
+      <AuthGuard requiredRole="provider">
+        <ProviderLayout>
+          <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="text-center">
+              <MdCancel className="text-red-500 text-6xl mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Erro de Autenticação</h2>
+              <p className="text-gray-600 mb-4">{authError}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                Tentar novamente
+              </button>
+            </div>
+          </div>
+        </ProviderLayout>
+      </AuthGuard>
+    );
+  }
+
+  // Se não há dados do usuário, mostrar loading
+  if (!userData) {
+    return (
+      <AuthGuard requiredRole="provider">
+        <ProviderLayout>
+          <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Carregando dados do usuário...</p>
+            </div>
+          </div>
+        </ProviderLayout>
+      </AuthGuard>
+    );
+  }
+
+  // Se há erro no carregamento dos dados, mostrar erro
+  if (error) {
+    return (
+      <AuthGuard requiredRole="provider">
+        <ProviderLayout>
+          <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="text-center">
+              <MdCancel className="text-red-500 text-6xl mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Erro ao carregar dashboard</h2>
+              <p className="text-gray-600 mb-4">{error}</p>
+              <button
+                onClick={() => loadData()}
+                className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                Tentar novamente
+              </button>
+            </div>
+          </div>
+        </ProviderLayout>
+      </AuthGuard>
+    );
+  }
+
+  // Se ainda está carregando os dados, mostrar loading
+  if (loading) {
+    return (
+      <AuthGuard requiredRole="provider">
+        <ProviderLayout>
+          <div className="min-h-screen bg-gray-50 p-6">
+            <div className="max-w-7xl mx-auto">
+              {/* Navigation Tabs Skeleton */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 mb-8 animate-pulse">
+                <div className="flex items-center gap-2">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <div key={i} className="h-10 w-32 bg-gray-300 rounded-xl"></div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Welcome Banner Skeleton */}
+              <div className="bg-gray-300 rounded-2xl p-6 mb-8 animate-pulse">
+                <div className="h-6 w-64 bg-gray-400 rounded mb-2"></div>
+                <div className="h-4 w-96 bg-gray-400 rounded"></div>
+              </div>
+
+              {/* Stats Cards Skeleton */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="w-12 h-12 bg-gray-300 rounded-xl"></div>
+                      <div className="h-4 w-12 bg-gray-200 rounded"></div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-6 w-16 bg-gray-300 rounded"></div>
+                      <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Revenue Stats Skeleton */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                {[1, 2].map((i) => (
+                  <div key={i} className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="w-12 h-12 bg-gray-300 rounded-xl"></div>
+                      <div className="h-4 w-12 bg-gray-200 rounded"></div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-6 w-20 bg-gray-300 rounded"></div>
+                      <div className="h-4 w-32 bg-gray-200 rounded"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Recent Requests Skeleton */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-pulse">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="h-6 w-40 bg-gray-300 rounded"></div>
+                  <div className="h-4 w-20 bg-gray-200 rounded"></div>
+                </div>
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-gray-300 rounded-lg"></div>
+                        <div className="space-y-2">
+                          <div className="h-4 w-32 bg-gray-300 rounded"></div>
+                          <div className="h-3 w-48 bg-gray-200 rounded"></div>
+                        </div>
+                      </div>
+                      <div className="h-6 w-20 bg-gray-300 rounded-full"></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </ProviderLayout>
+      </AuthGuard>
+    );
+  }
 
   // Estatísticas baseadas nos dados reais
   const totalRequests = providerStats.totalRequests;
@@ -1170,109 +1360,6 @@ export default function ProviderDashboard() {
     );
   };
 
-  if (loading) {
-    return (
-      <AuthGuard requiredRole="provider">
-        <ProviderLayout>
-          <div className="min-h-screen bg-gray-50 p-6">
-            <div className="max-w-7xl mx-auto">
-              {/* Navigation Tabs Skeleton */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 mb-8 animate-pulse">
-                <div className="flex items-center gap-2">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="h-10 w-32 bg-gray-300 rounded-xl"></div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Welcome Banner Skeleton */}
-              <div className="bg-gray-300 rounded-2xl p-6 mb-8 animate-pulse">
-                <div className="h-6 w-64 bg-gray-400 rounded mb-2"></div>
-                <div className="h-4 w-96 bg-gray-400 rounded"></div>
-              </div>
-
-              {/* Stats Cards Skeleton */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="w-12 h-12 bg-gray-300 rounded-xl"></div>
-                      <div className="h-4 w-12 bg-gray-200 rounded"></div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="h-6 w-16 bg-gray-300 rounded"></div>
-                      <div className="h-4 w-24 bg-gray-200 rounded"></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Revenue Stats Skeleton */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                {[1, 2].map((i) => (
-                  <div key={i} className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="w-12 h-12 bg-gray-300 rounded-xl"></div>
-                      <div className="h-4 w-12 bg-gray-200 rounded"></div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="h-6 w-20 bg-gray-300 rounded"></div>
-                      <div className="h-4 w-32 bg-gray-200 rounded"></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Recent Requests Skeleton */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-pulse">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="h-6 w-40 bg-gray-300 rounded"></div>
-                  <div className="h-4 w-20 bg-gray-200 rounded"></div>
-                </div>
-                <div className="space-y-4">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-gray-300 rounded-lg"></div>
-                        <div className="space-y-2">
-                          <div className="h-4 w-32 bg-gray-300 rounded"></div>
-                          <div className="h-3 w-48 bg-gray-200 rounded"></div>
-                        </div>
-                      </div>
-                      <div className="h-6 w-20 bg-gray-300 rounded-full"></div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </ProviderLayout>
-      </AuthGuard>
-    );
-  }
-
-  if (error) {
-    return (
-      <AuthGuard requiredRole="provider">
-        <ProviderLayout>
-          <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-            <div className="text-center">
-              <MdCancel className="text-red-500 text-6xl mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Erro ao carregar dashboard</h2>
-              <p className="text-gray-600 mb-4">{error}</p>
-              <button
-                onClick={() => window.location.reload()}
-                className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-              >
-                Tentar novamente
-              </button>
-            </div>
-          </div>
-        </ProviderLayout>
-      </AuthGuard>
-    );
-  }
-
   const renderContent = () => {
     switch (activeTab) {
       case 'overview':
@@ -1354,9 +1441,9 @@ export default function ProviderDashboard() {
             <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
               <div className="text-center mb-6">
                 <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
-                  confirmAction.type === 'approve' ? 'bg-green-100' : 'bg-red-100'
+                  confirmAction?.type === 'approve' ? 'bg-green-100' : 'bg-red-100'
                 }`}>
-                  {confirmAction.type === 'approve' ? (
+                  {confirmAction?.type === 'approve' ? (
                     <MdCheckCircle className={`text-3xl text-green-600`} />
                   ) : (
                     <MdClose className={`text-3xl text-red-600`} />
@@ -1364,18 +1451,18 @@ export default function ProviderDashboard() {
                 </div>
                 
                 <h3 className="text-xl font-bold text-gray-900 mb-2">
-                  {confirmAction.type === 'approve' ? 'Confirmar Aprovação' : 'Confirmar Rejeição'}
+                  {confirmAction?.type === 'approve' ? 'Confirmar Aprovação' : 'Confirmar Rejeição'}
                 </h3>
                 
                 <p className="text-gray-600">
-                  {confirmAction.serviceIds ? (
+                  {confirmAction?.serviceIds ? (
                     `Tem certeza que deseja ${confirmAction.type === 'approve' ? 'aprovar' : 'rejeitar'} ${confirmAction.serviceIds.length} serviços?`
                   ) : (
                     `Tem certeza que deseja ${confirmAction.type === 'approve' ? 'aprovar' : 'rejeitar'} ${confirmAction.serviceName || 'este serviço'}?`
                   )}
                 </p>
                 
-                {confirmAction.type === 'approve' && (
+                {confirmAction?.type === 'approve' && (
                   <p className="text-sm text-gray-500 mt-2">
                     O(s) serviço(s) será(ão) aprovado(s) com o preço já definido.
                   </p>
@@ -1397,7 +1484,7 @@ export default function ProviderDashboard() {
                   onClick={executeAction}
                   disabled={actionLoading === 'bulk-action'}
                   className={`flex-1 px-4 py-3 text-white rounded-lg font-medium transition-colors disabled:opacity-50 ${
-                    confirmAction.type === 'approve' 
+                    confirmAction?.type === 'approve' 
                       ? 'bg-green-600 hover:bg-green-700' 
                       : 'bg-red-600 hover:bg-red-700'
                   }`}
@@ -1408,7 +1495,7 @@ export default function ProviderDashboard() {
                       Processando...
                     </div>
                   ) : (
-                    confirmAction.type === 'approve' ? 'Aprovar' : 'Rejeitar'
+                    confirmAction?.type === 'approve' ? 'Aprovar' : 'Rejeitar'
                   )}
                 </button>
               </div>
@@ -1418,4 +1505,4 @@ export default function ProviderDashboard() {
       </ProviderLayout>
     </AuthGuard>
   );
-} 
+}

@@ -398,24 +398,32 @@ export function useAuth() {
         setLoading(false);
         
         // Verificar se a sessão ainda é válida no Supabase
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError || !session) {
-          console.log('Sessão do localStorage inválida, fazendo logout');
+        try {
+          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+          
+          if (sessionError || !session) {
+            console.log('Sessão do localStorage inválida, fazendo logout');
+            clearStoredSession();
+            setUser(null);
+            setUserData(null);
+            setLoading(false);
+            return;
+          }
+          
+          // Atualizar dados do usuário se necessário
+          if (session.user.id === storedUserData.id) {
+            await fetchUserData(session.user.id);
+          } else {
+            console.log('ID do usuário mudou, recarregando dados');
+            setUser(session.user);
+            await fetchUserData(session.user.id);
+          }
+        } catch (sessionCheckError) {
+          console.error('Erro ao verificar sessão:', sessionCheckError);
           clearStoredSession();
           setUser(null);
           setUserData(null);
           setLoading(false);
-          return;
-        }
-        
-        // Atualizar dados do usuário se necessário
-        if (session.user.id === storedUserData.id) {
-          await fetchUserData(session.user.id);
-        } else {
-          console.log('ID do usuário mudou, recarregando dados');
-          setUser(session.user);
-          await fetchUserData(session.user.id);
         }
         return;
       }
@@ -457,6 +465,7 @@ export function useAuth() {
         setUser(null);
         setUserData(null);
         clearStoredSession();
+        setLoading(false);
       }
     } catch (error) {
       const sessionErrorInfo = {
@@ -585,9 +594,16 @@ export function useAuth() {
       if (data.user) {
         console.log('Login realizado com sucesso para usuário:', data.user.id);
         setUser(data.user);
+        setStoredSession(data.session);
         
         // Buscar dados do usuário
         await fetchUserData(data.user.id);
+        
+        // Retornar dados completos incluindo userData
+        return {
+          ...data,
+          userData: getStoredUserData()
+        };
       }
       
       return data;
