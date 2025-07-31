@@ -10,7 +10,7 @@ create table users (
   organization_name text,
   cnpj text,
   whatsapp_number text,
-  logo_url text,
+  profile_image text,
   area_of_operation text,
   address text,
   city text,

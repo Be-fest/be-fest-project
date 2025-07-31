@@ -286,7 +286,7 @@ export interface Database {
           organization_name: string | null
           cnpj: string | null
           whatsapp_number: string | null
-          logo_url: string | null
+          profile_image: string | null
           area_of_operation: string | null
           city: string | null
           state: string | null
@@ -302,7 +302,7 @@ export interface Database {
           organization_name?: string | null
           cnpj?: string | null
           whatsapp_number?: string | null
-          logo_url?: string | null
+          profile_image?: string | null
           area_of_operation?: string | null
           city?: string | null
           state?: string | null
@@ -318,7 +318,7 @@ export interface Database {
           organization_name?: string | null
           cnpj?: string | null
           whatsapp_number?: string | null
-          logo_url?: string | null
+          profile_image?: string | null
           area_of_operation?: string | null
           city?: string | null
           state?: string | null
@@ -338,4 +338,4 @@ export interface Database {
       [_ in never]: never
     }
   }
-} 
+}

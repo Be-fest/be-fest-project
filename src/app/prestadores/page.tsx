@@ -14,7 +14,6 @@ import { ServicesSkeleton } from '@/components/ui';
 interface ProviderData {
   id: string;
   organization_name?: string;
-  logo_url?: string;
   profile_image?: string;
   area_of_operation?: string;
   services_count: number;
@@ -79,7 +78,7 @@ const ProvidersGrid = ({ providers }: { providers: ProviderData[] }) => {
           <div className="relative h-56 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent z-10"></div>
             <img
-              src={provider.profile_image || provider.logo_url || '/be-fest-provider-logo.png'}
+              src={provider.profile_image || '/be-fest-provider-logo.png'}
               alt={getProviderDisplayName(provider)}
               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
             />

@@ -12,7 +12,6 @@ const partySchema = z.object({
   // Campos separados de endereço
   street: z.string().min(1, 'Rua é obrigatória'),
   number: z.string().min(1, 'Número é obrigatório'),
-  complement: z.string().optional(),
   neighborhood: z.string().min(1, 'Bairro é obrigatório'),
   city: z.string().min(1, 'Cidade é obrigatória'),
   state: z.string().min(1, 'Estado é obrigatório'),
@@ -42,7 +41,6 @@ interface PartyEditFormProps {
 const generateFullAddress = (data: {
   street?: string;
   number?: string;
-  complement?: string;
   neighborhood?: string;
   city?: string;
   state?: string;
@@ -54,9 +52,6 @@ const generateFullAddress = (data: {
     let streetPart = data.street;
     if (data.number) {
       streetPart += `, ${data.number}`;
-    }
-    if (data.complement) {
-      streetPart += `, ${data.complement}`;
     }
     parts.push(streetPart);
   }
@@ -87,7 +82,6 @@ const parseAddress = (endereco: string) => {
   
   let street = '';
   let number = '';
-  let complement = '';
   let neighborhood = '';
   let city = '';
   let state = '';
@@ -97,7 +91,6 @@ const parseAddress = (endereco: string) => {
     const streetParts = parts[0].split(', ');
     street = streetParts[0] || '';
     number = streetParts[1] || '';
-    complement = streetParts[2] || '';
   }
   
   neighborhood = parts[1] || '';
@@ -110,7 +103,7 @@ const parseAddress = (endereco: string) => {
   
   zipcode = parts[3] || '';
   
-  return { street, number, complement, neighborhood, city, state, zipcode };
+  return { street, number, neighborhood, city, state, zipcode };
 };
 
 export function PartyEditForm({ initialData, onSubmit, onClose }: PartyEditFormProps) {
@@ -206,14 +199,6 @@ export function PartyEditForm({ initialData, onSubmit, onClose }: PartyEditFormP
                 </div>
               </div>
 
-              {/* Complemento */}
-              <Input
-                label="Complemento (opcional)"
-                placeholder="Ex: Apartamento 101, Bloco A"
-                error={errors.complement?.message}
-                {...register('complement')}
-              />
-
               {/* Bairro e CEP */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <Input
@@ -302,13 +287,12 @@ export function PartyEditForm({ initialData, onSubmit, onClose }: PartyEditFormP
               {(() => {
                 const street = watch('street');
                 const number = watch('number');
-                const complement = watch('complement');
                 const neighborhood = watch('neighborhood');
                 const city = watch('city');
                 const state = watch('state');
                 const zipcode = watch('zipcode');
                 
-                const previewData = { street, number, complement, neighborhood, city, state, zipcode };
+                const previewData = { street, number, neighborhood, city, state, zipcode };
                 const preview = generateFullAddress(previewData);
                 
                 if (preview) {

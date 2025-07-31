@@ -17,18 +17,16 @@ interface PartyConfigFormProps {
 }
 
 const partySchema = z.object({
-  title: z.string().min(2, 'Nome do evento deve ter pelo menos 2 caracteres'),
+  title: z.string().min(1, 'Título é obrigatório'),
   description: z.string().optional().nullable(),
   event_date: z.string().min(1, 'Data é obrigatória'),
   start_time: z.string().optional().nullable(),
-  // Campos de endereço separados
   street: z.string().optional().nullable(),
   number: z.string().optional().nullable(),
   neighborhood: z.string().optional().nullable(),
   city: z.string().optional().nullable(),
   state: z.string().optional().nullable(),
   zipcode: z.string().optional().nullable(),
-  complement: z.string().optional().nullable(),
   // Campo location será gerado automaticamente
   location: z.string().optional().nullable(),
   full_guests: z.number().min(0, 'Número de convidados inteira deve ser 0 ou maior'),
@@ -77,7 +75,6 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
       city: '',
       state: '',
       zipcode: '',
-      complement: '',
       location: '',
       full_guests: 0,
       half_guests: 0,
@@ -89,7 +86,6 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
   const generateFullAddress = (data: {
     street?: string;
     number?: string;
-    complement?: string;
     neighborhood?: string;
     city?: string;
     state?: string;
@@ -101,9 +97,6 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
       let streetPart = data.street;
       if (data.number) {
         streetPart += `, ${data.number}`;
-      }
-      if (data.complement) {
-        streetPart += `, ${data.complement}`;
       }
       parts.push(streetPart);
     }
@@ -143,7 +136,6 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
       const fullAddress = generateFullAddress({
         street: data.street || '',
         number: data.number || '',
-        complement: data.complement || '',
         neighborhood: data.neighborhood || '',
         city: data.city || '',
         state: data.state || '',
@@ -347,20 +339,6 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
             </div>
           </div>
 
-          {/* Complemento */}
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              Complemento (opcional)
-            </label>
-            <input
-              type="text"
-              {...register('complement')}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none text-sm"
-              placeholder="Ex: Apartamento 101, Bloco A"
-              disabled={loading}
-            />
-          </div>
-
           {/* Bairro e CEP */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -457,17 +435,15 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
           {(() => {
             const street = watch('street');
             const number = watch('number');
-            const complement = watch('complement');
             const neighborhood = watch('neighborhood');
             const city = watch('city');
             const state = watch('state');
             const zipcode = watch('zipcode');
             
-            const previewData = { street, number, complement, neighborhood, city, state, zipcode };
+            const previewData = { street, number, neighborhood, city, state, zipcode };
             const preview = generateFullAddress({
               street: previewData.street || undefined,
               number: previewData.number || undefined, 
-              complement: previewData.complement || undefined,
               neighborhood: previewData.neighborhood || undefined,
               city: previewData.city || undefined,
               state: previewData.state || undefined,

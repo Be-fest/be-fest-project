@@ -190,7 +190,7 @@ export async function getEventServicesAction(filters?: {
             id,
             full_name,
             organization_name,
-            logo_url,
+            profile_image,
             area_of_operation
           )
         ),
@@ -263,7 +263,7 @@ export async function getClientEventServicesAction(): Promise<ActionResult<Event
             id,
             full_name,
             organization_name,
-            logo_url,
+            profile_image,
             area_of_operation
           )
         ),
@@ -743,4 +743,4 @@ export async function recalculateAllEventServicesAction(eventId: string): Promis
       error: error instanceof Error ? error.message : 'Erro ao recalcular preços' 
     }
   }
-} 
+}

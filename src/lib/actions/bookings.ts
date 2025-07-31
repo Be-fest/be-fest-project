@@ -71,7 +71,7 @@ export async function getBookingsAction(filters?: {
             id,
             full_name,
             organization_name,
-            logo_url,
+            profile_image,
             area_of_operation
           )
         )
@@ -135,7 +135,7 @@ export async function getClientBookingsAction(): Promise<ActionResult<BookingWit
             id,
             full_name,
             organization_name,
-            logo_url,
+            profile_image,
             area_of_operation
           )
         )
@@ -181,7 +181,7 @@ export async function getProviderBookingsAction(): Promise<ActionResult<BookingW
             id,
             full_name,
             organization_name,
-            logo_url,
+            profile_image,
             area_of_operation
           )
         )
@@ -584,4 +584,4 @@ export async function createBookingFromEventServiceAction(eventServiceId: string
       error: error instanceof Error ? error.message : 'Erro ao criar reserva a partir do orçamento' 
     }
   }
-} 
+}

@@ -310,7 +310,7 @@ export default function ServiceDetailsPage() {
             {/* Imagem do Serviço */}
             <div className="relative h-64 md:h-80 lg:h-96 bg-gray-200">
               <img
-                src={service.images_urls?.[0] || service.provider?.profile_image || service.provider?.logo_url || '/be-fest-provider-logo.png'}
+                src={service.images_urls?.[0] || service.provider?.profile_image || '/be-fest-provider-logo.png'}
                 alt={service.name}
                 className="w-full h-full object-cover"
               />
@@ -354,7 +354,7 @@ export default function ServiceDetailsPage() {
               <div className="flex items-center gap-4 mb-8 p-6 bg-gray-50 rounded-xl">
                 <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200">
                   <img
-                    src={service.provider?.profile_image || service.provider?.logo_url || '/be-fest-provider-logo.png'}
+                    src={service.provider?.profile_image || '/be-fest-provider-logo.png'}
                     alt={service.provider?.organization_name || service.provider?.full_name || ''}
                     className="w-full h-full object-cover"
                   />
@@ -442,4 +442,4 @@ export default function ServiceDetailsPage() {
       </div>
     </>
   );
-} 
+}

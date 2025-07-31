@@ -28,7 +28,7 @@ const registerProviderSchema = z.object({
   confirmPassword: z.string(),
   cnpj: z.string().min(14, 'CNPJ inválido'),
   phone: z.string().min(10, 'Telefone inválido'),
-  areaOfOperation: z.string().min(1, 'Área de atuação é obrigatória')
+  areaOfOperation: z.string().min(1, 'Subcategoria é obrigatória')
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Senhas não coincidem",
   path: ["confirmPassword"],
@@ -68,6 +68,7 @@ export async function registerClientAction(formData: FormData): Promise<ActionRe
       confirmPassword: formData.get('confirmPassword') as string,
       cpf: formData.get('cpf') as string,
       phone: formData.get('phone') as string,
+      address: formData.get('address') as string,
     }
 
     console.log('Raw form data:', rawData)
@@ -114,17 +115,32 @@ export async function registerClientAction(formData: FormData): Promise<ActionRe
 
     console.log('Auth user created successfully:', authData.user.id)
 
+    // Extrair coordenadas se fornecidas
+    const latitude = formData.get('latitude') as string
+    const longitude = formData.get('longitude') as string
+
+    // Preparar dados para inserção
+    const insertData: any = {
+      id: authData.user.id,
+      role: 'client',
+      full_name: validatedData.fullName,
+      email: validatedData.email,
+      cpf: cpf,
+      whatsapp_number: phone,
+      address: rawData.address
+    }
+
+    // Adicionar coordenadas se disponíveis
+    if (latitude && longitude) {
+      insertData.latitude = parseFloat(latitude)
+      insertData.longitude = parseFloat(longitude)
+      insertData.raio_atuacao = 50 // Valor padrão para clientes
+    }
+
     // Inserir manualmente na tabela users com role 'client'
     const { error: insertError } = await supabase
       .from('users')
-      .insert({
-        id: authData.user.id,
-        role: 'client',
-        full_name: validatedData.fullName,
-        email: validatedData.email,
-        cpf: cpf,
-        whatsapp_number: phone
-      })
+      .insert(insertData)
 
     if (insertError) {
       console.error('User profile creation error:', insertError)
@@ -175,6 +191,7 @@ export async function registerProviderAction(formData: FormData): Promise<Action
       cnpj: formData.get('cnpj') as string,
       phone: formData.get('phone') as string,
       areaOfOperation: formData.get('areaOfOperation') as string,
+      address: formData.get('address') as string,
     }
 
     console.log('Raw provider form data:', rawData)
@@ -223,19 +240,34 @@ export async function registerProviderAction(formData: FormData): Promise<Action
 
     console.log('Provider auth user created successfully:', authData.user.id)
 
+    // Extrair coordenadas se fornecidas
+    const latitude = formData.get('latitude') as string
+    const longitude = formData.get('longitude') as string
+
+    // Preparar dados para inserção
+    const insertData: any = {
+      id: authData.user.id,
+      role: 'provider',
+      full_name: validatedData.companyName,
+      email: validatedData.email,
+      organization_name: validatedData.companyName,
+      cnpj: cnpj,
+      whatsapp_number: phone,
+      area_of_operation: validatedData.areaOfOperation,
+      address: rawData.address
+    }
+
+    // Adicionar coordenadas se disponíveis
+    if (latitude && longitude) {
+      insertData.latitude = parseFloat(latitude)
+      insertData.longitude = parseFloat(longitude)
+      insertData.raio_atuacao = 50 // Valor padrão para prestadores
+    }
+
     // Inserir manualmente na tabela users com role 'provider'
     const { error: insertError } = await supabase
       .from('users')
-      .insert({
-        id: authData.user.id,
-        role: 'provider',
-        full_name: validatedData.companyName,
-        email: validatedData.email,
-        organization_name: validatedData.companyName,
-        cnpj: cnpj,
-        whatsapp_number: phone,
-        area_of_operation: validatedData.areaOfOperation
-      })
+      .insert(insertData)
 
     if (insertError) {
       console.error('Provider profile creation error:', insertError)
@@ -721,7 +753,8 @@ const updateProviderProfileSchema = z.object({
   organization_description: z.string().optional(),
   full_name: z.string().min(1, 'Nome é obrigatório').optional(),
   whatsapp_number: z.string().min(8, 'Telefone deve ter pelo menos 8 dígitos').optional(),
-  area_of_operation: z.string().min(1, 'Área de atuação é obrigatória').optional(),
+  area_of_operation: z.string().min(1, 'Subcategoria é obrigatória').optional(),
+  address: z.string().min(1, 'Endereço é obrigatório').optional(),
   cnpj: z.string().min(11, 'CNPJ deve ter pelo menos 11 dígitos').optional(),
   profile_image: z.string().url('URL da imagem inválida').optional().or(z.literal(''))
 })
@@ -744,6 +777,7 @@ export async function updateProviderProfileAction(formData: FormData): Promise<A
       'full_name', 
       'whatsapp_number',
       'area_of_operation',
+      'address',
       'cnpj',
       'profile_image'
     ]
@@ -754,6 +788,11 @@ export async function updateProviderProfileAction(formData: FormData): Promise<A
         rawData[field] = value.trim()
       }
     })
+
+    // Extrair coordenadas se fornecidas
+    const latitude = formData.get('latitude') as string
+    const longitude = formData.get('longitude') as string
+    const raio_atuacao = formData.get('raio_atuacao') as string
 
     console.log('Dados extraídos do FormData:', rawData)
 
@@ -796,12 +835,23 @@ export async function updateProviderProfileAction(formData: FormData): Promise<A
       updateData.area_of_operation = validatedData.area_of_operation
     }
 
+    if (validatedData.address) {
+      updateData.address = validatedData.address
+    }
+
     if (validatedData.cnpj) {
       updateData.cnpj = removeMask(validatedData.cnpj)
     }
 
     if (validatedData.profile_image) {
       updateData.profile_image = validatedData.profile_image
+    }
+
+    // Atualizar coordenadas se fornecidas
+    if (latitude && longitude) {
+      updateData.latitude = parseFloat(latitude)
+      updateData.longitude = parseFloat(longitude)
+      updateData.raio_atuacao = raio_atuacao ? parseInt(raio_atuacao) : 50
     }
 
     console.log('Dados para atualização:', updateData)
@@ -904,4 +954,4 @@ export async function changePasswordAction(formData: FormData): Promise<ActionRe
       error: error instanceof Error ? error.message : 'Ocorreu um erro ao alterar a senha' 
     }
   }
-} 
+}

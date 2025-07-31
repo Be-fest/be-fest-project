@@ -21,7 +21,7 @@ CREATE TABLE public.users (
   cnpj text,
   cpf text,
   whatsapp_number text,
-  logo_url text,
+  profile_image text,
   area_of_operation text,
   coordenates jsonb,
   created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
@@ -306,4 +306,4 @@ INSERT INTO public.subcategories (category_id, name) VALUES
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
-GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated; 
+GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated;

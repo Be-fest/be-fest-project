@@ -6,11 +6,12 @@ import { MdEdit, MdSave, MdCancel, MdCloudUpload, MdWarning, MdRemove, MdImage }
 import { getProviderStatsAction } from '@/lib/actions/services';
 import { uploadProfileImageAction, deleteProfileImageAction, updateProviderProfileAction } from '@/lib/actions/auth';
 import { User } from '@/types/database';
-import { ProviderProfileSkeleton } from '@/components/ui';
+import { ProviderProfileSkeleton, AddressFields, ServiceRadiusPicker } from '@/components/ui';
+import AreaOfOperationSelect from '@/components/ui/AreaOfOperationSelect';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
 import { invalidateServiceImagesCache } from '@/hooks/useImagePreloader';
-import { LocationPicker } from '@/components/ui/LocationPicker';
 import { useAuth } from '@/hooks/useAuth';
+import { geocodingService } from '@/lib/services/geocoding';
 
 interface ProviderStats {
   totalRequests: number;
@@ -21,19 +22,29 @@ interface ProviderStats {
   completedEvents: number;
 }
 
+interface AddressData {
+  street: string;
+  number: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  zipcode: string;
+}
+
 interface FormData {
   organization_name: string;
   organization_description: string;
   full_name: string;
   email: string;
   whatsapp_number: string;
-  area_of_operation: string;
+  area_of_operation: string; // Subcategoria (buffet, churrasco, etc.)
+  address: AddressData; // Endereço completo
   coordenates: {
     latitude: number;
     longitude: number;
     raio_atuacao: number;
   };
-  profile_image: string;
+  profile_image: string | File;
 }
 
 export function ProviderProfile() {
@@ -60,29 +71,79 @@ export function ProviderProfile() {
     email: '',
     whatsapp_number: '',
     area_of_operation: '',
+    address: {
+      street: '',
+      number: '',
+      neighborhood: '',
+      city: '',
+      state: '',
+      zipcode: ''
+    },
     coordenates: {
-      latitude: userData?.coordenates?.latitude || 0,
-      longitude: userData?.coordenates?.longitude || 0,
-      raio_atuacao: userData?.coordenates?.raio_atuacao || 50,
+      latitude: userData?.latitude || 0,
+      longitude: userData?.longitude || 0,
+      raio_atuacao: userData?.raio_atuacao || 50,
     },
     profile_image: '',
   });
+
+  // Função para analisar endereço completo em componentes
+  const parseAddress = (fullAddress: string): AddressData => {
+    // Esta é uma implementação básica - pode ser melhorada
+    const parts = fullAddress.split(',').map(part => part.trim());
+    
+    return {
+      street: parts[0] || '',
+      number: parts[1] || '',
+      neighborhood: parts[2] || '',
+      city: parts[3] || '',
+      state: parts[4] || '',
+      zipcode: ''
+    };
+  };
+
+  // Função para gerar endereço completo a partir dos campos
+  const generateFullAddress = (addressData: AddressData): string => {
+    const parts = [];
+    
+    if (addressData.street) parts.push(addressData.street);
+    if (addressData.number) parts.push(addressData.number);
+    if (addressData.neighborhood) parts.push(addressData.neighborhood);
+    if (addressData.city) parts.push(addressData.city);
+    if (addressData.state) parts.push(addressData.state);
+    
+    return parts.join(', ');
+  };
 
   // Atualizar formData quando userData mudar
   useEffect(() => {
     if (userData) {
       console.log('✅ [PROVIDER_PROFILE] Dados do usuário atualizados:', userData);
+      
+      // Analisar endereço existente se houver
+      const addressData = userData.address 
+        ? parseAddress(userData.address)
+        : {
+            street: '',
+            number: '',
+            neighborhood: '',
+            city: '',
+            state: '',
+            zipcode: ''
+          };
+      
       setFormData({
         organization_name: userData.organization_name || '',
         organization_description: userData.organization_description || '',
         full_name: userData.full_name || '',
         email: userData.email || '',
         whatsapp_number: userData.whatsapp_number || '',
-        area_of_operation: userData.area_of_operation || '',
+        area_of_operation: userData.area_of_operation || '', // Subcategoria
+        address: addressData, // Endereço
         coordenates: {
-          latitude: userData.coordenates?.latitude || 0,
-          longitude: userData.coordenates?.longitude || 0,
-          raio_atuacao: userData.coordenates?.raio_atuacao || 50,
+          latitude: userData.latitude || 0,
+          longitude: userData.longitude || 0,
+          raio_atuacao: userData.raio_atuacao || 50,
         },
         profile_image: userData.profile_image || '',
       });
@@ -182,14 +243,13 @@ export function ProviderProfile() {
     setSaving(true);
     
     try {
-      const formDataToSend = new FormData();
+      const fullAddress = generateFullAddress(formData.address);
       
       // Validar campos obrigatórios antes de enviar
       const requiredFields = {
         organization_name: 'Nome da empresa é obrigatório',
         full_name: 'Nome do proprietário é obrigatório',
         whatsapp_number: 'WhatsApp é obrigatório',
-        area_of_operation: 'Área de atuação é obrigatória',
       };
 
       const errors: string[] = [];
@@ -201,55 +261,70 @@ export function ProviderProfile() {
         }
       });
 
+      // Validar se pelo menos alguns campos de endereço foram preenchidos
+      if (!formData.address.street || !formData.address.city || !formData.address.state) {
+        errors.push('Endereço é obrigatório (pelo menos rua, cidade e estado)');
+      }
+
       if (errors.length > 0) {
         toast.error('Campos obrigatórios', errors.join(', '), 5000);
         return;
       }
-      
-      // Adicionar apenas campos preenchidos
-      Object.entries(formData).forEach(([key, value]) => {
-        if (key === 'coordenates') {
-          // Handle coordenates object separately
-          if (value && typeof value === 'object') {
-            formDataToSend.append('latitude', value.latitude.toString());
-            formDataToSend.append('longitude', value.longitude.toString());
-            formDataToSend.append('raio_atuacao', value.raio_atuacao.toString());
-          }
-        } else if (value && typeof value === 'string' && value.trim() !== '' && key !== 'email') {
-          formDataToSend.append(key, value.trim());
+
+      // Tentar geocodificar o endereço
+      let coordinates = formData.coordenates;
+      if (fullAddress) {
+        toast.info('Processando endereço...', 'Obtendo coordenadas do endereço', 3000);
+        
+        const geocodingResult = await geocodingService.geocodeAddress(fullAddress);
+        if (geocodingResult) {
+          coordinates = {
+            latitude: geocodingResult.latitude,
+            longitude: geocodingResult.longitude,
+            raio_atuacao: formData.coordenates.raio_atuacao
+          };
+          console.log('✅ Coordenadas obtidas:', coordinates);
+        } else {
+          console.warn('⚠️ Não foi possível obter coordenadas para o endereço');
+          toast.warning('Aviso', 'Não foi possível obter coordenadas precisas do endereço', 4000);
         }
-      });
+      }
+      
+      const formDataToSend = new FormData();
+      
+      // Adicionar campos básicos
+      formDataToSend.append('organization_name', formData.organization_name.trim());
+      formDataToSend.append('organization_description', formData.organization_description.trim());
+      formDataToSend.append('full_name', formData.full_name.trim());
+      formDataToSend.append('whatsapp_number', formData.whatsapp_number.trim());
+      formDataToSend.append('area_of_operation', formData.area_of_operation.trim()); // Subcategoria
+      formDataToSend.append('address', fullAddress); // Endereço completo
+      
+      // Adicionar coordenadas
+      formDataToSend.append('latitude', coordinates.latitude.toString());
+      formDataToSend.append('longitude', coordinates.longitude.toString());
+      formDataToSend.append('raio_atuacao', coordinates.raio_atuacao.toString());
+      
+      // Adicionar imagem se houver
+      if (formData.profile_image) {
+        formDataToSend.append('profile_image', formData.profile_image);
+      }
       
       console.log('Enviando dados:', Object.fromEntries(formDataToSend.entries()));
       
       const result = await updateProviderProfileAction(formDataToSend);
       
       if (result.success) {
+        // Atualizar o formData local com as novas coordenadas
+        setFormData(prev => ({
+          ...prev,
+          area_of_operation: formData.area_of_operation, // Subcategoria
+          address: formData.address, // Endereço
+          coordenates: coordinates
+        }));
+        
         toast.success('Perfil atualizado!', 'Suas informações foram salvas com sucesso.', 4000);
         setIsEditing(false);
-        
-        // Atualizar dados do usuário local
-        // const supabase = createClient(); // This line is removed as per the new_code
-        // const { data: updatedUser } = await supabase // This line is removed as per the new_code
-        //   .from('users') // This line is removed as per the new_code
-        //   .select('*') // This line is removed as per the new_code
-        //   .eq('id', user?.id) // This line is removed as per the new_code
-        //   .single(); // This line is removed as per the new_code
-          
-        // if (updatedUser) { // This line is removed as per the new_code
-        //   setUser(updatedUser); // This line is removed as per the new_code
-        //   setFormData({ // This line is removed as per the new_code
-        //     organization_name: updatedUser.organization_name || '', // This line is removed as per the new_code
-        //     full_name: updatedUser.full_name || '', // This line is removed as per the new_code
-        //     email: updatedUser.email || '', // This line is removed as per the new_code
-        //     whatsapp_number: updatedUser.whatsapp_number || '', // This line is removed as per the new_code
-        //     latitude: updatedUser.latitude || 0,
-//     longitude: updatedUser.longitude || 0,
-//     raio_atuacao: updatedUser.raio_atuacao || 50,
-        //     cnpj: updatedUser.cnpj || '', // This line is removed as per the new_code
-        //     profile_image: updatedUser.profile_image || '', // This line is removed as per the new_code
-        //   }); // This line is removed as per the new_code
-        // } // This line is removed as per the new_code
       } else {
         toast.error('Erro ao salvar', result.error || 'Não foi possível salvar as alterações', 5000);
       }
@@ -263,17 +338,30 @@ export function ProviderProfile() {
 
   const handleCancel = () => {
     if (userData) {
+      // Analisar endereço existente se houver
+      const addressData = userData.address 
+        ? parseAddress(userData.address)
+        : {
+            street: '',
+            number: '',
+            neighborhood: '',
+            city: '',
+            state: '',
+            zipcode: ''
+          };
+      
       setFormData({
         organization_name: userData.organization_name || '',
         organization_description: userData.organization_description || '',
         full_name: userData.full_name || '',
         email: userData.email || '',
         whatsapp_number: userData.whatsapp_number || '',
-        area_of_operation: userData.area_of_operation || '',
+        area_of_operation: userData.area_of_operation || '', // Subcategoria
+        address: addressData, // Endereço
         coordenates: {
-          latitude: userData.coordenates?.latitude || 0,
-          longitude: userData.coordenates?.longitude || 0,
-          raio_atuacao: userData.coordenates?.raio_atuacao || 50,
+          latitude: userData.latitude || 0,
+          longitude: userData.longitude || 0,
+          raio_atuacao: userData.raio_atuacao || 50,
         },
         profile_image: userData.profile_image || '',
       });
@@ -513,49 +601,71 @@ export function ProviderProfile() {
             )}
           </div>
 
-          {/* Quarta linha - Área de Atuação (largura completa para o mapa) */}
-          <div>
-            <label className="block text-sm font-medium text-[#520029] mb-2">
-              Área de Atuação *
-            </label>
-            {isEditing ? (
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <LocationPicker
-                  onLocationChange={(lat, lng) => {
-                    setFormData(prev => ({
-                      ...prev,
-                      coordenates: {
-                        ...prev.coordenates,
-                        latitude: lat,
-                        longitude: lng
-                      }
-                    }));
-                  }}
-                  onRadiusChange={(radius) => {
-                    setFormData(prev => ({
-                      ...prev,
-                      coordenates: {
-                        ...prev.coordenates,
-                        raio_atuacao: radius
-                      }
-                    }));
-                  }}
-                  initialLat={formData.coordenates.latitude}
-                  initialLng={formData.coordenates.longitude}
-                  initialRadius={formData.coordenates.raio_atuacao}
+          {/* Quarta linha - Subcategoria e Endereço */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Subcategoria */}
+            <div>
+              <label className="block text-sm font-medium text-[#520029] mb-2">
+                Subcategoria *
+              </label>
+              {isEditing ? (
+                <AreaOfOperationSelect
+                  value={formData.area_of_operation}
+                  onChange={(value) => handleInputChange('area_of_operation', value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A502CA] focus:border-transparent"
+                  placeholder="Selecione a subcategoria (ex: Buffet, Churrasco)"
                 />
-              </div>
-            ) : (
-              <div className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
-                <span className="text-gray-900">{formData.area_of_operation || 'Não informado'}</span>
-                {formData.coordenates.latitude && formData.coordenates.longitude && (
-                  <div className="mt-2 text-sm text-gray-600">
-                    <p>Coordenadas: {formData.coordenates.latitude.toFixed(6)}, {formData.coordenates.longitude.toFixed(6)}</p>
-                    <p>Raio de atuação: {formData.coordenates.raio_atuacao} km</p>
-                  </div>
-                )}
-              </div>
-            )}
+              ) : (
+                <div className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <span className="text-gray-900">{formData.area_of_operation || 'Não informado'}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Endereço */}
+            <div>
+              <label className="block text-sm font-medium text-[#520029] mb-2">
+                Endereço *
+              </label>
+              {isEditing ? (
+                <div className="space-y-4">
+                  {/* Campos de Endereço */}
+                  <AddressFields
+                    value={formData.address}
+                    onChange={(addressData) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        address: addressData
+                      }));
+                    }}
+                  />
+                  
+                  {/* Seletor de Raio de Atuação */}
+                  <ServiceRadiusPicker
+                    value={formData.coordenates.raio_atuacao}
+                    onChange={(radius) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        coordenates: {
+                          ...prev.coordenates,
+                          raio_atuacao: radius
+                        }
+                      }));
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <span className="text-gray-900">{generateFullAddress(formData.address) || 'Não informado'}</span>
+                  {formData.coordenates.latitude && formData.coordenates.longitude && (
+                    <div className="mt-2 text-sm text-gray-600">
+                      <p>Coordenadas: {formData.coordenates.latitude.toFixed(6)}, {formData.coordenates.longitude.toFixed(6)}</p>
+                      <p>Raio de atuação: {formData.coordenates.raio_atuacao} km</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </motion.div>

@@ -18,12 +18,15 @@ export default function AreaOfOperationSelect({
   onChange,
   name = 'areaOfOperation',
   required = false,
-  placeholder = 'Selecione a área de atuação (Comida e Bebida)',
+  placeholder = 'Selecione uma subcategoria',
   className = ''
 }: AreaOfOperationSelectProps) {
   const [subcategories, setSubcategories] = useState<SubcategoryWithCategory[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // ID da categoria "Comida e Bebida"
+  const FOOD_BEVERAGE_CATEGORY_ID = '8f2c63ce-dd5b-49cb-b27d-5e282ba01c76'
 
   useEffect(() => {
     async function loadSubcategories() {
@@ -31,14 +34,10 @@ export default function AreaOfOperationSelect({
         setLoading(true)
         setError(null)
         
-        const result = await getSubcategoriesAction()
+        const result = await getSubcategoriesAction(FOOD_BEVERAGE_CATEGORY_ID)
         
         if (result.success && result.data) {
-          // Filtrar apenas subcategorias da categoria "COMIDA E BEBIDA"
-          const comidaBebidaSubcategories = result.data.filter(
-            subcategory => subcategory.category_name?.toLowerCase() === 'comida e bebida'
-          )
-          setSubcategories(comidaBebidaSubcategories)
+          setSubcategories(result.data)
         } else {
           setError(result.error || 'Erro ao carregar subcategorias')
         }
@@ -91,4 +90,4 @@ export default function AreaOfOperationSelect({
       ))}
     </select>
   )
-} 
+}

@@ -1,11 +1,17 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { MdBusiness, MdEmail, MdLock, MdPhone, MdLocationOn, MdVisibility, MdVisibilityOff } from 'react-icons/md'
-import { useRouter } from 'next/navigation'
-import { registerProviderAction } from '@/lib/actions/auth'
-import AreaOfOperationSelect from '@/components/ui/AreaOfOperationSelect'
+import { useState, useEffect } from 'react';
+import { useActionState } from 'react';
+import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
+import Image from 'next/image';
+import Link from 'next/link';
+import { MdVisibility, MdVisibilityOff, MdBusiness, MdEmail, MdLock, MdPhone, MdLocationOn } from 'react-icons/md';
+
+import { AddressFields } from '@/components/ui/AddressFields';
+import AreaOfOperationSelect from '@/components/ui/AreaOfOperationSelect';
+import { registerProviderAction } from '@/lib/actions/auth';
+import { geocodingService } from '@/lib/services/geocoding';
 
 export function ProviderRegisterForm() {
   const router = useRouter()
@@ -19,10 +25,48 @@ export function ProviderRegisterForm() {
     whatsapp: '',
     areaOfOperation: '',
   })
+  
+  // Estado para campos de endereço
+  const [addressData, setAddressData] = useState({
+    street: '',
+    number: '',
+    neighborhood: '',
+    city: '',
+    state: '',
+    zipcode: ''
+  });
+  
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+
+  // Função para gerar endereço completo
+  const generateFullAddress = (address: typeof addressData): string => {
+    const parts = [];
+    
+    if (address.street) {
+      parts.push(address.street);
+    }
+    
+    if (address.number) {
+      parts.push(address.number);
+    }
+    
+    if (address.neighborhood) {
+      parts.push(address.neighborhood);
+    }
+    
+    if (address.city) {
+      parts.push(address.city);
+    }
+    
+    if (address.state) {
+      parts.push(address.state);
+    }
+    
+    return parts.join(', ');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -42,6 +86,8 @@ export function ProviderRegisterForm() {
     setLoading(true)
     
     try {
+      const fullAddress = generateFullAddress(addressData);
+      
       const formDataObj = new FormData()
       formDataObj.append('companyName', formData.organizationName)
       formDataObj.append('cnpj', formData.cnpj)
@@ -50,6 +96,16 @@ export function ProviderRegisterForm() {
       formDataObj.append('confirmPassword', formData.confirmPassword)
       formDataObj.append('phone', formData.whatsapp)
       formDataObj.append('areaOfOperation', formData.areaOfOperation)
+      formDataObj.append('address', fullAddress)
+      
+      // Fazer geocoding do endereço
+      if (fullAddress && fullAddress.trim()) {
+        const geocodingResult = await geocodingService.geocodeAddress(fullAddress);
+        if (geocodingResult) {
+          formDataObj.append('latitude', geocodingResult.latitude.toString());
+          formDataObj.append('longitude', geocodingResult.longitude.toString());
+        }
+      }
       
       const result = await registerProviderAction(formDataObj)
       
@@ -178,9 +234,19 @@ export function ProviderRegisterForm() {
         </div>
       </div>
 
+      {/* Campos de Endereço */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-[#520029]">Endereço</h3>
+        <AddressFields
+          value={addressData}
+          onChange={setAddressData}
+          className="space-y-4"
+        />
+      </div>
+
       <div>
         <label className="block text-sm font-semibold text-[#520029] mb-2">
-          Área de Atuação (Opcional)
+          Subcategoria (Opcional)
         </label>
         <div className="relative">
           <MdLocationOn className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#6E5963] text-xl z-10" />
@@ -188,7 +254,7 @@ export function ProviderRegisterForm() {
             value={formData.areaOfOperation}
             onChange={(value) => setFormData(prev => ({ ...prev, areaOfOperation: value }))}
             name="areaOfOperation"
-            placeholder="Selecione a área de atuação"
+            placeholder="Selecione uma subcategoria"
             className="pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:border-[#FF0080] focus:ring-2 focus:ring-[#FF0080]/20 outline-none transition-all"
           />
         </div>

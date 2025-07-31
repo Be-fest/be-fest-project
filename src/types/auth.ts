@@ -51,7 +51,7 @@ export interface UserProfile {
   organization_name?: string;
   cnpj?: string;
   whatsapp_number?: string;
-  logo_url?: string;
+  profile_image?: string;
   area_of_operation?: string;
   city?: string;
   state?: string;

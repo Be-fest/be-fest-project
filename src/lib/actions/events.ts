@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createServerClient } from '@/lib/supabase/server'
 import { Event, EventInsert, EventUpdate, EventWithServices } from '@/types/database'
+import { geocodingService } from '@/lib/services/geocoding'
 
 // Validation schemas
 const createEventSchema = z.object({
@@ -243,7 +244,7 @@ export async function getEventByIdAction(eventId: string): Promise<ActionResult<
               id,
               full_name,
               organization_name,
-              logo_url,
+              profile_image,
               area_of_operation
             )
           ),
@@ -321,6 +322,19 @@ export async function createEventAction(formData: FormData): Promise<ActionResul
     const eventData: EventInsert = {
       ...validatedData,
       client_id: user.id
+    }
+
+    // Se um local foi fornecido, fazer geocoding
+    if (validatedData.location && validatedData.location.trim()) {
+      try {
+        const geocodingResult = await geocodingService.geocodeAddress(validatedData.location);
+        if (geocodingResult) {
+          eventData.event_latitude = geocodingResult.latitude;
+          eventData.event_longitude = geocodingResult.longitude;
+        }
+      } catch (geocodingError) {
+        console.warn('Erro no geocoding do evento, continuando sem coordenadas:', geocodingError);
+      }
     }
 
     const { data: event, error } = await supabase
@@ -420,6 +434,19 @@ export async function updateEventAction(formData: FormData): Promise<ActionResul
 
     // Remover campos que não devem ser atualizados
     delete updateData.id
+
+    // Se um local foi fornecido, fazer geocoding
+    if (validatedData.location && validatedData.location.trim()) {
+      try {
+        const geocodingResult = await geocodingService.geocodeAddress(validatedData.location);
+        if (geocodingResult) {
+          updateData.event_latitude = geocodingResult.latitude;
+          updateData.event_longitude = geocodingResult.longitude;
+        }
+      } catch (geocodingError) {
+        console.warn('Erro no geocoding do evento, continuando sem coordenadas:', geocodingError);
+      }
+    }
 
     console.log('📝 [UPDATE] Dados para atualização:', updateData);
 
@@ -539,4 +566,4 @@ export async function updateEventStatusAction(eventId: string, status: string): 
       error: 'Erro inesperado ao atualizar status do evento' 
     }
   }
-} 
+}

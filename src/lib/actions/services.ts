@@ -65,7 +65,6 @@ export async function getServicesAction(filters?: {
           id,
           full_name,
           organization_name,
-          logo_url,
           profile_image,
           area_of_operation
         )
@@ -122,7 +121,6 @@ export async function getServiceByIdAction(serviceId: string): Promise<ActionRes
           id,
           full_name,
           organization_name,
-          logo_url,
           profile_image,
           area_of_operation
         ),
@@ -585,7 +583,6 @@ export async function getPublicServicesAction(filters?: {
           id,
           full_name,
           organization_name,
-          logo_url,
           profile_image,
           area_of_operation
         ),
@@ -840,11 +837,11 @@ export async function deleteServiceImageAction(imageUrl: string): Promise<Action
 } 
 
 // Buscar subcategorias do banco de dados
-export async function getSubcategoriesAction(): Promise<ActionResult<SubcategoryWithCategory[]>> {
+export async function getSubcategoriesAction(categoryId?: string): Promise<ActionResult<SubcategoryWithCategory[]>> {
   try {
     const supabase = await createServerClient()
 
-    const { data: subcategories, error } = await supabase
+    let query = supabase
       .from('subcategories')
       .select(`
         id, 
@@ -857,7 +854,13 @@ export async function getSubcategoriesAction(): Promise<ActionResult<Subcategory
           name
         )
       `)
-      .order('name')
+
+    // Filtrar por category_id se fornecido
+    if (categoryId) {
+      query = query.eq('category_id', categoryId)
+    }
+
+    const { data: subcategories, error } = await query.order('name')
 
     if (error) {
       console.error('Error fetching subcategories:', error)
@@ -890,7 +893,6 @@ export async function getPublicProvidersAction(filters?: {
 }): Promise<ActionResult<Array<{
   id: string;
   organization_name?: string;
-  logo_url?: string;
   profile_image?: string;
   area_of_operation?: string;
   services_count: number;
@@ -906,7 +908,6 @@ export async function getPublicProvidersAction(filters?: {
       .select(`
         id,
         organization_name,
-        logo_url,
         profile_image,
         area_of_operation,
         created_at
@@ -946,7 +947,6 @@ export async function getPublicProvidersAction(filters?: {
         return {
           id: provider.id,
           organization_name: provider.organization_name,
-          logo_url: provider.logo_url,
           profile_image: provider.profile_image,
           area_of_operation: provider.area_of_operation,
           services_count: servicesCount || 0,
@@ -970,7 +970,7 @@ export async function getSimpleProvidersAction(): Promise<ActionResult<Array<{
   id: string;
   full_name: string;
   organization_name?: string;
-  logo_url?: string;
+  profile_image?: string;
   service_categories: string[];
 }>>> {
   try {
@@ -983,7 +983,7 @@ export async function getSimpleProvidersAction(): Promise<ActionResult<Array<{
         id,
         full_name,
         organization_name,
-        logo_url,
+        profile_image,
         services!inner (
           id,
           category,
@@ -1012,7 +1012,7 @@ export async function getSimpleProvidersAction(): Promise<ActionResult<Array<{
         id: provider.id,
         full_name: provider.full_name,
         organization_name: provider.organization_name,
-        logo_url: provider.logo_url,
+        profile_image: provider.profile_image,
         service_categories: categories
       }
     })
@@ -1025,4 +1025,4 @@ export async function getSimpleProvidersAction(): Promise<ActionResult<Array<{
       error: error instanceof Error ? error.message : 'Erro ao buscar prestadores'
     }
   }
-} 
+}

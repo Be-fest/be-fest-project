@@ -21,7 +21,7 @@ export interface ServiceWithDistance {
   provider_id: string;
   provider_name: string;
   provider_organization: string;
-  provider_logo_url: string;
+  provider_profile_image: string;
   provider_latitude: number;
   provider_longitude: number;
   provider_cidade: string;

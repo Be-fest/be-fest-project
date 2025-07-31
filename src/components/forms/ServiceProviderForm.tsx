@@ -8,6 +8,7 @@ import { MdVisibility, MdVisibilityOff } from 'react-icons/md';
 import Image from 'next/image';
 import { registerProviderAction } from '@/lib/actions/auth';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
+import AreaOfOperationSelect from '@/components/ui/AreaOfOperationSelect';
 
 interface ServiceProviderFormProps {
   userType: 'client' | 'service_provider';
@@ -227,24 +228,16 @@ export function ServiceProviderForm({ userType, onUserTypeChange }: ServiceProvi
 
         <div className="space-y-2">
           <label htmlFor="areaOfOperation" className="block text-sm font-medium text-gray-700">
-            Área de Atuação
+            Subcategoria
           </label>
-          <select
-            id="areaOfOperation"
+          <AreaOfOperationSelect
+            value=""
+            onChange={() => {}} // O valor será capturado pelo name do select interno
             name="areaOfOperation"
             required
+            placeholder="Selecione uma subcategoria"
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#A502CA] focus:border-[#A502CA]"
-          >
-            <option value="">Selecione uma área</option>
-            <option value="buffet">Buffet</option>
-            <option value="decoracao">Decoração</option>
-            <option value="musica">Música</option>
-            <option value="fotografia">Fotografia</option>
-            <option value="video">Vídeo</option>
-            <option value="churrasco">Churrasco</option>
-            <option value="doceria">Doceria</option>
-            <option value="outros">Outros</option>
-          </select>
+          />
         </div>
 
         <div className="space-y-2">

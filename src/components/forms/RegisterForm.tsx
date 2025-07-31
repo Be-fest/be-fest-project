@@ -1,6 +1,6 @@
 import { useState, useActionState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Input, Button } from '@/components/ui';
+import { Input, Button, AddressFields } from '@/components/ui';
 import { formatCPF, formatPhoneNumber, formatCNPJ } from '@/utils/formatters';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -9,18 +9,29 @@ import Image from 'next/image';
 import { registerClientAction, registerProviderAction } from '@/lib/actions/auth';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
 import AreaOfOperationSelect from '@/components/ui/AreaOfOperationSelect';
+import { geocodingService } from '@/lib/services/geocoding';
 
 interface RegisterFormProps {
   userType: 'client' | 'service_provider';
   onUserTypeChange: (type: 'client' | 'service_provider') => void;
 }
 
-// Wrapper function for useActionState compatibility
+// Wrapper function for useActionState compatibility with geocoding
 async function wrappedRegisterClientAction(
   prevState: { success: boolean; error?: string; data?: any }, 
   formData: FormData
 ): Promise<{ success: boolean; error?: string; data?: any }> {
   try {
+    // Obter endereço e fazer geocoding
+    const address = formData.get('address') as string;
+    if (address && address.trim()) {
+      const geocodingResult = await geocodingService.geocodeAddress(address);
+      if (geocodingResult) {
+        formData.append('latitude', geocodingResult.latitude.toString());
+        formData.append('longitude', geocodingResult.longitude.toString());
+      }
+    }
+    
     const result = await registerClientAction(formData);
     
     // Garantir que sempre retornamos um objeto válido
@@ -45,12 +56,22 @@ async function wrappedRegisterClientAction(
   }
 }
 
-// Wrapper function for provider registration
+// Wrapper function for provider registration with geocoding
 async function wrappedRegisterProviderAction(
   prevState: { success: boolean; error?: string; data?: any }, 
   formData: FormData
 ): Promise<{ success: boolean; error?: string; data?: any }> {
   try {
+    // Obter endereço e fazer geocoding
+    const address = formData.get('address') as string;
+    if (address && address.trim()) {
+      const geocodingResult = await geocodingService.geocodeAddress(address);
+      if (geocodingResult) {
+        formData.append('latitude', geocodingResult.latitude.toString());
+        formData.append('longitude', geocodingResult.longitude.toString());
+      }
+    }
+    
     const result = await registerProviderAction(formData);
     
     // Garantir que sempre retornamos um objeto válido
@@ -84,10 +105,47 @@ export const RegisterForm = ({ userType, onUserTypeChange }: RegisterFormProps) 
   const router = useRouter();
   const toast = useToastGlobal();
   
+  // Estado para campos de endereço
+  const [addressData, setAddressData] = useState({
+    street: '',
+    number: '',
+    neighborhood: '',
+    city: '',
+    state: '',
+    zipcode: ''
+  });
+  
   // Flags para controlar toasts
   const [hasShownSuccessToast, setHasShownSuccessToast] = useState(false);
   const [hasShownErrorToast, setHasShownErrorToast] = useState(false);
   const [lastError, setLastError] = useState('');
+
+  // Função para gerar endereço completo
+  const generateFullAddress = (address: typeof addressData): string => {
+    const parts = [];
+    
+    if (address.street) {
+      parts.push(address.street);
+    }
+    
+    if (address.number) {
+      parts.push(address.number);
+    }
+    
+    if (address.neighborhood) {
+      parts.push(address.neighborhood);
+    }
+    
+    if (address.city) {
+      parts.push(address.city);
+    }
+    
+    if (address.state) {
+      parts.push(address.state);
+    }
+    
+    return parts.join(', ');
+  };
 
   useEffect(() => {
     if (state?.success && state?.data?.message && !hasShownSuccessToast) {
@@ -268,6 +326,22 @@ export const RegisterForm = ({ userType, onUserTypeChange }: RegisterFormProps) 
                 className="w-full"
               />
             </div>
+
+            {/* Campos de Endereço */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-700">Endereço</h3>
+              <AddressFields
+                value={addressData}
+                onChange={setAddressData}
+                className="space-y-4"
+              />
+              {/* Campo oculto para enviar o endereço completo */}
+              <input
+                type="hidden"
+                name="address"
+                value={generateFullAddress(addressData)}
+              />
+            </div>
           </>
         ) : (
           <>
@@ -327,26 +401,34 @@ export const RegisterForm = ({ userType, onUserTypeChange }: RegisterFormProps) 
               />
             </div>
 
+            {/* Campos de Endereço para Prestadores */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-700">Endereço</h3>
+              <AddressFields
+                value={addressData}
+                onChange={setAddressData}
+                className="space-y-4"
+              />
+              {/* Campo oculto para enviar o endereço completo */}
+              <input
+                type="hidden"
+                name="address"
+                value={generateFullAddress(addressData)}
+              />
+            </div>
+
             <div className="space-y-2">
               <label htmlFor="areaOfOperation" className="block text-sm font-medium text-gray-700">
-                Área de Atuação
+                Subcategoria
               </label>
-              <select
-                id="areaOfOperation"
+              <AreaOfOperationSelect
+                value=""
+                onChange={() => {}} // O valor será capturado pelo name do select interno
                 name="areaOfOperation"
                 required
+                placeholder="Selecione uma subcategoria"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#A502CA] focus:border-[#A502CA]"
-              >
-                <option value="">Selecione uma área</option>
-                <option value="buffet">Buffet</option>
-                <option value="decoracao">Decoração</option>
-                <option value="musica">Música</option>
-                <option value="fotografia">Fotografia</option>
-                <option value="video">Vídeo</option>
-                <option value="churrasco">Churrasco</option>
-                <option value="doceria">Doceria</option>
-                <option value="outros">Outros</option>
-              </select>
+              />
             </div>
           </>
         )}

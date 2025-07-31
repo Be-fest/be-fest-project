@@ -30,9 +30,9 @@ export interface Database {
           cnpj: string | null
           cpf: string | null
           whatsapp_number: string | null
-          logo_url: string | null
           profile_image: string | null
           area_of_operation: string | null
+          address: string | null
           city: string | null
           state: string | null
           postal_code: string | null
@@ -50,9 +50,9 @@ export interface Database {
           cnpj?: string | null
           cpf?: string | null
           whatsapp_number?: string | null
-          logo_url?: string | null
           profile_image?: string | null
           area_of_operation?: string | null
+          address?: string | null
           city?: string | null
           state?: string | null
           postal_code?: string | null
@@ -70,9 +70,9 @@ export interface Database {
           cnpj?: string | null
           cpf?: string | null
           whatsapp_number?: string | null
-          logo_url?: string | null
           profile_image?: string | null
           area_of_operation?: string | null
+          address?: string | null
           city?: string | null
           state?: string | null
           postal_code?: string | null
@@ -136,6 +136,8 @@ export interface Database {
           event_date: string
           start_time: string | null
           location: string | null
+          event_latitude: number | null
+          event_longitude: number | null
           guest_count: number
           full_guests: number
           half_guests: number
@@ -151,6 +153,8 @@ export interface Database {
           event_date: string
           start_time?: string | null
           location?: string | null
+          event_latitude?: number | null
+          event_longitude?: number | null
           guest_count?: number
           full_guests?: number
           half_guests?: number
@@ -166,6 +170,8 @@ export interface Database {
           event_date?: string
           start_time?: string | null
           location?: string | null
+          event_latitude?: number | null
+          event_longitude?: number | null
           guest_count?: number
           full_guests?: number
           half_guests?: number
@@ -476,12 +482,12 @@ export type BookingUpdate = Database['public']['Tables']['bookings']['Update']
 
 // Extended types with relationships
 export type ServiceWithProvider = Service & {
-  provider: Pick<User, 'id' | 'full_name' | 'organization_name' | 'logo_url' | 'profile_image' | 'area_of_operation'>
+  provider: Pick<User, 'id' | 'full_name' | 'organization_name' | 'profile_image' | 'area_of_operation'>
   guest_tiers?: ServiceGuestTier[]
 }
 
 export type ServiceWithDetails = Service & {
-  provider: Pick<User, 'id' | 'full_name' | 'organization_name' | 'logo_url' | 'profile_image' | 'area_of_operation'>
+  provider: Pick<User, 'id' | 'full_name' | 'organization_name' | 'profile_image' | 'area_of_operation'>
   guest_tiers: ServiceGuestTier[]
 }
 
@@ -523,6 +529,7 @@ export interface UserData {
   role: UserRole;
   created_at: string;
   area_of_operation?: string;
+  address?: string;
   coordenates?: {
     latitude: number;
     longitude: number;

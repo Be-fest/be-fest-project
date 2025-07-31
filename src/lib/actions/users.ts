@@ -1,6 +1,7 @@
 'use server';
 
 import { supabase } from '@/lib/supabase';
+import { geocodingService } from '@/lib/services/geocoding';
 
 interface UpdateProfileData {
   full_name: string;
@@ -12,6 +13,7 @@ interface UpdateAddressData {
   city: string;
   state: string;
   postal_code: string;
+  address?: string; // Endereço completo para geocoding
 }
 
 interface UpdatePasswordData {
@@ -45,14 +47,32 @@ export async function updateUserProfileAction(data: UpdateProfileData) {
 
 export async function updateUserAddressAction(data: UpdateAddressData) {
   try {
+    const updateData: any = {
+      city: data.city,
+      state: data.state,
+      postal_code: data.postal_code,
+      updated_at: new Date().toISOString()
+    };
+
+    // Se um endereço completo foi fornecido, fazer geocoding
+    if (data.address && data.address.trim()) {
+      updateData.address = data.address;
+      
+      try {
+        const geocodingResult = await geocodingService.geocodeAddress(data.address);
+        if (geocodingResult) {
+          updateData.latitude = geocodingResult.latitude;
+          updateData.longitude = geocodingResult.longitude;
+          updateData.raio_atuacao = 50; // Valor padrão
+        }
+      } catch (geocodingError) {
+        console.warn('Erro no geocoding, continuando sem coordenadas:', geocodingError);
+      }
+    }
+
     const { error } = await supabase
       .from('users')
-      .update({
-        city: data.city,
-        state: data.state,
-        postal_code: data.postal_code,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', supabase.auth.getUser().then(({ data }) => data.user?.id));
 
     if (error) throw error;
@@ -83,4 +103,4 @@ export async function updatePasswordAction(data: UpdatePasswordData) {
       error: 'Erro ao atualizar senha. Por favor, tente novamente.'
     };
   }
-} 
+}

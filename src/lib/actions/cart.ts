@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { createServerClient } from '@/lib/supabase/server'
 import type { Event, EventService } from '@/types/database'
 import { calculateGuestCount, calculateAdvancedPrice } from '@/utils/formatters'
+import { geocodingService } from '@/lib/services/geocoding'
 
 // Validation schemas
 const saveCartEventSchema = z.object({
@@ -114,6 +115,19 @@ export async function saveCartEventAction(eventData: {
       half_guests: halfGuests,
       free_guests: freeGuests,
       status: 'draft' as const
+    }
+
+    // Se um local foi fornecido, fazer geocoding
+    if (validatedData.location && validatedData.location.trim()) {
+      try {
+        const geocodingResult = await geocodingService.geocodeAddress(validatedData.location);
+        if (geocodingResult) {
+          eventPayload.event_latitude = geocodingResult.latitude;
+          eventPayload.event_longitude = geocodingResult.longitude;
+        }
+      } catch (geocodingError) {
+        console.warn('Erro no geocoding do evento, continuando sem coordenadas:', geocodingError);
+      }
     }
 
     console.log('Payload do evento:', eventPayload);
@@ -465,7 +479,7 @@ export async function getCartEventAction(eventId: string): Promise<ActionResult<
               id,
               full_name,
               organization_name,
-              logo_url
+              profile_image
             )
           )
         )
@@ -645,4 +659,4 @@ export async function cleanDuplicateServicesAction(eventId: string): Promise<Act
       error: error instanceof Error ? error.message : 'Erro ao limpar serviços duplicados' 
     }
   }
-} 
+}
