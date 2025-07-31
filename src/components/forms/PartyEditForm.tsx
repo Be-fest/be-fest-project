@@ -48,37 +48,34 @@ const generateFullAddress = (data: {
 }) => {
   const parts = [];
   
-  if (data.street) {
-    let streetPart = data.street;
-    if (data.number) {
-      streetPart += `, ${data.number}`;
-    }
-    parts.push(streetPart);
+  // Formato: "Rua, Número, Bairro, Cidade, Estado"
+  if (data.street && data.street.trim()) {
+    parts.push(data.street.trim());
   }
   
-  if (data.neighborhood) {
-    parts.push(data.neighborhood);
+  if (data.number && data.number.trim()) {
+    parts.push(data.number.trim());
   }
   
-  if (data.city) {
-    let cityPart = data.city;
-    if (data.state) {
-      cityPart += `, ${data.state}`;
-    }
-    parts.push(cityPart);
+  if (data.neighborhood && data.neighborhood.trim()) {
+    parts.push(data.neighborhood.trim());
   }
   
-  if (data.zipcode) {
-    parts.push(data.zipcode);
+  if (data.city && data.city.trim()) {
+    parts.push(data.city.trim());
   }
   
-  return parts.join(' - ');
+  if (data.state && data.state.trim()) {
+    parts.push(data.state.trim());
+  }
+  
+  return parts.join(', ');
 };
 
 // Função para extrair componentes do endereço
 const parseAddress = (endereco: string) => {
-  // Esta é uma implementação básica - pode ser melhorada
-  const parts = endereco.split(' - ');
+  // Parse para o formato: "Rua, Número, Bairro, Cidade, Estado"
+  const parts = endereco.split(', ');
   
   let street = '';
   let number = '';
@@ -87,21 +84,12 @@ const parseAddress = (endereco: string) => {
   let state = '';
   let zipcode = '';
   
-  if (parts[0]) {
-    const streetParts = parts[0].split(', ');
-    street = streetParts[0] || '';
-    number = streetParts[1] || '';
-  }
-  
-  neighborhood = parts[1] || '';
-  
-  if (parts[2]) {
-    const cityParts = parts[2].split(', ');
-    city = cityParts[0] || '';
-    state = cityParts[1] || '';
-  }
-  
-  zipcode = parts[3] || '';
+  // Atribuir partes baseado na posição
+  if (parts[0]) street = parts[0];
+  if (parts[1]) number = parts[1];
+  if (parts[2]) neighborhood = parts[2];
+  if (parts[3]) city = parts[3];
+  if (parts[4]) state = parts[4];
   
   return { street, number, neighborhood, city, state, zipcode };
 };

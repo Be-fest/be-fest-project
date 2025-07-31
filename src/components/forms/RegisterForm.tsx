@@ -124,24 +124,25 @@ export const RegisterForm = ({ userType, onUserTypeChange }: RegisterFormProps) 
   const generateFullAddress = (address: typeof addressData): string => {
     const parts = [];
     
-    if (address.street) {
-      parts.push(address.street);
+    // Formato: "Rua, Número, Bairro, Cidade, Estado"
+    if (address.street && address.street.trim()) {
+      parts.push(address.street.trim());
     }
     
-    if (address.number) {
-      parts.push(address.number);
+    if (address.number && address.number.trim()) {
+      parts.push(address.number.trim());
     }
     
-    if (address.neighborhood) {
-      parts.push(address.neighborhood);
+    if (address.neighborhood && address.neighborhood.trim()) {
+      parts.push(address.neighborhood.trim());
     }
     
-    if (address.city) {
-      parts.push(address.city);
+    if (address.city && address.city.trim()) {
+      parts.push(address.city.trim());
     }
     
-    if (address.state) {
-      parts.push(address.state);
+    if (address.state && address.state.trim()) {
+      parts.push(address.state.trim());
     }
     
     return parts.join(', ');

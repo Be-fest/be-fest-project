@@ -62,24 +62,25 @@ export function AddressFields({
   const generateFullAddress = (addressData: AddressData): string => {
     const parts = [];
     
-    if (addressData.street) {
-      parts.push(addressData.street);
+    // Formato: "Rua, Número, Bairro, Cidade, Estado"
+    if (addressData.street && addressData.street.trim()) {
+      parts.push(addressData.street.trim());
     }
     
-    if (addressData.number) {
-      parts.push(addressData.number);
+    if (addressData.number && addressData.number.trim()) {
+      parts.push(addressData.number.trim());
     }
     
-    if (addressData.neighborhood) {
-      parts.push(addressData.neighborhood);
+    if (addressData.neighborhood && addressData.neighborhood.trim()) {
+      parts.push(addressData.neighborhood.trim());
     }
     
-    if (addressData.city) {
-      parts.push(addressData.city);
+    if (addressData.city && addressData.city.trim()) {
+      parts.push(addressData.city.trim());
     }
     
-    if (addressData.state) {
-      parts.push(addressData.state);
+    if (addressData.state && addressData.state.trim()) {
+      parts.push(addressData.state.trim());
     }
     
     return parts.join(', ');

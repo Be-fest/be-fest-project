@@ -93,31 +93,28 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
   }) => {
     const parts = [];
     
-    if (data.street) {
-      let streetPart = data.street;
-      if (data.number) {
-        streetPart += `, ${data.number}`;
-      }
-      parts.push(streetPart);
+    // Formato: "Rua, Número, Bairro, Cidade, Estado"
+    if (data.street && data.street.trim()) {
+      parts.push(data.street.trim());
     }
     
-    if (data.neighborhood) {
-      parts.push(data.neighborhood);
+    if (data.number && data.number.trim()) {
+      parts.push(data.number.trim());
     }
     
-    if (data.city) {
-      let cityPart = data.city;
-      if (data.state) {
-        cityPart += `, ${data.state}`;
-      }
-      parts.push(cityPart);
+    if (data.neighborhood && data.neighborhood.trim()) {
+      parts.push(data.neighborhood.trim());
     }
     
-    if (data.zipcode) {
-      parts.push(data.zipcode);
+    if (data.city && data.city.trim()) {
+      parts.push(data.city.trim());
     }
     
-    return parts.join(' - ');
+    if (data.state && data.state.trim()) {
+      parts.push(data.state.trim());
+    }
+    
+    return parts.join(', ');
   };
 
   const onSubmit = async (data: PartyFormData) => {
