@@ -9,6 +9,8 @@ import Image from 'next/image';
 import { registerProviderAction } from '@/lib/actions/auth';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
 import AreaOfOperationSelect from '@/components/ui/AreaOfOperationSelect';
+import { AddressFields } from '@/components/ui/AddressFields';
+import { geocodingService } from '@/lib/services/geocoding';
 
 interface ServiceProviderFormProps {
   userType: 'client' | 'service_provider';
@@ -21,6 +23,16 @@ async function wrappedRegisterProviderAction(
   formData: FormData
 ): Promise<{ success: boolean; error?: string; data?: any }> {
   try {
+    // Obter endereço e fazer geocoding
+    const address = formData.get('address') as string;
+    if (address && address.trim()) {
+      const geocodingResult = await geocodingService.geocodeAddress(address);
+      if (geocodingResult) {
+        formData.append('latitude', geocodingResult.latitude.toString());
+        formData.append('longitude', geocodingResult.longitude.toString());
+      }
+    }
+    
     const result = await registerProviderAction(formData);
     return result;
   } catch (error) {
@@ -40,10 +52,51 @@ export function ServiceProviderForm({ userType, onUserTypeChange }: ServiceProvi
   const router = useRouter();
   const toast = useToastGlobal();
   
+  // Estado para campos de endereço
+  const [addressData, setAddressData] = useState({
+    street: '',
+    number: '',
+    neighborhood: '',
+    city: '',
+    state: '',
+    zipcode: ''
+  });
+  
+  // Estado para subcategoria
+  const [areaOfOperation, setAreaOfOperation] = useState('');
+  
   // Flags para controlar toasts
   const [hasShownSuccessToast, setHasShownSuccessToast] = useState(false);
   const [hasShownErrorToast, setHasShownErrorToast] = useState(false);
   const [lastError, setLastError] = useState('');
+
+  // Função para gerar endereço completo
+  const generateFullAddress = (address: typeof addressData): string => {
+    const parts = [];
+    
+    // Formato: "Rua, Número, Bairro, Cidade, Estado"
+    if (address.street && address.street.trim()) {
+      parts.push(address.street.trim());
+    }
+    
+    if (address.number && address.number.trim()) {
+      parts.push(address.number.trim());
+    }
+    
+    if (address.neighborhood && address.neighborhood.trim()) {
+      parts.push(address.neighborhood.trim());
+    }
+    
+    if (address.city && address.city.trim()) {
+      parts.push(address.city.trim());
+    }
+    
+    if (address.state && address.state.trim()) {
+      parts.push(address.state.trim());
+    }
+    
+    return parts.join(', ');
+  };
 
   useEffect(() => {
     if (state?.success && state?.data?.message && !hasShownSuccessToast) {
@@ -226,13 +279,29 @@ export function ServiceProviderForm({ userType, onUserTypeChange }: ServiceProvi
           />
         </div>
 
+        {/* Campos de Endereço */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-700">Endereço</h3>
+          <AddressFields
+            value={addressData}
+            onChange={setAddressData}
+            className="space-y-4"
+          />
+          {/* Campo oculto para enviar o endereço completo */}
+          <input
+            type="hidden"
+            name="address"
+            value={generateFullAddress(addressData)}
+          />
+        </div>
+
         <div className="space-y-2">
           <label htmlFor="areaOfOperation" className="block text-sm font-medium text-gray-700">
             Subcategoria
           </label>
           <AreaOfOperationSelect
-            value=""
-            onChange={() => {}} // O valor será capturado pelo name do select interno
+            value={areaOfOperation}
+            onChange={setAreaOfOperation}
             name="areaOfOperation"
             required
             placeholder="Selecione uma subcategoria"
