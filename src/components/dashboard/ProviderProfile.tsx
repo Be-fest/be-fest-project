@@ -415,117 +415,86 @@ export function ProviderProfile() {
         </div>
 
         {/* Campos do formulário */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Nome da Empresa */}
-          <div>
-            <label className="block text-sm font-medium text-[#520029] mb-2">
-              Nome da Empresa *
-            </label>
-            {isEditing ? (
-              <input
-                type="text"
-                value={formData.organization_name}
-                onChange={(e) => handleInputChange('organization_name', e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A502CA] focus:border-transparent"
-                placeholder="Nome da sua empresa"
-              />
-            ) : (
-              <div className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
-                <span className="text-gray-900">{formData.organization_name || 'Não informado'}</span>
-              </div>
-            )}
-          </div>
+        <div className="space-y-6">
+          {/* Primeira linha - Nome da Empresa e Nome do Proprietário */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Nome da Empresa */}
+            <div>
+              <label className="block text-sm font-medium text-[#520029] mb-2">
+                Nome da Empresa *
+              </label>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={formData.organization_name}
+                  onChange={(e) => handleInputChange('organization_name', e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A502CA] focus:border-transparent"
+                  placeholder="Nome da sua empresa"
+                />
+              ) : (
+                <div className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <span className="text-gray-900">{formData.organization_name || 'Não informado'}</span>
+                </div>
+              )}
+            </div>
 
-          {/* Nome do Proprietário */}
-          <div>
-            <label className="block text-sm font-medium text-[#520029] mb-2">
-              Nome do Proprietário *
-            </label>
-            {isEditing ? (
-              <input
-                type="text"
-                value={formData.full_name}
-                onChange={(e) => handleInputChange('full_name', e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A502CA] focus:border-transparent"
-                placeholder="Seu nome completo"
-              />
-            ) : (
-              <div className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
-                <span className="text-gray-900">{formData.full_name || 'Não informado'}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Email */}
-          <div>
-            <label className="block text-sm font-medium text-[#520029] mb-2">
-              Email
-            </label>
-            <div className="px-4 py-3 bg-gray-100 rounded-lg border border-gray-200">
-              <span className="text-gray-500">{formData.email}</span>
-              <p className="text-xs text-gray-400 mt-1">O email não pode ser alterado aqui</p>
+            {/* Nome do Proprietário */}
+            <div>
+              <label className="block text-sm font-medium text-[#520029] mb-2">
+                Nome do Proprietário *
+              </label>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={formData.full_name}
+                  onChange={(e) => handleInputChange('full_name', e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A502CA] focus:border-transparent"
+                  placeholder="Seu nome completo"
+                />
+              ) : (
+                <div className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <span className="text-gray-900">{formData.full_name || 'Não informado'}</span>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* WhatsApp */}
-          <div>
-            <label className="block text-sm font-medium text-[#520029] mb-2">
-              WhatsApp *
-            </label>
-            {isEditing ? (
-              <input
-                type="tel"
-                value={formData.whatsapp_number}
-                onChange={(e) => handleInputChange('whatsapp_number', e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A502CA] focus:border-transparent"
-                placeholder="(11) 99999-9999"
-              />
-            ) : (
-              <div className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
-                <span className="text-gray-900">{formData.whatsapp_number || 'Não informado'}</span>
+          {/* Segunda linha - Email e WhatsApp */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-medium text-[#520029] mb-2">
+                Email
+              </label>
+              <div className="px-4 py-3 bg-gray-100 rounded-lg border border-gray-200">
+                <span className="text-gray-500">{formData.email}</span>
+                <p className="text-xs text-gray-400 mt-1">O email não pode ser alterado aqui</p>
               </div>
-            )}
+            </div>
+
+            {/* WhatsApp */}
+            <div>
+              <label className="block text-sm font-medium text-[#520029] mb-2">
+                WhatsApp *
+              </label>
+              {isEditing ? (
+                <input
+                  type="tel"
+                  value={formData.whatsapp_number}
+                  onChange={(e) => handleInputChange('whatsapp_number', e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A502CA] focus:border-transparent"
+                  placeholder="(11) 99999-9999"
+                />
+              ) : (
+                <div className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <span className="text-gray-900">{formData.whatsapp_number || 'Não informado'}</span>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Área de Atuação */}
+          {/* Terceira linha - Descrição da Empresa (largura completa) */}
           <div>
-            <label className="block text-sm font-medium text-[#520029] mb-2">
-              Área de Atuação *
-            </label>
-            {isEditing ? (
-              <LocationPicker
-                onLocationChange={(lat, lng) => {
-                  setFormData(prev => ({
-                    ...prev,
-                    coordenates: {
-                      ...prev.coordenates,
-                      latitude: lat,
-                      longitude: lng
-                    }
-                  }));
-                }}
-                onRadiusChange={(radius) => {
-                  setFormData(prev => ({
-                    ...prev,
-                    coordenates: {
-                      ...prev.coordenates,
-                      raio_atuacao: radius
-                    }
-                  }));
-                }}
-                initialLat={formData.coordenates.latitude}
-                initialLng={formData.coordenates.longitude}
-                initialRadius={formData.coordenates.raio_atuacao}
-              />
-            ) : (
-              <div className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
-                <span className="text-gray-900">{formData.area_of_operation || 'Não informado'}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Descrição da Empresa */}
-          <div className="md:col-span-2">
             <label className="block text-sm font-medium text-[#520029] mb-2">
               Descrição da Empresa
             </label>
@@ -540,6 +509,51 @@ export function ProviderProfile() {
             ) : (
               <div className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
                 <span className="text-gray-900">{formData.organization_description || 'Não informado'}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Quarta linha - Área de Atuação (largura completa para o mapa) */}
+          <div>
+            <label className="block text-sm font-medium text-[#520029] mb-2">
+              Área de Atuação *
+            </label>
+            {isEditing ? (
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <LocationPicker
+                  onLocationChange={(lat, lng) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      coordenates: {
+                        ...prev.coordenates,
+                        latitude: lat,
+                        longitude: lng
+                      }
+                    }));
+                  }}
+                  onRadiusChange={(radius) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      coordenates: {
+                        ...prev.coordenates,
+                        raio_atuacao: radius
+                      }
+                    }));
+                  }}
+                  initialLat={formData.coordenates.latitude}
+                  initialLng={formData.coordenates.longitude}
+                  initialRadius={formData.coordenates.raio_atuacao}
+                />
+              </div>
+            ) : (
+              <div className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
+                <span className="text-gray-900">{formData.area_of_operation || 'Não informado'}</span>
+                {formData.coordenates.latitude && formData.coordenates.longitude && (
+                  <div className="mt-2 text-sm text-gray-600">
+                    <p>Coordenadas: {formData.coordenates.latitude.toFixed(6)}, {formData.coordenates.longitude.toFixed(6)}</p>
+                    <p>Raio de atuação: {formData.coordenates.raio_atuacao} km</p>
+                  </div>
+                )}
               </div>
             )}
           </div>
