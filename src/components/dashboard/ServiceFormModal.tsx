@@ -38,6 +38,27 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
     images_urls: service?.images_urls || []
   });
 
+  // Atualizar formData quando service mudar
+  useEffect(() => {
+    if (service) {
+      setFormData({
+        name: service.name || '',
+        description: service.description || '',
+        category: service.category || '',
+        is_active: service.is_active ?? true,
+        images_urls: service.images_urls || []
+      });
+    } else {
+      setFormData({
+        name: '',
+        description: '',
+        category: '',
+        is_active: true,
+        images_urls: []
+      });
+    }
+  }, [service]);
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -213,8 +234,11 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
       formDataToSend.append('guest_tiers', JSON.stringify(guestTiers));
       
       // Adicionar imagens
+      console.log('📸 [SERVICE_FORM] Enviando imagens:', formData.images_urls);
       if (formData.images_urls.length > 0) {
         formDataToSend.append('images_urls', JSON.stringify(formData.images_urls));
+      } else {
+        formDataToSend.append('images_urls', JSON.stringify([]));
       }
       
       const result = service 
@@ -270,6 +294,7 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
     const file = event.target.files?.[0];
     if (!file) return;
 
+    console.log('📸 [SERVICE_FORM] Iniciando upload de imagem:', file.name);
     setUploadingImage(true);
     
     try {
@@ -279,19 +304,26 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
       const result = await uploadServiceImageAction(formData);
       
       if (result.success && result.data) {
-        setFormData(prev => ({
-          ...prev,
-          images_urls: [...prev.images_urls, result.data as string]
-        }));
+        console.log('✅ [SERVICE_FORM] Upload bem-sucedido:', result.data);
+        setFormData(prev => {
+          const newImages = [...prev.images_urls, result.data as string];
+          console.log('📸 [SERVICE_FORM] Novas imagens:', newImages);
+          return {
+            ...prev,
+            images_urls: newImages
+          };
+        });
         
         // Invalidar cache para mostrar a nova imagem imediatamente
         invalidateServiceImagesCache();
         
         toast.success('Imagem adicionada!', 'Upload realizado com sucesso.', 3000);
       } else {
+        console.error('❌ [SERVICE_FORM] Erro no upload:', result.error);
         toast.error('Erro no upload', result.error || 'Falha ao fazer upload da imagem', 5000);
       }
     } catch (error) {
+      console.error('💥 [SERVICE_FORM] Erro inesperado no upload:', error);
       toast.error('Erro no upload', 'Erro inesperado ao fazer upload da imagem', 5000);
     } finally {
       setUploadingImage(false);

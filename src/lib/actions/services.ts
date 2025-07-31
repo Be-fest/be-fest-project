@@ -10,7 +10,7 @@ const createServiceSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres').max(100, 'Nome deve ter no máximo 100 caracteres'),
   description: z.string().optional(),
   category: z.string().min(1, 'Categoria é obrigatória'),
-  images_urls: z.array(z.string().url('URL da imagem inválida')).optional(),
+  images_urls: z.array(z.string()).optional().default([]),
   is_active: z.boolean().optional()
 })
 
@@ -19,7 +19,7 @@ const updateServiceSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres').max(100, 'Nome deve ter no máximo 100 caracteres').optional(),
   description: z.string().optional().nullable(),
   category: z.string().min(1, 'Categoria é obrigatória').optional(),
-  images_urls: z.array(z.string()).optional(),
+  images_urls: z.array(z.string()).optional().default([]),
   status: z.enum(['active', 'inactive', 'pending_approval']).optional(),
   is_active: z.boolean().optional()
 })
@@ -179,11 +179,25 @@ export async function createServiceAction(formData: FormData): Promise<ActionRes
   try {
     const user = await getCurrentUser()
     
+    // Processar imagens
+    const imagesUrlsData = formData.get('images_urls') as string;
+    console.log('📸 [CREATE_SERVICE] Dados de imagens recebidos:', imagesUrlsData);
+    let imagesUrls: string[] = [];
+    if (imagesUrlsData) {
+      try {
+        imagesUrls = JSON.parse(imagesUrlsData);
+        console.log('📸 [CREATE_SERVICE] Imagens processadas:', imagesUrls);
+      } catch (error) {
+        console.error('Error parsing images_urls:', error);
+        imagesUrls = [];
+      }
+    }
+
     const rawData = {
       name: formData.get('name') as string,
       description: formData.get('description') as string || null,
       category: formData.get('category') as string,
-      images_urls: formData.getAll('images_urls').filter(url => url) as string[],
+      images_urls: imagesUrls,
       is_active: formData.get('is_active') === 'true'
     }
 
@@ -207,8 +221,11 @@ export async function createServiceAction(formData: FormData): Promise<ActionRes
       status: 'active',
       is_active: validatedData.is_active ?? true,
       min_guests: 0,
-      max_guests: null
+      max_guests: null,
+      images_urls: validatedData.images_urls || []
     }
+    
+    console.log('📸 [CREATE_SERVICE] ServiceData com imagens:', serviceData);
 
     const { data: service, error } = await supabase
       .from('services')
@@ -275,12 +292,26 @@ export async function updateServiceAction(formData: FormData): Promise<ActionRes
   try {
     const user = await getCurrentUser()
     
+    // Processar imagens
+    const imagesUrlsData = formData.get('images_urls') as string;
+    console.log('📸 [UPDATE_SERVICE] Dados de imagens recebidos:', imagesUrlsData);
+    let imagesUrls: string[] = [];
+    if (imagesUrlsData) {
+      try {
+        imagesUrls = JSON.parse(imagesUrlsData);
+        console.log('📸 [UPDATE_SERVICE] Imagens processadas:', imagesUrls);
+      } catch (error) {
+        console.error('Error parsing images_urls:', error);
+        imagesUrls = [];
+      }
+    }
+
     const rawData = {
       id: formData.get('id') as string,
       name: formData.get('name') as string,
       description: formData.get('description') as string || null,
       category: formData.get('category') as string,
-      images_urls: formData.getAll('images_urls').filter(url => url) as string[],
+      images_urls: imagesUrls,
       status: (formData.get('status') as string) || undefined,
       is_active: formData.get('is_active') === 'true'
     }
@@ -324,6 +355,11 @@ export async function updateServiceAction(formData: FormData): Promise<ActionRes
     if (validatedData.status !== undefined) {
       updateData.status = validatedData.status
     }
+    if (validatedData.images_urls !== undefined) {
+      updateData.images_urls = validatedData.images_urls
+    }
+
+    console.log('📸 [UPDATE_SERVICE] UpdateData com imagens:', updateData);
 
     const { data: service, error } = await supabase
       .from('services')
@@ -706,12 +742,16 @@ export async function getProviderStatsAction(): Promise<ActionResult<{
 // Upload de imagem para o Supabase Storage
 export async function uploadServiceImageAction(formData: FormData): Promise<ActionResult<string>> {
   try {
+    console.log('📸 [UPLOAD_SERVICE_IMAGE] Iniciando upload');
     const user = await getCurrentUser()
     const file = formData.get('image') as File
     
     if (!file) {
+      console.log('❌ [UPLOAD_SERVICE_IMAGE] Nenhum arquivo selecionado');
       return { success: false, error: 'Nenhum arquivo selecionado' }
     }
+    
+    console.log('📸 [UPLOAD_SERVICE_IMAGE] Arquivo recebido:', file.name, file.size, file.type);
 
     // Validar tipo de arquivo
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
@@ -748,6 +788,8 @@ export async function uploadServiceImageAction(formData: FormData): Promise<Acti
     const { data: { publicUrl } } = supabase.storage
       .from('be-fest-images')
       .getPublicUrl(fileName)
+
+    console.log('✅ [UPLOAD_SERVICE_IMAGE] Upload concluído:', publicUrl);
 
     return { 
       success: true, 
