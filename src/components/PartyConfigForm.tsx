@@ -21,6 +21,15 @@ const partySchema = z.object({
   description: z.string().optional().nullable(),
   event_date: z.string().min(1, 'Data é obrigatória'),
   start_time: z.string().optional().nullable(),
+  // Campos de endereço separados
+  street: z.string().optional().nullable(),
+  number: z.string().optional().nullable(),
+  neighborhood: z.string().optional().nullable(),
+  city: z.string().optional().nullable(),
+  state: z.string().optional().nullable(),
+  zipcode: z.string().optional().nullable(),
+  complement: z.string().optional().nullable(),
+  // Campo location será gerado automaticamente
   location: z.string().optional().nullable(),
   full_guests: z.number().min(0, 'Número de convidados inteira deve ser 0 ou maior'),
   half_guests: z.number().min(0, 'Número de convidados meia deve ser 0 ou maior'),
@@ -53,6 +62,7 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<PartyFormData>({
     resolver: zodResolver(partySchema),
@@ -61,12 +71,61 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
       description: '',
       event_date: '',
       start_time: '',
+      street: '',
+      number: '',
+      neighborhood: '',
+      city: '',
+      state: '',
+      zipcode: '',
+      complement: '',
       location: '',
       full_guests: 0,
       half_guests: 0,
       free_guests: 0,
     },
   });
+
+  // Função para gerar endereço completo
+  const generateFullAddress = (data: {
+    street?: string;
+    number?: string;
+    complement?: string;
+    neighborhood?: string;
+    city?: string;
+    state?: string;
+    zipcode?: string;
+  }) => {
+    const parts = [];
+    
+    if (data.street) {
+      let streetPart = data.street;
+      if (data.number) {
+        streetPart += `, ${data.number}`;
+      }
+      if (data.complement) {
+        streetPart += `, ${data.complement}`;
+      }
+      parts.push(streetPart);
+    }
+    
+    if (data.neighborhood) {
+      parts.push(data.neighborhood);
+    }
+    
+    if (data.city) {
+      let cityPart = data.city;
+      if (data.state) {
+        cityPart += `, ${data.state}`;
+      }
+      parts.push(cityPart);
+    }
+    
+    if (data.zipcode) {
+      parts.push(data.zipcode);
+    }
+    
+    return parts.join(' - ');
+  };
 
   const onSubmit = async (data: PartyFormData) => {
     setLoading(true);
@@ -80,11 +139,22 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
         formData.append('id', eventId);
       }
       
+      // Gerar endereço completo
+      const fullAddress = generateFullAddress({
+        street: data.street || '',
+        number: data.number || '',
+        complement: data.complement || '',
+        neighborhood: data.neighborhood || '',
+        city: data.city || '',
+        state: data.state || '',
+        zipcode: data.zipcode || '',
+      });
+      
       formData.append('title', data.title);
       if (data.description) formData.append('description', data.description);
       formData.append('event_date', data.event_date);
       if (data.start_time) formData.append('start_time', data.start_time);
-      if (data.location) formData.append('location', data.location);
+      if (fullAddress) formData.append('location', fullAddress);
       formData.append('guest_count', calculateGuestCount(data.full_guests, data.half_guests, data.free_guests).toString());
       formData.append('full_guests', data.full_guests.toString());
       formData.append('half_guests', data.half_guests.toString());
@@ -241,22 +311,180 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
         </div>
       </div>
 
-      {/* Local */}
+      {/* Endereço do Evento */}
       <div>
-        <label className="block text-sm font-semibold text-[#520029] mb-2">
+        <label className="block text-sm font-semibold text-[#520029] mb-3">
           <MdLocationOn className="inline mr-1" />
-          Local do Evento
+          Endereço do Evento
         </label>
-        <input
-          type="text"
-          {...register('location')}
-          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none"
-          placeholder="Ex: Rua das Flores, 123 - Jardins, São Paulo"
-          disabled={loading}
-        />
-        {errors.location && (
-          <p className="text-red-500 text-sm mt-1">{errors.location.message}</p>
-        )}
+        
+        <div className="space-y-4">
+          {/* Rua e Número */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2">
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Rua/Avenida
+              </label>
+              <input
+                type="text"
+                {...register('street')}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none text-sm"
+                placeholder="Ex: Rua das Flores"
+                disabled={loading}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Número
+              </label>
+              <input
+                type="text"
+                {...register('number')}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none text-sm"
+                placeholder="123"
+                disabled={loading}
+              />
+            </div>
+          </div>
+
+          {/* Complemento */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">
+              Complemento (opcional)
+            </label>
+            <input
+              type="text"
+              {...register('complement')}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none text-sm"
+              placeholder="Ex: Apartamento 101, Bloco A"
+              disabled={loading}
+            />
+          </div>
+
+          {/* Bairro e CEP */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Bairro
+              </label>
+              <input
+                type="text"
+                {...register('neighborhood')}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none text-sm"
+                placeholder="Ex: Jardins"
+                disabled={loading}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                CEP
+              </label>
+              <input
+                type="text"
+                {...register('zipcode')}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none text-sm"
+                placeholder="00000-000"
+                disabled={loading}
+                maxLength={9}
+                onChange={(e) => {
+                  // Formatação automática do CEP
+                  let value = e.target.value.replace(/\D/g, '');
+                  if (value.length > 5) {
+                    value = value.replace(/(\d{5})(\d)/, '$1-$2');
+                  }
+                  e.target.value = value;
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Cidade e Estado */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Cidade
+              </label>
+              <input
+                type="text"
+                {...register('city')}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none text-sm"
+                placeholder="Ex: São Paulo"
+                disabled={loading}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Estado
+              </label>
+              <select
+                {...register('state')}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none text-sm"
+                disabled={loading}
+              >
+                <option value="">Selecione</option>
+                <option value="AC">Acre</option>
+                <option value="AL">Alagoas</option>
+                <option value="AP">Amapá</option>
+                <option value="AM">Amazonas</option>
+                <option value="BA">Bahia</option>
+                <option value="CE">Ceará</option>
+                <option value="DF">Distrito Federal</option>
+                <option value="ES">Espírito Santo</option>
+                <option value="GO">Goiás</option>
+                <option value="MA">Maranhão</option>
+                <option value="MT">Mato Grosso</option>
+                <option value="MS">Mato Grosso do Sul</option>
+                <option value="MG">Minas Gerais</option>
+                <option value="PA">Pará</option>
+                <option value="PB">Paraíba</option>
+                <option value="PR">Paraná</option>
+                <option value="PE">Pernambuco</option>
+                <option value="PI">Piauí</option>
+                <option value="RJ">Rio de Janeiro</option>
+                <option value="RN">Rio Grande do Norte</option>
+                <option value="RS">Rio Grande do Sul</option>
+                <option value="RO">Rondônia</option>
+                <option value="RR">Roraima</option>
+                <option value="SC">Santa Catarina</option>
+                <option value="SP">São Paulo</option>
+                <option value="SE">Sergipe</option>
+                <option value="TO">Tocantins</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Preview do endereço */}
+          {(() => {
+            const street = watch('street');
+            const number = watch('number');
+            const complement = watch('complement');
+            const neighborhood = watch('neighborhood');
+            const city = watch('city');
+            const state = watch('state');
+            const zipcode = watch('zipcode');
+            
+            const previewData = { street, number, complement, neighborhood, city, state, zipcode };
+            const preview = generateFullAddress({
+              street: previewData.street || undefined,
+              number: previewData.number || undefined, 
+              complement: previewData.complement || undefined,
+              neighborhood: previewData.neighborhood || undefined,
+              city: previewData.city || undefined,
+              state: previewData.state || undefined,
+              zipcode: previewData.zipcode || undefined
+            });
+            
+            if (preview) {
+              return (
+                <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-xs font-medium text-blue-800 mb-1">Preview do endereço:</p>
+                  <p className="text-sm text-blue-700">{preview}</p>
+                </div>
+              );
+            }
+            return null;
+          })()}
+        </div>
       </div>
 
       {/* Número de Convidados por Categoria */}
