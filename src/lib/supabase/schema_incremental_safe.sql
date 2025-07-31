@@ -473,3 +473,9 @@ SELECT
     with_check
 FROM pg_policies 
 WHERE tablename = 'event_services';
+
+-- Adicionar campo organization_description à tabela users
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS organization_description text;
+
+-- Comentário para documentar o campo
+COMMENT ON COLUMN public.users.organization_description IS 'Descrição da organização/prestador de serviços';

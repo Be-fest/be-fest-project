@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { getSubcategoriesAction } from '@/lib/actions/services'
-import { Subcategory } from '@/types/database'
+import { SubcategoryWithCategory } from '@/types/database'
 
 interface AreaOfOperationSelectProps {
   value: string
@@ -18,10 +18,10 @@ export default function AreaOfOperationSelect({
   onChange,
   name = 'areaOfOperation',
   required = false,
-  placeholder = 'Selecione a área de atuação',
+  placeholder = 'Selecione a área de atuação (Comida e Bebida)',
   className = ''
 }: AreaOfOperationSelectProps) {
-  const [subcategories, setSubcategories] = useState<Subcategory[]>([])
+  const [subcategories, setSubcategories] = useState<SubcategoryWithCategory[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -34,7 +34,11 @@ export default function AreaOfOperationSelect({
         const result = await getSubcategoriesAction()
         
         if (result.success && result.data) {
-          setSubcategories(result.data)
+          // Filtrar apenas subcategorias da categoria "COMIDA E BEBIDA"
+          const comidaBebidaSubcategories = result.data.filter(
+            subcategory => subcategory.category_name?.toLowerCase() === 'comida e bebida'
+          )
+          setSubcategories(comidaBebidaSubcategories)
         } else {
           setError(result.error || 'Erro ao carregar subcategorias')
         }

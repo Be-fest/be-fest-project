@@ -718,6 +718,7 @@ export async function deleteProfileImageAction(imageUrl: string): Promise<Action
 // Esquema para atualização de perfil do prestador
 const updateProviderProfileSchema = z.object({
   organization_name: z.string().min(1, 'Nome da empresa é obrigatório').optional(),
+  organization_description: z.string().optional(),
   full_name: z.string().min(1, 'Nome é obrigatório').optional(),
   whatsapp_number: z.string().min(8, 'Telefone deve ter pelo menos 8 dígitos').optional(),
   area_of_operation: z.string().min(1, 'Área de atuação é obrigatória').optional(),
@@ -739,6 +740,7 @@ export async function updateProviderProfileAction(formData: FormData): Promise<A
     
     const fields = [
       'organization_name',
+      'organization_description',
       'full_name', 
       'whatsapp_number',
       'area_of_operation',
@@ -776,6 +778,10 @@ export async function updateProviderProfileAction(formData: FormData): Promise<A
 
     if (validatedData.organization_name) {
       updateData.organization_name = validatedData.organization_name
+    }
+
+    if (validatedData.organization_description !== undefined) {
+      updateData.organization_description = validatedData.organization_description
     }
 
     if (validatedData.full_name) {

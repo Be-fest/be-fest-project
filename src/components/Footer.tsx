@@ -26,19 +26,9 @@ export function Footer() {
                 whileHover={{ scale: 1.1 }}
                 className="w-10 h-10 bg-[#FF0080] rounded-full flex items-center justify-center cursor-pointer"
               >
-                <FaFacebookF className="text-white text-sm" />
-              </motion.div>
-              <motion.div 
-                whileHover={{ scale: 1.1 }}
-                className="w-10 h-10 bg-[#FF0080] rounded-full flex items-center justify-center cursor-pointer"
-              >
-                <FaInstagram className="text-white text-sm" />
-              </motion.div>
-              <motion.div 
-                whileHover={{ scale: 1.1 }}
-                className="w-10 h-10 bg-[#FF0080] rounded-full flex items-center justify-center cursor-pointer"
-              >
-                <FaXTwitter className="text-white text-sm" />
+                <a href="https://www.instagram.com/be_.fest/" target="_blank" rel="noopener noreferrer">
+                  <FaInstagram className="text-white text-sm" />
+                </a>
               </motion.div>
             </div>
           </div>          <div className="space-y-6">
@@ -75,7 +65,7 @@ export function Footer() {
                 </div>
                 <div>
                   <div className="text-xs font-medium text-gray-500">E-mail</div>
-                  <span>contato@befest.com.br</span>
+                  <span>befest21@gmail.com</span>
                 </div>
               </div>
               <div className="flex items-center space-x-3">
@@ -83,8 +73,17 @@ export function Footer() {
                   <MdPhone className="text-white text-xs" />
                 </div>
                 <div>
-                  <div className="text-xs font-medium text-gray-500">Número de Telefone</div>
-                  <span>(11) 9999-9999</span>
+                  <div className="text-xs font-medium text-gray-500">WhatsApp</div>
+                  <span>21 980082781</span>
+                </div>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-5 h-5 bg-[#FF0080] rounded-full flex items-center justify-center">
+                  <MdPhone className="text-white text-xs" />
+                </div>
+                <div>
+                  <div className="text-xs font-medium text-gray-500">Telefone</div>
+                  <span>21 980082781</span>
                 </div>
               </div>
               <div className="flex items-center space-x-3">
@@ -93,7 +92,7 @@ export function Footer() {
                 </div>
                 <div>
                   <div className="text-xs font-medium text-gray-500">Local</div>
-                  <span>São Paulo, SP</span>
+                  <span>Rio de Janeiro - RJ</span>
                 </div>
               </div>
             </div>

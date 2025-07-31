@@ -17,8 +17,12 @@ export default function ProvidersPage() {
       <div id="como-funciona">
         <ProviderHowItWorks />
       </div>
-      <ProviderFAQ />
-      <ProviderCTA />
+      <div id="faq">
+        <ProviderFAQ />
+      </div>
+      <div id="contato">
+        <ProviderCTA />
+      </div>
       <Footer />
     </main>
   );

@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createServerClient } from '@/lib/supabase/server'
-import { Service, ServiceInsert, ServiceUpdate, ServiceWithProvider, ServiceWithDetails, Subcategory } from '@/types/database'
+import { Service, ServiceInsert, ServiceUpdate, ServiceWithProvider, ServiceWithDetails, Subcategory, SubcategoryWithCategory } from '@/types/database'
 
 // Validation schemas
 const createServiceSchema = z.object({
@@ -840,13 +840,23 @@ export async function deleteServiceImageAction(imageUrl: string): Promise<Action
 } 
 
 // Buscar subcategorias do banco de dados
-export async function getSubcategoriesAction(): Promise<ActionResult<Subcategory[]>> {
+export async function getSubcategoriesAction(): Promise<ActionResult<SubcategoryWithCategory[]>> {
   try {
     const supabase = await createServerClient()
 
     const { data: subcategories, error } = await supabase
       .from('subcategories')
-      .select('id, name, category_id, icon_url, created_at, updated_at')
+      .select(`
+        id, 
+        name, 
+        category_id, 
+        icon_url, 
+        created_at, 
+        updated_at,
+        categories!subcategories_category_id_fkey (
+          name
+        )
+      `)
       .order('name')
 
     if (error) {
@@ -854,7 +864,13 @@ export async function getSubcategoriesAction(): Promise<ActionResult<Subcategory
       return { success: false, error: 'Erro ao carregar subcategorias' }
     }
 
-    return { success: true, data: subcategories || [] }
+    // Transformar os dados para incluir o nome da categoria
+    const transformedSubcategories = subcategories?.map(subcategory => ({
+      ...subcategory,
+      category_name: (subcategory as any).categories?.name
+    })) || []
+
+    return { success: true, data: transformedSubcategories }
   } catch (error) {
     console.error('Subcategories fetch failed:', error)
     return { 

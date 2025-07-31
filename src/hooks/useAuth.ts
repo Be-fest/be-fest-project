@@ -22,12 +22,11 @@ interface UserData {
   full_name: string | null;
   email: string | null;
   organization_name: string | null;
+  organization_description: string | null;
   profile_image: string | null;
   whatsapp_number: string | null;
   area_of_operation: string | null;
-  city: string | null;
-  state: string | null;
-  postal_code: string | null;
+  cnpj: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -631,12 +630,11 @@ export function useAuth() {
           full_name,
           email,
           organization_name,
+          organization_description,
           profile_image,
           whatsapp_number,
           area_of_operation,
-          city,
-          state,
-          postal_code,
+          cnpj,
           created_at,
           updated_at
         `)

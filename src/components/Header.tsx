@@ -747,6 +747,22 @@ function ProviderHeader({ user, userType, loading }: { user: any; userType: 'cli
               >
                 Como Funciona
               </ScrollLink>
+              <ScrollLink 
+                to="faq"
+                smooth={true} 
+                duration={500}
+                className="text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer font-poppins"
+              >
+                FAQ
+              </ScrollLink>
+              <ScrollLink 
+                to="contato"
+                smooth={true} 
+                duration={500}
+                className="text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer font-poppins"
+              >
+                Contato
+              </ScrollLink>
             </>
           )}
         </nav>
@@ -864,6 +880,24 @@ function ProviderHeader({ user, userType, loading }: { user: any; userType: 'cli
                 onClick={() => setIsMenuOpen(false)}
               >
                 Como Funciona
+              </ScrollLink>
+              <ScrollLink 
+                to="faq"
+                smooth={true} 
+                duration={500}
+                className="block text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer py-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                FAQ
+              </ScrollLink>
+              <ScrollLink 
+                to="contato"
+                smooth={true} 
+                duration={500}
+                className="block text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer py-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Contato
               </ScrollLink>
               <div className="pt-4 border-t border-gray-200 space-y-2">
                 <Link 

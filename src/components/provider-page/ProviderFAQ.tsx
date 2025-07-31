@@ -8,7 +8,7 @@ const faqs = [
   {
     id: 1,
     question: 'Quanto custa para ser um prestador na Be Fest?',
-    answer: 'O cadastro é 100% gratuito! Você só paga uma pequena taxa quando fecha um negócio através da plataforma. No plano gratuito, a taxa é de 8% por transação.'
+    answer: 'NÃO CUSTARÁ NADA PARA OS PRESTADORES! A NOSSA FORMA DE SERVIÇO NÃO TEM TAXAS PARA OS PRESTADORES. O cadastro é 100% gratuito e você pode começar a receber solicitações imediatamente.'
   },
   {
     id: 2,

@@ -6,7 +6,7 @@ import { MdClose, MdAttachMoney, MdGroup, MdAdd, MdEdit, MdRemove, MdCloudUpload
 import { Input, Button, TipTapEditor } from '@/components/ui';
 import { createServiceAction, updateServiceAction, uploadServiceImageAction, deleteServiceImageAction, getSubcategoriesAction } from '@/lib/actions/services';
 import { invalidateServiceImagesCache } from '@/hooks/useImagePreloader';
-import { Service, ServiceWithDetails, ServiceGuestTier, Subcategory } from '@/types/database';
+import { ServiceWithDetails, SubcategoryWithCategory } from '@/types/database';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
 
 interface ServiceFormModalProps {
@@ -68,7 +68,7 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
   const [tiersError, setTiersError] = useState<string | null>(null);
 
   // Estado para subcategorias
-  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [subcategories, setSubcategories] = useState<SubcategoryWithCategory[]>([]);
   const [loadingSubcategories, setLoadingSubcategories] = useState(false);
 
   // Carregar subcategorias quando o modal abrir
@@ -406,10 +406,10 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
             {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
           </div>
 
-          {/* Categoria */}
+          {/* Subcategoria */}
           <div>
             <label className="block text-sm font-medium text-[#520029] mb-2">
-              Categoria *
+              Subcategoria *
             </label>
             <select
               value={formData.category}
@@ -420,7 +420,7 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
               disabled={loading || loadingSubcategories}
             >
               <option value="">
-                {loadingSubcategories ? 'Carregando categorias...' : 'Selecione uma categoria'}
+                {loadingSubcategories ? 'Carregando subcategorias...' : 'Selecione uma subcategoria'}
               </option>
               {subcategories.map(subcategory => (
                 <option key={subcategory.id} value={subcategory.name}>

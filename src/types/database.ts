@@ -26,6 +26,7 @@ export interface Database {
           full_name: string | null
           email: string | null
           organization_name: string | null
+          organization_description: string | null
           cnpj: string | null
           cpf: string | null
           whatsapp_number: string | null
@@ -45,6 +46,7 @@ export interface Database {
           full_name?: string | null
           email?: string | null
           organization_name?: string | null
+          organization_description?: string | null
           cnpj?: string | null
           cpf?: string | null
           whatsapp_number?: string | null
@@ -64,6 +66,7 @@ export interface Database {
           full_name?: string | null
           email?: string | null
           organization_name?: string | null
+          organization_description?: string | null
           cnpj?: string | null
           cpf?: string | null
           whatsapp_number?: string | null
@@ -422,6 +425,11 @@ export type CategoryUpdate = Database['public']['Tables']['categories']['Update'
 export type Subcategory = Database['public']['Tables']['subcategories']['Row']
 export type SubcategoryInsert = Database['public']['Tables']['subcategories']['Insert']
 export type SubcategoryUpdate = Database['public']['Tables']['subcategories']['Update']
+
+// Tipo estendido para subcategorias com nome da categoria
+export type SubcategoryWithCategory = Subcategory & {
+  category_name?: string
+}
 
 export type Event = Database['public']['Tables']['events']['Row']
 export type EventInsert = Database['public']['Tables']['events']['Insert']

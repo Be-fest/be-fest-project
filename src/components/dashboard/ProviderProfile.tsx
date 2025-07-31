@@ -40,6 +40,7 @@ export function ProviderProfile() {
   
   const [formData, setFormData] = useState({
     organization_name: '',
+    organization_description: '',
     full_name: '',
     email: '',
     whatsapp_number: '',
@@ -53,6 +54,7 @@ export function ProviderProfile() {
       console.log('✅ [PROVIDER_PROFILE] Dados do usuário atualizados:', userData);
       setFormData({
         organization_name: userData.organization_name || '',
+        organization_description: userData.organization_description || '',
         full_name: userData.full_name || '',
         email: userData.email || '',
         whatsapp_number: userData.whatsapp_number || '',
@@ -229,6 +231,7 @@ export function ProviderProfile() {
     if (userData) {
       setFormData({
         organization_name: userData.organization_name || '',
+        organization_description: userData.organization_description || '',
         full_name: userData.full_name || '',
         email: userData.email || '',
         whatsapp_number: userData.whatsapp_number || '',
@@ -462,6 +465,26 @@ export function ProviderProfile() {
             ) : (
               <div className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
                 <span className="text-gray-900">{formData.area_of_operation || 'Não informado'}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Descrição da Empresa */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-[#520029] mb-2">
+              Descrição da Empresa
+            </label>
+            {isEditing ? (
+              <textarea
+                value={formData.organization_description}
+                onChange={(e) => handleInputChange('organization_description', e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A502CA] focus:border-transparent"
+                rows={3}
+                placeholder="Descreva sua empresa e seus serviços"
+              />
+            ) : (
+              <div className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
+                <span className="text-gray-900">{formData.organization_description || 'Não informado'}</span>
               </div>
             )}
           </div>

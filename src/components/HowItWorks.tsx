@@ -7,19 +7,19 @@ const steps = [
 	{
 		icon: MdSearch,
 		title: 'Busque',
-		description: 'Navegue por centenas de prestadores verificados em diversas categorias.',
+		description: 'Navegue por diversos prestadores e serviços variados.',
 		color: '#FF0080'
 	},
 	{
 		icon: MdMessage,
-		title: 'Negocie',
-		description: 'Entre em contato direto com os prestadores e negocie os melhores preços.',
+		title: 'Monte sua Festa',
+		description: 'Adicione os serviços dos prestadores a sua festa.',
 		color: '#A502CA'
 	},
 	{
 		icon: MdCelebration,
 		title: 'Celebre',
-		description: 'Relaxe e aproveite sua festa perfeita enquanto cuidamos de todos os detalhes.',
+		description: 'Aproveite a festa com os Serviços contratados na Be fest!',
 		color: '#520029'
 	}
 ];
