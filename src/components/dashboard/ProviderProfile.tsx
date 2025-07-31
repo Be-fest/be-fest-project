@@ -9,7 +9,7 @@ import { User } from '@/types/database';
 import { ProviderProfileSkeleton } from '@/components/ui';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
 import { invalidateServiceImagesCache } from '@/hooks/useImagePreloader';
-import AreaOfOperationSelect from '@/components/ui/AreaOfOperationSelect';
+import { LocationPicker } from '@/components/ui/LocationPicker';
 import { useAuth } from '@/hooks/useAuth';
 
 interface ProviderStats {
@@ -19,6 +19,21 @@ interface ProviderStats {
   activeServices: number;
   totalRevenue: number;
   completedEvents: number;
+}
+
+interface FormData {
+  organization_name: string;
+  organization_description: string;
+  full_name: string;
+  email: string;
+  whatsapp_number: string;
+  area_of_operation: string;
+  coordenates: {
+    latitude: number;
+    longitude: number;
+    raio_atuacao: number;
+  };
+  profile_image: string;
 }
 
 export function ProviderProfile() {
@@ -38,13 +53,18 @@ export function ProviderProfile() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const toast = useToastGlobal();
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     organization_name: '',
     organization_description: '',
     full_name: '',
     email: '',
     whatsapp_number: '',
     area_of_operation: '',
+    coordenates: {
+      latitude: userData?.coordenates?.latitude || 0,
+      longitude: userData?.coordenates?.longitude || 0,
+      raio_atuacao: userData?.coordenates?.raio_atuacao || 50,
+    },
     profile_image: '',
   });
 
@@ -59,6 +79,11 @@ export function ProviderProfile() {
         email: userData.email || '',
         whatsapp_number: userData.whatsapp_number || '',
         area_of_operation: userData.area_of_operation || '',
+        coordenates: {
+          latitude: userData.coordenates?.latitude || 0,
+          longitude: userData.coordenates?.longitude || 0,
+          raio_atuacao: userData.coordenates?.raio_atuacao || 50,
+        },
         profile_image: userData.profile_image || '',
       });
     }
@@ -171,7 +196,7 @@ export function ProviderProfile() {
       
       Object.entries(requiredFields).forEach(([field, errorMessage]) => {
         const value = formData[field as keyof typeof formData];
-        if (!value || value.trim() === '') {
+        if (!value || (typeof value === 'string' && value.trim() === '')) {
           errors.push(errorMessage);
         }
       });
@@ -183,7 +208,14 @@ export function ProviderProfile() {
       
       // Adicionar apenas campos preenchidos
       Object.entries(formData).forEach(([key, value]) => {
-        if (value && value.trim() !== '' && key !== 'email') {
+        if (key === 'coordenates') {
+          // Handle coordenates object separately
+          if (value && typeof value === 'object') {
+            formDataToSend.append('latitude', value.latitude.toString());
+            formDataToSend.append('longitude', value.longitude.toString());
+            formDataToSend.append('raio_atuacao', value.raio_atuacao.toString());
+          }
+        } else if (value && typeof value === 'string' && value.trim() !== '' && key !== 'email') {
           formDataToSend.append(key, value.trim());
         }
       });
@@ -211,7 +243,9 @@ export function ProviderProfile() {
         //     full_name: updatedUser.full_name || '', // This line is removed as per the new_code
         //     email: updatedUser.email || '', // This line is removed as per the new_code
         //     whatsapp_number: updatedUser.whatsapp_number || '', // This line is removed as per the new_code
-        //     area_of_operation: updatedUser.area_of_operation || '', // This line is removed as per the new_code
+        //     latitude: updatedUser.latitude || 0,
+//     longitude: updatedUser.longitude || 0,
+//     raio_atuacao: updatedUser.raio_atuacao || 50,
         //     cnpj: updatedUser.cnpj || '', // This line is removed as per the new_code
         //     profile_image: updatedUser.profile_image || '', // This line is removed as per the new_code
         //   }); // This line is removed as per the new_code
@@ -236,6 +270,11 @@ export function ProviderProfile() {
         email: userData.email || '',
         whatsapp_number: userData.whatsapp_number || '',
         area_of_operation: userData.area_of_operation || '',
+        coordenates: {
+          latitude: userData.coordenates?.latitude || 0,
+          longitude: userData.coordenates?.longitude || 0,
+          raio_atuacao: userData.coordenates?.raio_atuacao || 50,
+        },
         profile_image: userData.profile_image || '',
       });
     }
@@ -454,13 +493,29 @@ export function ProviderProfile() {
               Área de Atuação *
             </label>
             {isEditing ? (
-              <AreaOfOperationSelect
-                value={formData.area_of_operation}
-                onChange={(value) => handleInputChange('area_of_operation', value)}
-                name="area_of_operation"
-                required
-                placeholder="Selecione a área de atuação"
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A502CA] focus:border-transparent"
+              <LocationPicker
+                onLocationChange={(lat, lng) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    coordenates: {
+                      ...prev.coordenates,
+                      latitude: lat,
+                      longitude: lng
+                    }
+                  }));
+                }}
+                onRadiusChange={(radius) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    coordenates: {
+                      ...prev.coordenates,
+                      raio_atuacao: radius
+                    }
+                  }));
+                }}
+                initialLat={formData.coordenates.latitude}
+                initialLng={formData.coordenates.longitude}
+                initialRadius={formData.coordenates.raio_atuacao}
               />
             ) : (
               <div className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">

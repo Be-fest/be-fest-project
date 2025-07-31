@@ -30,6 +30,11 @@ interface UserData {
   city: string | null;
   state: string | null;
   postal_code: string | null;
+  coordenates?: {
+    latitude: number;
+    longitude: number;
+    raio_atuacao: number;
+  } | null;
   created_at: string;
   updated_at: string;
 }

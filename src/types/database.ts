@@ -512,3 +512,20 @@ export interface GuestTier {
   base_price_per_adult: number;
   tier_description: string;
 } 
+export interface UserData {
+  id: string;
+  full_name?: string;
+  organization_name?: string;
+  organization_description?: string;
+  email: string;
+  whatsapp_number: string;
+  profile_image?: string;
+  role: UserRole;
+  created_at: string;
+  area_of_operation?: string;
+  coordenates?: {
+    latitude: number;
+    longitude: number;
+    raio_atuacao: number;
+  };
+}
