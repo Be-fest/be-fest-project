@@ -821,3 +821,172 @@ export async function getSubcategoriesAction(): Promise<ActionResult<Subcategory
     }
   }
 } 
+
+// ================================================================
+// PUBLIC PROVIDERS ACTIONS
+// ================================================================
+
+export async function getPublicProvidersAction(filters?: {
+  search?: string
+  location?: string
+  limit?: number
+}): Promise<ActionResult<Array<{
+  id: string;
+  full_name: string;
+  organization_name?: string;
+  email: string;
+  whatsapp_number?: string;
+  city?: string;
+  state?: string;
+  profile_image?: string;
+  logo_url?: string;
+  description?: string;
+  services_count: number;
+  average_rating?: number;
+  created_at: string;
+}>>> {
+  try {
+    const supabase = await createServerClient()
+    
+    let query = supabase
+      .from('users')
+      .select(`
+        id,
+        full_name,
+        organization_name,
+        email,
+        whatsapp_number,
+        city,
+        state,
+        profile_image,
+        logo_url,
+        description,
+        created_at,
+        services!inner (
+          id,
+          is_active
+        )
+      `)
+      .eq('role', 'provider')
+      .eq('services.is_active', true)
+
+    // Aplicar filtros
+    if (filters?.search) {
+      query = query.or(`full_name.ilike.%${filters.search}%,organization_name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`)
+    }
+
+    if (filters?.location) {
+      query = query.or(`city.ilike.%${filters.location}%,state.ilike.%${filters.location}%`)
+    }
+
+    if (filters?.limit) {
+      query = query.limit(filters.limit)
+    }
+
+    const { data: providers, error } = await query
+
+    if (error) {
+      console.error('Error fetching providers:', error)
+      return { success: false, error: error.message }
+    }
+
+    // Processar dados para incluir contagem de serviços e rating médio
+    const processedProviders = await Promise.all(
+      providers.map(async (provider) => {
+        // Buscar contagem de serviços ativos
+        const { count: servicesCount } = await supabase
+          .from('services')
+          .select('*', { count: 'exact', head: true })
+          .eq('provider_id', provider.id)
+          .eq('is_active', true)
+
+
+
+        return {
+          id: provider.id,
+          full_name: provider.full_name,
+          organization_name: provider.organization_name,
+          email: provider.email,
+          whatsapp_number: provider.whatsapp_number,
+          city: provider.city,
+          state: provider.state,
+          profile_image: provider.profile_image,
+          logo_url: provider.logo_url,
+          description: provider.description,
+          services_count: servicesCount || 0,
+
+          created_at: provider.created_at
+        }
+      })
+    )
+
+    return { success: true, data: processedProviders }
+  } catch (error) {
+    console.error('getPublicProvidersAction failed:', error)
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Erro ao buscar prestadores' 
+    }
+  }
+}
+
+export async function getSimpleProvidersAction(): Promise<ActionResult<Array<{
+  id: string;
+  full_name: string;
+  organization_name?: string;
+  logo_url?: string;
+  service_categories: string[];
+}>>> {
+  try {
+    const supabase = await createServerClient()
+
+    // Buscar prestadores com serviços ativos
+    const { data: providers, error } = await supabase
+      .from('users')
+      .select(`
+        id,
+        full_name,
+        organization_name,
+        logo_url,
+        services!inner (
+          id,
+          category,
+          is_active
+        )
+      `)
+      .eq('role', 'provider')
+      .eq('services.is_active', true)
+
+    if (error) {
+      console.error('Error fetching simple providers:', error)
+      return { success: false, error: error.message }
+    }
+
+    // Processar dados para incluir categorias únicas
+    const processedProviders = providers.map((provider) => {
+      // Extrair categorias únicas dos serviços
+      const categories = [...new Set(
+        provider.services
+          .filter((service: any) => service.is_active)
+          .map((service: any) => service.category)
+          .filter(Boolean)
+      )]
+
+      return {
+        id: provider.id,
+        full_name: provider.full_name,
+        organization_name: provider.organization_name,
+        logo_url: provider.logo_url,
+        service_categories: categories
+      }
+    })
+
+    return { success: true, data: processedProviders }
+  } catch (error) {
+    console.error('getSimpleProvidersAction failed:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Erro ao buscar prestadores'
+    }
+  }
+} 

@@ -301,14 +301,12 @@ function HomeHeader() {
             >
               Como Funciona
             </ScrollLink>
-            <ScrollLink 
-              to="prestadores" 
-              smooth={true} 
-              duration={500} 
-              className="text-gray-600 hover:text-[#FF0080] transition-colors cursor-pointer font-poppins"
+                        <Link
+              href="/prestadores"
+              className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
             >
               Prestadores
-            </ScrollLink>
+            </Link>
             {user ? (
               <>
                 {userType === 'service_provider' && (
@@ -395,15 +393,13 @@ function HomeHeader() {
             >
               Como Funciona
             </ScrollLink>
-            <ScrollLink 
-              to="prestadores" 
-              smooth={true} 
-              duration={500} 
-              className="block text-gray-600 hover:text-[#FF0080] transition-colors cursor-pointer py-2"
+                        <Link
+              href="/prestadores"
+              className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
               onClick={() => setIsMenuOpen(false)}
             >
               Prestadores
-            </ScrollLink>
+            </Link>
             {user ? (
               <>
                 {userType === 'service_provider' && (

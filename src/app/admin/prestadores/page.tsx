@@ -55,21 +55,37 @@ export default function PrestadoresPage() {
       setLoading(true);
       setError(null);
       
-      const [usersResult, servicesResult] = await Promise.all([
-        getAllUsersAction(),
-        getAllServicesAction()
-      ]);
+      console.log('Iniciando carregamento de prestadores...');
+      
+      // Primeiro, tentar carregar apenas usuários
+      const usersResult = await getAllUsersAction();
+      console.log('Resultado da busca de usuários:', usersResult);
       
       if (usersResult.success && usersResult.data) {
         // Filtrar apenas prestadores
         const providerUsers = usersResult.data.filter(user => user.role === 'provider');
+        console.log(`Encontrados ${providerUsers.length} prestadores`);
+        
+        // Tentar carregar serviços
+        let servicesResult;
+        try {
+          servicesResult = await getAllServicesAction();
+          console.log('Resultado da busca de serviços:', servicesResult);
+        } catch (servicesError) {
+          console.error('Erro ao buscar serviços:', servicesError);
+          servicesResult = { success: false, error: 'Erro ao buscar serviços' };
+        }
         
         // Enriquecer com dados de serviços se disponível
         let enrichedProviders = providerUsers;
         if (servicesResult.success && servicesResult.data) {
           enrichedProviders = providerUsers.map(provider => {
             const providerServices = servicesResult.data!.filter(
-              service => service.provider_name === (provider.organization_name || provider.full_name)
+              service => {
+                // Comparar por nome da organização ou nome completo
+                const providerDisplayName = provider.organization_name || provider.full_name;
+                return service.provider_name === providerDisplayName;
+              }
             );
             
             return {
@@ -78,6 +94,13 @@ export default function PrestadoresPage() {
               totalRevenue: 0 // Implementar quando tiver dados de receita
             };
           });
+        } else {
+          // Se não conseguir buscar serviços, definir contagem como 0
+          enrichedProviders = providerUsers.map(provider => ({
+            ...provider,
+            servicesCount: 0,
+            totalRevenue: 0
+          }));
         }
         
         setProviders(enrichedProviders);
