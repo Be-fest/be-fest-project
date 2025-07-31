@@ -15,7 +15,6 @@ interface EventService {
   event_title: string;
   event_date: string;
   event_location: string;
-  event_status: string;
   client_name: string;
   client_email: string;
   client_whatsapp: string;
@@ -221,4 +220,4 @@ export function OrdersTable({ searchTerm = '', statusFilter = 'todos' }: OrdersT
       ) : null}
     </>
   );
-} 
+}

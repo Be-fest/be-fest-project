@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
@@ -107,28 +107,28 @@ const ProvidersGrid = ({ providers }: { providers: ProviderData[] }) => {
               </div>
             </div>
 
-                         {/* Área de atuação com design melhorado */}
-             <div className="mb-5">
-               <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-[#FF0080] to-[#E6006F] text-white shadow-lg shadow-pink-200">
-                 <div className="w-2 h-2 bg-white rounded-full mr-2 opacity-80"></div>
-                 {provider.area_of_operation || 'Geral'}
-               </span>
-             </div>
+            {/* Área de atuação com design melhorado */}
+            <div className="mb-5">
+              <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-[#FF0080] to-[#E6006F] text-white shadow-lg shadow-pink-200">
+                <div className="w-2 h-2 bg-white rounded-full mr-2 opacity-80"></div>
+                {provider.area_of_operation || 'Geral'}
+              </span>
+            </div>
 
-                         {/* Informações do prestador com design aprimorado */}
-             <div className="flex items-center mb-6 p-4 bg-gradient-to-r from-gray-50 to-pink-50 rounded-xl border border-gray-100">
-               <div className="flex items-center">
-                 <div className="w-10 h-10 bg-gradient-to-br from-pink-100 to-purple-100 rounded-lg flex items-center justify-center mr-3">
-                   <MdBusiness className="text-[#FF0080] text-lg" />
-                 </div>
-                 <div>
-                   <span className="text-sm font-semibold text-gray-700">
-                     {provider.services_count} serviço{provider.services_count !== 1 ? 's' : ''}
-                   </span>
-                   <p className="text-xs text-gray-500">disponíveis</p>
-                 </div>
-               </div>
-             </div>
+            {/* Informações do prestador com design aprimorado */}
+            <div className="flex items-center mb-6 p-4 bg-gradient-to-r from-gray-50 to-pink-50 rounded-xl border border-gray-100">
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-gradient-to-br from-pink-100 to-purple-100 rounded-lg flex items-center justify-center mr-3">
+                  <MdBusiness className="text-[#FF0080] text-lg" />
+                </div>
+                <div>
+                  <span className="text-sm font-semibold text-gray-700">
+                    {provider.services_count} serviço{provider.services_count !== 1 ? 's' : ''}
+                  </span>
+                  <p className="text-xs text-gray-500">disponíveis</p>
+                </div>
+              </div>
+            </div>
 
             {/* Botão de ação com design moderno */}
             <div className="relative">
@@ -155,7 +155,8 @@ const ProvidersGrid = ({ providers }: { providers: ProviderData[] }) => {
   );
 };
 
-export default function PrestadoresPage() {
+// Componente que usa useSearchParams
+function PrestadoresContent() {
   const searchParams = useSearchParams();
   const [providers, setProviders] = useState<ProviderData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -200,10 +201,10 @@ export default function PrestadoresPage() {
     };
 
     fetchProviders();
-  }, [debouncedSearchQuery]);
+  }, [debouncedSearchQuery, selectedCategory, locationFilter]);
 
-  const handleCategorySelect = (category: string) => {
-    setSelectedCategory(category === selectedCategory ? undefined : category);
+  const handleCategorySelect = (category: string | undefined) => {
+    setSelectedCategory(category);
   };
 
   const clearFilters = () => {
@@ -217,39 +218,21 @@ export default function PrestadoresPage() {
       <>
         <Header />
         <div className="min-h-screen bg-[#FFF6FB] pt-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-8">
             <div className="mb-8">
-              <div className="h-8 w-64 bg-gray-300 rounded animate-pulse mb-4"></div>
-              <div className="h-4 w-96 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-10 bg-gradient-to-r from-gray-200 to-gray-300 rounded-xl mb-4 w-96 animate-pulse"></div>
+              <div className="h-6 bg-gradient-to-r from-gray-200 to-gray-300 rounded-xl w-80 animate-pulse"></div>
             </div>
+            
             <SearchSkeleton />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div key={i} className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden animate-pulse">
-                  {/* Imagem skeleton */}
                   <div className="h-56 bg-gradient-to-r from-gray-200 to-gray-300"></div>
-                  
-                  {/* Conteúdo skeleton */}
-                  <div className="p-6 space-y-4">
-                    <div className="space-y-2">
-                      <div className="h-6 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-3/4"></div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full"></div>
-                        <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-20"></div>
-                      </div>
-                    </div>
-                    
-                    <div className="h-8 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full w-24"></div>
-                    
-                    <div className="p-4 bg-gradient-to-r from-gray-50 to-pink-50 rounded-xl border border-gray-100">
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg mr-3"></div>
-                        <div className="space-y-1">
-                          <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-16"></div>
-                          <div className="h-3 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-20"></div>
-                        </div>
-                      </div>
-                    </div>
+                  <div className="p-6">
+                    <div className="h-6 bg-gradient-to-r from-gray-200 to-gray-300 rounded-xl mb-4 w-32"></div>
+                    <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded-xl mb-6 w-24"></div>
                     
                     <div className="h-12 bg-gradient-to-r from-gray-200 to-gray-300 rounded-xl"></div>
                   </div>
@@ -447,4 +430,31 @@ export default function PrestadoresPage() {
       </div>
     </>
   );
-} 
+}
+
+// Componente de fallback para o Suspense
+function PrestadoresLoading() {
+  return (
+    <>
+      <Header />
+      <div className="min-h-screen bg-[#FFF6FB] pt-20">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-8">
+          <div className="mb-8">
+            <div className="h-10 bg-gradient-to-r from-gray-200 to-gray-300 rounded-xl mb-4 w-96 animate-pulse"></div>
+            <div className="h-6 bg-gradient-to-r from-gray-200 to-gray-300 rounded-xl w-80 animate-pulse"></div>
+          </div>
+          <SearchSkeleton />
+        </div>
+      </div>
+    </>
+  );
+}
+
+// Componente principal da página
+export default function PrestadoresPage() {
+  return (
+    <Suspense fallback={<PrestadoresLoading />}>
+      <PrestadoresContent />
+    </Suspense>
+  );
+}

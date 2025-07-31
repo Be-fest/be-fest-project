@@ -27,6 +27,9 @@ interface UserData {
   whatsapp_number: string | null;
   area_of_operation: string | null;
   cnpj: string | null;
+  city: string | null;
+  state: string | null;
+  postal_code: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -635,6 +638,9 @@ export function useAuth() {
           whatsapp_number,
           area_of_operation,
           cnpj,
+          city,
+          state,
+          postal_code,
           created_at,
           updated_at
         `)
@@ -689,4 +695,4 @@ export function useAuth() {
     refreshUserData,
     setupAuthHeaders,
   };
-} 
+}
