@@ -404,16 +404,8 @@ export async function getAllUsersAction(): Promise<ActionResult<Array<{
   whatsapp_number?: string;
 }>>> {
   try {
-    console.log('Iniciando getAllUsersAction...');
     const supabase = createClient();
     
-    // Verificar se o cliente foi criado corretamente
-    if (!supabase) {
-      console.error('Supabase client not initialized in getAllUsersAction');
-      return { success: false, error: 'Cliente Supabase não inicializado' };
-    }
-
-    console.log('Buscando usuários...');
     const { data: users, error } = await supabase
       .from('users')
       .select(`
@@ -432,7 +424,6 @@ export async function getAllUsersAction(): Promise<ActionResult<Array<{
       return { success: false, error: error.message };
     }
 
-    console.log(`Encontrados ${users?.length || 0} usuários`);
     return { success: true, data: users || [] };
   } catch (error) {
     console.error('Users fetch failed:', error);
@@ -457,14 +448,7 @@ export async function getAllServicesAction(): Promise<ActionResult<Array<{
   try {
     const supabase = createClient();
     
-    // Verificar se o cliente foi criado corretamente
-    if (!supabase) {
-      console.error('Supabase client not initialized');
-      return { success: false, error: 'Cliente Supabase não inicializado' };
-    }
-
-    // Primeiro, buscar todos os serviços
-    const { data: services, error: servicesError } = await supabase
+    const { data: services, error } = await supabase
       .from('services')
       .select(`
         id,
@@ -475,62 +459,30 @@ export async function getAllServicesAction(): Promise<ActionResult<Array<{
         is_active,
         status,
         created_at,
-        provider_id
+        provider:users!provider_id (
+          full_name,
+          organization_name
+        )
       `)
       .order('created_at', { ascending: false });
 
-    if (servicesError) {
-      console.error('Error fetching services:', servicesError);
-      return { success: false, error: servicesError.message };
+    if (error) {
+      console.error('Error fetching services:', error);
+      return { success: false, error: error.message };
     }
 
-    // Se não há serviços, retornar array vazio
-    if (!services || services.length === 0) {
-      console.log('No services found');
-      return { success: true, data: [] };
-    }
+    const formattedServices = services?.map(service => ({
+      id: service.id,
+      name: service.name,
+      description: service.description || '',
+      provider_name: (service.provider as any)?.organization_name || (service.provider as any)?.full_name || 'N/A',
+      category: service.category || 'N/A',
+      price_per_guest: service.price_per_guest || 0,
+      is_active: service.is_active || false,
+      status: service.status || 'draft',
+      created_at: service.created_at,
+    })) || [];
 
-    console.log(`Found ${services.length} services`);
-
-    // Buscar dados dos prestadores
-    const providerIds = [...new Set(services.map(service => service.provider_id))];
-    console.log(`Fetching data for ${providerIds.length} providers`);
-
-    const { data: providers, error: providersError } = await supabase
-      .from('users')
-      .select('id, full_name, organization_name')
-      .in('id', providerIds);
-
-    if (providersError) {
-      console.error('Error fetching providers:', providersError);
-      return { success: false, error: providersError.message };
-    }
-
-    // Criar um mapa de prestadores para acesso rápido
-    const providersMap = new Map();
-    providers?.forEach(provider => {
-      providersMap.set(provider.id, provider);
-    });
-
-    console.log(`Found ${providers?.length || 0} providers`);
-
-    // Formatar os serviços com dados dos prestadores
-    const formattedServices = services.map(service => {
-      const provider = providersMap.get(service.provider_id);
-      return {
-        id: service.id,
-        name: service.name,
-        description: service.description || '',
-        provider_name: provider?.organization_name || provider?.full_name || 'N/A',
-        category: service.category || 'N/A',
-        price_per_guest: service.price_per_guest || 0,
-        is_active: service.is_active || false,
-        status: service.status || 'draft',
-        created_at: service.created_at,
-      };
-    });
-
-    console.log(`Formatted ${formattedServices.length} services`);
     return { success: true, data: formattedServices };
   } catch (error) {
     console.error('Services fetch failed:', error);

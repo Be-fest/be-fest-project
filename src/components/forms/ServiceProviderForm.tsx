@@ -216,72 +216,75 @@ export function ServiceProviderForm({ userType, onUserTypeChange }: ServiceProvi
         </p>
       </div>
 
-      <form action={formAction} className="space-y-4">
-        <div className="space-y-2">
-          <label htmlFor="companyName" className="block text-sm font-medium text-gray-700">
-            Nome da Empresa
-          </label>
-          <Input
-            id="companyName"
-            name="companyName"
-            type="text"
-            required
-            placeholder="Digite o nome da empresa"
-            className="w-full"
-          />
-        </div>
+      <form action={formAction} className="space-y-6">
+        {/* Informações da Empresa - Layout em duas colunas no desktop */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label htmlFor="companyName" className="block text-sm font-medium text-gray-700">
+              Nome da Empresa
+            </label>
+            <Input
+              id="companyName"
+              name="companyName"
+              type="text"
+              required
+              placeholder="Digite o nome da empresa"
+              className="w-full"
+            />
+          </div>
 
-        <div className="space-y-2">
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-            Email
-          </label>
-          <Input
-            id="email"
-            name="email"
-            type="email"
-            required
-            placeholder="Digite o email da empresa"
-            className="w-full"
-          />
-        </div>
+          <div className="space-y-2">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              Email
+            </label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              required
+              placeholder="Digite o email da empresa"
+              className="w-full"
+            />
+          </div>
 
-        <div className="space-y-2">
-          <label htmlFor="cnpj" className="block text-sm font-medium text-gray-700">
-            CNPJ
-          </label>
-          <Input
-            id="cnpj"
-            name="cnpj"
-            type="text"
-            required
-            placeholder="00.000.000/0000-00"
-            className="w-full"
-            onChange={(e) => {
-              e.target.value = formatCNPJ(e.target.value);
-            }}
-          />
-        </div>
+          <div className="space-y-2">
+            <label htmlFor="cnpj" className="block text-sm font-medium text-gray-700">
+              CNPJ
+            </label>
+            <Input
+              id="cnpj"
+              name="cnpj"
+              type="text"
+              required
+              placeholder="00.000.000/0000-00"
+              className="w-full"
+              onChange={(e) => {
+                e.target.value = formatCNPJ(e.target.value);
+              }}
+            />
+          </div>
 
-        <div className="space-y-2">
-          <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-            WhatsApp
-          </label>
-          <Input
-            id="phone"
-            name="phone"
-            type="tel"
-            required
-            placeholder="(11) 99999-9999"
-            className="w-full"
-            onChange={(e) => {
-              e.target.value = formatPhoneNumber(e.target.value);
-            }}
-          />
+          <div className="space-y-2">
+            <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+              WhatsApp
+            </label>
+            <Input
+              id="phone"
+              name="phone"
+              type="tel"
+              required
+              placeholder="(11) 99999-9999"
+              className="w-full"
+              onChange={(e) => {
+                e.target.value = formatPhoneNumber(e.target.value);
+              }}
+            />
+          </div>
         </div>
 
         {/* Campos de Endereço */}
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-700">Endereço</h3>
+          <h3 className="text-lg font-semibold text-gray-700 border-b border-gray-200 pb-2">Endereço</h3>
           <AddressFields
             value={addressData}
             onChange={setAddressData}
@@ -295,78 +298,85 @@ export function ServiceProviderForm({ userType, onUserTypeChange }: ServiceProvi
           />
         </div>
 
-        <div className="space-y-2">
-          <label htmlFor="areaOfOperation" className="block text-sm font-medium text-gray-700">
-            Subcategoria
-          </label>
-          <AreaOfOperationSelect
-            value={areaOfOperation}
-            onChange={setAreaOfOperation}
-            name="areaOfOperation"
-            required
-            placeholder="Selecione uma subcategoria"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#A502CA] focus:border-[#A502CA]"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-            Senha
-          </label>
-          <div className="relative">
-            <Input
-              id="password"
-              name="password"
-              type={showPassword ? "text" : "password"}
+        {/* Subcategoria e Senhas - Layout em duas colunas no desktop */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-700 border-b border-gray-200 pb-2">Informações de Acesso</h3>
+          
+          <div className="space-y-2">
+            <label htmlFor="areaOfOperation" className="block text-sm font-medium text-gray-700">
+              Subcategoria
+            </label>
+            <AreaOfOperationSelect
+              value={areaOfOperation}
+              onChange={setAreaOfOperation}
+              name="areaOfOperation"
               required
-              placeholder="Digite sua senha"
-              className="w-full pr-10"
+              placeholder="Selecione uma subcategoria"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#A502CA] focus:border-[#A502CA]"
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center"
-            >
-              {showPassword ? (
-                <MdVisibilityOff className="h-5 w-5 text-gray-400" />
-              ) : (
-                <MdVisibility className="h-5 w-5 text-gray-400" />
-              )}
-            </button>
           </div>
-        </div>
 
-        <div className="space-y-2">
-          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-            Confirmar Senha
-          </label>
-          <div className="relative">
-            <Input
-              id="confirmPassword"
-              name="confirmPassword"
-              type={showConfirmPassword ? "text" : "password"}
-              required
-              placeholder="Confirme sua senha"
-              className="w-full pr-10"
-            />
-            <button
-              type="button"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center"
-            >
-              {showConfirmPassword ? (
-                <MdVisibilityOff className="h-5 w-5 text-gray-400" />
-              ) : (
-                <MdVisibility className="h-5 w-5 text-gray-400" />
-              )}
-            </button>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Senha
+              </label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  placeholder="Digite sua senha"
+                  className="w-full pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                >
+                  {showPassword ? (
+                    <MdVisibilityOff className="h-5 w-5 text-gray-400" />
+                  ) : (
+                    <MdVisibility className="h-5 w-5 text-gray-400" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                Confirmar Senha
+              </label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  required
+                  placeholder="Confirme sua senha"
+                  className="w-full pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                >
+                  {showConfirmPassword ? (
+                    <MdVisibilityOff className="h-5 w-5 text-gray-400" />
+                  ) : (
+                    <MdVisibility className="h-5 w-5 text-gray-400" />
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
         <Button
           type="submit"
           disabled={isPending}
-          className={`w-full py-3 text-white font-semibold rounded-lg transition-all duration-200 bg-[#A502CA] hover:bg-[#8A02A8] disabled:opacity-50 disabled:cursor-not-allowed`}
+          className={`w-full py-3 text-white font-semibold rounded-lg transition-all duration-200 bg-[#A502CA] hover:bg-[#8A02A8] disabled:opacity-50 disabled:cursor-not-allowed mt-6`}
         >
           {isPending ? "Criando conta..." : "Criar Conta"}
         </Button>

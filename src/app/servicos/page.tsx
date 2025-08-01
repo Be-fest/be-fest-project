@@ -160,7 +160,7 @@ const ServicesGrid = ({ services, selectedParty }: {
           {/* Imagem do serviço */}
           <div className="relative h-48 bg-gray-200 overflow-hidden">
             <img
-              src={service.images_urls?.[0] || service.provider?.profile_image || service.provider?.logo_url || '/be-fest-provider-logo.png'}
+              src={service.images_urls?.[0] || service.provider?.profile_image || '/be-fest-provider-logo.png'}
               alt={service.name}
               className="w-full h-full object-cover"
             />
@@ -529,4 +529,4 @@ export default function ServicesPage() {
       </div>
     </>
   );
-} 
+}

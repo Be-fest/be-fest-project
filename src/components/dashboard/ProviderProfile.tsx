@@ -80,9 +80,9 @@ export function ProviderProfile() {
       zipcode: ''
     },
     coordenates: {
-      latitude: userData?.latitude || 0,
-      longitude: userData?.longitude || 0,
-      raio_atuacao: userData?.raio_atuacao || 50,
+      latitude: 0,
+      longitude: 0,
+      raio_atuacao: 50,
     },
     profile_image: '',
   });
@@ -147,6 +147,28 @@ export function ProviderProfile() {
             zipcode: ''
           };
       
+      // Extrair coordenadas do userData
+      let coordinates = {
+        latitude: 0,
+        longitude: 0,
+        raio_atuacao: 50
+      };
+      
+      if (userData.coordenates) {
+        coordinates = {
+          latitude: userData.coordenates.latitude || 0,
+          longitude: userData.coordenates.longitude || 0,
+          raio_atuacao: userData.coordenates.raio_atuacao || 50
+        };
+      } else if (userData.latitude && userData.longitude) {
+        // Fallback para propriedades diretas se existirem
+        coordinates = {
+          latitude: userData.latitude,
+          longitude: userData.longitude,
+          raio_atuacao: userData.raio_atuacao || 50
+        };
+      }
+      
       setFormData({
         organization_name: userData.organization_name || '',
         organization_description: userData.organization_description || '',
@@ -155,11 +177,7 @@ export function ProviderProfile() {
         whatsapp_number: userData.whatsapp_number || '',
         area_of_operation: userData.area_of_operation || '', // Subcategoria
         address: addressData, // Endereço
-        coordenates: {
-          latitude: userData.latitude || 0,
-          longitude: userData.longitude || 0,
-          raio_atuacao: userData.raio_atuacao || 50,
-        },
+        coordenates: coordinates,
         profile_image: userData.profile_image || '',
       });
     }
@@ -234,7 +252,7 @@ export function ProviderProfile() {
     
     try {
       // Tentar deletar a imagem do storage se ela for do nosso bucket
-      if (formData.profile_image.includes('supabase')) {
+      if (typeof formData.profile_image === 'string' && formData.profile_image.includes('supabase')) {
         await deleteProfileImageAction(formData.profile_image);
       }
     } catch (error) {
@@ -365,6 +383,28 @@ export function ProviderProfile() {
             zipcode: ''
           };
       
+      // Extrair coordenadas do userData
+      let coordinates = {
+        latitude: 0,
+        longitude: 0,
+        raio_atuacao: 50
+      };
+      
+      if (userData.coordenates) {
+        coordinates = {
+          latitude: userData.coordenates.latitude || 0,
+          longitude: userData.coordenates.longitude || 0,
+          raio_atuacao: userData.coordenates.raio_atuacao || 50
+        };
+      } else if (userData.latitude && userData.longitude) {
+        // Fallback para propriedades diretas se existirem
+        coordinates = {
+          latitude: userData.latitude,
+          longitude: userData.longitude,
+          raio_atuacao: userData.raio_atuacao || 50
+        };
+      }
+      
       setFormData({
         organization_name: userData.organization_name || '',
         organization_description: userData.organization_description || '',
@@ -373,11 +413,7 @@ export function ProviderProfile() {
         whatsapp_number: userData.whatsapp_number || '',
         area_of_operation: userData.area_of_operation || '', // Subcategoria
         address: addressData, // Endereço
-        coordenates: {
-          latitude: userData.latitude || 0,
-          longitude: userData.longitude || 0,
-          raio_atuacao: userData.raio_atuacao || 50,
-        },
+        coordenates: coordinates,
         profile_image: userData.profile_image || '',
       });
     }

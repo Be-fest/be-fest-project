@@ -104,7 +104,20 @@ export async function saveCartEventAction(eventData: {
     // Calcular guest_count total usando nossa função
     const totalGuests = calculateGuestCount(fullGuests, halfGuests, freeGuests);
 
-    const eventPayload = {
+    const eventPayload: {
+      client_id: string;
+      title: string;
+      event_date: string;
+      start_time: string | null | undefined;
+      location: string | null | undefined;
+      guest_count: number;
+      full_guests: number;
+      half_guests: number;
+      free_guests: number;
+      status: 'draft';
+      event_latitude?: number;
+      event_longitude?: number;
+    } = {
       client_id: user.id,
       title: validatedData.title,
       event_date: validatedData.event_date,

@@ -27,14 +27,19 @@ interface UserData {
   whatsapp_number: string | null;
   area_of_operation: string | null;
   cnpj: string | null;
+  cpf: string | null;
   city: string | null;
   state: string | null;
   postal_code: string | null;
-  coordenates?: {
+  address: string | null;
+  coordenates: {
     latitude: number;
     longitude: number;
     raio_atuacao: number;
   } | null;
+  latitude?: number;
+  longitude?: number;
+  raio_atuacao?: number;
   created_at: string;
   updated_at: string;
 }
@@ -673,8 +678,18 @@ export function useAuth() {
 
       if (userData) {
         console.log('✅ Dados do usuário atualizados com sucesso');
-        setUserData(userData);
-        setStoredUserData(userData);
+        setUserData({
+          ...userData,
+          cpf: null,
+          address: null,
+          coordenates: null
+        } as UserData);
+        setStoredUserData({
+          ...userData,
+          cpf: null,
+          address: null,
+          coordenates: null
+        } as UserData);
         setError(null);
       }
     } catch (error) {
