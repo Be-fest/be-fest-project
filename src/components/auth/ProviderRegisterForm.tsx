@@ -98,6 +98,7 @@ export function ProviderRegisterForm() {
       formDataObj.append('phone', formData.whatsapp)
       formDataObj.append('areaOfOperation', formData.areaOfOperation)
       formDataObj.append('address', fullAddress)
+      formDataObj.append('state', addressData.state)
       
       // Fazer geocoding do endereço
       if (fullAddress && fullAddress.trim()) {

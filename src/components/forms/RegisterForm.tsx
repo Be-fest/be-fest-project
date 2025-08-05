@@ -342,6 +342,12 @@ export const RegisterForm = ({ userType, onUserTypeChange }: RegisterFormProps) 
                 name="address"
                 value={generateFullAddress(addressData)}
               />
+              {/* Campo oculto para enviar o estado separadamente */}
+              <input
+                type="hidden"
+                name="state"
+                value={addressData.state}
+              />
             </div>
           </>
         ) : (
@@ -415,6 +421,12 @@ export const RegisterForm = ({ userType, onUserTypeChange }: RegisterFormProps) 
                 type="hidden"
                 name="address"
                 value={generateFullAddress(addressData)}
+              />
+              {/* Campo oculto para enviar o estado separadamente */}
+              <input
+                type="hidden"
+                name="state"
+                value={addressData.state}
               />
             </div>
 

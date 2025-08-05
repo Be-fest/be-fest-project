@@ -304,7 +304,7 @@ export default function ProviderDashboard() {
   const waitingPaymentRequests = events.flatMap(event => 
     event.event_services?.filter(service => 
       service.provider_id === userData?.id &&
-      service.booking_status === 'approved'
+      service.booking_status === 'waiting_payment'
     ) || []
   ).length;
   const paidRequests = events.flatMap(event => 
@@ -581,8 +581,8 @@ export default function ProviderDashboard() {
       const results = await Promise.all(
         idsToProcess.map(async (id) => {
           if (type === 'approve') {
-                    // Para aprovação, muda o status para approved (aprovado)
-        return await updateEventServiceStatusAction(id, 'approved');
+            // Para aprovação, muda o status para waiting_payment (aguardando pagamento)
+            return await updateEventServiceStatusAction(id, 'waiting_payment');
           } else {
             // Para rejeição
             return await updateEventServiceStatusAction(id, 'cancelled', 'Serviço rejeitado');
@@ -636,20 +636,20 @@ export default function ProviderDashboard() {
       const updatedEvents = eventsResult.data;
 
       // Verificar cada evento para ver se todos os serviços estão aguardando pagamento
-      for (const event of updatedEvents) {
-        if (event.event_services && event.event_services.length > 0) {
-          // Verificar se TODOS os serviços do evento estão aprovados
-          const allEventServicesApproved = event.event_services.every(service => 
-            service.booking_status === 'approved'
-          );
+        for (const event of updatedEvents) {
+          if (event.event_services && event.event_services.length > 0) {
+            // Verificar se TODOS os serviços do evento estão aguardando pagamento
+            const allEventServicesWaitingPayment = event.event_services.every(service => 
+              service.booking_status === 'waiting_payment'
+            );
 
-          if (allEventServicesApproved) {
-            // Todos os serviços do evento estão aprovados
-            console.log(`Todos serviços do evento ${event.id} estão aprovados, mudando status do evento para waiting_payment`);
-            await updateEventStatusAction(event.id, 'waiting_payment');
+            if (allEventServicesWaitingPayment) {
+              // Todos os serviços do evento estão aguardando pagamento
+              console.log(`Todos serviços do evento ${event.id} estão aguardando pagamento, mudando status do evento para waiting_payment`);
+              await updateEventStatusAction(event.id, 'waiting_payment');
+            }
           }
         }
-      }
     } catch (error) {
       console.error('Erro ao verificar status dos eventos:', error);
     }
@@ -884,7 +884,7 @@ export default function ProviderDashboard() {
                           </span>
                           {estimatedPrice > 0 && (
                             <span className="text-gray-600">
-                              {formatCurrency(estimatedPrice)} (com taxa)
+                              {formatCurrency(estimatedPrice)}
                             </span>
                           )}
                         </div>
@@ -1112,13 +1112,13 @@ export default function ProviderDashboard() {
   };
 
   const renderWaitingPayment = () => {
-    // Filtrar apenas serviços aprovados que pertencem ao prestador logado
+    // Filtrar apenas serviços aguardando pagamento que pertencem ao prestador logado
     const waitingPaymentServices = events.flatMap(event => 
       event.event_services?.filter(service => 
         // Verificar se o serviço pertence ao prestador logado
         service.provider_id === userData?.id &&
-        // Verificar se está aprovado
-        service.booking_status === 'approved'
+        // Verificar se está aguardando pagamento
+        service.booking_status === 'waiting_payment'
       ) || []
     );
 
@@ -1142,10 +1142,10 @@ export default function ProviderDashboard() {
         ) : (
           <div className="space-y-4">
             {events.map((event) => {
-              // Filtrar apenas os serviços aprovados deste evento que pertencem ao prestador
+              // Filtrar apenas os serviços aguardando pagamento deste evento que pertencem ao prestador
               const eventWaitingPaymentServices = event.event_services?.filter(service => 
                 service.provider_id === userData?.id &&
-                service.booking_status === 'approved'
+                service.booking_status === 'waiting_payment'
               ) || [];
 
               // Só mostrar o evento se tiver serviços aguardando pagamento do prestador
@@ -1191,10 +1191,10 @@ export default function ProviderDashboard() {
                               </span>
                             </div>
                             <p className="text-sm text-gray-600 mb-1">
-                              <strong>Preço estimado:</strong> {formatCurrency(estimatedPrice)} (inclui 5% de taxa)
+                              <strong>Preço estimado:</strong> {formatCurrency(estimatedPrice)}
                             </p>
                             <p className="text-sm text-gray-500">
-                              Preço base: {formatCurrency(calculateBasePriceForEvent(service, event))} + Taxa: {formatCurrency(estimatedPrice - calculateBasePriceForEvent(service, event))}
+                              Valor total: {formatCurrency(estimatedPrice)}
                             </p>
                             <p className="text-sm text-gray-500">
                               Categoria: {service.service?.category || 'Não especificada'}

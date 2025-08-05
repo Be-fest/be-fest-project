@@ -17,7 +17,7 @@ const updateEventServiceSchema = z.object({
   id: z.string().uuid('ID inválido'),
   price_per_guest_at_booking: z.coerce.number().min(0, 'Preço por convidado deve ser maior ou igual a 0').optional().nullable(),
   total_estimated_price: z.coerce.number().min(0, 'Preço total deve ser maior ou igual a 0').optional().nullable(),
-  booking_status: z.enum(['pending_provider_approval', 'approved', 'in_progress', 'completed', 'cancelled']).optional()
+  booking_status: z.enum(['pending_provider_approval', 'approved', 'waiting_payment', 'in_progress', 'completed', 'cancelled']).optional()
 })
 
 // Result types

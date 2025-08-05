@@ -296,6 +296,12 @@ export function ServiceProviderForm({ userType, onUserTypeChange }: ServiceProvi
             name="address"
             value={generateFullAddress(addressData)}
           />
+          {/* Campo oculto para enviar o estado separadamente */}
+          <input
+            type="hidden"
+            name="state"
+            value={addressData.state}
+          />
         </div>
 
         {/* Subcategoria e Senhas - Layout em duas colunas no desktop */}

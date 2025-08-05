@@ -40,7 +40,7 @@ export interface Database {
           id: string
           provider_notes: string | null
           client_notes: string | null
-          booking_status: 'pending_provider_approval' | 'approved' | 'in_progress' | 'completed' | 'cancelled'
+          booking_status: 'pending_provider_approval' | 'approved' | 'waiting_payment' | 'in_progress' | 'completed' | 'cancelled'
           created_at: string
           updated_at: string
         }
@@ -54,7 +54,7 @@ export interface Database {
           id?: string
           provider_notes?: string | null
           client_notes?: string | null
-          booking_status?: 'pending_provider_approval' | 'approved' | 'in_progress' | 'completed' | 'cancelled'
+          booking_status?: 'pending_provider_approval' | 'approved' | 'waiting_payment' | 'in_progress' | 'completed' | 'cancelled'
           created_at?: string
           updated_at?: string
         }
@@ -68,7 +68,7 @@ export interface Database {
           id?: string
           provider_notes?: string | null
           client_notes?: string | null
-          booking_status?: 'pending_provider_approval' | 'approved' | 'in_progress' | 'completed' | 'cancelled'
+          booking_status?: 'pending_provider_approval' | 'approved' | 'waiting_payment' | 'in_progress' | 'completed' | 'cancelled'
           created_at?: string
           updated_at?: string
         }

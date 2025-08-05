@@ -69,6 +69,7 @@ export async function registerClientAction(formData: FormData): Promise<ActionRe
       cpf: formData.get('cpf') as string,
       phone: formData.get('phone') as string,
       address: formData.get('address') as string,
+      state: formData.get('state') as string,
     }
 
     console.log('Raw form data:', rawData)
@@ -127,7 +128,8 @@ export async function registerClientAction(formData: FormData): Promise<ActionRe
       email: validatedData.email,
       cpf: cpf,
       whatsapp_number: phone,
-      address: rawData.address
+      address: rawData.address,
+      state: rawData.state
     }
 
     // Adicionar coordenadas se disponíveis
@@ -192,6 +194,7 @@ export async function registerProviderAction(formData: FormData): Promise<Action
       phone: formData.get('phone') as string,
       areaOfOperation: formData.get('areaOfOperation') as string,
       address: formData.get('address') as string,
+      state: formData.get('state') as string,
     }
 
     console.log('Raw provider form data:', rawData)
@@ -254,7 +257,8 @@ export async function registerProviderAction(formData: FormData): Promise<Action
       cnpj: cnpj,
       whatsapp_number: phone,
       area_of_operation: validatedData.areaOfOperation,
-      address: rawData.address
+      address: rawData.address,
+      state: rawData.state
     }
 
     // Adicionar coordenadas se disponíveis
