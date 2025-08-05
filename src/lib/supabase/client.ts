@@ -42,6 +42,20 @@ export const createClient = () => {
                 autoRefreshToken: true,
                 persistSession: true,
                 detectSessionInUrl: true
+            },
+            global: {
+                fetch: (url, options = {}) => {
+                    // Adicionar timeout de 8 segundos para todas as requisições
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 8000);
+                    
+                    return fetch(url, {
+                        ...options,
+                        signal: controller.signal
+                    }).finally(() => {
+                        clearTimeout(timeoutId);
+                    });
+                }
             }
         }
     );
@@ -128,4 +142,4 @@ export const checkDocumentExists = async (document: string) => {
       throw new Error('Erro desconhecido ao verificar documento');
     }
   }
-}; 
+};

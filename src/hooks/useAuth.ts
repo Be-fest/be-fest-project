@@ -126,6 +126,7 @@ export function useAuth() {
   const sessionExpiredToastShownRef = useRef(false);
   const retryCountRef = useRef(0);
   const maxRetries = 3;
+  const isInitializingRef = useRef(false);
 
   console.log('useAuth: Estado atual', { 
     user: !!user, 
@@ -390,11 +391,21 @@ export function useAuth() {
       
       setError(getFriendlyErrorMessage(fetchError));
       setLoading(false);
+    } finally {
+      isInitializingRef.current = false;
     }
   };
 
   // Função para obter sessão inicial
   const getInitialSession = async () => {
+    // Evitar múltiplas chamadas simultâneas
+    if (isInitializingRef.current) {
+      console.log('🔄 useAuth: Inicialização já em andamento, ignorando...');
+      return;
+    }
+    
+    isInitializingRef.current = true;
+    
     try {
       setLoading(true);
       setError(null);
@@ -443,11 +454,11 @@ export function useAuth() {
       // Se não há dados no localStorage, verificar no Supabase
       console.log('Verificando sessão no Supabase');
       
-      // Timeout de segurança: 10 segundos
+      // Timeout de segurança: 5 segundos
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => {
           reject(new Error('Timeout na verificação de autenticação'));
-        }, 10000);
+        }, 5000);
       });
 
       const sessionPromise = supabase.auth.getSession();
@@ -489,8 +500,14 @@ export function useAuth() {
       
       console.error('💥 Erro inesperado em getInitialSession:', sessionErrorInfo);
       
-      // Verificar se é erro de rede
-      if (isNetworkError(error)) {
+      // Verificar se é erro de timeout
+      if (error instanceof Error && error.message.includes('Timeout na verificação')) {
+        console.warn('⏰ Timeout na verificação de autenticação - continuando sem usuário');
+        setUser(null);
+        setUserData(null);
+        clearStoredSession();
+        setError(null); // Não mostrar erro para timeout
+      } else if (isNetworkError(error)) {
         setError('Erro de conexão. Verifique sua internet e tente novamente.');
       } else {
         setError('Erro ao inicializar autenticação');

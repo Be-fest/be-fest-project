@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Hero } from '@/components/Hero';
 import { CategoriesSection } from '@/components/CategoriesSection';
+import { ServicesSection } from '@/components/ServicesSection';
 import { HowItWorks } from '@/components/HowItWorks';
 import { AboutUs } from '@/components/AboutUs';
 import { FAQ } from '@/components/FAQ';
@@ -20,7 +21,7 @@ export default function Home() {
     <main className="min-h-screen">
       <Hero />
       <div id="servicos">
-        <CategoriesSection />
+        <ServicesSection />
       </div>
       <div id="como-funciona">
         <HowItWorks />

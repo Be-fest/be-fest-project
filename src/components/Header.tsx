@@ -6,7 +6,7 @@ import { Link as ScrollLink } from 'react-scroll';
 import { Logo } from '@/components/ui';
 import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import LogoutButton from './LogoutButton';
 import { 
   MdAccountCircle,
@@ -202,110 +202,17 @@ function UserDropdown({ user, userType }: UserDropdownProps) {
 
 export function Header() {
   const pathname = usePathname();
-  const [user, setUser] = useState<any>(null);
-  const [userType, setUserType] = useState<'client' | 'provider' | 'admin' | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [initialLoad, setInitialLoad] = useState(true);
-  const supabase = createClient();
+  const { user, userData, loading } = useAuth();
+  
+  // Extrair o tipo de usuário dos dados do useAuth
+  const userType = userData?.role as 'client' | 'provider' | 'admin' | null;
 
-  useEffect(() => {
-    let mounted = true;
-
-    const getUser = async () => {
-      try {
-        console.log('🔄 Header: Iniciando carregamento de usuário...');
-        
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!mounted) return;
-        
-        if (session?.user) {
-          console.log('✅ Header: Sessão encontrada para usuário:', session.user.email);
-          setUser(session.user);
-          
-          // Buscar dados do usuário
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('role')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (!mounted) return;
-          
-          if (userError) {
-            console.error('❌ Header: Erro ao buscar dados do usuário:', userError);
-            setUserType(null);
-          } else if (userData) {
-            console.log('✅ Header: Role do usuário carregado:', userData.role);
-            setUserType(userData.role as 'client' | 'provider' | 'admin');
-          } else {
-            console.log('⚠️ Header: Dados do usuário não encontrados');
-            setUserType(null);
-          }
-        } else {
-          console.log('ℹ️ Header: Nenhuma sessão encontrada');
-          setUser(null);
-          setUserType(null);
-        }
-      } catch (error) {
-        console.error('❌ Header: Erro ao carregar usuário:', error);
-        if (mounted) {
-          setUser(null);
-          setUserType(null);
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-          setInitialLoad(false);
-        }
-      }
-    };
-
-    getUser();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔄 Header: Auth state change:', event, session?.user?.email);
-      
-      if (!mounted) return;
-      
-      if (session?.user) {
-        setUser(session.user);
-        setLoading(true); // Reset loading para buscar dados atualizados
-        
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('role')
-          .eq('id', session.user.id)
-          .single();
-        
-        if (!mounted) return;
-        
-        if (userError) {
-          console.error('❌ Header: Erro ao buscar dados do usuário (auth change):', userError);
-          setUserType(null);
-        } else if (userData) {
-          console.log('✅ Header: Role atualizado:', userData.role);
-          setUserType(userData.role as 'client' | 'provider' | 'admin');
-        } else {
-          setUserType(null);
-        }
-      } else {
-        console.log('ℹ️ Header: Usuário deslogado');
-        setUser(null);
-        setUserType(null);
-      }
-      
-      if (mounted) {
-        setLoading(false);
-      }
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
+  console.log('🔄 Header: Estado do useAuth', { 
+    hasUser: !!user, 
+    hasUserData: !!userData, 
+    userType, 
+    loading 
+  });
 
   // Se estiver na rota de admin, não renderizar header (admin tem seu próprio layout)
   if (pathname?.startsWith('/admin')) {
@@ -327,8 +234,8 @@ export function Header() {
     return <ProviderHeader user={user} userType={userType} loading={loading} />;
   }
 
-  // Se ainda está carregando e é o carregamento inicial, mostrar skeleton
-  if (loading && initialLoad) {
+  // Se ainda está carregando, mostrar skeleton
+  if (loading) {
     return <HeaderSkeleton />;
   }
 
