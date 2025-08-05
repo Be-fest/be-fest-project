@@ -21,7 +21,8 @@ import {
   MdClose,
   MdApproval,
   MdPayment,
-  MdWhatsapp
+  MdWhatsapp,
+  MdAccessTime
 } from 'react-icons/md';
 import { ProviderLayout } from '@/components/dashboard/ProviderLayout';
 import { ServiceManagement } from '@/components/dashboard/ServiceManagement';
@@ -369,10 +370,8 @@ export default function ProviderDashboard() {
         }
       }
       
-      // Aplicar taxa de 5% para exibição
-      const taxRate = 0.05; // 5%
-      const taxAmount = calculatedPrice * taxRate;
-      return Math.ceil(calculatedPrice + taxAmount);
+      // Retornar valor sem taxa (valor que o prestador irá receber)
+      return calculatedPrice;
     } catch (error) {
       console.error('Erro ao calcular preço estimado:', error);
       return 0;
@@ -457,6 +456,11 @@ export default function ProviderDashboard() {
       month: 'short',
       year: 'numeric'
     });
+  };
+
+  const formatTime = (timeString: string | null) => {
+    if (!timeString) return '';
+    return timeString.substring(0, 5); // Remove segundos se houver
   };
 
   const getStatusColor = (status: string) => {
@@ -992,6 +996,7 @@ export default function ProviderDashboard() {
                         <span className="flex items-center gap-1">
                           <MdCalendarToday className="text-sm" />
                           {formatDate(event.event_date)}
+                          {event.start_time && ` às ${formatTime(event.start_time)}`}
                         </span>
                         <span className="flex items-center gap-1">
                           <MdLocationOn className="text-sm" />
@@ -1034,10 +1039,7 @@ export default function ProviderDashboard() {
                                 </span>
                               </div>
                                                           <p className="text-sm text-gray-600 mb-1">
-                              <strong>Preço estimado:</strong> {formatCurrency(estimatedPrice)} (inclui 5% de taxa)
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Preço base: {formatCurrency(calculateBasePriceForEvent(service, event))} + Taxa: {formatCurrency(estimatedPrice - calculateBasePriceForEvent(service, event))}
+                              <strong>Valor a receber:</strong> {formatCurrency(estimatedPrice)}
                             </p>
                               <p className="text-sm text-gray-500">
                                 Categoria: {service.service?.category || 'Não especificada'}
@@ -1158,6 +1160,7 @@ export default function ProviderDashboard() {
                         <span className="flex items-center gap-1">
                           <MdCalendarToday className="text-sm" />
                           {formatDate(event.event_date)}
+                          {event.start_time && ` às ${formatTime(event.start_time)}`}
                         </span>
                         <span className="flex items-center gap-1">
                           <MdLocationOn className="text-sm" />
@@ -1297,10 +1300,7 @@ export default function ProviderDashboard() {
                               </span>
                             </div>
                             <p className="text-sm text-gray-600 mb-1">
-                              <strong>Valor recebido:</strong> {formatCurrency(estimatedPrice)} (inclui 5% de taxa)
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Preço base: {formatCurrency(calculateBasePriceForEvent(service, event))} + Taxa: {formatCurrency(estimatedPrice - calculateBasePriceForEvent(service, event))}
+                              <strong>Valor recebido:</strong> {formatCurrency(estimatedPrice)}
                             </p>
                             <p className="text-sm text-gray-500">
                               Categoria: {service.service?.category || 'Não especificada'}
@@ -1319,7 +1319,7 @@ export default function ProviderDashboard() {
                         <div className="flex items-center gap-3">
                           <div className="flex items-center gap-2 text-sm text-gray-600">
                             <MdEvent className="text-lg" />
-                            <span>Evento em: {formatDate(event.event_date)}</span>
+                            <span>Evento em: {formatDate(event.event_date)}{event.start_time && ` às ${formatTime(event.start_time)}`}</span>
                           </div>
                           <div className="flex items-center gap-2 text-sm text-gray-600">
                             <MdLocationOn className="text-lg" />

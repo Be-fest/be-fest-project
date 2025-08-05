@@ -563,43 +563,33 @@ export function useAuth() {
 
   const signOut = async () => {
     try {
-      setLoading(true);
-      
       console.log('🔴 Iniciando logout do useAuth...');
       
-      // Limpar dados do localStorage
+      // Limpar dados locais imediatamente
       clearStoredSession();
-      
-      // Fazer logout no Supabase
-      await supabase.auth.signOut();
-      
-      // Limpar estado
       setUser(null);
       setUserData(null);
       setError(null);
       
+      // Fazer logout no Supabase de forma assíncrona (não esperar)
+      supabase.auth.signOut().catch(error => {
+        console.warn('⚠️ Erro no signOut do Supabase (ignorado):', error);
+      });
+      
       console.log('✅ Logout realizado com sucesso no useAuth');
       
-      // Forçar redirecionamento
+      // Redirecionamento imediato
       if (typeof window !== 'undefined') {
-        window.location.href = '/auth/login?reason=useauth_logout';
+        window.location.replace('/auth/login?reason=useauth_logout');
       }
       
     } catch (error) {
-      const logoutErrorInfo = {
-        message: error instanceof Error ? error.message : 'Erro desconhecido',
-        stack: error instanceof Error ? error.stack : undefined
-      };
+      console.error('❌ Erro ao fazer logout no useAuth:', error);
       
-      console.error('❌ Erro ao fazer logout no useAuth:', logoutErrorInfo);
-      setError('Erro ao fazer logout');
-      
-      // Mesmo com erro, tentar redirecionamento
+      // Mesmo com erro, forçar redirecionamento
       if (typeof window !== 'undefined') {
-        window.location.href = '/auth/login?reason=useauth_error';
+        window.location.replace('/auth/login?reason=useauth_error');
       }
-    } finally {
-      setLoading(false);
     }
   };
 

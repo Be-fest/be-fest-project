@@ -17,18 +17,35 @@ export default function LogoutButton() {
     setIsLoggingOut(true);
     
     try {
-      // Usar a função performLogout melhorada
-      await performLogout('logout_button');
+      // Abordagem mais direta - limpar tudo imediatamente
+      console.log('🗑️ Limpando localStorage e sessionStorage...');
       
-      // Se chegou até aqui sem redirecionar, forçar redirecionamento manual
-      console.warn('⚠️ Logout concluído mas ainda na página, forçando redirecionamento...');
-      window.location.href = '/auth/login?reason=manual_redirect';
+      // Limpar localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        // Limpar cookies
+        document.cookie.split(";").forEach(function(c) { 
+          document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+        });
+      }
+      
+      // Fazer logout no Supabase de forma assíncrona (não esperar)
+      const supabase = (await import('@/lib/supabase/client')).createClient();
+      supabase.auth.signOut().catch(error => {
+        console.warn('⚠️ Erro no signOut do Supabase (ignorado):', error);
+      });
+      
+      // Redirecionamento imediato
+      console.log('🔄 Redirecionando imediatamente...');
+      window.location.replace('/auth/login?reason=logout_button');
       
     } catch (error) {
       console.error('❌ Erro no LogoutButton:', error);
       
-      // Em caso de erro, forçar redirecionamento
-      window.location.href = '/auth/login?reason=error_redirect';
+      // Em caso de erro, forçar redirecionamento de qualquer forma
+      window.location.replace('/auth/login?reason=error_redirect');
     }
   };
 

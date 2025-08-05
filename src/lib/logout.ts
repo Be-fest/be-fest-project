@@ -7,108 +7,37 @@ export async function performLogout(reason: string = 'logout') {
   try {
     console.log('🔄 Iniciando processo de logout...');
     
-    const supabase = createClient();
-    
-    // 1. Fazer logout no Supabase
-    console.log('🔐 Fazendo logout no Supabase...');
-    const { error } = await supabase.auth.signOut();
-    
-    if (error) {
-      console.error('❌ Erro ao fazer logout no Supabase:', error);
-    } else {
-      console.log('✅ Logout do Supabase realizado com sucesso');
-    }
-
-    // 2. Limpar localStorage de forma mais agressiva
-    console.log('🗑️ Limpando localStorage...');
+    // 1. Limpar dados locais primeiro (mais rápido)
+    console.log('🗑️ Limpando dados locais...');
     if (typeof window !== 'undefined') {
-      // Limpar todos os itens relacionados ao Supabase e autenticação
-      const keysToRemove = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && (
-          key.startsWith('sb-') || 
-          key.includes('supabase') || 
-          key === 'sessionExpired' ||
-          key.includes('auth') ||
-          key.includes('be-fest')
-        )) {
-          keysToRemove.push(key);
-        }
-      }
-      
-      keysToRemove.forEach(key => {
-        localStorage.removeItem(key);
-        console.log(`🗑️ Removido do localStorage: ${key}`);
-      });
-      
-      // Limpar sessionStorage também
+      localStorage.clear();
       sessionStorage.clear();
     }
-
-    // 3. Limpar cookies de forma mais abrangente
-    console.log('🍪 Limpando cookies...');
-    if (typeof document !== 'undefined') {
-      // Obter todos os cookies
-      const cookies = document.cookie.split(';');
-      
-      cookies.forEach(cookie => {
-        const eqPos = cookie.indexOf('=');
-        const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
-        
-        // Limpar cookies relacionados ao Supabase, autenticação e qualquer cookie de sessão
-        if (name.includes('sb-') || name.includes('auth') || name.includes('supabase') || name.includes('session')) {
-          // Limpar para o domínio atual
-          document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
-          // Limpar para subdomínios
-          document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${window.location.hostname}`;
-          console.log(`🍪 Cookie removido: ${name}`);
-        }
-      });
+    
+    // 2. Fazer logout no Supabase de forma assíncrona (não bloquear)
+    console.log('🔐 Fazendo logout no Supabase...');
+    const supabase = createClient();
+    
+    // Usar Promise.race para não esperar mais que 2 segundos
+    const logoutPromise = supabase.auth.signOut();
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Timeout')), 2000)
+    );
+    
+    try {
+      await Promise.race([logoutPromise, timeoutPromise]);
+      console.log('✅ Logout do Supabase realizado com sucesso');
+    } catch (error) {
+      console.warn('⚠️ Logout do Supabase demorou muito ou falhou (continuando):', error);
     }
 
-    // 4. Redirecionamento forçado com múltiplos métodos
+    // 3. Redirecionamento imediato
     console.log('🔄 Redirecionando para login...');
     const redirectUrl = `/auth/login?reason=${encodeURIComponent(reason)}`;
     
     if (typeof window !== 'undefined') {
       console.log('🔄 Executando redirecionamento para:', redirectUrl);
-      
-      // Método 1: window.location.replace (imediato)
-      try {
-        window.location.replace(redirectUrl);
-        return { success: true };
-      } catch (error) {
-        console.warn('Método 1 falhou, tentando método 2:', error);
-      }
-      
-      // Método 2: window.location.href (com timeout)
-      try {
-        setTimeout(() => {
-          window.location.href = redirectUrl;
-        }, 100);
-        return { success: true };
-      } catch (error) {
-        console.warn('Método 2 falhou, tentando método 3:', error);
-      }
-      
-      // Método 3: Usar history API
-      try {
-        window.history.pushState(null, '', redirectUrl);
-        window.location.reload();
-        return { success: true };
-      } catch (error) {
-        console.warn('Método 3 falhou, tentando método 4:', error);
-      }
-      
-      // Método 4: Último recurso - recarregar página
-      try {
-        window.location.reload();
-        return { success: true };
-      } catch (error) {
-        console.error('Todos os métodos de redirecionamento falharam:', error);
-        return { success: false, error };
-      }
+      window.location.replace(redirectUrl);
     }
     
     return { success: true };
@@ -194,4 +123,4 @@ export function emergencyLogout(reason: string = 'emergency') {
 if (typeof window !== 'undefined') {
   (window as any).emergencyLogout = emergencyLogout;
   console.log('🔧 Função de emergência disponível: window.emergencyLogout()');
-} 
+}
