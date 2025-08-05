@@ -263,7 +263,7 @@ export default function ServiceDetailsPage() {
       <div className="pt-20 pb-8 min-h-screen bg-[#FFF6FB]">
         <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
           {/* Botão Voltar */}
-          <div className="mb-6">
+          <div className="mb-6 pt-4">
             <Link
               href="/servicos"
               className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
