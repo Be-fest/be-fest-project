@@ -454,19 +454,8 @@ export function useAuth() {
       // Se não há dados no localStorage, verificar no Supabase
       console.log('Verificando sessão no Supabase');
       
-      // Timeout de segurança: 5 segundos
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => {
-          reject(new Error('Timeout na verificação de autenticação'));
-        }, 5000);
-      });
-
-      const sessionPromise = supabase.auth.getSession();
-      
-      const { data: { session }, error: sessionError } = await Promise.race([
-        sessionPromise,
-        timeoutPromise
-      ]) as any;
+      // Verificar sessão com timeout simples
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
         // Verificar se é erro de JWT expirado
@@ -491,14 +480,8 @@ export function useAuth() {
         setLoading(false);
       }
     } catch (error) {
-      const sessionErrorInfo = {
-        error,
-        message: error instanceof Error ? error.message : 'Erro desconhecido',
-        stack: error instanceof Error ? error.stack : undefined,
-        timestamp: new Date().toISOString()
-      };
-      
-      console.error('💥 Erro inesperado em getInitialSession:', sessionErrorInfo);
+      // Usar safeLogError para tratamento seguro do erro
+      safeLogError('💥 Erro inesperado em getInitialSession:', error, 'getInitialSession');
       
       // Verificar se é erro de timeout
       if (error instanceof Error && error.message.includes('Timeout na verificação')) {
@@ -514,6 +497,8 @@ export function useAuth() {
       }
       
       setLoading(false);
+    } finally {
+      isInitializingRef.current = false;
     }
   };
 
@@ -565,11 +550,17 @@ export function useAuth() {
     try {
       console.log('🔴 Iniciando logout do useAuth...');
       
+      // Resetar flags de controle
+      isInitializingRef.current = false;
+      sessionExpiredToastShownRef.current = false;
+      retryCountRef.current = 0;
+      
       // Limpar dados locais imediatamente
       clearStoredSession();
       setUser(null);
       setUserData(null);
       setError(null);
+      setLoading(false);
       
       // Fazer logout no Supabase de forma assíncrona (não esperar)
       supabase.auth.signOut().catch(error => {

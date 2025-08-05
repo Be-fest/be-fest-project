@@ -17,7 +17,7 @@ export function ProviderLayout({ children }: ProviderLayoutProps) {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
-  const { userData } = useAuth();
+  const { userData, signOut } = useAuth();
 
   const handleLogoutClick = () => {
     setShowLogoutModal(true);
@@ -28,24 +28,17 @@ export function ProviderLayout({ children }: ProviderLayoutProps) {
     try {
       console.log('🔴 Iniciando logout do ProviderLayout...');
       
-      // Fazer logout diretamente
-      const { createClient } = await import('@/lib/supabase/client');
-      const supabase = createClient();
-      await supabase.auth.signOut();
-      
-      // Limpar localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.clear();
-        sessionStorage.clear();
-      }
-      
-      // Redirecionar imediatamente
-      window.location.href = '/auth/login';
+      // Usar a função signOut do useAuth para garantir consistência
+      await signOut();
       
     } catch (error) {
       console.error('❌ Erro durante logout do provider layout:', error);
       // Mesmo com erro, forçar redirecionamento
-      window.location.href = '/auth/login';
+      if (typeof window !== 'undefined') {
+        window.location.replace('/auth/login?reason=provider_layout_error');
+      }
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 

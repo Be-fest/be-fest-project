@@ -151,9 +151,25 @@ export const getRetryDelay = (retryCount: number, baseDelay: number = 1000): num
 // Função para logar erro de forma segura
 export const safeLogError = (message: string, error: any, context?: string) => {
   try {
+    // Verificar se o erro é válido
+    if (!error) {
+      console.error(message, 'Erro indefinido ou nulo', context ? { context } : {});
+      return;
+    }
+    
+    // Verificar se é um objeto vazio
+    if (typeof error === 'object' && Object.keys(error).length === 0) {
+      console.error(message, 'Objeto de erro vazio', context ? { context } : {});
+      return;
+    }
+    
     const errorInfo = createErrorInfo(error, context);
     console.error(message, errorInfo);
   } catch (logError) {
-    console.error(message, 'Erro ao processar dados de erro:', logError);
+    console.error(message, 'Erro ao processar dados de erro:', {
+      originalError: error,
+      logError: logError,
+      context: context
+    });
   }
-}; 
+};

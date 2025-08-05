@@ -311,6 +311,19 @@ export class ApiService {
   }
 
   async createService(serviceData: Partial<Service>): Promise<Service> {
+    // Se provider_state não foi fornecido e temos provider_id, buscar o estado do prestador
+    if (!('provider_state' in serviceData) && serviceData.provider_id) {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('state')
+        .eq('id', serviceData.provider_id)
+        .single()
+      
+      if (userData?.state) {
+        (serviceData as any).provider_state = userData.state
+      }
+    }
+
     const { data, error } = await supabase
       .from('services')
       .insert(serviceData)

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Poppins, Roboto } from "next/font/google";
 import { GlobalToastProvider } from "@/contexts/GlobalToastContext";
-import { RoutesModal } from "@/components/ui";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -65,7 +64,6 @@ export default function RootLayout({
       >
         <GlobalToastProvider>
           {children}
-          <RoutesModal />
         </GlobalToastProvider>
       </body>
     </html>

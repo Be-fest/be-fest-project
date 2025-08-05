@@ -57,6 +57,21 @@ export async function getServicesAction(filters?: {
   try {
     const supabase = await createServerClient()
     
+    // Obter estado do usuário para filtrar serviços
+    let userState: string | null = null
+    try {
+      const user = await getCurrentUser()
+      const { data: userData } = await supabase
+        .from('users')
+        .select('state')
+        .eq('id', user.id)
+        .single()
+      
+      userState = userData?.state || null
+    } catch (error) {
+      console.log('Usuário não logado ou erro ao buscar estado, mostrando todos os serviços')
+    }
+    
     let query = supabase
       .from('services')
       .select(`
@@ -70,6 +85,11 @@ export async function getServicesAction(filters?: {
         )
       `)
       .order('created_at', { ascending: false })
+    
+    // SEMPRE aplicar filtro por estado do usuário se disponível
+    if (userState) {
+      query = query.eq('provider_state', userState)
+    }
 
     // Apply filters
     if (filters?.category) {
@@ -113,7 +133,22 @@ export async function getServiceByIdAction(serviceId: string): Promise<ActionRes
   try {
     const supabase = await createServerClient()
     
-    const { data: service, error } = await supabase
+    // Obter estado do usuário para filtrar serviços
+    let userState: string | null = null
+    try {
+      const user = await getCurrentUser()
+      const { data: userData } = await supabase
+        .from('users')
+        .select('state')
+        .eq('id', user.id)
+        .single()
+      
+      userState = userData?.state || null
+    } catch (error) {
+      console.log('Usuário não logado ou erro ao buscar estado, mostrando serviço se existir')
+    }
+    
+    let query = supabase
       .from('services')
       .select(`
         *,
@@ -127,7 +162,13 @@ export async function getServiceByIdAction(serviceId: string): Promise<ActionRes
         guest_tiers:service_guest_tiers (*)
       `)
       .eq('id', serviceId)
-      .single()
+    
+    // SEMPRE aplicar filtro por estado do usuário se disponível
+    if (userState) {
+      query = query.eq('provider_state', userState)
+    }
+
+    const { data: service, error } = await query.single()
 
     if (error) {
       console.error('Error fetching service:', error)
@@ -575,6 +616,21 @@ export async function getPublicServicesAction(filters?: {
   try {
     const supabase = await createServerClient()
     
+    // Obter estado do usuário para filtrar serviços
+    let userState: string | null = null
+    try {
+      const user = await getCurrentUser()
+      const { data: userData } = await supabase
+        .from('users')
+        .select('state')
+        .eq('id', user.id)
+        .single()
+      
+      userState = userData?.state || null
+    } catch (error) {
+      console.log('Usuário não logado ou erro ao buscar estado, mostrando todos os serviços')
+    }
+    
     let query = supabase
       .from('services')
       .select(`
@@ -591,6 +647,11 @@ export async function getPublicServicesAction(filters?: {
       .eq('is_active', true)
       .eq('status', 'active')
       .order('created_at', { ascending: false })
+    
+    // SEMPRE aplicar filtro por estado do usuário se disponível
+     if (userState) {
+       query = query.eq('provider_state', userState)
+     }
 
     // Apply filters
     if (filters?.category) {
@@ -902,6 +963,21 @@ export async function getPublicProvidersAction(filters?: {
   try {
     const supabase = await createServerClient()
     
+    // Obter estado do usuário para filtrar prestadores
+    let userState: string | null = null
+    try {
+      const user = await getCurrentUser()
+      const { data: userData } = await supabase
+        .from('users')
+        .select('state')
+        .eq('id', user.id)
+        .single()
+      
+      userState = userData?.state || null
+    } catch (error) {
+      console.log('Usuário não logado ou erro ao buscar estado, mostrando todos os prestadores')
+    }
+    
     // Primeiro, buscar todos os prestadores
     let query = supabase
       .from('users')
@@ -910,9 +986,15 @@ export async function getPublicProvidersAction(filters?: {
         organization_name,
         profile_image,
         area_of_operation,
-        created_at
+        created_at,
+        state
       `)
       .eq('role', 'provider')
+    
+    // SEMPRE aplicar filtro por estado do usuário se disponível
+    if (userState) {
+      query = query.eq('state', userState)
+    }
 
     // Aplicar filtros
     if (filters?.search) {
@@ -976,14 +1058,30 @@ export async function getSimpleProvidersAction(): Promise<ActionResult<Array<{
   try {
     const supabase = await createServerClient()
 
+    // Obter estado do usuário para filtrar prestadores
+    let userState: string | null = null
+    try {
+      const user = await getCurrentUser()
+      const { data: userData } = await supabase
+        .from('users')
+        .select('state')
+        .eq('id', user.id)
+        .single()
+      
+      userState = userData?.state || null
+    } catch (error) {
+      console.log('Usuário não logado ou erro ao buscar estado, mostrando todos os prestadores')
+    }
+
     // Buscar prestadores com serviços ativos
-    const { data: providers, error } = await supabase
+    let query = supabase
       .from('users')
       .select(`
         id,
         full_name,
         organization_name,
         profile_image,
+        state,
         services!inner (
           id,
           category,
@@ -992,6 +1090,13 @@ export async function getSimpleProvidersAction(): Promise<ActionResult<Array<{
       `)
       .eq('role', 'provider')
       .eq('services.is_active', true)
+    
+    // SEMPRE aplicar filtro por estado do usuário se disponível
+    if (userState) {
+      query = query.eq('state', userState)
+    }
+    
+    const { data: providers, error } = await query
 
     if (error) {
       console.error('Error fetching simple providers:', error)
