@@ -159,6 +159,23 @@ function UserDropdown({ user, userType }: UserDropdownProps) {
                 </Link>
               )}
 
+              {/* Link para Perfil se for cliente */}
+              {userType === 'client' && (
+                <Link
+                  href="/perfil"
+                  onClick={() => setIsDropdownOpen(false)}
+                  className="flex items-center space-x-4 px-5 py-3 text-gray-700 hover:bg-gradient-to-r hover:from-[#FF0080]/5 hover:to-[#A502CA]/5 hover:text-[#FF0080] transition-all duration-200 group mx-2 rounded-xl"
+                >
+                  <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 group-hover:bg-[#FF0080]/10 transition-colors">
+                    <MdPerson className="text-lg group-hover:text-[#FF0080]" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-medium">Meu Perfil</div>
+                    <div className="text-xs text-gray-500">Área do cliente</div>
+                  </div>
+                </Link>
+              )}
+
 
             </div>
 

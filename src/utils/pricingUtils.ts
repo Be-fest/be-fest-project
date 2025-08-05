@@ -117,4 +117,85 @@ export function formatMinimumPriceWithFee(guestTiers: GuestTier[]): string {
   const priceWithFee = Math.ceil(calculatePriceWithFee(basePrice));
   
   return formatPrice(priceWithFee);
-} 
+}
+
+// Nova função para calcular preço com lógica de convidados mínimos
+export function calculatePriceWithMinimumGuests(
+  service: any, 
+  clientGuests: number
+): { 
+  totalPrice: number; 
+  pricePerGuest: number; 
+  minimumGuests: number; 
+  appliedGuests: number;
+  explanation: string;
+} {
+  if (!service.guest_tiers || service.guest_tiers.length === 0) {
+    // Lógica antiga se não há faixas
+    const pricePerGuest = service.price_per_guest || 0;
+    const totalPrice = pricePerGuest * clientGuests;
+    
+    return {
+      totalPrice,
+      pricePerGuest,
+      minimumGuests: clientGuests,
+      appliedGuests: clientGuests,
+      explanation: `${clientGuests} convidados × ${formatPrice(pricePerGuest)}`
+    };
+  }
+
+  // Encontrar a faixa apropriada para o número de convidados do cliente
+  const sortedTiers = [...service.guest_tiers].sort((a, b) => a.min_total_guests - b.min_total_guests);
+  
+  let applicableTier = null;
+  for (const tier of sortedTiers) {
+    if (clientGuests >= tier.min_total_guests && 
+        (tier.max_total_guests === null || clientGuests <= tier.max_total_guests)) {
+      applicableTier = tier;
+      break;
+    }
+  }
+
+  // Se o cliente tem menos convidados que o mínimo, usar a primeira faixa (menor)
+  if (!applicableTier && sortedTiers.length > 0) {
+    applicableTier = sortedTiers[0];
+  }
+
+  if (!applicableTier) {
+    return {
+      totalPrice: 0,
+      pricePerGuest: 0,
+      minimumGuests: 0,
+      appliedGuests: 0,
+      explanation: 'Preço não disponível'
+    };
+  }
+
+  const minimumGuests = applicableTier.min_total_guests;
+  const pricePerGuest = applicableTier.base_price_per_adult;
+
+  // Se o cliente tem menos convidados que o mínimo:
+  // Preço = (mínimo de convidados × preço por convidado) ÷ número de convidados do cliente
+  if (clientGuests < minimumGuests) {
+    const totalPrice = (minimumGuests * pricePerGuest) / clientGuests;
+    
+    return {
+      totalPrice: totalPrice * clientGuests, // Preço total real
+      pricePerGuest: totalPrice, // Preço por convidado ajustado
+      minimumGuests,
+      appliedGuests: minimumGuests,
+      explanation: `Mínimo ${minimumGuests} convidados: (${minimumGuests} × ${formatPrice(pricePerGuest)}) ÷ ${clientGuests} = ${formatPrice(totalPrice)}/convidado`
+    };
+  }
+
+  // Se o cliente tem convidados >= mínimo, usar preço normal
+  const totalPrice = clientGuests * pricePerGuest;
+  
+  return {
+    totalPrice,
+    pricePerGuest,
+    minimumGuests,
+    appliedGuests: clientGuests,
+    explanation: `${clientGuests} convidados × ${formatPrice(pricePerGuest)}`
+  };
+}

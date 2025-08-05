@@ -140,10 +140,10 @@ export function ClientLayout({ children }: ClientLayoutProps) {
                 <MdMenu className="text-xl text-gray-700" />
               </button>
               <div className="hidden sm:block">
-                <h1 className="text-xl font-bold bg-gradient-to-r from-[#520029] to-[#F71875] bg-clip-text text-transparent">
+                <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-[#520029] to-[#F71875] bg-clip-text text-transparent">
                   Área do Cliente
                 </h1>
-                <p className="text-sm text-gray-500">Bem-vindo de volta, {userData?.full_name ? userData.full_name.split(' ')[0] : 'Usuário'}!</p>
+                <p className="text-xs sm:text-sm text-gray-500">Bem-vindo de volta, {userData?.full_name ? userData.full_name.split(' ')[0] : 'Usuário'}!</p>
               </div>
             </div>
             {/* Right side - User info */}
@@ -161,15 +161,15 @@ export function ClientLayout({ children }: ClientLayoutProps) {
           </div>
         </header>
         {/* Main Content */}
-        <div className="px-4 sm:px-6 lg:px-8 py-8">
+        <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
             className="max-w-6xl mx-auto"
           >
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 min-h-[calc(100vh-12rem)] overflow-hidden">
-              <div className="p-8">
+            <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200/50 min-h-[calc(100vh-10rem)] sm:min-h-[calc(100vh-12rem)] overflow-hidden">
+              <div className="p-4 sm:p-6 lg:p-8">
                 {children}
               </div>
             </div>
@@ -183,4 +183,4 @@ export function ClientLayout({ children }: ClientLayoutProps) {
       </main>
     </div>
   );
-} 
+}

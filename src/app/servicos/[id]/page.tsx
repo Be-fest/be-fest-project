@@ -18,6 +18,7 @@ import {
 } from 'react-icons/md';
 import { Header } from '@/components/Header';
 import { SafeHTML } from '@/components/ui/SafeHTML';
+import PriceTable from '@/components/PriceTable';
 import { getServiceByIdAction } from '@/lib/actions/services';
 import { ServiceWithProvider, ServiceWithDetails } from '@/types/database';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
@@ -77,6 +78,7 @@ export default function ServiceDetailsPage() {
         }
 
         console.log('Serviço encontrado:', result.data);
+        console.log('🔍 [ServicePage] Guest tiers do serviço:', result.data.guest_tiers);
         setService(result.data);
       } catch (err) {
         console.error('Error fetching service:', err);
@@ -277,7 +279,7 @@ export default function ServiceDetailsPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="bg-gradient-to-r from-[#FF0080] to-[#E6006F] rounded-xl p-6 mb-6 text-white relative overflow-hidden"
+              className="bg-gradient-to-r from-[#FF0080] to-[#E6006F] rounded-xl p-4 md:p-6 mb-6 text-white relative overflow-hidden"
             >
               {/* Background pattern */}
               <div className="absolute inset-0 opacity-10">
@@ -287,13 +289,13 @@ export default function ServiceDetailsPage() {
               </div>
               
               <div className="relative">
-                <h2 className="text-xl md:text-2xl font-bold mb-2">
+                <h2 className="text-lg md:text-xl lg:text-2xl font-bold mb-2">
                   🎉 Adicionando à Festa
                 </h2>
-                <p className="text-lg font-medium opacity-90">
+                <p className="text-base md:text-lg font-medium opacity-90">
                   {selectedParty.name}
                 </p>
-                <p className="text-sm opacity-75 mt-1">
+                <p className="text-xs md:text-sm opacity-75 mt-1">
                   Você está adicionando este serviço à sua festa
                 </p>
               </div>
@@ -336,23 +338,23 @@ export default function ServiceDetailsPage() {
             {/* Conteúdo Principal */}
             <div className="p-6 md:p-8 lg:p-10">
               {/* Categoria e Preço */}
-              <div className="flex items-center justify-between mb-8">
-                <span className="inline-block bg-[#FF0080] text-white px-4 py-2 rounded-full text-sm font-medium">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                <span className="inline-block bg-[#FF0080] text-white px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-medium w-fit">
                   {service.category}
                 </span>
-                <div className="text-right">
-                  <div className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#FF0080]">
+                <div className="text-left sm:text-right">
+                  <div className="text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-[#FF0080]">
                     {priceInfo?.price}
                   </div>
                   {priceInfo?.unit && (
-                    <div className="text-sm text-gray-600">{priceInfo.unit}</div>
+                    <div className="text-xs md:text-sm text-gray-600">{priceInfo.unit}</div>
                   )}
                 </div>
               </div>
 
               {/* Informações do Prestador */}
-              <div className="flex items-center gap-4 mb-8 p-6 bg-gray-50 rounded-xl">
-                <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200">
+              <div className="flex items-center gap-3 md:gap-4 mb-8 p-4 md:p-6 bg-gray-50 rounded-xl">
+                <div className="w-12 h-12 md:w-16 md:h-16 rounded-full overflow-hidden bg-gray-200">
                   <img
                     src={service.provider?.profile_image || '/be-fest-provider-logo.png'}
                     alt={service.provider?.organization_name || service.provider?.full_name || ''}
@@ -360,11 +362,11 @@ export default function ServiceDetailsPage() {
                   />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900">
+                  <h3 className="text-base md:text-lg font-semibold text-gray-900">
                     {service.provider?.organization_name || service.provider?.full_name}
                   </h3>
-                  <div className="flex items-center gap-1 text-gray-600 text-sm">
-                    <MdLocationOn className="text-base" />
+                  <div className="flex items-center gap-1 text-gray-600 text-xs md:text-sm">
+                    <MdLocationOn className="text-sm md:text-base" />
                     <span>{service.provider?.area_of_operation || 'São Paulo'}</span>
                   </div>
                 </div>
@@ -373,8 +375,8 @@ export default function ServiceDetailsPage() {
               {/* Descrição do Serviço */}
               {service.description && (
                 <div className="mb-8">
-                  <h2 className="text-2xl font-semibold text-gray-900 mb-6">Descrição do Serviço</h2>
-                  <div className="text-gray-700 leading-relaxed text-base md:text-lg">
+                  <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6">Descrição do Serviço</h2>
+                  <div className="text-gray-700 leading-relaxed text-sm md:text-base lg:text-lg">
                     <SafeHTML 
                       html={service.description} 
                       fallback="Sem descrição disponível"
@@ -383,10 +385,17 @@ export default function ServiceDetailsPage() {
                 </div>
               )}
 
+              {/* Tabela de Preços */}
+              {service.guest_tiers && service.guest_tiers.length > 0 && (
+                <div className="mb-8">
+                  <PriceTable guestTiers={service.guest_tiers} />
+                </div>
+              )}
+
               {/* Informações de Capacidade */}
               {(service.min_guests || service.max_guests) && (
-                <div className="mb-8 p-6 bg-blue-50 rounded-xl">
-                  <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2 text-lg">
+                <div className="mb-8 p-4 md:p-6 bg-blue-50 rounded-xl">
+                  <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2 text-base md:text-lg">
                     <MdPeople className="text-blue-600" />
                     Capacidade
                   </h3>
@@ -403,15 +412,15 @@ export default function ServiceDetailsPage() {
               )}
 
               {/* Botões de Ação */}
-              <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
                 {selectedParty ? (
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleAddServiceToParty}
-                    className="flex-1 bg-green-500 hover:bg-green-600 text-white py-4 px-8 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 text-lg"
+                    className="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 md:py-4 px-6 md:px-8 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 text-base md:text-lg"
                   >
-                    <MdAdd className="text-xl" />
+                    <MdAdd className="text-lg md:text-xl" />
                     Adicionar à Festa
                   </motion.button>
                 ) : (
@@ -419,9 +428,9 @@ export default function ServiceDetailsPage() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleAddServiceClick}
-                    className="flex-1 bg-[#FF0080] hover:bg-[#E6006F] text-white py-4 px-8 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 text-lg"
+                    className="flex-1 bg-[#FF0080] hover:bg-[#E6006F] text-white py-3 md:py-4 px-6 md:px-8 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 text-base md:text-lg"
                   >
-                    <MdAdd className="text-xl" />
+                    <MdAdd className="text-lg md:text-xl" />
                     Adicionar à uma Festa
                   </motion.button>
                 )}
@@ -430,9 +439,9 @@ export default function ServiceDetailsPage() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleShare}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 py-4 px-8 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 text-lg"
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 md:py-4 px-6 md:px-8 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 text-base md:text-lg sm:w-auto"
                 >
-                  <MdShare className="text-xl" />
+                  <MdShare className="text-lg md:text-xl" />
                   Compartilhar
                 </motion.button>
               </div>

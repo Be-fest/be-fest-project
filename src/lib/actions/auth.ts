@@ -353,7 +353,7 @@ export async function loginAction(formData: FormData): Promise<ActionResult> {
     const returnUrl = formData.get('returnUrl') as string
     
     // Determine redirect URL based on user role or returnUrl
-    let redirectTo = '/perfil'
+    let redirectTo = '/' // Página principal por padrão
     
     if (returnUrl && returnUrl.trim() !== '') {
       // Validate returnUrl to prevent open redirect attacks
@@ -372,6 +372,8 @@ export async function loginAction(formData: FormData): Promise<ActionResult> {
           redirectTo = '/dashboard/prestador'
         } else if (user.role === 'admin') {
           redirectTo = '/admin'
+        } else {
+          redirectTo = '/' // Página principal para clientes
         }
       }
     } else {
@@ -380,6 +382,8 @@ export async function loginAction(formData: FormData): Promise<ActionResult> {
         redirectTo = '/dashboard/prestador'
       } else if (user.role === 'admin') {
         redirectTo = '/admin'
+      } else {
+        redirectTo = '/' // Página principal para clientes
       }
     }
 

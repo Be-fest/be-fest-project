@@ -239,30 +239,30 @@ const DashboardTab = () => {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="text-center space-y-4">
-        <h2 className="text-3xl font-bold text-gray-900">Dashboard</h2>
-        <p className="text-gray-600 text-lg">
+      <div className="text-center space-y-2 md:space-y-4">
+        <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Dashboard</h2>
+        <p className="text-gray-600 text-sm md:text-lg px-4">
           Acesse rapidamente as principais funcionalidades da sua conta
         </p>
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
         {stats.map((stat, index) => (
           <motion.div
             key={stat.title}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: index * 0.1 }}
-            className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100"
+            className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100"
           >
-            <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 ${stat.bgColor} rounded-xl flex items-center justify-center`}>
-                <stat.icon className={`text-xl ${stat.color}`} />
+            <div className="flex flex-col md:flex-row items-center md:items-center gap-2 md:gap-4">
+              <div className={`w-10 h-10 md:w-12 md:h-12 ${stat.bgColor} rounded-lg md:rounded-xl flex items-center justify-center`}>
+                <stat.icon className={`text-lg md:text-xl ${stat.color}`} />
               </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                <p className="text-gray-600 text-sm font-medium">{stat.title}</p>
+              <div className="text-center md:text-left">
+                <p className="text-xl md:text-2xl font-bold text-gray-900">{stat.value}</p>
+                <p className="text-gray-600 text-xs md:text-sm font-medium">{stat.title}</p>
               </div>
             </div>
           </motion.div>
@@ -275,7 +275,7 @@ const DashboardTab = () => {
           Links Rápidos
         </h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {quickLinks.map((link, index) => (
             <motion.div
               key={link.title}
@@ -284,22 +284,22 @@ const DashboardTab = () => {
               transition={{ duration: 0.5, delay: index * 0.1 }}
             >
               <Link href={link.href} className="block group">
-                <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-200 border border-gray-100 h-full group-hover:transform group-hover:scale-105">
-                  <div className="flex items-start gap-4">
-                    <div className={`w-14 h-14 ${link.bgColor} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200`}>
-                      <link.icon className={`text-2xl ${link.textColor}`} />
+                <div className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 shadow-sm hover:shadow-lg transition-all duration-200 border border-gray-100 h-full group-hover:transform group-hover:scale-105">
+                  <div className="flex items-start gap-3 md:gap-4">
+                    <div className={`w-12 h-12 md:w-14 md:h-14 ${link.bgColor} rounded-lg md:rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200`}>
+                      <link.icon className={`text-xl md:text-2xl ${link.textColor}`} />
                     </div>
                     <div className="flex-1">
-                      <h4 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-[#F71875] transition-colors">
+                      <h4 className="text-base md:text-lg font-bold text-gray-900 mb-1 md:mb-2 group-hover:text-[#F71875] transition-colors">
                         {link.title}
                       </h4>
-                      <p className="text-gray-600 text-sm">
+                      <p className="text-gray-600 text-xs md:text-sm">
                         {link.description}
                       </p>
                     </div>
                   </div>
                   
-                  <div className={`h-1 bg-gradient-to-r ${link.color} rounded-full mt-4 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300`}></div>
+                  <div className={`h-1 bg-gradient-to-r ${link.color} rounded-full mt-3 md:mt-4 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300`}></div>
                 </div>
               </Link>
             </motion.div>
@@ -308,11 +308,11 @@ const DashboardTab = () => {
       </div>
 
       {/* Recent Activity */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <h4 className="text-xl font-bold text-gray-900 mb-4">
+      <div className="bg-white rounded-xl md:rounded-2xl shadow-sm border border-gray-100 p-4 md:p-6">
+        <h4 className="text-lg md:text-xl font-bold text-gray-900 mb-3 md:mb-4">
           Atividade Recente
         </h4>
-        <div className="space-y-4">
+        <div className="space-y-3 md:space-y-4">
           {events.length > 0 ? (
             events
               .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -322,22 +322,22 @@ const DashboardTab = () => {
                 const timeAgo = daysDiff === 0 ? 'Hoje' : daysDiff === 1 ? 'Ontem' : `Há ${daysDiff} dias`;
                 
                 return (
-                  <div key={event.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <MdEvent className="text-blue-600" />
+                  <div key={event.id} className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-gray-50 rounded-lg md:rounded-xl">
+                    <div className="w-8 h-8 md:w-10 md:h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <MdEvent className="text-sm md:text-base text-blue-600" />
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">{event.title} foi criada</p>
-                      <p className="text-sm text-gray-500">{timeAgo}</p>
+                      <p className="font-medium text-gray-900 text-sm md:text-base">{event.title} foi criada</p>
+                      <p className="text-xs md:text-sm text-gray-500">{timeAgo}</p>
                     </div>
                   </div>
                 );
               })
           ) : (
-            <div className="text-center py-8 text-gray-500">
-              <MdEvent className="text-4xl mx-auto mb-2 text-gray-300" />
-              <p>Nenhuma atividade recente</p>
-              <p className="text-sm">Crie sua primeira festa para ver as atividades aqui</p>
+            <div className="text-center py-6 md:py-8 text-gray-500">
+              <MdEvent className="text-3xl md:text-4xl mx-auto mb-2 text-gray-300" />
+              <p className="text-sm md:text-base">Nenhuma atividade recente</p>
+              <p className="text-xs md:text-sm">Crie sua primeira festa para ver as atividades aqui</p>
             </div>
           )}
         </div>
@@ -1185,4 +1185,4 @@ export default function ProfilePage() {
       <ProfilePageContent />
     </Suspense>
   );
-} 
+}
