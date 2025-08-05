@@ -326,11 +326,11 @@ export default function ProviderDashboard() {
       
       // Prioridade 1: Usar preço por convidado no booking (já calculado pelo sistema)
       if (service.price_per_guest_at_booking && service.price_per_guest_at_booking > 0) {
-        calculatedPrice = calculateServiceTotalValue(fullGuests, halfGuests, service.price_per_guest_at_booking);
+        calculatedPrice = calculateServiceTotalValue(fullGuests, halfGuests, service.price_per_guest_at_booking, service);
       }
       // Prioridade 2: Usar preço por convidado do serviço
       else if (service.service?.price_per_guest && service.service.price_per_guest > 0) {
-        calculatedPrice = calculateServiceTotalValue(fullGuests, halfGuests, service.service.price_per_guest);
+        calculatedPrice = calculateServiceTotalValue(fullGuests, halfGuests, service.service.price_per_guest, service);
       }
       // Prioridade 3: Se tem preço base definido
       else if (service.service?.base_price && service.service.base_price > 0) {
@@ -362,7 +362,7 @@ export default function ProviderDashboard() {
         const categoryPrice = categoryPrices[category] || 30;
         
         if (categoryPrice > 0) {
-          calculatedPrice = calculateServiceTotalValue(fullGuests, halfGuests, categoryPrice);
+          calculatedPrice = calculateServiceTotalValue(fullGuests, halfGuests, categoryPrice, service);
         } else {
           // Último recurso: preço base mínimo
           const totalGuests = fullGuests + halfGuests;
@@ -387,11 +387,11 @@ export default function ProviderDashboard() {
       
       // Prioridade 1: Usar preço por convidado no booking (já calculado pelo sistema)
       if (service.price_per_guest_at_booking && service.price_per_guest_at_booking > 0) {
-        calculatedPrice = calculateServiceTotalValue(fullGuests, halfGuests, service.price_per_guest_at_booking);
+        calculatedPrice = calculateServiceTotalValue(fullGuests, halfGuests, service.price_per_guest_at_booking, service);
       }
       // Prioridade 2: Usar preço por convidado do serviço
       else if (service.service?.price_per_guest && service.service.price_per_guest > 0) {
-        calculatedPrice = calculateServiceTotalValue(fullGuests, halfGuests, service.service.price_per_guest);
+        calculatedPrice = calculateServiceTotalValue(fullGuests, halfGuests, service.service.price_per_guest, service);
       }
       // Prioridade 3: Se tem preço base definido
       else if (service.service?.base_price && service.service.base_price > 0) {
@@ -423,7 +423,7 @@ export default function ProviderDashboard() {
         const categoryPrice = categoryPrices[category] || 30;
         
         if (categoryPrice > 0) {
-          calculatedPrice = calculateServiceTotalValue(fullGuests, halfGuests, categoryPrice);
+          calculatedPrice = calculateServiceTotalValue(fullGuests, halfGuests, categoryPrice, service);
         } else {
           // Último recurso: preço base mínimo
           const totalGuests = fullGuests + halfGuests;

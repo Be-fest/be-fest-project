@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createServerClient } from '@/lib/supabase/server'
 import type { Event, EventService } from '@/types/database'
-import { calculateGuestCount, calculateAdvancedPrice } from '@/utils/formatters'
+import { calculateGuestCount, calculateAdvancedPrice, calculateAdjustedPricePerGuest } from '@/utils/formatters'
 import { geocodingService } from '@/lib/services/geocoding'
 
 // Validation schemas
@@ -329,11 +329,19 @@ export async function addServiceToCartAction(serviceData: {
       return { success: false, error: 'Erro ao calcular preço do serviço' }
     }
 
+    // Calcular o preço ajustado por convidado considerando convidados mínimos
+    const adjustedPricePerGuest = calculateAdjustedPricePerGuest(
+      eventData.full_guests || 0,
+      eventData.half_guests || 0,
+      pricePerGuest,
+      { service: fullServiceData }
+    )
+    
     // Usar o mesmo cálculo que está sendo usado no PartyDetailsTab.tsx
     const calculatedPrice = calculateAdvancedPrice(
       { 
         ...fullServiceData, 
-        price_per_guest_at_booking: pricePerGuest 
+        price_per_guest_at_booking: adjustedPricePerGuest 
       },
       eventData.full_guests || 0,
       eventData.half_guests || 0,
@@ -344,7 +352,7 @@ export async function addServiceToCartAction(serviceData: {
       event_id: validatedData.event_id,
       service_id: validatedData.service_id,
       provider_id: validatedData.provider_id,
-      price_per_guest_at_booking: pricePerGuest,
+      price_per_guest_at_booking: adjustedPricePerGuest,
       total_estimated_price: calculatedPrice, // Usar o cálculo correto com taxa de 5% e Math.ceil
       booking_status: 'pending_provider_approval'
     });
@@ -356,7 +364,7 @@ export async function addServiceToCartAction(serviceData: {
         event_id: validatedData.event_id,
         service_id: validatedData.service_id,
         provider_id: validatedData.provider_id,
-        price_per_guest_at_booking: pricePerGuest, // Usar a coluna correta da tabela
+        price_per_guest_at_booking: adjustedPricePerGuest, // Usar o preço ajustado
         total_estimated_price: calculatedPrice, // Usar o cálculo correto com taxa de 5% e Math.ceil
         booking_status: 'pending_provider_approval' // Usar o enum correto
       })

@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createServerClient } from '@/lib/supabase/server'
 import { EventService, EventServiceInsert, EventServiceUpdate, EventServiceWithDetails, EventServiceStatus } from '@/types/database'
-import { calculateAdvancedPrice } from '@/utils/formatters'
+import { calculateAdvancedPrice, calculateAdjustedPricePerGuest } from '@/utils/formatters'
 
 // Validation schemas
 const createEventServiceSchema = z.object({
@@ -127,22 +127,30 @@ async function calculateServicePrice(
     throw new Error('Erro ao buscar dados completos do serviço')
   }
 
-  // 5. Usar o mesmo cálculo que está sendo usado no PartyDetailsTab.tsx
+  // 5. Calcular o preço ajustado por convidado considerando convidados mínimos
+  const adjustedPricePerGuest = calculateAdjustedPricePerGuest(
+    fullGuests,
+    halfGuests,
+    pricePerGuest,
+    { service: fullServiceData }
+  )
+  
+  // 6. Usar o mesmo cálculo que está sendo usado no PartyDetailsTab.tsx
   const calculatedPrice = calculateAdvancedPrice(
     { 
       ...fullServiceData, 
-      price_per_guest_at_booking: pricePerGuest 
+      price_per_guest_at_booking: adjustedPricePerGuest 
     },
     fullGuests,
     halfGuests,
     0 // free_guests
   )
   
-  // 6. Atualizar o event_service com os preços calculados
+  // 7. Atualizar o event_service com os preços calculados
   const { error: updateError } = await supabase
     .from('event_services')
     .update({
-      price_per_guest_at_booking: pricePerGuest,
+      price_per_guest_at_booking: adjustedPricePerGuest, // Salvar o preço ajustado
       total_estimated_price: calculatedPrice // Usar o cálculo correto com taxa de 5% e Math.ceil
     })
     .eq('id', eventServiceId)

@@ -134,10 +134,15 @@ const DashboardTab = () => {
   // Calcular estatísticas reais
   const totalEvents = events.length;
   
-  // Calcular próximo evento
+  // Calcular eventos futuros (a realizar)
   const upcomingEvents = events.filter(e => 
     new Date(e.event_date) > new Date()
   ).sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
+  
+  // Calcular eventos passados (realizados)
+  const pastEvents = events.filter(e => 
+    new Date(e.event_date) <= new Date()
+  );
   
   const nextEventDays = upcomingEvents.length > 0 
     ? Math.ceil((new Date(upcomingEvents[0].event_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
@@ -153,7 +158,7 @@ const DashboardTab = () => {
     },
     {
       title: 'Eventos à Realizar',
-      value: events.length.toString(),
+      value: upcomingEvents.length.toString(),
       icon: MdCalendarToday,
       color: 'text-green-600',
       bgColor: 'bg-green-50'
@@ -167,7 +172,7 @@ const DashboardTab = () => {
     },
     {
       title: 'Eventos Realizados',
-      value: events.length.toString(),
+      value: pastEvents.length.toString(),
       icon: MdCheckCircle,
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-50'

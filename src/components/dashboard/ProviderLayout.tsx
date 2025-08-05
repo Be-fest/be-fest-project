@@ -99,7 +99,7 @@ export function ProviderLayout({ children }: ProviderLayoutProps) {
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-4">
               <Link 
-                href="/"
+                href="/seja-um-prestador"
                 className="text-gray-600 hover:text-[#A502CA] transition-colors flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50"
               >
                 <MdHome />
