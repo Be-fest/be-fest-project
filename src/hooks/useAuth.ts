@@ -8,6 +8,8 @@ import { useToastGlobal } from '@/contexts/GlobalToastContext';
 import { 
   isJWTExpiredError, 
   isNetworkError, 
+  isPermissionError, 
+  isNotFoundError,
   getFriendlyErrorMessage,
   shouldRetry,
   getRetryDelay,
