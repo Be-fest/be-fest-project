@@ -55,9 +55,10 @@ interface CategoriesProps {
   onCategorySelect?: (category: string) => void;
   showScrollButtons?: boolean;
   className?: string;
+  selectedCategory?: string;
 }
 
-export function Categories({ onCategorySelect, showScrollButtons = true, className = "" }: CategoriesProps) {
+export function Categories({ onCategorySelect, showScrollButtons = true, className = "", selectedCategory }: CategoriesProps) {
   const router = useRouter();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -205,36 +206,55 @@ export function Categories({ onCategorySelect, showScrollButtons = true, classNa
             }}
             onScroll={checkScrollButtons}
           >
-            {categories.map((category, index) => (
-              <motion.div
-                key={category.name}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.4, delay: index * 0.05 }}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => handleCategoryClick(category.slug)}
-                className="flex flex-col items-center gap-2 md:gap-3 font-medium cursor-pointer group min-w-[80px] md:min-w-[100px] flex-shrink-0 select-none"
-              >
-                <div
-                  className="rounded-xl md:rounded-2xl h-16 w-20 md:h-20 md:w-24 lg:h-24 lg:w-32 flex items-center justify-center shadow-sm group-hover:shadow-md transition-all duration-300"
-                  style={{
-                    background: `linear-gradient(180deg, ${category.color} 55%, #FFFFFF 55%)`,
-                  }}
+            {categories.map((category, index) => {
+              // Mapear o selectedCategory (nome da categoria) para o slug correspondente
+              const categorySlugToName: { [key: string]: string } = {
+                'buffet': 'Buffet',
+                'buffet-de-pizzas': 'Buffet de Pizzas',
+                'churrasco': 'Churrasco',
+                'confeitaria': 'Confeitaria',
+                'estacoes-de-festa': 'Estações de Festa',
+                'open-bar': 'Open-Bar',
+                'chopp': 'Chopp'
+              };
+              
+              const isSelected = selectedCategory && categorySlugToName[category.slug] === selectedCategory;
+              
+              return (
+                <motion.div
+                  key={category.name}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.4, delay: index * 0.05 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => handleCategoryClick(category.slug)}
+                  className="flex flex-col items-center gap-2 md:gap-3 font-medium cursor-pointer group min-w-[80px] md:min-w-[100px] flex-shrink-0 select-none"
                 >
-                  <Image
-                    src={category.image}
-                    alt={category.name}
-                    width={42}
-                    height={42}
-                    className="object-contain md:w-10 md:h-10 lg:w-12 lg:h-12"
-                  />
-                </div>
-                <span className="text-xs md:text-sm text-gray-700 font-medium text-center leading-tight max-w-[80px] md:max-w-none">
-                  {category.name}
-                </span>
-              </motion.div>
-            ))}
+                  <div
+                    className={`rounded-xl md:rounded-2xl h-16 w-20 md:h-20 md:w-24 lg:h-24 lg:w-32 flex items-center justify-center shadow-sm group-hover:shadow-md transition-all duration-300 ${
+                      isSelected ? 'ring-2 ring-[#FF0080] shadow-lg' : ''
+                    }`}
+                    style={{
+                      background: `linear-gradient(180deg, ${category.color} 55%, #FFFFFF 55%)`,
+                    }}
+                  >
+                    <Image
+                      src={category.image}
+                      alt={category.name}
+                      width={42}
+                      height={42}
+                      className="object-contain md:w-10 md:h-10 lg:w-12 lg:h-12"
+                    />
+                  </div>
+                  <span className={`text-xs md:text-sm font-medium text-center leading-tight max-w-[80px] md:max-w-none transition-colors duration-300 ${
+                    isSelected ? 'text-[#FF0080]' : 'text-gray-700'
+                  }`}>
+                    {category.name}
+                  </span>
+                </motion.div>
+              );
+            })}
           </motion.div>
         </div>
       </div>

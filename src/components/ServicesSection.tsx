@@ -164,6 +164,7 @@ export const ServicesSection = () => {
         >
           <Categories
             selectedCategory={selectedCategory}
+
             onCategorySelect={handleCategorySelect}
           />
         </motion.div>
