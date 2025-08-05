@@ -25,9 +25,10 @@ interface PaymentFormProps {
   loading?: boolean;
   paymentData?: PaymentLinkResponse | null;
   paymentStatus?: 'pending' | 'waiting_payment' | 'confirmed' | 'paid' | 'completed' | 'cancelled';
+  dataLoading?: boolean;
 }
 
-export function PaymentForm({ services, totalValue, onSubmit, loading: externalLoading, paymentData, paymentStatus }: PaymentFormProps) {
+export function PaymentForm({ services, totalValue, onSubmit, loading: externalLoading, paymentData, paymentStatus, dataLoading }: PaymentFormProps) {
   const [internalLoading, setInternalLoading] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
 
@@ -150,12 +151,18 @@ export function PaymentForm({ services, totalValue, onSubmit, loading: externalL
       >
         <h2 className="font-medium text-[#520029] text-sm md:text-base">Ver resumo da festa:</h2>
         <div className="mt-2">
-          <button
-            onClick={() => setShowDetails(!showDetails)}
-            className="bg-gray-50 py-2 px-3 md:px-4 rounded-lg text-xs md:text-sm text-gray-600"
-          >
-            {showDetails ? 'Ocultar detalhes' : 'Ver detalhes'}
-          </button>
+          {dataLoading ? (
+            <div className="bg-gray-300 py-2 px-3 md:px-4 rounded-lg animate-pulse">
+              <div className="h-4 w-20 bg-gray-400 rounded"></div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowDetails(!showDetails)}
+              className="bg-gray-50 py-2 px-3 md:px-4 rounded-lg text-xs md:text-sm text-gray-600"
+            >
+              {showDetails ? 'Ocultar detalhes' : 'Ver detalhes'}
+            </button>
+          )}
         </div>
       </motion.div>
 
@@ -261,23 +268,35 @@ export function PaymentForm({ services, totalValue, onSubmit, loading: externalL
         <div className="mb-6 md:mb-8">
           <div className="flex justify-between items-center mb-4">
             <span className="font-medium text-[#520029] text-sm md:text-base">Valor:</span>
-            <span className="font-bold text-[#520029] text-lg md:text-xl">
-              R${totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </span>
+            {dataLoading ? (
+              <div className="animate-pulse">
+                <div className="h-6 w-32 bg-gray-300 rounded"></div>
+              </div>
+            ) : (
+              <span className="font-bold text-[#520029] text-lg md:text-xl">
+                R${totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </span>
+            )}
           </div>
         </div>
 
         <motion.form onSubmit={handleSubmit}>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-[#F71875] hover:bg-[#E6006F] text-white font-medium py-3 md:py-4 px-6 md:px-8 rounded-xl transition-colors relative overflow-hidden group text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <span className="relative z-10">
-              {loading ? 'Processando...' : 'Pagar'}
-            </span>
-            <div className="absolute inset-0 bg-gradient-to-r from-[#FF6B9D] to-[#F71875] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          </button>
+          {dataLoading ? (
+            <div className="w-full bg-gray-300 py-3 md:py-4 px-6 md:px-8 rounded-xl animate-pulse">
+              <div className="h-5 w-16 bg-gray-400 rounded mx-auto"></div>
+            </div>
+          ) : (
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-[#F71875] hover:bg-[#E6006F] text-white font-medium py-3 md:py-4 px-6 md:px-8 rounded-xl transition-colors relative overflow-hidden group text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span className="relative z-10">
+                {loading ? 'Processando...' : 'Pagar'}
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-[#FF6B9D] to-[#F71875] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </button>
+          )}
         </motion.form>
       </motion.div>
     </div>

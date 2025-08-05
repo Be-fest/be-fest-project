@@ -215,24 +215,7 @@ function PaymentPageContent() {
 
   const displayTotalValue = paymentData?.pricing?.total || totalValue;
 
-  if (loadingData || generatingPayment) {
-    return (
-      <AuthLayout>
-        <div className="relative w-full px-4 sm:px-0">
-          <div className="w-full max-w-sm mx-auto sm:max-w-md">
-            <div className="animate-pulse space-y-6">
-              <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-                <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
-                <div className="h-12 bg-gray-200 rounded w-full"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </AuthLayout>
-    );
-  }
+  // Não mostrar skeleton de página inteira, apenas passar o estado de loading para o componente
 
   if (!eventId || serviceIds.length === 0) {
     return (
@@ -268,6 +251,7 @@ function PaymentPageContent() {
             loading={loading}
             paymentData={paymentData}
             paymentStatus={paymentStatus}
+            dataLoading={loadingData || generatingPayment}
           />
         </div>
       </div>
@@ -281,13 +265,8 @@ export default function PaymentPage() {
       <AuthLayout>
         <div className="relative w-full px-4 sm:px-0">
           <div className="w-full max-w-sm mx-auto sm:max-w-md">
-            <div className="animate-pulse space-y-6">
-              <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-                <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
-                <div className="h-12 bg-gray-200 rounded w-full"></div>
-              </div>
+            <div className="text-center py-12">
+              <div className="text-lg text-gray-600">Carregando...</div>
             </div>
           </div>
         </div>
@@ -296,4 +275,4 @@ export default function PaymentPage() {
       <PaymentPageContent />
     </Suspense>
   );
-} 
+}
