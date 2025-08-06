@@ -218,7 +218,7 @@ export function PaymentForm({ services, totalValue, onSubmit, loading: externalL
                         <span className="font-medium">Categoria:</span> {service.category}
                       </p>
                       <p className="text-gray-500 text-xs mt-1">
-                        <span className="font-medium">Preço:</span> R$ {Math.ceil(service.price_per_guest * 1.05).toFixed(2)} por convidado
+                        <span className="font-medium">Preço:</span> R$ {(service.price_per_guest * 1.05).toFixed(2)} por convidado
                       </p>
                       <p className="text-gray-500 text-xs mt-1">
                         <span className="font-medium">Prestador:</span> {service.provider.name}
