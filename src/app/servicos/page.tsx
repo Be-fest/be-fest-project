@@ -21,21 +21,40 @@ import { useAuth } from '@/hooks/useAuth';
 // Skeleton Components para a página de serviços
 const SearchSkeleton = () => (
   <div className="space-y-8">
-    {/* Search Bar Skeleton */}
-    <div className="bg-white rounded-xl shadow-lg p-6 animate-pulse">
+    {/* Search and Filters - Estrutura estática */}
+    <div className="bg-white rounded-xl shadow-lg p-6">
       <div className="flex flex-col md:flex-row gap-4">
-        <div className="flex-1 h-12 bg-gray-300 rounded-lg"></div>
-        <div className="w-full md:w-48 h-12 bg-gray-300 rounded-lg"></div>
-        <div className="w-full md:w-32 h-12 bg-gray-300 rounded-lg"></div>
+        <div className="flex-1 relative">
+          <MdSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
+          <input
+            type="text"
+            placeholder="Buscar serviços..."
+            disabled
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed"
+          />
+        </div>
+        <select
+          disabled
+          className="w-full md:w-48 px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed"
+        >
+          <option value="">Todas as regiões</option>
+        </select>
+        <button 
+          disabled
+          className="w-full md:w-auto px-6 py-3 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed flex items-center justify-center gap-2"
+        >
+          <MdTune />
+          Filtros
+        </button>
       </div>
     </div>
 
-    {/* Categories Skeleton */}
+    {/* Categories Skeleton - apenas os ícones das categorias */}
     <div className="grid grid-cols-2 md:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
       {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
-        <div key={i} className="bg-white rounded-xl p-4 shadow-sm animate-pulse">
-          <div className="w-16 h-16 bg-gray-300 rounded-lg mx-auto mb-3"></div>
-          <div className="h-4 bg-gray-300 rounded mx-auto w-20"></div>
+        <div key={i} className="bg-white rounded-xl p-4 shadow-sm">
+          <div className="w-16 h-16 bg-gray-300 rounded-lg mx-auto mb-3 animate-pulse"></div>
+          <div className="h-4 bg-gray-300 rounded mx-auto w-20 animate-pulse"></div>
         </div>
       ))}
     </div>
@@ -306,11 +325,60 @@ export default function ServicesPage() {
       <>
         <Header />
         <div className="min-h-screen bg-[#FFF6FB] pt-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="mb-8">
-              <div className="h-8 w-64 bg-gray-300 rounded animate-pulse mb-4"></div>
-              <div className="h-4 w-96 bg-gray-200 rounded animate-pulse"></div>
-            </div>
+          <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-8">
+            {/* Header - Estrutura estática */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="mb-8"
+            >
+              <h1 className="text-3xl md:text-4xl font-bold text-[#520029] mb-4">
+                Serviços Disponíveis
+              </h1>
+              <p className="text-[#6E5963] text-lg">
+                Descubra os melhores serviços para sua festa
+              </p>
+            </motion.div>
+
+            {/* Card de Adicionando Serviços - se aplicável */}
+            {selectedParty && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="bg-gradient-to-r from-[#FF0080] to-[#E6006F] rounded-xl p-6 mb-8 text-white relative overflow-hidden"
+              >
+                <div className="absolute inset-0 opacity-10">
+                  <div className="absolute transform rotate-45 -top-4 -right-4 w-16 h-16 bg-white rounded-lg"></div>
+                  <div className="absolute transform rotate-12 top-8 right-8 w-8 h-8 bg-white rounded"></div>
+                  <div className="absolute transform -rotate-12 bottom-4 right-12 w-12 h-12 bg-white rounded-full"></div>
+                </div>
+                
+                <div className="relative flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl md:text-2xl font-bold mb-2">
+                      🎉 Adicionando Serviços para Festa
+                    </h2>
+                    <p className="text-lg font-medium opacity-90">
+                      {selectedParty.name}
+                    </p>
+                    <p className="text-sm opacity-75 mt-1">
+                      Selecione os serviços que deseja adicionar à sua festa
+                    </p>
+                  </div>
+                  
+                  <button
+                    onClick={() => setSelectedParty(null)}
+                    className="bg-black/20 hover:bg-black/30 p-2 rounded-full transition-colors"
+                    title="Fechar"
+                  >
+                    <MdClose className="text-xl" />
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
             <SearchSkeleton />
             <ServicesSkeleton count={9} />
           </div>

@@ -117,32 +117,48 @@ export default function ProviderDashboard() {
         <ProviderLayout>
           <div className="min-h-screen bg-gray-50 p-6">
             <div className="max-w-7xl mx-auto">
-              {/* Navigation Tabs Skeleton */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 mb-8 animate-pulse">
+              {/* Navigation Tabs - Static Structure */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 mb-8">
                 <div className="flex items-center gap-2">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="h-10 w-32 bg-gray-300 rounded-xl"></div>
+                  {[
+                    { label: 'Visão Geral', icon: MdDashboard },
+                    { label: 'Solicitações', icon: MdPendingActions },
+                    { label: 'Aguardando Pagamento', icon: MdPayment },
+                    { label: 'Pagos', icon: MdCheckCircle }
+                  ].map((tab, i) => (
+                    <div key={i} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100">
+                      <tab.icon className="text-gray-400" size={18} />
+                      <span className="text-gray-400 font-medium">{tab.label}</span>
+                    </div>
                   ))}
                 </div>
               </div>
 
-              {/* Welcome Banner Skeleton */}
-              <div className="bg-gray-300 rounded-2xl p-6 mb-8 animate-pulse">
-                <div className="h-6 w-64 bg-gray-400 rounded mb-2"></div>
-                <div className="h-4 w-96 bg-gray-400 rounded"></div>
+              {/* Welcome Banner - Static Structure with Dynamic Content */}
+              <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-6 mb-8 text-white">
+                <h1 className="text-2xl font-bold mb-2">
+                  Bem-vindo, <span className="animate-pulse bg-white/20 rounded px-2 py-1 inline-block w-32 h-6"></span>!
+                </h1>
+                <p className="text-purple-100">Gerencie seus serviços e acompanhe suas solicitações</p>
               </div>
 
-              {/* Stats Cards Skeleton */}
+              {/* Stats Cards - Static Structure with Dynamic Values */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
+                {[
+                  { title: 'Total de Solicitações', icon: MdBusinessCenter },
+                  { title: 'Solicitações Pendentes', icon: MdPendingActions },
+                  { title: 'Serviços Ativos', icon: MdCheckCircle },
+                  { title: 'Receita Total', icon: MdAttachMoney },
+                  { title: 'Eventos Concluídos', icon: MdCheckCircle }
+                ].map((stat, i) => (
+                  <div key={i} className="bg-white rounded-2xl p-6 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
-                      <div className="w-12 h-12 bg-gray-300 rounded-xl"></div>
-                      <div className="h-4 w-12 bg-gray-200 rounded"></div>
+                      <stat.icon className="text-purple-600" size={24} />
+                      <span className="text-xs text-gray-500">+0%</span>
                     </div>
                     <div className="space-y-2">
-                      <div className="h-6 w-16 bg-gray-300 rounded"></div>
-                      <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                      <div className="h-6 w-16 bg-gray-300 rounded animate-pulse"></div>
+                      <p className="text-sm text-gray-600">{stat.title}</p>
                     </div>
                   </div>
                 ))}
@@ -223,70 +239,93 @@ export default function ProviderDashboard() {
         <ProviderLayout>
           <div className="min-h-screen bg-gray-50 p-6">
             <div className="max-w-7xl mx-auto">
-              {/* Navigation Tabs Skeleton */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 mb-8 animate-pulse">
+              {/* Navigation Tabs - Static Structure */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 mb-8">
                 <div className="flex items-center gap-2">
-                  {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <div key={i} className="h-10 w-32 bg-gray-300 rounded-xl"></div>
+                  {[
+                    { label: 'Visão Geral', icon: MdDashboard },
+                    { label: 'Solicitações', icon: MdPendingActions },
+                    { label: 'Aguardando Pagamento', icon: MdPayment },
+                    { label: 'Pagos', icon: MdCheckCircle },
+                    { label: 'Cancelados', icon: MdCancel },
+                    { label: 'Configurações', icon: MdSettings }
+                  ].map((tab, i) => (
+                    <div key={i} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100">
+                      <tab.icon className="text-gray-400" size={18} />
+                      <span className="text-gray-400 font-medium">{tab.label}</span>
+                    </div>
                   ))}
                 </div>
               </div>
 
-              {/* Welcome Banner Skeleton */}
-              <div className="bg-gray-300 rounded-2xl p-6 mb-8 animate-pulse">
-                <div className="h-6 w-64 bg-gray-400 rounded mb-2"></div>
-                <div className="h-4 w-96 bg-gray-400 rounded"></div>
+              {/* Welcome Banner - Static Structure with Dynamic Content */}
+              <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-6 mb-8 text-white">
+                <h1 className="text-2xl font-bold mb-2">
+                  Bem-vindo, <span className="animate-pulse bg-white/20 rounded px-2 py-1 inline-block w-32 h-6"></span>!
+                </h1>
+                <p className="text-purple-100">Gerencie seus serviços e acompanhe suas solicitações</p>
               </div>
 
-              {/* Stats Cards Skeleton */}
+              {/* Stats Cards - Static Structure with Dynamic Values */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
+                {[
+                  { title: 'Total de Solicitações', icon: MdBusinessCenter },
+                  { title: 'Solicitações Pendentes', icon: MdPendingActions },
+                  { title: 'Serviços Ativos', icon: MdCheckCircle },
+                  { title: 'Receita Total', icon: MdAttachMoney },
+                  { title: 'Eventos Concluídos', icon: MdCheckCircle }
+                ].map((stat, i) => (
+                  <div key={i} className="bg-white rounded-2xl p-6 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
-                      <div className="w-12 h-12 bg-gray-300 rounded-xl"></div>
-                      <div className="h-4 w-12 bg-gray-200 rounded"></div>
+                      <stat.icon className="text-purple-600" size={24} />
+                      <span className="text-xs text-gray-500">+0%</span>
                     </div>
                     <div className="space-y-2">
-                      <div className="h-6 w-16 bg-gray-300 rounded"></div>
-                      <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                      <div className="h-6 w-16 bg-gray-300 rounded animate-pulse"></div>
+                      <p className="text-sm text-gray-600">{stat.title}</p>
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* Revenue Stats Skeleton */}
+              {/* Revenue Stats - Static Structure with Dynamic Values */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                {[1, 2].map((i) => (
-                  <div key={i} className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
+                {[
+                  { title: 'Receita Este Mês', icon: MdTrendingUp },
+                  { title: 'Receita Total', icon: MdAttachMoney }
+                ].map((stat, i) => (
+                  <div key={i} className="bg-white rounded-2xl p-6 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
-                      <div className="w-12 h-12 bg-gray-300 rounded-xl"></div>
-                      <div className="h-4 w-12 bg-gray-200 rounded"></div>
+                      <stat.icon className="text-green-600" size={24} />
+                      <span className="text-xs text-gray-500">+0%</span>
                     </div>
                     <div className="space-y-2">
-                      <div className="h-6 w-20 bg-gray-300 rounded"></div>
-                      <div className="h-4 w-32 bg-gray-200 rounded"></div>
+                      <div className="h-6 w-20 bg-gray-300 rounded animate-pulse"></div>
+                      <p className="text-sm text-gray-600">{stat.title}</p>
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* Recent Requests Skeleton */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-pulse">
+              {/* Recent Requests - Static Structure with Dynamic Content */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <div className="h-6 w-40 bg-gray-300 rounded"></div>
-                  <div className="h-4 w-20 bg-gray-200 rounded"></div>
+                  <h3 className="text-lg font-semibold text-gray-900">Solicitações Recentes</h3>
+                  <button className="text-sm text-purple-600 hover:text-purple-700 font-medium">
+                    Ver todas
+                  </button>
                 </div>
                 <div className="space-y-4">
                   {[1, 2, 3].map((i) => (
                     <div key={i} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                       <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-gray-300 rounded-lg"></div>
+                        <div className="w-10 h-10 bg-gray-300 rounded-lg animate-pulse"></div>
                         <div className="space-y-2">
-                          <div className="h-4 w-32 bg-gray-300 rounded"></div>
-                          <div className="h-3 w-48 bg-gray-200 rounded"></div>
+                          <div className="h-4 w-32 bg-gray-300 rounded animate-pulse"></div>
+                          <div className="h-3 w-48 bg-gray-200 rounded animate-pulse"></div>
                         </div>
                       </div>
-                      <div className="h-6 w-20 bg-gray-300 rounded-full"></div>
+                      <div className="h-6 w-20 bg-gray-300 rounded-full animate-pulse"></div>
                     </div>
                   ))}
                 </div>
@@ -324,9 +363,9 @@ export default function ProviderDashboard() {
       
       let calculatedPrice = 0;
       
-      // Prioridade 1: Usar preço por convidado no booking (já calculado pelo sistema)
+      // Prioridade 1: Usar preço por convidado no booking (já calculado pelo sistema) - SEMPRE CALCULAR CORRETAMENTE
       if (service.price_per_guest_at_booking && service.price_per_guest_at_booking > 0) {
-        calculatedPrice = calculateServiceTotalValue(fullGuests, halfGuests, service.price_per_guest_at_booking, service);
+        calculatedPrice = calculateServiceTotalValue(fullGuests, halfGuests, service.price_per_guest_at_booking, service, true);
       }
       // Prioridade 2: Usar preço por convidado do serviço
       else if (service.service?.price_per_guest && service.service.price_per_guest > 0) {
@@ -370,8 +409,11 @@ export default function ProviderDashboard() {
         }
       }
       
-      // Retornar valor sem taxa (valor que o prestador irá receber)
-      return calculatedPrice;
+      // Calcular o valor que o prestador irá receber (descontando a taxa de 5%)
+      // Se o cliente paga com taxa, o prestador recebe sem a taxa
+      const taxRate = 0.05; // 5%
+      const priceWithoutTax = calculatedPrice / (1 + taxRate);
+      return Math.floor(priceWithoutTax); // Arredondar para baixo para o prestador
     } catch (error) {
       console.error('Erro ao calcular preço estimado:', error);
       return 0;
@@ -385,9 +427,9 @@ export default function ProviderDashboard() {
       
       let calculatedPrice = 0;
       
-      // Prioridade 1: Usar preço por convidado no booking (já calculado pelo sistema)
+      // Prioridade 1: Usar preço por convidado no booking (já calculado pelo sistema) - SEMPRE CALCULAR CORRETAMENTE
       if (service.price_per_guest_at_booking && service.price_per_guest_at_booking > 0) {
-        calculatedPrice = calculateServiceTotalValue(fullGuests, halfGuests, service.price_per_guest_at_booking, service);
+        calculatedPrice = calculateServiceTotalValue(fullGuests, halfGuests, service.price_per_guest_at_booking, service, true);
       }
       // Prioridade 2: Usar preço por convidado do serviço
       else if (service.service?.price_per_guest && service.service.price_per_guest > 0) {
@@ -431,7 +473,11 @@ export default function ProviderDashboard() {
         }
       }
       
-      return calculatedPrice; // Retorna sem taxa
+      // Calcular o valor que o prestador irá receber (descontando a taxa de 5%)
+      // Se o cliente paga com taxa, o prestador recebe sem a taxa
+      const taxRate = 0.05; // 5%
+      const priceWithoutTax = calculatedPrice / (1 + taxRate);
+      return Math.floor(priceWithoutTax); // Arredondar para baixo para o prestador
     } catch (error) {
       console.error('Erro ao calcular preço base:', error);
       return 0;

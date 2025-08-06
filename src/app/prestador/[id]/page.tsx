@@ -19,42 +19,59 @@ interface PageProps {
 
 // Skeleton Components
 const ProviderSkeleton = () => (
-  <div className="bg-white rounded-2xl shadow-lg overflow-hidden animate-pulse">
-    {/* Header Skeleton */}
-    <div className="relative h-48 md:h-64 bg-gray-300">
+  <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+    {/* Provider Header */}
+    <div className="relative h-48 md:h-64 bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 border-b border-purple-100">
+      {/* Padrão decorativo sutil */}
+      <div className="absolute inset-0 opacity-5">
+        <svg className="w-full h-full" viewBox="0 0 400 200" fill="none">
+          <circle cx="50" cy="50" r="30" fill="#F71875"/>
+          <circle cx="350" cy="40" r="20" fill="#8B5CF6"/>
+          <circle cx="80" cy="150" r="25" fill="#EC4899"/>
+          <circle cx="320" cy="160" r="15" fill="#A855F7"/>
+        </svg>
+      </div>
+      
       <div className="absolute bottom-4 md:bottom-6 left-4 md:left-6 flex flex-col md:flex-row items-start md:items-end gap-4 md:gap-6">
-        <div className="w-16 h-16 md:w-24 md:h-24 rounded-xl bg-gray-400"></div>
-        <div className="space-y-2">
-          <div className="h-8 w-48 bg-gray-400 rounded"></div>
-          <div className="h-4 w-32 bg-gray-400 rounded"></div>
+        <div className="w-16 h-16 md:w-24 md:h-24 rounded-2xl bg-gray-300 animate-pulse shadow-xl border-2 border-white"></div>
+        <div className="text-gray-800">
+          <div className="h-8 w-48 bg-gray-300 rounded animate-pulse mb-2"></div>
+          <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 text-sm md:text-base">
+            <div className="flex items-center gap-1 text-gray-600 bg-white/80 px-3 py-1 rounded-full">
+              <MdLocationOn className="text-pink-500" />
+              <div className="h-4 w-24 bg-gray-300 rounded animate-pulse"></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-    
-    {/* Content Skeleton */}
+
+    {/* Provider Content */}
     <div className="p-4 md:p-6 lg:p-8">
       <div className="mb-6 md:mb-8">
-        <div className="h-6 w-24 bg-gray-300 rounded mb-4"></div>
-        <div className="h-4 w-full bg-gray-200 rounded mb-2"></div>
-        <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
+        <h2 className="text-xl md:text-2xl font-bold text-[#520029] mb-4">Sobre</h2>
+        <div className="space-y-2">
+          <div className="h-4 w-full bg-gray-200 rounded animate-pulse"></div>
+          <div className="h-4 w-3/4 bg-gray-200 rounded animate-pulse"></div>
+        </div>
       </div>
-      
+
       <div>
-        <div className="h-6 w-32 bg-gray-300 rounded mb-4"></div>
+        <h2 className="text-xl md:text-2xl font-bold text-[#520029] mb-4">Serviços</h2>
         <div className="space-y-8">
           {[1, 2].map((i) => (
             <div key={i} className="bg-gray-50 rounded-xl overflow-hidden">
-              <div className="h-16 bg-gray-300"></div>
+              <div className="h-16 bg-gray-300 animate-pulse"></div>
               <div className="p-6 space-y-4">
                 {[1, 2, 3].map((j) => (
                   <div key={j} className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg">
-                    <div className="w-20 h-20 rounded-lg bg-gray-300"></div>
+                    <div className="w-20 h-20 rounded-lg bg-gray-300 animate-pulse"></div>
                     <div className="flex-1 space-y-2">
-                      <div className="h-5 w-32 bg-gray-300 rounded"></div>
-                      <div className="h-4 w-48 bg-gray-200 rounded"></div>
+                      <div className="h-5 w-32 bg-gray-300 rounded animate-pulse"></div>
+                      <div className="h-4 w-48 bg-gray-200 rounded animate-pulse"></div>
                       <div className="flex items-center justify-between">
-                        <div className="h-6 w-20 bg-gray-300 rounded"></div>
-                        <div className="w-10 h-10 rounded-full bg-gray-300"></div>
+                        <div className="h-6 w-20 bg-gray-300 rounded animate-pulse"></div>
+                        <div className="w-24 h-8 bg-blue-200 rounded animate-pulse"></div>
                       </div>
                     </div>
                   </div>
@@ -102,10 +119,9 @@ const convertToProviderData = (provider: User, services: ServiceWithProvider[]) 
     description: provider.organization_description || 
       'Prestador de serviços para festas e eventos',
     image: provider.profile_image || '/be-fest-provider-logo.png',
-    rating: 4.8,
     location: {
-      neighborhood: provider.area_of_operation || 'Região',
-      city: 'Cidade'
+      neighborhood: provider.area_of_operation || 'Área de atuação não informada',
+      city: provider.state || 'Estado não informado'
     },
     services: categorizedServices
   };
@@ -191,12 +207,23 @@ export default function ProviderPage({ params }: PageProps) {
         <Header />
         <div className="pt-20 pb-8">
           <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
-            {/* Botão Voltar Skeleton */}
+            {/* Botão Voltar */}
             <div className="mb-4 mt-8">
-              <div className="w-10 h-10 bg-gray-300 rounded-full animate-pulse"></div>
+              <Link
+                href="/servicos"
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors inline-block"
+              >
+                <MdArrowBack className="text-2xl text-[#F71875]" />
+              </Link>
             </div>
             
-            <ProviderSkeleton />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <ProviderSkeleton />
+            </motion.div>
           </div>
         </div>
       </>
@@ -244,30 +271,30 @@ export default function ProviderPage({ params }: PageProps) {
             className="bg-white rounded-2xl shadow-lg overflow-hidden"
           >
             {/* Provider Header */}
-            <div className="relative h-48 md:h-64 bg-gradient-to-r from-[#520029] to-[#FF0080]">
-              <div className="absolute inset-0 bg-black bg-opacity-20"></div>
-              <img
-                src={providerData.image}
-                alt={providerData.name}
-                className="w-full h-full object-cover mix-blend-overlay"
-              />
+            <div className="relative h-48 md:h-64 bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 border-b border-purple-100">
+              {/* Padrão decorativo sutil */}
+              <div className="absolute inset-0 opacity-5">
+                <svg className="w-full h-full" viewBox="0 0 400 200" fill="none">
+                  <circle cx="50" cy="50" r="30" fill="#F71875"/>
+                  <circle cx="350" cy="40" r="20" fill="#8B5CF6"/>
+                  <circle cx="80" cy="150" r="25" fill="#EC4899"/>
+                  <circle cx="320" cy="160" r="15" fill="#A855F7"/>
+                </svg>
+              </div>
+              
               <div className="absolute bottom-4 md:bottom-6 left-4 md:left-6 flex flex-col md:flex-row items-start md:items-end gap-4 md:gap-6">
-                <div className="w-16 h-16 md:w-24 md:h-24 rounded-xl bg-white p-2 shadow-lg">
+                <div className="w-16 h-16 md:w-24 md:h-24 rounded-2xl bg-white p-3 shadow-xl border-2 border-white">
                   <img
                     src={providerData.image}
                     alt={`${providerData.name} logo`}
-                    className="w-full h-full object-cover rounded-lg"
+                    className="w-full h-full object-cover rounded-xl"
                   />
                 </div>
-                <div className="text-white">
-                  <h1 className="text-2xl md:text-3xl font-bold mb-2">{providerData.name}</h1>
+                <div className="text-gray-800">
+                  <h1 className="text-2xl md:text-3xl font-bold mb-2 text-gray-900">{providerData.name}</h1>
                   <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 text-sm md:text-base">
-                    <div className="flex items-center gap-1">
-                      <MdStar className="text-yellow-400" />
-                      <span>{providerData.rating}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <MdLocationOn />
+                    <div className="flex items-center gap-1 text-gray-600 bg-white/80 px-3 py-1 rounded-full">
+                      <MdLocationOn className="text-pink-500" />
                       <span>{providerData.location.neighborhood}, {providerData.location.city}</span>
                     </div>
                   </div>

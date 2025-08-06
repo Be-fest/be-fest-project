@@ -155,29 +155,12 @@ export const calculateServiceTotalValue = (
     minimumGuests = service.service.min_guests;
   }
   
-  // Se o cliente tem menos convidados que o mínimo, aplicar a lógica especial
+  // Se o cliente tem menos convidados que o mínimo, SEMPRE cobrar pelo mínimo
   if (minimumGuests > 0 && totalClientGuests > 0 && totalClientGuests < minimumGuests) {
-    // Calcular o preço total baseado no mínimo de convidados
-    const totalPriceForMinimum = minimumGuests * normalizedPricePerGuest;
-    
-    // CORREÇÃO: A distribuição do preço por convidado deve ser baseada APENAS nos full_guests
-    // Se tiver 20 full_guests e 10 half_guests, calcular R$ 3.150,00 ÷ 20 = R$ 157,50
-    if (normalizedFullGuests > 0) {
-      const adjustedPricePerFullGuest = totalPriceForMinimum / normalizedFullGuests;
-      const fullGuestsTotal = normalizedFullGuests * adjustedPricePerFullGuest;
-      const halfGuestsTotal = normalizedHalfGuests * (adjustedPricePerFullGuest / 2);
-      
-      return fullGuestsTotal + halfGuestsTotal;
-    } else {
-      // Se não há full_guests, usar a lógica proporcional original
-      const fullGuestRatio = normalizedFullGuests / totalClientGuests;
-      const halfGuestRatio = normalizedHalfGuests / totalClientGuests;
-      
-      const fullGuestsTotal = totalPriceForMinimum * fullGuestRatio;
-      const halfGuestsTotal = totalPriceForMinimum * halfGuestRatio;
-      
-      return fullGuestsTotal + halfGuestsTotal;
-    }
+    // NOVA LÓGICA: Sempre calcular baseado no mínimo de convidados
+    // Exemplo: preço R$ 140, mínimo 30 convidados, cliente tem 20 convidados
+    // Resultado: 30 × R$ 140 = R$ 4.200 (cliente sempre paga pelo mínimo)
+    return minimumGuests * normalizedPricePerGuest;
   }
   
   // Lógica normal: fullGuests * pricePerGuest + halfGuests * (pricePerGuest / 2)
@@ -233,20 +216,13 @@ export const calculateAdjustedPricePerGuest = (
     minimumGuests = service.service.min_guests;
   }
   
-  // Se o cliente tem menos convidados que o mínimo, aplicar a lógica especial
+  // Se o cliente tem menos convidados que o mínimo, calcular preço ajustado
   if (minimumGuests > 0 && totalClientGuests > 0 && totalClientGuests < minimumGuests) {
-    // Calcular o preço total baseado no mínimo de convidados
+    // NOVA LÓGICA: Calcular preço ajustado baseado no mínimo
+    // Exemplo: 30 convidados mínimos × R$ 140 = R$ 4.200
+    // Com 20 convidados reais: R$ 4.200 ÷ 20 = R$ 210 por convidado
     const totalPriceForMinimum = minimumGuests * normalizedPricePerGuest;
-    
-    // CORREÇÃO: Distribuir o preço total entre os convidados reais
-    // Exemplo: 30 convidados mínimos × R$ 105 = R$ 3.150
-    // Com 20 full_guests: R$ 3.150 ÷ 20 = R$ 157,50 por full_guest
-    if (normalizedFullGuests > 0) {
-      return Math.ceil(totalPriceForMinimum / normalizedFullGuests);
-    } else if (totalClientGuests > 0) {
-      // Se não há full_guests, distribuir proporcionalmente
-      return Math.ceil(totalPriceForMinimum / totalClientGuests);
-    }
+    return Math.ceil(totalPriceForMinimum / totalClientGuests);
   }
   
   // Retornar preço original se não há ajuste necessário
