@@ -282,9 +282,16 @@ export function PaymentForm({ services, totalValue, onSubmit, loading: externalL
 
         <motion.form onSubmit={handleSubmit}>
           {dataLoading ? (
-            <div className="w-full bg-gray-300 py-3 md:py-4 px-6 md:px-8 rounded-xl animate-pulse">
-              <div className="h-5 w-16 bg-gray-400 rounded mx-auto"></div>
-            </div>
+            <button
+              type="submit"
+              disabled={true}
+              className="w-full bg-[#F71875] hover:bg-[#E6006F] text-white font-medium py-3 md:py-4 px-6 md:px-8 rounded-xl transition-colors relative overflow-hidden group text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span className="relative z-10">
+                Processando...
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-[#FF6B9D] to-[#F71875] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </button>
           ) : (
             <button
               type="submit"
