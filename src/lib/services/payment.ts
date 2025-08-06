@@ -61,10 +61,10 @@ export interface PaymentError {
 
 function getApiBaseUrl(): string {
   if (process.env.NODE_ENV === 'development') {
-    return 'http://localhost:3001';
+    return 'https://be-fest-api.onrender.com';
   }
   
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  return process.env.NEXT_PUBLIC_API_URL || 'https://be-fest-api.onrender.com';
 }
 
 export async function generatePaymentLink(
