@@ -99,8 +99,7 @@ const convertToProviderData = (provider: User, services: ServiceWithProvider[]) 
   return {
     id: provider.id,
     name: providerName,
-    description: provider.area_of_operation ? 
-      `Especializado em ${provider.area_of_operation}` : 
+    description: provider.organization_description || 
       'Prestador de serviços para festas e eventos',
     image: provider.profile_image || '/be-fest-provider-logo.png',
     rating: 4.8,
