@@ -409,11 +409,8 @@ export default function ProviderDashboard() {
         }
       }
       
-      // Calcular o valor que o prestador irá receber (descontando a taxa de 5%)
-      // Se o cliente paga com taxa, o prestador recebe sem a taxa
-      const taxRate = 0.05; // 5%
-      const priceWithoutTax = calculatedPrice / (1 + taxRate);
-      return Math.floor(priceWithoutTax); // Arredondar para baixo para o prestador
+      // Retornar o preço calculado sem taxa (valor original)
+      return calculatedPrice;
     } catch (error) {
       console.error('Erro ao calcular preço estimado:', error);
       return 0;
@@ -473,11 +470,8 @@ export default function ProviderDashboard() {
         }
       }
       
-      // Calcular o valor que o prestador irá receber (descontando a taxa de 5%)
-      // Se o cliente paga com taxa, o prestador recebe sem a taxa
-      const taxRate = 0.05; // 5%
-      const priceWithoutTax = calculatedPrice / (1 + taxRate);
-      return Math.floor(priceWithoutTax); // Arredondar para baixo para o prestador
+      // Retornar o preço calculado sem taxa (valor original)
+      return calculatedPrice;
     } catch (error) {
       console.error('Erro ao calcular preço base:', error);
       return 0;
