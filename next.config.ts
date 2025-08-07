@@ -24,7 +24,6 @@ const nextConfig: NextConfig = {
     } : false,
   },
   // Configurações de build para produção
-  swcMinify: true,
   poweredByHeader: false,
   // Configurações de runtime
   output: 'standalone',

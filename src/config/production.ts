@@ -32,21 +32,24 @@ export const isProduction = () => {
   return process.env.NODE_ENV === 'production';
 };
 
+// Tipos para operações de timeout
+type TimeoutOperation = 'AUTH_TIMEOUT' | 'SESSION_CHECK_TIMEOUT' | 'USER_DATA_TIMEOUT' | 'HYDRATION_TIMEOUT';
+
 // Função para obter timeout baseado no ambiente
-export const getTimeout = (operation: keyof typeof PRODUCTION_CONFIG) => {
+export const getTimeout = (operation: TimeoutOperation): number => {
   if (isProduction()) {
     return PRODUCTION_CONFIG[operation] as number;
   }
   
   // Timeouts mais longos em desenvolvimento
-  const devTimeouts = {
+  const devTimeouts: Record<TimeoutOperation, number> = {
     AUTH_TIMEOUT: 15000,
     SESSION_CHECK_TIMEOUT: 10000,
     USER_DATA_TIMEOUT: 12000,
     HYDRATION_TIMEOUT: 5000,
   };
   
-  return devTimeouts[operation] || PRODUCTION_CONFIG[operation];
+  return devTimeouts[operation] || (PRODUCTION_CONFIG[operation] as number);
 };
 
 // Função para verificar se deve usar fallback
