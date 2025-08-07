@@ -418,9 +418,10 @@ export function useAuth() {
         console.log('Carregando sessão do localStorage');
         setUser(storedSession.user);
         setUserData(storedUserData);
+        // Finalizar loading imediatamente quando userData está disponível
         setLoading(false);
         
-        // Verificar se a sessão ainda é válida no Supabase
+        // Verificar se a sessão ainda é válida no Supabase em background
         try {
           const { data: { session }, error: sessionError } = await supabase.auth.getSession();
           
@@ -433,9 +434,10 @@ export function useAuth() {
             return;
           }
           
-          // Atualizar dados do usuário se necessário
+          // Atualizar dados do usuário se necessário (em background)
           if (session.user.id === storedUserData.id) {
-            await fetchUserData(session.user.id);
+            // Não aguardar fetchUserData para não bloquear a UI
+            fetchUserData(session.user.id).catch(console.error);
           } else {
             console.log('ID do usuário mudou, recarregando dados');
             setUser(session.user);
@@ -507,6 +509,14 @@ export function useAuth() {
     getInitialSession();
   }, []);
 
+  // Effect para finalizar loading quando userData está disponível
+  useEffect(() => {
+    if (userData && loading) {
+      console.log('useAuth: userData disponível, finalizando loading');
+      setLoading(false);
+    }
+  }, [userData, loading]);
+
   // Effect para escutar mudanças na autenticação
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -524,19 +534,31 @@ export function useAuth() {
           console.log('useAuth: Usuário logado');
           setUser(session.user);
           setStoredSession(session);
-          await fetchUserData(session.user.id);
+          
+          // Verificar se já temos userData no localStorage para este usuário
+          const storedUserData = getStoredUserData();
+          if (storedUserData && storedUserData.id === session.user.id) {
+            console.log('useAuth: Usando userData do localStorage');
+            setUserData(storedUserData);
+            setLoading(false);
+            // Atualizar dados em background
+            fetchUserData(session.user.id).catch(console.error);
+          } else {
+            // Buscar dados do usuário
+            await fetchUserData(session.user.id);
+          }
+          
           // Reset flag para permitir novos toasts de sessão expirada
           sessionExpiredToastShownRef.current = false;
-          setLoading(false);
         } else if (event === 'TOKEN_REFRESHED') {
           console.log('useAuth: Token atualizado');
           if (session) {
             setStoredSession(session);
           }
-          setLoading(false);
+          // Não alterar loading aqui, manter estado atual
         } else {
           console.log('useAuth: Outro evento de auth', event);
-          setLoading(false);
+          // Não alterar loading para eventos desconhecidos
         }
       }
     );
