@@ -16,7 +16,7 @@ const roboto = Roboto({
 });
 
 export const metadata: Metadata = {
-  title: "Be Fest - Sua festa dos sonhos",
+  title: "Be Fest - Sua festa num Clique!",
   description: "Encontre os melhores prestadores para sua festa",
 };
 
