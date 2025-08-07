@@ -62,14 +62,14 @@ export async function middleware(request: NextRequest) {
   
   // Se não há cookies de autenticação válidos E não há header de localStorage, redirecionar para login
   if (supabaseCookies.length === 0 && !authTokenCookie && !accessTokenCookie && !localStorageAuth) {
-    console.log(`Middleware: Nenhuma autenticação válida encontrada para ${pathname}`);
+    // Removido console.log para produção
     const redirectUrl = new URL('/auth/login', request.url);
     redirectUrl.searchParams.set('redirectTo', pathname);
     redirectUrl.searchParams.set('reason', 'unauthorized');
     return NextResponse.redirect(redirectUrl);
   }
 
-  console.log(`Middleware: Autenticação encontrada para ${pathname}, permitindo acesso`);
+  // Removido console.log para produção
   return NextResponse.next();
 }
 
@@ -85,4 +85,4 @@ export const config = {
      */
     '/((?!api|_next/static|_next/image|favicon.ico|.*\\.png$|.*\\.jpg$|.*\\.jpeg$|.*\\.gif$|.*\\.svg$).*)',
   ],
-}; 
+};

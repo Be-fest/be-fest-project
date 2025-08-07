@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { AuthErrorFallback } from './ui/AuthErrorFallback';
+import { ClientOnly } from './ClientOnly';
+import LoadingSpinner from './LoadingSpinner';
+import { getTimeout, shouldSilenceErrors } from '@/config/production';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -28,7 +31,9 @@ export function AuthGuard({ children, requiredRole, redirectTo = '/auth/login' }
       const { data: { session }, error } = await supabase.auth.getSession();
       
       if (error) {
-        console.error('Erro ao verificar sessão:', error);
+        if (!shouldSilenceErrors()) {
+          console.error('Erro ao verificar sessão:', error);
+        }
         setError('Erro ao verificar autenticação');
         setLoading(false);
         return;
@@ -49,7 +54,9 @@ export function AuthGuard({ children, requiredRole, redirectTo = '/auth/login' }
         .single();
 
       if (userError) {
-        console.error('Erro ao buscar dados do usuário:', userError);
+        if (!shouldSilenceErrors()) {
+          console.error('Erro ao buscar dados do usuário:', userError);
+        }
         
         // Se não encontrar o usuário na tabela, pode ser que ainda não foi criado
         // Vamos assumir que é um cliente por padrão
@@ -60,25 +67,44 @@ export function AuthGuard({ children, requiredRole, redirectTo = '/auth/login' }
 
       // Verificar se o usuário tem o papel necessário
       if (requiredRole && userData?.role !== requiredRole) {
-        console.log('Usuário não tem o papel necessário:', {
-          required: requiredRole,
-          actual: userData?.role
-        });
+        if (!shouldSilenceErrors()) {
+          console.log('Usuário não tem o papel necessário:', {
+            required: requiredRole,
+            actual: userData?.role
+          });
+        }
         router.push('/acesso-negado');
         return;
       }
 
       setLoading(false);
     } catch (error) {
-      console.error('Erro inesperado no AuthGuard:', error);
+      if (!shouldSilenceErrors()) {
+        console.error('Erro inesperado no AuthGuard:', error);
+      }
       setError('Erro inesperado na verificação de autenticação');
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    checkAuth();
+    // Só executar no cliente
+    if (typeof window !== 'undefined') {
+      checkAuth();
+    }
   }, [requiredRole]);
+
+  // Timeout de segurança para evitar loading infinito
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (loading) {
+        setLoading(false);
+        setError('Timeout na verificação de autenticação');
+      }
+    }, getTimeout('AUTH_TIMEOUT')); // Usar timeout de produção
+
+    return () => clearTimeout(timeout);
+  }, [loading]);
 
   const handleRetry = async () => {
     await checkAuth();
@@ -88,26 +114,32 @@ export function AuthGuard({ children, requiredRole, redirectTo = '/auth/login' }
     router.push(redirectTo);
   };
 
+  const handleLoadingTimeout = () => {
+    setLoading(false);
+    setError('Timeout na verificação de autenticação. Tente novamente.');
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando...</p>
-        </div>
-      </div>
+      <LoadingSpinner 
+        message="Verificando autenticação..." 
+        timeout={getTimeout('AUTH_TIMEOUT')}
+        onTimeout={handleLoadingTimeout}
+      />
     );
   }
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <AuthErrorFallback 
-          error={error} 
-          onRetry={handleRetry}
-          onLogout={handleLogout}
-        />
-      </div>
+      <ClientOnly fallback={<LoadingSpinner message="Carregando..." />}>
+        <div className="container mx-auto px-4 py-8">
+          <AuthErrorFallback 
+            error={error} 
+            onRetry={handleRetry}
+            onLogout={handleLogout}
+          />
+        </div>
+      </ClientOnly>
     );
   }
 
@@ -115,5 +147,9 @@ export function AuthGuard({ children, requiredRole, redirectTo = '/auth/login' }
     return null; // Redirecionamento em andamento
   }
 
-  return <>{children}</>;
-} 
+  return (
+    <ClientOnly fallback={<LoadingSpinner message="Carregando..." />}>
+      {children}
+    </ClientOnly>
+  );
+}

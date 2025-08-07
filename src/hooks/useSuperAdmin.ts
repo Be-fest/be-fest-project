@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { shouldSilenceErrors } from '@/config/production';
 
 export function useSuperAdmin() {
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
@@ -27,7 +28,9 @@ export function useSuperAdmin() {
           setIsSuperAdmin(false);
         }
       } catch (error) {
-        console.error('Erro ao verificar super admin:', error);
+        if (!shouldSilenceErrors()) {
+          console.error('Erro ao verificar super admin:', error);
+        }
         setIsSuperAdmin(false);
       } finally {
         setLoading(false);
@@ -48,4 +51,4 @@ export function useSuperAdmin() {
     loading,
     logout
   };
-} 
+}

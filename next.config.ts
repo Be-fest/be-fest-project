@@ -17,6 +17,17 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Otimizações para produção
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn']
+    } : false,
+  },
+  // Configurações de build para produção
+  swcMinify: true,
+  poweredByHeader: false,
+  // Configurações de runtime
+  output: 'standalone',
 };
 
 export default nextConfig;
