@@ -66,8 +66,8 @@ export function GlobalToastProvider({ children }: { children: ReactNode }) {
       {children}
       
       {/* Toast Container */}
-      <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-3 pointer-events-none">
-        <AnimatePresence mode="popLayout">
+      <div className="fixed top-2 right-2 md:top-4 md:right-4 z-50 space-y-2 md:space-y-3 max-h-screen overflow-hidden w-full max-w-xs md:max-w-md lg:max-w-lg xl:max-w-xl pointer-events-none">
+        <AnimatePresence>
           {toasts.map((toast) => (
             <SimpleToast
               key={toast.id}
@@ -119,4 +119,4 @@ export function useToastGlobal() {
       remove: (id: string) => console.log('Remove toast:', id),
     };
   }
-} 
+}

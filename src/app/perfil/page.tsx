@@ -782,7 +782,11 @@ Esta ação não pode ser desfeita. Apenas festas em rascunho ou canceladas pode
 const ConfiguracoesTab = () => {
   const [loading, setLoading] = useState(true);
   const [activeForm, setActiveForm] = useState<'personal' | 'address' | 'password' | null>(null);
-  const { user } = useAuth();
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
+  const router = useRouter();
 
   useEffect(() => {
     // Simular carregamento inicial
@@ -792,6 +796,24 @@ const ConfiguracoesTab = () => {
 
     return () => clearTimeout(timer);
   }, []);
+
+  const handleDeleteAccount = async () => {
+    setDeleteLoading(true);
+    try {
+      // Aqui você implementaria a lógica de exclusão da conta
+      // Por enquanto, vamos simular um delay e mostrar uma mensagem
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      toast.success('Conta excluída', 'Sua conta foi excluída com sucesso.');
+      await signOut();
+      router.push('/');
+    } catch (error) {
+      toast.error('Erro ao excluir conta', 'Ocorreu um erro ao excluir sua conta. Tente novamente.');
+    } finally {
+      setDeleteLoading(false);
+      setShowDeleteConfirmation(false);
+    }
+  };
 
   const settingsGroups = [
     {
@@ -937,7 +959,10 @@ const ConfiguracoesTab = () => {
           Ações da Conta
         </h4>
         <div className="space-y-4">
-          <button className="w-full text-left p-4 rounded-xl hover:bg-red-50 transition-colors duration-200">
+          <button 
+            onClick={() => setShowDeleteConfirmation(true)}
+            className="w-full text-left p-4 rounded-xl hover:bg-red-50 transition-colors duration-200"
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-red-600">Excluir Conta</p>
@@ -992,6 +1017,56 @@ const ConfiguracoesTab = () => {
                 {activeForm === 'password' && (
                   <PasswordForm onClose={() => setActiveForm(null)} />
                 )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Account Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteConfirmation && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 backdrop-blur-md bg-black/50 z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-2xl max-w-md w-full p-6"
+            >
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+                  <MdDelete className="text-red-600 text-2xl" />
+                </div>
+                
+                <h3 className="text-xl font-bold text-gray-900">
+                  Excluir Conta
+                </h3>
+                
+                <p className="text-gray-600">
+                  Tem certeza de que deseja excluir sua conta? Esta ação não pode ser desfeita e todos os seus dados serão permanentemente removidos.
+                </p>
+                
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={() => setShowDeleteConfirmation(false)}
+                    disabled={deleteLoading}
+                    className="flex-1 px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors disabled:opacity-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleDeleteAccount}
+                    disabled={deleteLoading}
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
+                  >
+                    {deleteLoading ? 'Excluindo...' : 'Excluir Conta'}
+                  </button>
+                </div>
               </div>
             </motion.div>
           </motion.div>

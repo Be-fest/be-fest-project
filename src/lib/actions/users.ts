@@ -23,6 +23,16 @@ interface UpdatePasswordData {
 
 export async function updateUserProfileAction(data: UpdateProfileData) {
   try {
+    // Obter o usuário autenticado
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return {
+        success: false,
+        error: 'Usuário não autenticado'
+      };
+    }
+
     const { error } = await supabase
       .from('users')
       .update({
@@ -31,7 +41,7 @@ export async function updateUserProfileAction(data: UpdateProfileData) {
         whatsapp_number: data.whatsapp_number,
         updated_at: new Date().toISOString()
       })
-      .eq('id', supabase.auth.getUser().then(({ data }) => data.user?.id));
+      .eq('id', user.id);
 
     if (error) throw error;
 
@@ -47,6 +57,16 @@ export async function updateUserProfileAction(data: UpdateProfileData) {
 
 export async function updateUserAddressAction(data: UpdateAddressData) {
   try {
+    // Obter o usuário autenticado
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return {
+        success: false,
+        error: 'Usuário não autenticado'
+      };
+    }
+
     const updateData: any = {
       city: data.city,
       state: data.state,
@@ -73,7 +93,7 @@ export async function updateUserAddressAction(data: UpdateAddressData) {
     const { error } = await supabase
       .from('users')
       .update(updateData)
-      .eq('id', supabase.auth.getUser().then(({ data }) => data.user?.id));
+      .eq('id', user.id);
 
     if (error) throw error;
 

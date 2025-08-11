@@ -153,8 +153,7 @@ export function SimpleToast({
       animate={{ opacity: 1, x: 0, scale: 1 }}
       exit={{ opacity: 0, x: 400, scale: 0.9 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className="pointer-events-auto"
-      style={{ width: '600px', minWidth: '600px' }}
+      className="pointer-events-auto w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl"
     >
       <div className={`
         ${colors.bg} 
@@ -173,32 +172,32 @@ export function SimpleToast({
         </div>
         
         {/* Conteúdo do toast */}
-        <div className="flex items-start p-5 pt-6">
+        <div className="flex items-start p-3 pt-4 sm:p-4 sm:pt-5 md:p-5 md:pt-6">
           <div className="flex-shrink-0">
-            <Icon className={`h-6 w-6 ${colors.icon}`} />
+            <Icon className={`h-5 w-5 sm:h-6 sm:w-6 ${colors.icon}`} />
           </div>
           
-          <div className="ml-4 flex-1">
-            <p className={`text-base font-semibold ${colors.title} leading-tight`}>
+          <div className="ml-3 sm:ml-4 flex-1 min-w-0">
+            <p className={`text-sm sm:text-base font-semibold ${colors.title} leading-tight`}>
               {title}
             </p>
             {message && (
-              <p className={`mt-2 text-sm ${colors.message} leading-relaxed`}>
+              <p className={`mt-1 sm:mt-2 text-xs sm:text-sm ${colors.message} leading-relaxed`}>
                 {message}
               </p>
             )}
           </div>
           
-          <div className="ml-4 flex-shrink-0">
+          <div className="ml-3 sm:ml-4 flex-shrink-0">
             <button
-              className="inline-flex items-center justify-center w-8 h-8 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-200"
+              className="inline-flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-200"
               onClick={handleClose}
             >
-              <MdClose className="h-5 w-5" />
+              <MdClose className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
           </div>
         </div>
       </div>
     </motion.div>
   );
-} 
+}
