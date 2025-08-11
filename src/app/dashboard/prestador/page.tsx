@@ -143,7 +143,7 @@ export default function ProviderDashboard() {
               </div>
 
               {/* Stats Cards - Static Structure with Dynamic Values */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-6 mb-8">
                 {[
                   { title: 'Total de Solicitações', icon: MdBusinessCenter },
                   { title: 'Solicitações Pendentes', icon: MdPendingActions },
@@ -151,17 +151,37 @@ export default function ProviderDashboard() {
                   { title: 'Receita Total', icon: MdAttachMoney },
                   { title: 'Eventos Concluídos', icon: MdCheckCircle }
                 ].map((stat, i) => (
-                  <div key={i} className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
-                    <div className="flex items-center justify-between mb-3 sm:mb-4">
-                      <stat.icon className="text-purple-600 text-lg sm:text-xl" />
-                      <span className="text-xs text-gray-500">+0%</span>
+                  <div key={i} className="bg-white rounded-2xl p-3 sm:p-4 lg:p-6 shadow-sm">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 sm:mb-3 lg:mb-4">
+                      <stat.icon className="text-purple-600 text-base sm:text-lg lg:text-xl mb-1 sm:mb-0" />
+                      <span className="text-xs text-gray-500 hidden sm:inline">+0%</span>
                     </div>
-                    <div className="space-y-2">
-                      <div className="h-5 sm:h-6 w-12 sm:w-16 bg-gray-300 rounded animate-pulse"></div>
-                      <p className="text-xs sm:text-sm text-gray-600">{stat.title}</p>
+                    <div className="space-y-1 sm:space-y-2">
+                      <div className="h-4 sm:h-5 lg:h-6 w-10 sm:w-12 lg:w-16 bg-gray-300 rounded animate-pulse"></div>
+                      <p className="text-xs sm:text-sm text-gray-600 leading-tight">{stat.title}</p>
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* Recent Activity Skeleton */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+                <div className="flex items-center justify-between mb-4 sm:mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900">Atividade Recente</h3>
+                  <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+                <div className="space-y-3 sm:space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-center gap-3 sm:gap-4 p-3 bg-gray-50 rounded-xl">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-300 rounded-lg animate-pulse flex-shrink-0"></div>
+                      <div className="flex-1 space-y-1 sm:space-y-2">
+                        <div className="h-3 sm:h-4 w-3/4 bg-gray-300 rounded animate-pulse"></div>
+                        <div className="h-2 sm:h-3 w-1/2 bg-gray-200 rounded animate-pulse"></div>
+                      </div>
+                      <div className="h-6 w-16 bg-gray-300 rounded-full animate-pulse"></div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -237,11 +257,11 @@ export default function ProviderDashboard() {
     return (
       <AuthGuard requiredRole="provider">
         <ProviderLayout>
-          <div className="min-h-screen bg-gray-50 p-6">
+          <div className="min-h-screen bg-gray-50 p-3 sm:p-6">
             <div className="max-w-7xl mx-auto">
               {/* Navigation Tabs - Static Structure */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 mb-8">
-                <div className="flex items-center gap-2">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 mb-6 sm:mb-8">
+                <div className="flex flex-wrap items-center gap-2 overflow-x-auto">
                   {[
                     { label: 'Visão Geral', icon: MdDashboard },
                     { label: 'Solicitações', icon: MdPendingActions },
@@ -250,24 +270,24 @@ export default function ProviderDashboard() {
                     { label: 'Cancelados', icon: MdCancel },
                     { label: 'Configurações', icon: MdSettings }
                   ].map((tab, i) => (
-                    <div key={i} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100">
-                      <tab.icon className="text-gray-400" size={18} />
-                      <span className="text-gray-400 font-medium">{tab.label}</span>
+                    <div key={i} className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-xl bg-gray-100">
+                      <tab.icon className="text-gray-400 text-sm sm:text-base" size={18} />
+                      <span className="text-gray-400 font-medium text-xs sm:text-sm whitespace-nowrap">{tab.label}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
               {/* Welcome Banner - Static Structure with Dynamic Content */}
-              <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-6 mb-8 text-white">
-                <h1 className="text-2xl font-bold mb-2">
-                  Bem-vindo, <span className="animate-pulse bg-white/20 rounded px-2 py-1 inline-block w-32 h-6"></span>!
+              <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 text-white">
+                <h1 className="text-lg sm:text-2xl font-bold mb-2">
+                  Bem-vindo, <span className="animate-pulse bg-white/20 rounded px-2 py-1 inline-block w-24 sm:w-32 h-5 sm:h-6"></span>!
                 </h1>
-                <p className="text-purple-100">Gerencie seus serviços e acompanhe suas solicitações</p>
+                <p className="text-purple-100 text-sm sm:text-base">Gerencie seus serviços e acompanhe suas solicitações</p>
               </div>
 
               {/* Stats Cards - Static Structure with Dynamic Values */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-6 mb-8">
                 {[
                   { title: 'Total de Solicitações', icon: MdBusinessCenter },
                   { title: 'Solicitações Pendentes', icon: MdPendingActions },
@@ -275,21 +295,21 @@ export default function ProviderDashboard() {
                   { title: 'Receita Total', icon: MdAttachMoney },
                   { title: 'Eventos Concluídos', icon: MdCheckCircle }
                 ].map((stat, i) => (
-                  <div key={i} className="bg-white rounded-2xl p-6 shadow-sm">
-                    <div className="flex items-center justify-between mb-4">
-                      <stat.icon className="text-purple-600" size={24} />
-                      <span className="text-xs text-gray-500">+0%</span>
+                  <div key={i} className="bg-white rounded-2xl p-3 sm:p-4 lg:p-6 shadow-sm">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 sm:mb-3 lg:mb-4">
+                      <stat.icon className="text-purple-600 text-base sm:text-lg lg:text-xl mb-1 sm:mb-0" size={24} />
+                      <span className="text-xs text-gray-500 hidden sm:inline">+0%</span>
                     </div>
-                    <div className="space-y-2">
-                      <div className="h-6 w-16 bg-gray-300 rounded animate-pulse"></div>
-                      <p className="text-sm text-gray-600">{stat.title}</p>
+                    <div className="space-y-1 sm:space-y-2">
+                      <div className="h-4 sm:h-5 lg:h-6 w-10 sm:w-12 lg:w-16 bg-gray-300 rounded animate-pulse"></div>
+                      <p className="text-xs sm:text-sm text-gray-600 leading-tight">{stat.title}</p>
                     </div>
                   </div>
                 ))}
               </div>
 
               {/* Revenue Stats - Static Structure with Dynamic Values */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6 mb-8">
                 {[
                   { title: 'Receita Este Mês', icon: MdTrendingUp },
                   { title: 'Receita Total', icon: MdAttachMoney }
@@ -315,12 +335,12 @@ export default function ProviderDashboard() {
                     Ver todas
                   </button>
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {[1, 2, 3].map((i) => (
                     <div key={i} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-xl">
                       <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
                         <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-300 rounded-lg animate-pulse flex-shrink-0"></div>
-                        <div className="space-y-2 min-w-0 flex-1">
+                        <div className="space-y-1 sm:space-y-2 min-w-0 flex-1">
                           <div className="h-3 sm:h-4 w-24 sm:w-32 bg-gray-300 rounded animate-pulse"></div>
                           <div className="h-2 sm:h-3 w-32 sm:w-48 bg-gray-200 rounded animate-pulse"></div>
                         </div>
