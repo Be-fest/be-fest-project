@@ -323,7 +323,7 @@ function AdminHeader({ user, userType }: { user: any; userType: 'client' | 'prov
         </nav>
 
         {/* Desktop Auth Buttons */}
-        <div className="hidden md:flex items-center space-x-4">
+        <div className="hidden md:flex items-center space-x-2 lg:space-x-4">
           <UserDropdown user={user} userType={userType} />
         </div>
 
@@ -345,7 +345,7 @@ function AdminHeader({ user, userType }: { user: any; userType: 'client' | 'prov
         animate={{ opacity: isMenuOpen ? 1 : 0, height: isMenuOpen ? 'auto' : 0 }}
         transition={{ duration: 0.3 }}
       >
-        <nav className="px-6 py-4 space-y-4">
+        <nav className="px-3 md:px-6 py-3 md:py-4 space-y-3 md:space-y-4">
           <Link 
             href="/admin"
             className="flex items-center gap-2 text-gray-600 hover:text-[#FF0080] transition-colors py-2"
@@ -604,13 +604,13 @@ function ProviderHeader({ user, userType, loading }: { user: any; userType: 'cli
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <header className="w-full bg-white shadow-sm py-4 px-6 fixed top-0 z-50">
+    <header className="w-full bg-white shadow-sm py-3 md:py-4 px-3 md:px-6 fixed top-0 z-50">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <Link href="/" className="flex items-center">
           <img 
             src="/be-fest-provider-logo.png" 
             alt="Be Fest Provider Logo" 
-            className="h-10 w-auto"
+            className="h-8 md:h-10 w-auto"
           />
         </Link>
         
@@ -710,7 +710,7 @@ function ProviderHeader({ user, userType, loading }: { user: any; userType: 'cli
               </Link>
               <Link 
                 href="/auth/register"
-                className="bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-4 py-2 rounded-lg transition-colors font-poppins"
+                className="bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-3 lg:px-4 py-2 rounded-lg transition-colors font-poppins text-sm lg:text-base"
               >
                 Cadastrar
               </Link>

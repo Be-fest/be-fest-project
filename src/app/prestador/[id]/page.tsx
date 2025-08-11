@@ -32,14 +32,14 @@ const ProviderSkeleton = () => (
         </svg>
       </div>
       
-      <div className="absolute bottom-4 md:bottom-6 left-4 md:left-6 flex flex-col md:flex-row items-start md:items-end gap-4 md:gap-6">
-        <div className="w-16 h-16 md:w-24 md:h-24 rounded-2xl bg-gray-300 animate-pulse shadow-xl border-2 border-white"></div>
-        <div className="text-gray-800">
-          <div className="h-8 w-48 bg-gray-300 rounded animate-pulse mb-2"></div>
-          <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 text-sm md:text-base">
-            <div className="flex items-center gap-1 text-gray-600 bg-white/80 px-3 py-1 rounded-full">
-              <MdLocationOn className="text-pink-500" />
-              <div className="h-4 w-24 bg-gray-300 rounded animate-pulse"></div>
+      <div className="absolute bottom-4 md:bottom-6 left-4 md:left-6 right-4 md:right-auto flex flex-col md:flex-row items-start md:items-end gap-3 md:gap-6">
+        <div className="w-16 h-16 md:w-24 md:h-24 rounded-2xl bg-gray-300 animate-pulse shadow-xl border-2 border-white flex-shrink-0"></div>
+        <div className="text-gray-800 min-w-0 flex-1">
+          <div className="h-6 md:h-8 w-full max-w-48 bg-gray-300 rounded animate-pulse mb-2"></div>
+          <div className="flex flex-col gap-2 text-sm md:text-base">
+            <div className="flex items-center gap-1 text-gray-600 bg-white/80 px-2 md:px-3 py-1 rounded-full w-fit">
+              <MdLocationOn className="text-pink-500 flex-shrink-0" />
+              <div className="h-4 w-20 md:w-24 bg-gray-300 rounded animate-pulse"></div>
             </div>
           </div>
         </div>
@@ -47,9 +47,9 @@ const ProviderSkeleton = () => (
     </div>
 
     {/* Provider Content */}
-    <div className="p-4 md:p-6 lg:p-8">
-      <div className="mb-6 md:mb-8">
-        <h2 className="text-xl md:text-2xl font-bold text-[#520029] mb-4">Sobre</h2>
+    <div className="p-3 md:p-6 lg:p-8">
+      <div className="mb-4 md:mb-8">
+        <h2 className="text-lg md:text-2xl font-bold text-[#520029] mb-3 md:mb-4">Sobre</h2>
         <div className="space-y-2">
           <div className="h-4 w-full bg-gray-200 rounded animate-pulse"></div>
           <div className="h-4 w-3/4 bg-gray-200 rounded animate-pulse"></div>
@@ -57,25 +57,25 @@ const ProviderSkeleton = () => (
       </div>
 
       <div>
-        <h2 className="text-xl md:text-2xl font-bold text-[#520029] mb-4">Serviços</h2>
+        <h2 className="text-lg md:text-2xl font-bold text-[#520029] mb-3 md:mb-4">Serviços</h2>
         <div className="space-y-8">
           {[1, 2].map((i) => (
             <div key={i} className="bg-gray-50 rounded-xl overflow-hidden">
-              <div className="h-16 bg-gray-300 animate-pulse"></div>
-              <div className="p-6 space-y-4">
+              <div className="h-12 md:h-16 bg-gray-300 animate-pulse"></div>
+              <div className="p-3 md:p-6 space-y-3 md:space-y-4">
                 {[1, 2, 3].map((j) => (
-                  <div key={j} className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg">
-                    <div className="w-20 h-20 rounded-lg bg-gray-300 animate-pulse"></div>
-                    <div className="flex-1 space-y-2">
-                      <div className="h-5 w-32 bg-gray-300 rounded animate-pulse"></div>
-                      <div className="h-4 w-48 bg-gray-200 rounded animate-pulse"></div>
-                      <div className="flex items-center justify-between">
-                        <div className="h-6 w-20 bg-gray-300 rounded animate-pulse"></div>
-                        <div className="w-24 h-8 bg-blue-200 rounded animate-pulse"></div>
+                    <div key={j} className="flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-4 p-3 md:p-4 border border-gray-200 rounded-lg">
+                      <div className="w-full md:w-20 h-32 md:h-20 rounded-lg bg-gray-300 animate-pulse flex-shrink-0"></div>
+                      <div className="flex-1 w-full space-y-2">
+                        <div className="h-4 md:h-5 w-32 bg-gray-300 rounded animate-pulse"></div>
+                        <div className="h-3 md:h-4 w-full max-w-48 bg-gray-200 rounded animate-pulse"></div>
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                          <div className="h-5 md:h-6 w-20 bg-gray-300 rounded animate-pulse"></div>
+                          <div className="w-full md:w-24 h-8 bg-blue-200 rounded animate-pulse"></div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </div>
           ))}
@@ -282,20 +282,20 @@ export default function ProviderPage({ params }: PageProps) {
                 </svg>
               </div>
               
-              <div className="absolute bottom-4 md:bottom-6 left-4 md:left-6 flex flex-col md:flex-row items-start md:items-end gap-4 md:gap-6">
-                <div className="w-16 h-16 md:w-24 md:h-24 rounded-2xl bg-white p-3 shadow-xl border-2 border-white">
+              <div className="absolute bottom-4 md:bottom-6 left-4 md:left-6 right-4 md:right-auto flex flex-col md:flex-row items-start md:items-end gap-3 md:gap-6">
+                <div className="w-16 h-16 md:w-24 md:h-24 rounded-2xl bg-white p-2 md:p-3 shadow-xl border-2 border-white flex-shrink-0">
                   <img
                     src={providerData.image}
                     alt={`${providerData.name} logo`}
                     className="w-full h-full object-cover rounded-xl"
                   />
                 </div>
-                <div className="text-gray-800">
-                  <h1 className="text-2xl md:text-3xl font-bold mb-2 text-gray-900">{providerData.name}</h1>
-                  <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 text-sm md:text-base">
-                    <div className="flex items-center gap-1 text-gray-600 bg-white/80 px-3 py-1 rounded-full">
-                      <MdLocationOn className="text-pink-500" />
-                      <span>{providerData.location.neighborhood}, {providerData.location.city}</span>
+                <div className="text-gray-800 min-w-0 flex-1">
+                  <h1 className="text-xl md:text-3xl font-bold mb-2 text-gray-900 break-words">{providerData.name}</h1>
+                  <div className="flex flex-col gap-2 text-sm md:text-base">
+                    <div className="flex items-center gap-1 text-gray-600 bg-white/80 px-2 md:px-3 py-1 rounded-full w-fit">
+                      <MdLocationOn className="text-pink-500 flex-shrink-0" />
+                      <span className="truncate">{providerData.location.neighborhood}, {providerData.location.city}</span>
                     </div>
                   </div>
                 </div>
@@ -303,14 +303,14 @@ export default function ProviderPage({ params }: PageProps) {
             </div>
 
             {/* Provider Content */}
-            <div className="p-4 md:p-6 lg:p-8">
-              <div className="mb-6 md:mb-8">
-                <h2 className="text-xl md:text-2xl font-bold text-[#520029] mb-4">Sobre</h2>
-                <p className="text-gray-600 text-sm md:text-base">{providerData.description}</p>
+            <div className="p-3 md:p-6 lg:p-8">
+              <div className="mb-4 md:mb-8">
+                <h2 className="text-lg md:text-2xl font-bold text-[#520029] mb-3 md:mb-4">Sobre</h2>
+                <p className="text-gray-600 text-sm md:text-base leading-relaxed">{providerData.description}</p>
               </div>
 
               <div>
-                <h2 className="text-xl md:text-2xl font-bold text-[#520029] mb-4">Serviços</h2>
+                <h2 className="text-lg md:text-2xl font-bold text-[#520029] mb-3 md:mb-4">Serviços</h2>
                 {providerData.services && providerData.services.length > 0 ? (
                   <ProviderServices 
                     services={providerData.services} 

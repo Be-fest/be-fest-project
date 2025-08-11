@@ -119,22 +119,22 @@ export function ProviderServices({ services, providerId }: ProviderServicesProps
           className="bg-white rounded-xl shadow-sm overflow-hidden"
         >
           {/* Category Header */}
-          <div className="bg-gradient-to-r from-[#FF0080] to-[#CD0067] px-6 py-4">
-            <h2 className="text-xl font-bold text-white">{category.category}</h2>
+          <div className="bg-gradient-to-r from-[#FF0080] to-[#CD0067] px-4 md:px-6 py-3 md:py-4">
+            <h2 className="text-lg md:text-xl font-bold text-white">{category.category}</h2>
           </div>
 
           {/* Category Items */}
-          <div className="p-6 space-y-4">
+          <div className="p-3 md:p-6 space-y-3 md:space-y-4">
             {category.items.map((item, itemIndex) => (
               <motion.div
                 key={item.id}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5, delay: (categoryIndex * 0.1) + (itemIndex * 0.05) }}
-                className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-[#FF0080] hover:shadow-md transition-all duration-300 group"
+                className="flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-4 p-3 md:p-4 border border-gray-200 rounded-lg hover:border-[#FF0080] hover:shadow-md transition-all duration-300 group"
               >
                 {/* Service Image */}
-                <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                <div className="w-full md:w-20 h-32 md:h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                   <img
                     src={item.image}
                     alt={item.name}
@@ -143,20 +143,20 @@ export function ProviderServices({ services, providerId }: ProviderServicesProps
                 </div>
 
                 {/* Service Info */}
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-[#520029] mb-1">
+                <div className="flex-1 w-full">
+                  <h3 className="text-base md:text-lg font-semibold text-[#520029] mb-2">
                     {item.name}
                   </h3>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xl font-bold text-[#FF0080]">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <span className="text-lg md:text-xl font-bold text-[#FF0080]">
                       A partir de R$ {(item.price || 0).toFixed(2)}
                     </span>
-                    <Link href={`/servicos/${item.id}`}>
+                    <Link href={`/servicos/${item.id}`} className="w-full md:w-auto">
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => handleViewService(item, category.category)}
-                        className="bg-[#FF0080] text-white px-4 py-2 rounded-lg hover:bg-[#E6006F] transition-colors duration-300 group-hover:shadow-lg flex items-center gap-2 text-sm font-medium"
+                        className="w-full md:w-auto bg-[#FF0080] text-white px-4 py-2 rounded-lg hover:bg-[#E6006F] transition-colors duration-300 group-hover:shadow-lg flex items-center justify-center gap-2 text-sm font-medium"
                       >
                         <MdVisibility className="text-lg" />
                         Ver Serviço
@@ -175,25 +175,27 @@ export function ProviderServices({ services, providerId }: ProviderServicesProps
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.5 }}
-        className="bg-gradient-to-r from-[#520029] to-[#FF0080] rounded-xl p-8 text-center text-white"
+        className="bg-gradient-to-r from-[#520029] to-[#FF0080] rounded-xl p-4 md:p-8 text-center text-white"
       >
       
-        <p className="text-pink-100 mb-6 max-w-2xl mx-auto">
+        <p className="text-pink-100 mb-4 md:mb-6 max-w-2xl mx-auto text-sm md:text-base">
           Compartilhe este prestador e ajude outros a encontrarem serviços incríveis para seus eventos!
         </p>        
-        <div className="flex flex-col md:flex-row gap-4 justify-center">
+        <div className="flex flex-col gap-3 md:gap-4 justify-center">
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => toast.info('Redirecionando...', 'Você será redirecionado para criar sua festa.', 2000)}
-            className="bg-white text-[#FF0080] px-8 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors duration-300"
+            className="w-full md:w-auto bg-white text-[#FF0080] px-6 md:px-8 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors duration-300"
           >
             New Fest
           </motion.button>
-          <ShareButton 
-            title="Prestador New Fest"
-            description="Interessado nos nossos serviços? Compartilhe e personalize seu evento dos sonhos!"
-          />
+          <div className="w-full md:w-auto">
+            <ShareButton 
+              title="Prestador New Fest"
+              description="Interessado nos nossos serviços? Compartilhe e personalize seu evento dos sonhos!"
+            />
+          </div>
         </div>
       </motion.div>
     </div>

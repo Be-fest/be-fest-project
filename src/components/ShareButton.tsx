@@ -71,10 +71,11 @@ export function ShareButton({
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={handleNativeShare}
-        className={`flex items-center gap-2 border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-[#FF0080] transition-all duration-300 ${className}`}
+        className={`flex items-center gap-1 md:gap-2 border-2 border-white text-white px-4 md:px-8 py-2 md:py-3 rounded-lg font-semibold hover:bg-white hover:text-[#FF0080] transition-all duration-300 text-sm md:text-base ${className}`}
       >
-        <MdShare className="text-xl" />
-        Compartilhar
+        <MdShare className="text-lg md:text-xl" />
+        <span className="hidden sm:inline">Compartilhar</span>
+        <span className="sm:hidden">Share</span>
       </motion.button>
 
       {isOpen && (
@@ -83,47 +84,47 @@ export function ShareButton({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 p-4 min-w-[280px] z-50"
+            className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 p-3 md:p-4 min-w-[250px] md:min-w-[280px] z-50"
           >
-            <div className="space-y-3">
-              <h4 className="font-semibold text-[#520029] mb-3">Compartilhar prestador</h4>
+            <div className="space-y-2 md:space-y-3">
+              <h4 className="font-semibold text-[#520029] mb-2 md:mb-3 text-sm md:text-base">Compartilhar prestador</h4>
               
               <button
                 onClick={copyToClipboard}
-                className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                className="w-full flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
               >
                 {copied ? (
-                  <MdCheck className="text-green-500 text-xl" />
+                  <MdCheck className="text-green-500 text-lg md:text-xl" />
                 ) : (
-                  <MdContentCopy className="text-gray-600 text-xl" />
+                  <MdContentCopy className="text-gray-600 text-lg md:text-xl" />
                 )}
-                <span className="text-sm text-gray-700">
+                <span className="text-xs md:text-sm text-gray-700">
                   {copied ? 'Link copiado!' : 'Copiar link'}
                 </span>
               </button>
 
               <button
                 onClick={shareToWhatsApp}
-                className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                className="w-full flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
               >
-                <FaWhatsapp className="text-green-500 text-xl" />
-                <span className="text-sm text-gray-700">WhatsApp</span>
+                <FaWhatsapp className="text-green-500 text-lg md:text-xl" />
+                <span className="text-xs md:text-sm text-gray-700">WhatsApp</span>
               </button>
 
               <button
                 onClick={shareToFacebook}
-                className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                className="w-full flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
               >
-                <FaFacebook className="text-blue-600 text-xl" />
-                <span className="text-sm text-gray-700">Facebook</span>
+                <FaFacebook className="text-blue-600 text-lg md:text-xl" />
+                <span className="text-xs md:text-sm text-gray-700">Facebook</span>
               </button>
 
               <button
                 onClick={shareToTwitter}
-                className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                className="w-full flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
               >
-                <FaTwitter className="text-blue-400 text-xl" />
-                <span className="text-sm text-gray-700">Twitter</span>
+                <FaTwitter className="text-blue-400 text-lg md:text-xl" />
+                <span className="text-xs md:text-sm text-gray-700">Twitter</span>
               </button>
             </div>
           </motion.div>
