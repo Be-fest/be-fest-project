@@ -1,6 +1,6 @@
 'use client';
 
-import { formatPrice } from '@/utils/pricingUtils';
+import { formatPrice, calculatePriceWithFee } from '@/utils/pricingUtils';
 import { MdPeople, MdAttachMoney } from 'react-icons/md';
 import { ServiceGuestTier } from '@/types/database';
 
@@ -43,7 +43,7 @@ export default function PriceTable({ guestTiers, className = '' }: PriceTablePro
           Tabela de Preços
         </h3>
         <p className="text-white/80 text-xs md:text-sm mt-1">
-          Preços por convidado baseados na quantidade
+          Preços por convidado baseados na quantidade (inclui taxa de 10%)
         </p>
       </div>
       
@@ -70,7 +70,9 @@ export default function PriceTable({ guestTiers, className = '' }: PriceTablePro
                 ? `${tier.min_total_guests} - ${tier.max_total_guests}`
                 : `${tier.min_total_guests}+`;
               
-              const minTotalPrice = tier.min_total_guests * tier.base_price_per_adult;
+              // Aplicar taxa de 10% nos preços
+              const priceWithFee = calculatePriceWithFee(tier.base_price_per_adult);
+              const minTotalPriceWithFee = tier.min_total_guests * priceWithFee;
               
               return (
                 <tr key={tier.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
@@ -85,12 +87,12 @@ export default function PriceTable({ guestTiers, className = '' }: PriceTablePro
                   </td>
                   <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap">
                     <span className="text-sm md:text-lg font-semibold text-[#FF0080]">
-                      {formatPrice(tier.base_price_per_adult)}
+                      {formatPrice(priceWithFee)}
                     </span>
                   </td>
                   <td className="px-2 md:px-6 py-2 md:py-4 whitespace-nowrap hidden sm:table-cell">
                     <span className="text-xs md:text-sm text-gray-600">
-                      A partir de {formatPrice(minTotalPrice)}
+                      A partir de {formatPrice(minTotalPriceWithFee)}
                     </span>
                   </td>
                 </tr>
@@ -100,6 +102,12 @@ export default function PriceTable({ guestTiers, className = '' }: PriceTablePro
         </table>
       </div>
       
+      {/* Nota explicativa sobre a taxa */}
+      <div className="px-3 md:px-6 py-3 bg-gray-50 border-t border-gray-200">
+        <p className="text-xs text-gray-600 text-center">
+          * Os preços exibidos já incluem a taxa de serviço de 10%
+        </p>
+      </div>
 
     </div>
   );

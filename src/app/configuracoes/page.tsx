@@ -16,6 +16,7 @@ import {
 } from 'react-icons/md';
 import { ClientLayout } from '@/components/client/ClientLayout';
 import { ClientAuthGuard } from '@/components/ClientAuthGuard';
+import { ClientOnlyGuard } from '@/components/guards/ClientOnlyGuard';
 import { PersonalInfoForm } from '@/components/profile/PersonalInfoForm';
 import { AddressForm } from '@/components/profile/AddressForm';
 import { PasswordForm } from '@/components/profile/PasswordForm';
@@ -101,8 +102,9 @@ export default function ConfiguracoesPage() {
   ];
 
   return (
-    <ClientAuthGuard requiredRole="client">
-      <ClientLayout>
+    <ClientOnlyGuard>
+      <ClientAuthGuard requiredRole="client">
+        <ClientLayout>
         <div className="space-y-8">
           {/* Header */}
           <div className="text-center space-y-4">
@@ -187,7 +189,8 @@ export default function ConfiguracoesPage() {
         >
           <PasswordForm onClose={handleCloseModal} />
         </BaseModal>
-      </ClientLayout>
-    </ClientAuthGuard>
+        </ClientLayout>
+      </ClientAuthGuard>
+    </ClientOnlyGuard>
   );
-} 
+}

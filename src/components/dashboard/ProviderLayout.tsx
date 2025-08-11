@@ -82,55 +82,56 @@ export function ProviderLayout({ children }: ProviderLayoutProps) {
     <div className="min-h-screen bg-gray-50">
       {/* Top Navigation */}
       <nav className="bg-white shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Link href="/dashboard/prestador">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center min-w-0 flex-1">
+              <Link href="/dashboard/prestador" className="flex items-center flex-shrink-0">
                 <ProviderLogo 
-                  width={40} 
-                  height={40} 
+                  width={32} 
+                  height={32} 
+                  className="sm:w-10 sm:h-10"
                 />
               </Link>
-              <span className="ml-3 text-lg font-semibold text-purple-900">
+              <span className="ml-2 sm:ml-3 text-sm sm:text-lg font-semibold text-purple-900 truncate">
                 Dashboard do Prestador
               </span>
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-4">
+            <div className="hidden md:flex items-center space-x-2 lg:space-x-4 flex-shrink-0">
               <Link 
                 href={userData?.id ? `/prestador/${userData.id}` : "/seja-um-prestador"}
-                className="text-gray-600 hover:text-[#A502CA] transition-colors flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50"
+                className="text-gray-600 hover:text-[#A502CA] transition-colors flex items-center gap-1 lg:gap-2 px-2 lg:px-3 py-2 rounded-lg hover:bg-gray-50"
               >
-                <MdHome />
-                <span className="hidden lg:inline">Ir para site</span>
+                <MdHome className="text-lg" />
+                <span className="hidden lg:inline text-sm">Ir para site</span>
               </Link>
               
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 lg:gap-2 max-w-[120px] lg:max-w-none">
                 {(userData as any)?.profile_image ? (
                   <img
                     src={(userData as any).profile_image}
                     alt="Logo da empresa"
-                    className="w-8 h-8 rounded-full object-cover"
+                    className="w-6 h-6 lg:w-8 lg:h-8 rounded-full object-cover flex-shrink-0"
                   />
                 ) : (
-                  <div className="w-8 h-8 bg-[#A502CA] rounded-full flex items-center justify-center">
-                    <MdPerson className="text-white text-sm" />
+                  <div className="w-6 h-6 lg:w-8 lg:h-8 bg-[#A502CA] rounded-full flex items-center justify-center flex-shrink-0">
+                    <MdPerson className="text-white text-xs lg:text-sm" />
                   </div>
                 )}
-                <span className="text-sm font-medium text-gray-700 max-w-32 truncate">
+                <span className="text-xs lg:text-sm font-medium text-gray-700 truncate min-w-0">
                   {userData?.organization_name || userData?.full_name || 'Prestador'}
                 </span>
               </div>
 
               <button
                 onClick={handleLogoutClick}
-                className="px-3 py-2 text-gray-600 hover:text-red-600 transition-all duration-200 flex items-center gap-2 rounded-lg hover:bg-red-50 border border-transparent hover:border-red-200 relative"
+                className="px-2 lg:px-3 py-2 text-gray-600 hover:text-red-600 transition-all duration-200 flex items-center gap-1 lg:gap-2 rounded-lg hover:bg-red-50 border border-transparent hover:border-red-200 relative flex-shrink-0"
                 disabled={isLoggingOut}
                 title="Sair do dashboard"
               >
                 <MdLogout className="text-lg" />
-                <span className="font-medium hidden lg:inline">Sair</span>
+                <span className="font-medium hidden lg:inline text-sm">Sair</span>
                 {isLoggingOut && (
                   <div className="absolute inset-0 bg-white/80 rounded-lg flex items-center justify-center">
                     <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
@@ -140,12 +141,12 @@ export function ProviderLayout({ children }: ProviderLayoutProps) {
             </div>
 
             {/* Mobile menu button */}
-            <div className="md:hidden flex items-center">
+            <div className="md:hidden flex items-center flex-shrink-0">
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
               >
-                {isMobileMenuOpen ? <MdClose size={24} /> : <MdMenu size={24} />}
+                {isMobileMenuOpen ? <MdClose size={20} /> : <MdMenu size={20} />}
               </button>
             </div>
           </div>
@@ -160,9 +161,28 @@ export function ProviderLayout({ children }: ProviderLayoutProps) {
             className="md:hidden border-t bg-white z-50"
           >
             <div className="px-4 py-3 space-y-2">
+              {/* User Info on Mobile */}
+              <div className="flex items-center gap-3 py-2 px-3 bg-gray-50 rounded-lg mb-3">
+                {(userData as any)?.profile_image ? (
+                  <img
+                    src={(userData as any).profile_image}
+                    alt="Logo da empresa"
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-8 h-8 bg-[#A502CA] rounded-full flex items-center justify-center">
+                    <MdPerson className="text-white text-sm" />
+                  </div>
+                )}
+                <span className="text-sm font-medium text-gray-700 truncate">
+                  {userData?.organization_name || userData?.full_name || 'Prestador'}
+                </span>
+              </div>
+              
               <Link 
                 href={userData?.id ? `/prestador/${userData.id}` : "/seja-um-prestador"}
                 className="block text-gray-600 hover:text-[#A502CA] transition-colors py-2 px-3 rounded-lg hover:bg-gray-50"
+                onClick={() => setIsMobileMenuOpen(false)}
               >
                 <div className="flex items-center gap-2">
                   <MdHome className="text-lg" />

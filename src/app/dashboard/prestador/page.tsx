@@ -115,31 +115,31 @@ export default function ProviderDashboard() {
     return (
       <AuthGuard requiredRole="provider">
         <ProviderLayout>
-          <div className="min-h-screen bg-gray-50 p-6">
+          <div className="min-h-screen bg-gray-50 p-3 sm:p-6">
             <div className="max-w-7xl mx-auto">
               {/* Navigation Tabs - Static Structure */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 mb-8">
-                <div className="flex items-center gap-2">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 mb-6 sm:mb-8">
+                <div className="flex flex-wrap items-center gap-2 overflow-x-auto">
                   {[
                     { label: 'Visão Geral', icon: MdDashboard },
                     { label: 'Solicitações', icon: MdPendingActions },
                     { label: 'Aguardando Pagamento', icon: MdPayment },
                     { label: 'Pagos', icon: MdCheckCircle }
                   ].map((tab, i) => (
-                    <div key={i} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100">
-                      <tab.icon className="text-gray-400" size={18} />
-                      <span className="text-gray-400 font-medium">{tab.label}</span>
+                    <div key={i} className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-xl bg-gray-100">
+                      <tab.icon className="text-gray-400 text-sm sm:text-base" />
+                      <span className="text-gray-400 font-medium text-xs sm:text-sm whitespace-nowrap">{tab.label}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
               {/* Welcome Banner - Static Structure with Dynamic Content */}
-              <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-6 mb-8 text-white">
-                <h1 className="text-2xl font-bold mb-2">
-                  Bem-vindo, <span className="animate-pulse bg-white/20 rounded px-2 py-1 inline-block w-32 h-6"></span>!
+              <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 text-white">
+                <h1 className="text-lg sm:text-2xl font-bold mb-2">
+                  Bem-vindo, <span className="animate-pulse bg-white/20 rounded px-2 py-1 inline-block w-24 sm:w-32 h-5 sm:h-6"></span>!
                 </h1>
-                <p className="text-purple-100">Gerencie seus serviços e acompanhe suas solicitações</p>
+                <p className="text-purple-100 text-sm sm:text-base">Gerencie seus serviços e acompanhe suas solicitações</p>
               </div>
 
               {/* Stats Cards - Static Structure with Dynamic Values */}
@@ -151,14 +151,14 @@ export default function ProviderDashboard() {
                   { title: 'Receita Total', icon: MdAttachMoney },
                   { title: 'Eventos Concluídos', icon: MdCheckCircle }
                 ].map((stat, i) => (
-                  <div key={i} className="bg-white rounded-2xl p-6 shadow-sm">
-                    <div className="flex items-center justify-between mb-4">
-                      <stat.icon className="text-purple-600" size={24} />
+                  <div key={i} className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
+                    <div className="flex items-center justify-between mb-3 sm:mb-4">
+                      <stat.icon className="text-purple-600 text-lg sm:text-xl" />
                       <span className="text-xs text-gray-500">+0%</span>
                     </div>
                     <div className="space-y-2">
-                      <div className="h-6 w-16 bg-gray-300 rounded animate-pulse"></div>
-                      <p className="text-sm text-gray-600">{stat.title}</p>
+                      <div className="h-5 sm:h-6 w-12 sm:w-16 bg-gray-300 rounded animate-pulse"></div>
+                      <p className="text-xs sm:text-sm text-gray-600">{stat.title}</p>
                     </div>
                   </div>
                 ))}
@@ -294,38 +294,38 @@ export default function ProviderDashboard() {
                   { title: 'Receita Este Mês', icon: MdTrendingUp },
                   { title: 'Receita Total', icon: MdAttachMoney }
                 ].map((stat, i) => (
-                  <div key={i} className="bg-white rounded-2xl p-6 shadow-sm">
-                    <div className="flex items-center justify-between mb-4">
-                      <stat.icon className="text-green-600" size={24} />
+                  <div key={i} className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
+                    <div className="flex items-center justify-between mb-3 sm:mb-4">
+                      <stat.icon className="text-green-600 text-lg sm:text-xl" />
                       <span className="text-xs text-gray-500">+0%</span>
                     </div>
                     <div className="space-y-2">
-                      <div className="h-6 w-20 bg-gray-300 rounded animate-pulse"></div>
-                      <p className="text-sm text-gray-600">{stat.title}</p>
+                      <div className="h-5 sm:h-6 w-16 sm:w-20 bg-gray-300 rounded animate-pulse"></div>
+                      <p className="text-xs sm:text-sm text-gray-600">{stat.title}</p>
                     </div>
                   </div>
                 ))}
               </div>
 
               {/* Recent Requests - Static Structure with Dynamic Content */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <div className="flex items-center justify-between mb-6">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
                   <h3 className="text-lg font-semibold text-gray-900">Solicitações Recentes</h3>
-                  <button className="text-sm text-purple-600 hover:text-purple-700 font-medium">
+                  <button className="text-sm text-purple-600 hover:text-purple-700 font-medium self-start">
                     Ver todas
                   </button>
                 </div>
                 <div className="space-y-4">
                   {[1, 2, 3].map((i) => (
-                    <div key={i} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-gray-300 rounded-lg animate-pulse"></div>
-                        <div className="space-y-2">
-                          <div className="h-4 w-32 bg-gray-300 rounded animate-pulse"></div>
-                          <div className="h-3 w-48 bg-gray-200 rounded animate-pulse"></div>
+                    <div key={i} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-xl">
+                      <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-300 rounded-lg animate-pulse flex-shrink-0"></div>
+                        <div className="space-y-2 min-w-0 flex-1">
+                          <div className="h-3 sm:h-4 w-24 sm:w-32 bg-gray-300 rounded animate-pulse"></div>
+                          <div className="h-2 sm:h-3 w-32 sm:w-48 bg-gray-200 rounded animate-pulse"></div>
                         </div>
                       </div>
-                      <div className="h-6 w-20 bg-gray-300 rounded-full animate-pulse"></div>
+                      <div className="h-5 sm:h-6 w-16 sm:w-20 bg-gray-300 rounded-full animate-pulse self-start sm:self-center"></div>
                     </div>
                   ))}
                 </div>
@@ -774,11 +774,11 @@ export default function ProviderDashboard() {
   const renderOverview = () => (
     <div className="space-y-8">
       {/* Welcome Message */}
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-6 text-white">
-        <h2 className="text-2xl font-bold mb-2">
+      <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-4 sm:p-6 text-white">
+        <h2 className="text-lg sm:text-2xl font-bold mb-2 break-words">
           Bem-vindo, {userData?.organization_name || userData?.full_name}!
         </h2>
-        <p className="text-purple-100">
+        <p className="text-purple-100 text-sm sm:text-base">
           Aqui está um resumo da sua atividade como prestador de serviços
         </p>
       </div>
@@ -791,13 +791,13 @@ export default function ProviderDashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: index * 0.1 }}
-            className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100"
+            className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100"
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className={`w-12 h-12 ${stat.bgColor} rounded-xl flex items-center justify-center`}>
-                <stat.icon className={`text-xl ${stat.textColor}`} />
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className={`w-10 h-10 sm:w-12 sm:h-12 ${stat.bgColor} rounded-xl flex items-center justify-center`}>
+                <stat.icon className={`text-lg sm:text-xl ${stat.textColor}`} />
               </div>
-              <div className="flex items-center gap-1 text-sm">
+              <div className="flex items-center gap-1 text-xs sm:text-sm">
                 {stat.changeType === 'increase' && <MdArrowUpward className="text-green-500" />}
                 {stat.changeType === 'decrease' && <MdArrowDownward className="text-red-500" />}
                 <span className={`font-medium ${
@@ -810,8 +810,8 @@ export default function ProviderDashboard() {
               </div>
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-              <p className="text-gray-600 text-sm font-medium">{stat.title}</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{stat.value}</p>
+              <p className="text-gray-600 text-xs sm:text-sm font-medium">{stat.title}</p>
             </div>
           </motion.div>
         ))}
@@ -825,13 +825,13 @@ export default function ProviderDashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: (statsCards.length * 0.1) + (index * 0.1) }}
-            className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100"
+            className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100"
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className={`w-12 h-12 ${stat.bgColor} rounded-xl flex items-center justify-center`}>
-                <stat.icon className={`text-xl ${stat.textColor}`} />
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className={`w-10 h-10 sm:w-12 sm:h-12 ${stat.bgColor} rounded-xl flex items-center justify-center`}>
+                <stat.icon className={`text-lg sm:text-xl ${stat.textColor}`} />
               </div>
-              <div className="flex items-center gap-1 text-sm">
+              <div className="flex items-center gap-1 text-xs sm:text-sm">
                 {stat.changeType === 'increase' && <MdArrowUpward className="text-green-500" />}
                 {stat.changeType === 'decrease' && <MdArrowDownward className="text-red-500" />}
                 <span className={`font-medium ${
@@ -844,20 +844,20 @@ export default function ProviderDashboard() {
               </div>
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-              <p className="text-gray-600 text-sm font-medium">{stat.title}</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{stat.value}</p>
+              <p className="text-gray-600 text-xs sm:text-sm font-medium">{stat.title}</p>
             </div>
           </motion.div>
         ))}
       </div>
 
       {/* Recent Requests */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-gray-900">Solicitações Recentes</h3>
+      <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
+          <h3 className="text-lg sm:text-xl font-bold text-gray-900">Solicitações Recentes</h3>
           <button
             onClick={() => setActiveTab('requests')}
-            className="text-purple-600 hover:text-purple-700 font-medium text-sm"
+            className="text-purple-600 hover:text-purple-700 font-medium text-sm self-start"
           >
             Ver todas
           </button>
@@ -875,28 +875,30 @@ export default function ProviderDashboard() {
               
               return (
                 <div key={event.id} className="bg-gray-50 rounded-xl p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <MdEvent className="text-purple-600" />
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <MdEvent className="text-purple-600 text-sm sm:text-base" />
                       </div>
-                      <div>
-                        <h4 className="font-medium text-gray-900">{event.title}</h4>
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-medium text-gray-900 text-sm sm:text-base truncate">{event.title}</h4>
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
                           <span className="flex items-center gap-1">
                             <MdCalendarToday className="text-xs" />
-                            {formatDate(event.event_date)}
+                            <span className="truncate">{formatDate(event.event_date)}</span>
                           </span>
                           <span className="flex items-center gap-1">
                             <MdLocationOn className="text-xs" />
-                            {event.location}
+                            <span className="truncate max-w-[120px] sm:max-w-none">{event.location}</span>
                           </span>
                           <span className="flex items-center gap-1">
                             <MdPeople className="text-xs" />
-                            {event.full_guests !== undefined && event.half_guests !== undefined && event.free_guests !== undefined
-                              ? formatGuestsInfo(event.full_guests, event.half_guests, event.free_guests)
-                              : `${event.guest_count} convidados`
-                            }
+                            <span className="truncate">
+                              {event.full_guests !== undefined && event.half_guests !== undefined && event.free_guests !== undefined
+                                ? formatGuestsInfo(event.full_guests, event.half_guests, event.free_guests)
+                                : `${event.guest_count} convidados`
+                              }
+                            </span>
                           </span>
                         </div>
                       </div>
@@ -905,10 +907,11 @@ export default function ProviderDashboard() {
                     {hasPendingServices && (
                       <button
                         onClick={() => setActiveTab('requests')}
-                        className="px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white text-xs rounded-lg font-medium transition-colors flex items-center gap-1"
+                        className="px-2 sm:px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white text-xs rounded-lg font-medium transition-colors flex items-center gap-1 whitespace-nowrap self-start"
                       >
                         <MdPendingActions className="text-sm" />
-                        Ação Necessária
+                        <span className="hidden sm:inline">Ação Necessária</span>
+                        <span className="sm:hidden">Ação</span>
                       </button>
                     )}
                   </div>
@@ -1441,11 +1444,11 @@ export default function ProviderDashboard() {
   return (
     <AuthGuard requiredRole="provider">
       <ProviderLayout>
-        <div className="min-h-screen bg-gray-50 p-6">
+        <div className="min-h-screen bg-gray-50 p-3 sm:p-6">
           <div className="max-w-7xl mx-auto">
             {/* Navigation Tabs */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 mb-8">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 overflow-x-auto">
                 {[
                   { id: 'overview', label: 'Visão Geral', icon: MdDashboard },
                   { id: 'requests', label: 'Solicitações', icon: MdPendingActions },
@@ -1457,14 +1460,15 @@ export default function ProviderDashboard() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as any)}
-                    className={`flex items-center gap-2 px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
+                    className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 sm:py-3 rounded-xl font-medium transition-all duration-200 text-xs sm:text-sm whitespace-nowrap ${
                       activeTab === tab.id
                         ? 'bg-purple-100 text-purple-700'
                         : 'text-gray-600 hover:text-purple-600 hover:bg-gray-50'
                     }`}
                   >
-                    <tab.icon className="text-lg" />
-                    {tab.label}
+                    <tab.icon className="text-sm sm:text-lg flex-shrink-0" />
+                    <span className="hidden sm:inline">{tab.label}</span>
+                    <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
                   </button>
                 ))}
               </div>

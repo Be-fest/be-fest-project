@@ -10,6 +10,7 @@ import { getPublicProvidersAction } from '@/lib/actions/services';
 import { ProviderLogo } from '@/components/ui/ProviderLogo';
 import { Header } from '@/components/Header';
 import { ServicesSkeleton } from '@/components/ui';
+import { ClientOnlyGuard } from '@/components/guards/ClientOnlyGuard';
 
 interface ProviderData {
   id: string;
@@ -245,7 +246,7 @@ function PrestadoresContent() {
   }
 
   return (
-    <>
+    <ClientOnlyGuard>
       <Header />
       <div className="min-h-screen bg-[#FFF6FB] pt-20">
         <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-8">
@@ -427,7 +428,7 @@ function PrestadoresContent() {
           </motion.div>
         </div>
       </div>
-    </>
+    </ClientOnlyGuard>
   );
 }
 

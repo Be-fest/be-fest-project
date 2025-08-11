@@ -17,6 +17,7 @@ import { formatMinimumPriceWithFee } from '@/utils/pricingUtils';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { ClientOnlyGuard } from '@/components/guards/ClientOnlyGuard';
 
 // Skeleton Components para a página de serviços
 const SearchSkeleton = () => (
@@ -79,7 +80,9 @@ const ServicesGrid = ({ services, selectedParty }: {
 
   const getServicePrice = (service: ServiceWithProvider) => {
     if (service.guest_tiers && service.guest_tiers.length > 0) {
-      return service.guest_tiers[0].base_price_per_adult || 0;
+      const basePrice = service.guest_tiers[0].base_price_per_adult || 0;
+      // Aplicar taxa de 10% no preço
+      return Math.ceil(basePrice * 1.10);
     }
     return 0; // Se não tem tiers, retorna 0
   };
@@ -388,7 +391,7 @@ export default function ServicesPage() {
   }
 
   return (
-    <>
+    <ClientOnlyGuard>
       <Header />
       <div className="min-h-screen bg-[#FFF6FB] pt-20">
         <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-8">
@@ -595,6 +598,6 @@ export default function ServicesPage() {
           </motion.div>
         </div>
       </div>
-    </>
+    </ClientOnlyGuard>
   );
 }

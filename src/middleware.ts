@@ -1,23 +1,55 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { createServerClient } from '@/lib/supabase/server';
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   
-  // Pular middleware para rotas que não precisam de verificação
+  // Pular middleware apenas para rotas que realmente não precisam de verificação
   if (
     pathname.startsWith('/auth/') ||
     pathname.startsWith('/_next/') ||
     pathname.startsWith('/api/') ||
-    pathname === '/' ||
-    pathname.startsWith('/prestadores') ||
-    pathname.startsWith('/servicos') ||
-    pathname.startsWith('/prestador/') ||
     pathname.startsWith('/super-admin') ||
     pathname === '/favicon.ico' ||
     pathname.includes('.')
   ) {
     return NextResponse.next();
+  }
+
+  // PRIMEIRO: Verificar se é prestador e bloquear rotas de cliente
+  try {
+    const supabase = await createServerClient();
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (user) {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('role, id')
+        .eq('id', user.id)
+        .single();
+
+      if (userData?.role === 'provider') {
+        // Rotas permitidas para prestadores
+        const allowedProviderRoutes = [
+          '/dashboard/prestador',
+          `/prestador/${userData.id}`
+        ];
+
+        // Verificar se a rota atual é permitida
+        const isAllowedRoute = allowedProviderRoutes.some(route => 
+          pathname === route || pathname.startsWith(route + '/')
+        );
+
+        // Se não é uma rota permitida, redirecionar
+        if (!isAllowedRoute) {
+          return NextResponse.redirect(new URL('/dashboard/prestador', request.url));
+        }
+      }
+    }
+  } catch (error) {
+    // Em caso de erro na verificação, continuar com o fluxo normal
   }
 
   // Rotas que precisam de autenticação

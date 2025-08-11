@@ -26,7 +26,7 @@ export function calculateMinPrice(service: any): {
   }
 
   return {
-    price: minTier.base_price_per_adult,
+    price: minTier.base_price_per_adult, // Retorna preço base sem taxa (para cálculos internos)
     minGuests: minTier.min_total_guests,
     maxGuests: minTier.max_total_guests || undefined,
     hasTiers: true
@@ -42,7 +42,7 @@ export function formatPrice(price: number): string {
   }).format(price);
 }
 
-// Função para calcular o preço total para um número específico de convidados
+// Função para calcular o preço total para um número específico de convidados (sem taxa - para cálculos internos)
 export function calculateTotalPrice(service: any, guestCount: number): number {
   if (!service.guest_tiers || service.guest_tiers.length === 0) {
     // Usar lógica antiga se não há faixas
@@ -75,6 +75,12 @@ export function calculateTotalPrice(service: any, guestCount: number): number {
   return applicableTier.base_price_per_adult * guestCount;
 }
 
+// Função para calcular o preço total com taxa de 10% (para exibição)
+export function calculateTotalPriceWithFee(service: any, guestCount: number): number {
+  const basePrice = calculateTotalPrice(service, guestCount);
+  return calculatePriceWithFee(basePrice);
+}
+
 // Função para obter todas as faixas de preço formatadas
 export function getFormattedTiers(service: any): string[] {
   if (!service.guest_tiers || service.guest_tiers.length === 0) {
@@ -88,7 +94,9 @@ export function getFormattedTiers(service: any): string[] {
       ? `${tier.min_total_guests}-${tier.max_total_guests}`
       : `${tier.min_total_guests}+`;
     
-    return `${range} convidados: ${formatPrice(tier.base_price_per_adult)}/adulto`;
+    // Aplicar taxa de 10% no preço exibido
+    const priceWithFee = calculatePriceWithFee(tier.base_price_per_adult);
+    return `${range} convidados: ${formatPrice(priceWithFee)}/adulto`;
   });
 }
 

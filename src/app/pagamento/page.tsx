@@ -8,6 +8,7 @@ import { generatePaymentLink, redirectToPayment, PaymentLinkResponse } from '@/l
 import { getEventServicesAction } from '@/lib/actions/event-services';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
 import { EventServiceWithDetails } from '@/types/database';
+import { ClientOnlyGuard } from '@/components/guards/ClientOnlyGuard';
 
 function PaymentPageContent() {
   const searchParams = useSearchParams();
@@ -261,18 +262,20 @@ function PaymentPageContent() {
 
 export default function PaymentPage() {
   return (
-    <Suspense fallback={
-      <AuthLayout>
-        <div className="relative w-full px-4 sm:px-0">
-          <div className="w-full max-w-sm mx-auto sm:max-w-md">
-            <div className="text-center py-12">
-              <div className="text-lg text-gray-600">Carregando...</div>
+    <ClientOnlyGuard>
+      <Suspense fallback={
+        <AuthLayout>
+          <div className="relative w-full px-4 sm:px-0">
+            <div className="w-full max-w-sm mx-auto sm:max-w-md">
+              <div className="text-center py-12">
+                <div className="text-lg text-gray-600">Carregando...</div>
+              </div>
             </div>
           </div>
-        </div>
-      </AuthLayout>
-    }>
-      <PaymentPageContent />
-    </Suspense>
+        </AuthLayout>
+      }>
+        <PaymentPageContent />
+      </Suspense>
+    </ClientOnlyGuard>
   );
 }

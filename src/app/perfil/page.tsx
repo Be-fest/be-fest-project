@@ -41,6 +41,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { ClientLayout } from '@/components/client/ClientLayout';
 import { ClientAuthGuard } from '@/components/ClientAuthGuard';
+import { ClientOnlyGuard } from '@/components/guards/ClientOnlyGuard';
 import { NewPartyModal } from '@/components/NewPartyModal';
 import { getClientEventsAction, deleteEventAction } from '@/lib/actions/events';
 import { getClientEventServicesAction } from '@/lib/actions/event-services';
@@ -1225,49 +1226,51 @@ function ProfilePageContent() {
 
 export default function ProfilePage() {
   return (
-    <Suspense fallback={
-      <ClientAuthGuard requiredRole="client">
-        <ClientLayout>
-          <div className="space-y-8">
-            {/* Tab Navigation Skeleton */}
-            <div className="border-b border-gray-200 overflow-x-auto">
-              <nav className="flex space-x-4 md:space-x-8 min-w-max">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="py-4 px-2 md:px-1 animate-pulse">
-                    <div className="h-5 w-16 md:w-24 bg-gray-300 rounded"></div>
-                  </div>
-                ))}
-              </nav>
-            </div>
-
-            {/* Tab Content Skeleton */}
-            <div className="mt-8 space-y-8">
-              {/* Header Skeleton */}
-              <div className="text-center space-y-4">
-                <div className="h-8 w-48 bg-gray-300 rounded-lg animate-pulse mx-auto"></div>
-                <div className="h-5 w-96 bg-gray-200 rounded animate-pulse mx-auto"></div>
+    <ClientOnlyGuard>
+      <Suspense fallback={
+        <ClientAuthGuard requiredRole="client">
+          <ClientLayout>
+            <div className="space-y-8">
+              {/* Tab Navigation Skeleton */}
+              <div className="border-b border-gray-200 overflow-x-auto">
+                <nav className="flex space-x-4 md:space-x-8 min-w-max">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="py-4 px-2 md:px-1 animate-pulse">
+                      <div className="h-5 w-16 md:w-24 bg-gray-300 rounded"></div>
+                    </div>
+                  ))}
+                </nav>
               </div>
 
-              {/* Cards Skeleton */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-gray-300 rounded-xl"></div>
-                      <div className="space-y-2">
-                        <div className="h-6 w-16 bg-gray-300 rounded"></div>
-                        <div className="h-4 w-24 bg-gray-200 rounded"></div>
+              {/* Tab Content Skeleton */}
+              <div className="mt-8 space-y-8">
+                {/* Header Skeleton */}
+                <div className="text-center space-y-4">
+                  <div className="h-8 w-48 bg-gray-300 rounded-lg animate-pulse mx-auto"></div>
+                  <div className="h-5 w-96 bg-gray-200 rounded animate-pulse mx-auto"></div>
+                </div>
+
+                {/* Cards Skeleton */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-gray-300 rounded-xl"></div>
+                        <div className="space-y-2">
+                          <div className="h-6 w-16 bg-gray-300 rounded"></div>
+                          <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        </ClientLayout>
-      </ClientAuthGuard>
-    }>
-      <ProfilePageContent />
-    </Suspense>
+          </ClientLayout>
+        </ClientAuthGuard>
+      }>
+        <ProfilePageContent />
+      </Suspense>
+    </ClientOnlyGuard>
   );
 }

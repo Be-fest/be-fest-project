@@ -376,15 +376,16 @@ export function ProviderBudget({ providerId }: ProviderBudgetProps) {
                               </div>
                               {(() => {
                                 const minPriceInfo = calculateMinPrice(service);
+                                const priceWithFee = calculatePriceWithFee(minPriceInfo.price);
                                 return (
                                   <>
                                     <p className="font-semibold text-[#FF0080] mb-4">
-                                      {formatPrice(minPriceInfo.price)} por pessoa
+                                      {formatPrice(priceWithFee)} por pessoa
                                     </p>
                                     
                                     <div className="bg-white p-4 rounded-lg mb-4 border border-gray-200">
                                       <div className="text-sm text-[#6E5963] space-y-2">
-                                        <p><strong>Preço base:</strong> {formatPrice(minPriceInfo.price)}</p>
+                                        <p><strong>Preço final:</strong> {formatPrice(priceWithFee)}</p>
                                         {minPriceInfo.hasTiers && (
                                           <p><strong>Faixa de preço:</strong> A partir de {minPriceInfo.minGuests} convidados</p>
                                         )}

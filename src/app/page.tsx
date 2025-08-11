@@ -9,6 +9,7 @@ import { AboutUs } from '@/components/AboutUs';
 import { FAQ } from '@/components/FAQ';
 import { CTA } from '@/components/CTA';
 import { Footer } from '@/components/Footer';
+import { ClientOnlyGuard } from '@/components/guards/ClientOnlyGuard';
 
 export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>();
@@ -18,24 +19,26 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen">
-      <Hero />
-      <div id="servicos">
-        <ServicesSection />
-      </div>
-      <div id="como-funciona">
-        <HowItWorks />
-      </div>
-      <div id="sobre-nos">
-        <AboutUs />
-      </div>
-      <div id="faq">
-        <FAQ />
-      </div>
-      <CTA />
-      <div id="contatos">
-        <Footer />
-      </div>
-    </main>
+    <ClientOnlyGuard>
+      <main className="min-h-screen">
+        <Hero />
+        <div id="servicos">
+          <ServicesSection />
+        </div>
+        <div id="como-funciona">
+          <HowItWorks />
+        </div>
+        <div id="sobre-nos">
+          <AboutUs />
+        </div>
+        <div id="faq">
+          <FAQ />
+        </div>
+        <CTA />
+        <div id="contatos">
+          <Footer />
+        </div>
+      </main>
+    </ClientOnlyGuard>
   );
 }
