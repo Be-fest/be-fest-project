@@ -353,7 +353,7 @@ export async function addServiceToCartAction(serviceData: {
       service_id: validatedData.service_id,
       provider_id: validatedData.provider_id,
       price_per_guest_at_booking: adjustedPricePerGuest,
-      total_estimated_price: calculatedPrice, // Usar o cálculo correto com taxa de 5% e Math.ceil
+      total_estimated_price: calculatedPrice, // Usar o cálculo correto com taxa de 10% e Math.ceil
       booking_status: 'pending_provider_approval'
     });
 
@@ -365,7 +365,7 @@ export async function addServiceToCartAction(serviceData: {
         service_id: validatedData.service_id,
         provider_id: validatedData.provider_id,
         price_per_guest_at_booking: adjustedPricePerGuest, // Usar o preço ajustado
-        total_estimated_price: calculatedPrice, // Usar o cálculo correto com taxa de 5% e Math.ceil
+        total_estimated_price: calculatedPrice, // Usar o cálculo correto com taxa de 10% e Math.ceil
         booking_status: 'pending_provider_approval' // Usar o enum correto
       })
       .select()

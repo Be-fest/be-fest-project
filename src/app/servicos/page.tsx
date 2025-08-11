@@ -85,7 +85,7 @@ const ServicesGrid = ({ services, selectedParty }: {
   };
 
   const getPriceLabel = (service: ServiceWithProvider) => {
-    // Se tem tiers de preço, usar o preço mínimo com taxa de 5%
+    // Se tem tiers de preço, usar o preço mínimo com taxa de 10%
     if (service.guest_tiers && service.guest_tiers.length > 0) {
       const minPrice = formatMinimumPriceWithFee(service.guest_tiers);
       return `A partir de ${minPrice}`;

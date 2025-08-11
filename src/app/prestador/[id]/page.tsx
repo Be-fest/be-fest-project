@@ -99,7 +99,7 @@ const convertToProviderData = (provider: User, services: ServiceWithProvider[]) 
       id: service.id, // Manter o ID real do serviço
       name: service.name,
       description: service.description || 'Serviço de qualidade para sua festa',
-      price: calculatePriceWithFee(service.guest_tiers?.[0]?.base_price_per_adult || 0), // Aplicar taxa de 5%
+      price: calculatePriceWithFee(service.guest_tiers?.[0]?.base_price_per_adult || 0), // Aplicar taxa de 10%
       image: service.images_urls?.[0],
       providerId: service.provider_id // Adicionar providerId real
     });

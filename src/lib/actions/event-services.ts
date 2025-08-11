@@ -151,7 +151,7 @@ async function calculateServicePrice(
     .from('event_services')
     .update({
       price_per_guest_at_booking: adjustedPricePerGuest, // Salvar o preço ajustado
-      total_estimated_price: calculatedPrice // Usar o cálculo correto com taxa de 5% e Math.ceil
+      total_estimated_price: calculatedPrice // Usar o cálculo correto com taxa de 10% e Math.ceil
     })
     .eq('id', eventServiceId)
   

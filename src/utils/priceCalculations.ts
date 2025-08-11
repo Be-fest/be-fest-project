@@ -53,15 +53,15 @@ export function calculateTotalPricing(
     subtotal += calculateServiceValue(service, guests);
   });
   
-  // Calcular taxa BeFest (5%)
-  const befest_fee = subtotal * 0.05;
+  // Calcular taxa BeFest (10%)
+  const befest_fee = subtotal * 0.10;
   const total = subtotal + befest_fee;
   
   return {
     subtotal,
     befest_fee,
     total,
-    fee_percentage: 5
+    fee_percentage: 10
   };
 }
 
@@ -119,4 +119,4 @@ export function getTotalGuests(guests: GuestBreakdown): number {
  * 
  * const pricing = calculateTotalPricing([service], guests);
  * // Resultado: { subtotal: 15400, befest_fee: 770, total: 16170, fee_percentage: 5 }
- */ 
+ */

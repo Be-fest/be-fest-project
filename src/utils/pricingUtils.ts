@@ -92,14 +92,14 @@ export function getFormattedTiers(service: any): string[] {
   });
 }
 
-// Função para calcular preço com taxa de 5% (para exibição no lado do cliente)
+// Função para calcular preço com taxa de 10% (para exibição no lado do cliente)
 export function calculatePriceWithFee(price: number): number {
-  const taxRate = 0.05; // 5%
+  const taxRate = 0.10; // 10%
   const taxAmount = price * taxRate;
   return Math.ceil(price + taxAmount);
 }
 
-// Função para formatar preço mínimo com taxa de 5% (para exibição no lado do cliente)
+// Função para formatar preço mínimo com taxa de 10% (para exibição no lado do cliente)
 export function formatMinimumPriceWithFee(guestTiers: GuestTier[]): string {
   if (!guestTiers || guestTiers.length === 0) {
     return 'Preço sob consulta';

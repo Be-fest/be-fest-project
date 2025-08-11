@@ -264,8 +264,8 @@ export const calculateEventServicePrice = (
     calculatedPrice = totalGuests > 0 ? Math.max(500, totalGuests * 30) : 500;
   }
   
-  // Aplicar taxa de 5% para exibição no lado do cliente e arredondar para cima
-  const taxRate = 0.05; // 5%
+  // Aplicar taxa de 10% para exibição no lado do cliente e arredondar para cima
+  const taxRate = 0.10; // 10%
   const taxAmount = calculatedPrice * taxRate;
   return Math.ceil(calculatedPrice + taxAmount);
 };
@@ -330,8 +330,8 @@ export const calculateCorrectServicePrice = (
     calculatedPrice = totalGuests > 0 ? Math.max(500, totalGuests * 30) : 500;
   }
   
-  // Aplicar taxa de 5% para exibição no lado do cliente
-  const taxRate = 0.05; // 5%
+  // Aplicar taxa de 10% para exibição no lado do cliente
+  const taxRate = 0.10; // 10%
   const taxAmount = calculatedPrice * taxRate;
   return Math.ceil(calculatedPrice + taxAmount);
 };
@@ -395,8 +395,8 @@ export const calculateAdvancedPrice = (
     }
   }
   
-  // Aplicar taxa de 5% para exibição no lado do cliente
-  const taxRate = 0.05; // 5%
+  // Aplicar taxa de 10% para exibição no lado do cliente
+  const taxRate = 0.10; // 10%
   const taxAmount = calculatedPrice * taxRate;
   return Math.ceil(calculatedPrice + taxAmount);
 };
@@ -524,8 +524,8 @@ export const calculateEstimatedPrice = (
     }
   }
   
-  // Aplicar taxa de 5% para exibição no lado do cliente
-  const taxRate = 0.05; // 5%
+  // Aplicar taxa de 10% para exibição no lado do cliente
+  const taxRate = 0.10; // 10%
   const taxAmount = calculatedPrice * taxRate;
   return Math.ceil(calculatedPrice + taxAmount);
 };
@@ -583,8 +583,8 @@ export const formatMinimumPrice = (guestTiers: any[], basePrice?: number): strin
   const minPrice = calculateMinimumPrice(guestTiers);
   
   if (minPrice && minPrice > 0) {
-    // Aplicar taxa de 5% para exibição no lado do cliente e arredondar para cima
-    const priceWithFee = Math.ceil(minPrice * 1.05);
+    // Aplicar taxa de 10% para exibição no lado do cliente e arredondar para cima
+  const priceWithFee = Math.ceil(minPrice * 1.10);
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
@@ -592,8 +592,8 @@ export const formatMinimumPrice = (guestTiers: any[], basePrice?: number): strin
   }
   
   if (basePrice && basePrice > 0) {
-    // Aplicar taxa de 5% para exibição no lado do cliente e arredondar para cima
-    const priceWithFee = Math.ceil(basePrice * 1.05);
+    // Aplicar taxa de 10% para exibição no lado do cliente e arredondar para cima
+    const priceWithFee = Math.ceil(basePrice * 1.10);
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
