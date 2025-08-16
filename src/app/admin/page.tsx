@@ -100,28 +100,24 @@ export default function AdminDashboard() {
       title: 'Serviços Aguardando Pagamento',
       value: servicesAwaitingPayment.toString(),
       icon: MdPayment,
-      trend: '+12%',
       color: 'text-yellow-600'
     },
     {
       title: 'Serviços Pagos',
       value: servicesPaid.toString(),
       icon: MdCheckCircle,
-      trend: '+5%',
       color: 'text-green-600'
     },
     {
       title: 'Renda Estimada',
       value: formatCurrency(stats.totalRevenue),
       icon: MdAttachMoney,
-      trend: '+8%',
       color: 'text-blue-600'
     },
     {
       title: 'Renda em Taxas',
       value: formatCurrency(estimatedFeeRevenue),
       icon: MdAccountBalance,
-      trend: '+15%',
       color: 'text-purple-600'
     }
   ];
@@ -221,7 +217,6 @@ export default function AdminDashboard() {
             title={stat.title}
             value={stat.value}
             icon={stat.icon}
-            trend={stat.trend}
             delay={index * 0.1}
           />
         ))}
@@ -395,15 +390,6 @@ export default function AdminDashboard() {
               <span className="text-gray-600">Média por Evento</span>
               <span className="font-bold text-gray-900">{formatCurrency(stats.averageEventValue)}</span>
             </div>
-            <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-green-500 to-green-600 rounded-full transition-all duration-1000"
-                style={{ width: `${Math.min((stats.monthlyRevenue / 100000) * 100, 100)}%` }}
-              />
-            </div>
-            <p className="text-xs text-gray-500 text-center">
-              Meta mensal: {formatCurrency(100000)}
-            </p>
           </div>
         </motion.div>
 

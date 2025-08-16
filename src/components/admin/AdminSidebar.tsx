@@ -16,6 +16,7 @@ import {
   MdChevronLeft,
   MdChevronRight
 } from 'react-icons/md';
+import { getEventServicesCountsAction } from '@/lib/actions/admin';
 
 interface MenuItem {
   label: string;
@@ -33,6 +34,25 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { isSuperAdmin } = useSuperAdmin();
   
+  const [ordersBadge, setOrdersBadge] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    // Load real counts for orders to display in the badge
+    let isMounted = true;
+    (async () => {
+      const res = await getEventServicesCountsAction();
+      if (!isMounted) return;
+      if (res.success && res.data) {
+        setOrdersBadge(res.data.total > 0 ? String(res.data.total) : undefined);
+      } else {
+        setOrdersBadge(undefined);
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const menuItems: MenuItem[] = [
     {
       label: 'Dashboard',
@@ -44,7 +64,7 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
       label: 'Pedidos',
       icon: MdReceipt,
       path: '/admin/pedidos',
-      badge: '12'
+      badge: ordersBadge
     },
     {
       label: 'Clientes',

@@ -611,3 +611,34 @@ export async function getAllEventServicesAction(): Promise<ActionResult<Array<{
     };
   }
 }
+
+export async function getEventServicesCountsAction(): Promise<ActionResult<{
+  total: number;
+  byStatus: Record<string, number>;
+}>> {
+  try {
+    const supabase = createClient();
+
+    const { data, error } = await supabase
+      .from('event_services')
+      .select('booking_status');
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    const byStatus: Record<string, number> = {};
+    (data || []).forEach((row: any) => {
+      const s = row.booking_status || 'unknown';
+      byStatus[s] = (byStatus[s] || 0) + 1;
+    });
+
+    return { success: true, data: { total: data?.length || 0, byStatus } };
+  } catch (error) {
+    console.error('Event services count fetch failed:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Erro ao buscar contagens de pedidos'
+    };
+  }
+}
