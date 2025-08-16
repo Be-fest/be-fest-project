@@ -120,6 +120,7 @@ const convertToProviderData = (provider: User, services: ServiceWithProvider[]) 
     description: provider.organization_description || 
       'Prestador de serviços para festas e eventos',
     image: provider.profile_image || '/be-fest-provider-logo.png',
+  bannerUrl: (provider as any).profile_banner_url || '',
     location: {
       neighborhood: provider.area_of_operation || 'Área de atuação não informada',
       city: provider.state || 'Estado não informado'
@@ -279,17 +280,26 @@ export default function ProviderPage({ params }: PageProps) {
             transition={{ duration: 0.5 }}
             className="bg-white rounded-2xl shadow-lg overflow-hidden"
           >
-            {/* Provider Header */}
-            <div className="relative h-48 md:h-64 bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 border-b border-purple-100">
-              {/* Padrão decorativo sutil */}
-              <div className="absolute inset-0 opacity-5">
-                <svg className="w-full h-full" viewBox="0 0 400 200" fill="none">
-                  <circle cx="50" cy="50" r="30" fill="#F71875"/>
-                  <circle cx="350" cy="40" r="20" fill="#8B5CF6"/>
-                  <circle cx="80" cy="150" r="25" fill="#EC4899"/>
-                  <circle cx="320" cy="160" r="15" fill="#A855F7"/>
-                </svg>
-              </div>
+            {/* Provider Header with optional banner */}
+            <div className="relative h-48 md:h-64 border-b border-purple-100 overflow-hidden">
+              {providerData.bannerUrl ? (
+                <img
+                  src={providerData.bannerUrl}
+                  alt={`Banner de ${providerData.name}`}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              ) : (
+                <div className="absolute inset-0 bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50">
+                  <div className="absolute inset-0 opacity-5">
+                    <svg className="w-full h-full" viewBox="0 0 400 200" fill="none">
+                      <circle cx="50" cy="50" r="30" fill="#F71875"/>
+                      <circle cx="350" cy="40" r="20" fill="#8B5CF6"/>
+                      <circle cx="80" cy="150" r="25" fill="#EC4899"/>
+                      <circle cx="320" cy="160" r="15" fill="#A855F7"/>
+                    </svg>
+                  </div>
+                </div>
+              )}
               
               <div className="absolute bottom-4 md:bottom-6 left-4 md:left-6 right-4 md:right-auto flex flex-col md:flex-row items-start md:items-end gap-3 md:gap-6">
                 <div className="w-16 h-16 md:w-24 md:h-24 rounded-2xl bg-white p-2 md:p-3 shadow-xl border-2 border-white flex-shrink-0">
@@ -300,7 +310,11 @@ export default function ProviderPage({ params }: PageProps) {
                   />
                 </div>
                 <div className="text-gray-800 min-w-0 flex-1">
-                  <h1 className="text-xl md:text-3xl font-bold mb-2 text-gray-900 break-words">{providerData.name}</h1>
+                  <h1 className="text-xl md:text-3xl font-bold mb-2 text-gray-900 break-words">
+                    <span className="inline-block bg-white/85 backdrop-blur px-3 md:px-4 py-1 md:py-1.5 rounded-full shadow-sm">
+                      {providerData.name}
+                    </span>
+                  </h1>
                   <div className="flex flex-col gap-2 text-sm md:text-base">
                     <div className="flex items-center gap-1 text-gray-600 bg-white/80 px-2 md:px-3 py-1 rounded-full w-fit">
                       <MdLocationOn className="text-pink-500 flex-shrink-0" />

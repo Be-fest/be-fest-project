@@ -755,6 +755,83 @@ export async function deleteProfileImageAction(imageUrl: string): Promise<Action
   }
 }
 
+// Upload de banner do perfil do prestador
+export async function uploadBannerImageAction(formData: FormData): Promise<ActionResult<string>> {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return { success: false, error: 'Usuário não autenticado' }
+    }
+
+    const file = formData.get('image') as File | null
+    if (!file) {
+      return { success: false, error: 'Arquivo de imagem não fornecido' }
+    }
+
+    const supabase = await createServerClient()
+
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${Date.now()}.${fileExt}`
+    const filePath = `${user.id}/banners/${fileName}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('be-fest-images')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: file.type || 'image/jpeg'
+      })
+
+    if (uploadError) {
+      console.error('Erro no upload do banner:', uploadError)
+      return { success: false, error: 'Erro ao fazer upload do banner' }
+    }
+
+    // Obter URL pública
+    const { data: { publicUrl } } = supabase.storage
+      .from('be-fest-images')
+      .getPublicUrl(filePath)
+
+    return { success: true, data: publicUrl }
+  } catch (error) {
+    console.error('Banner image upload failed:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Erro inesperado no upload do banner'
+    }
+  }
+}
+
+// Deletar banner do storage (opcional)
+export async function deleteBannerImageAction(imageUrl: string): Promise<ActionResult<void>> {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return { success: false, error: 'Usuário não autenticado' }
+    }
+
+    const supabase = await createServerClient()
+    const url = new URL(imageUrl)
+    const parts = url.pathname.split('/')
+    const fileName = parts[parts.length - 1]
+    const filePath = `${user.id}/banners/${fileName}`
+
+    const { error } = await supabase.storage
+      .from('be-fest-images')
+      .remove([filePath])
+
+    if (error) {
+      console.error('Erro ao deletar banner:', error)
+      return { success: false, error: 'Erro ao deletar banner' }
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error('Banner image deletion failed:', error)
+    return { success: false, error: error instanceof Error ? error.message : 'Erro inesperado ao deletar banner' }
+  }
+}
+
 // Esquema para atualização de perfil do prestador
 const updateProviderProfileSchema = z.object({
   organization_name: z.string().min(1, 'Nome da empresa é obrigatório').optional(),
@@ -764,7 +841,8 @@ const updateProviderProfileSchema = z.object({
   area_of_operation: z.string().min(1, 'Subcategoria é obrigatória').optional(),
   address: z.string().min(1, 'Endereço é obrigatório').optional(),
   cnpj: z.string().min(11, 'CNPJ deve ter pelo menos 11 dígitos').optional(),
-  profile_image: z.string().url('URL da imagem inválida').optional().or(z.literal(''))
+  profile_image: z.string().url('URL da imagem inválida').optional().or(z.literal('')),
+  profile_banner_url: z.string().url('URL do banner inválida').optional().or(z.literal(''))
 })
 
 // Atualizar perfil completo do prestador
@@ -787,7 +865,8 @@ export async function updateProviderProfileAction(formData: FormData): Promise<A
       'area_of_operation',
       'address',
       'cnpj',
-      'profile_image'
+      'profile_image',
+      'profile_banner_url'
     ]
     
     fields.forEach(field => {
@@ -853,6 +932,10 @@ export async function updateProviderProfileAction(formData: FormData): Promise<A
 
     if (validatedData.profile_image) {
       updateData.profile_image = validatedData.profile_image
+    }
+
+    if (validatedData.profile_banner_url !== undefined) {
+      updateData.profile_banner_url = validatedData.profile_banner_url
     }
 
     // Atualizar coordenadas se fornecidas

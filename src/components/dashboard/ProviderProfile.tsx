@@ -4,14 +4,14 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { MdEdit, MdSave, MdCancel, MdCloudUpload, MdWarning, MdRemove, MdImage } from 'react-icons/md';
 import { getProviderStatsAction } from '@/lib/actions/services';
-import { uploadProfileImageAction, deleteProfileImageAction, updateProviderProfileAction } from '@/lib/actions/auth';
+import { uploadProfileImageAction, deleteProfileImageAction, updateProviderProfileAction, uploadBannerImageAction, deleteBannerImageAction } from '@/lib/actions/auth';
 import { User } from '@/types/database';
-import { ProviderProfileSkeleton, AddressFields, ServiceRadiusPicker } from '@/components/ui';
+import { ProviderProfileSkeleton, AddressFields } from '@/components/ui';
 import AreaOfOperationSelect from '@/components/ui/AreaOfOperationSelect';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
 import { invalidateServiceImagesCache } from '@/hooks/useImagePreloader';
 import { useAuth } from '@/hooks/useAuth';
-import { geocodingService } from '@/lib/services/geocoding';
+// Coordinates/geocoding temporarily disabled
 
 interface ProviderStats {
   totalRequests: number;
@@ -45,6 +45,7 @@ interface FormData {
     raio_atuacao: number;
   };
   profile_image: string | File;
+  profile_banner_url?: string;
 }
 
 export function ProviderProfile() {
@@ -61,7 +62,9 @@ export function ProviderProfile() {
   const [statsLoading, setStatsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
   const toast = useToastGlobal();
   
   const [formData, setFormData] = useState<FormData>({
@@ -85,6 +88,7 @@ export function ProviderProfile() {
       raio_atuacao: 50,
     },
     profile_image: '',
+  profile_banner_url: '',
   });
 
   // Função para analisar endereço completo em componentes
@@ -178,7 +182,8 @@ export function ProviderProfile() {
         area_of_operation: userData.area_of_operation || '', // Subcategoria
         address: addressData, // Endereço
         coordenates: coordinates,
-        profile_image: userData.profile_image || '',
+  profile_image: userData.profile_image || '',
+  profile_banner_url: (userData as any).profile_banner_url || '',
       });
     }
   }, [userData]);
@@ -268,6 +273,41 @@ export function ProviderProfile() {
     toast.success('Imagem removida!', 'A imagem foi removida com sucesso.', 3000);
   };
 
+  const handleBannerUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setUploadingBanner(true);
+    try {
+      const form = new FormData();
+      form.append('image', file);
+      const result = await uploadBannerImageAction(form);
+      if (result.success && result.data) {
+        setFormData(prev => ({ ...prev, profile_banner_url: result.data as string }));
+        toast.success('Banner atualizado!', 'Imagem de fundo atualizada com sucesso.', 3000);
+      } else {
+        toast.error('Erro no upload', result.error || 'Falha ao enviar o banner', 5000);
+      }
+    } catch (e) {
+      toast.error('Erro no upload', 'Erro inesperado ao enviar o banner', 5000);
+    } finally {
+      setUploadingBanner(false);
+      if (bannerInputRef.current) bannerInputRef.current.value = '';
+    }
+  };
+
+  const handleBannerRemove = async () => {
+    if (!formData.profile_banner_url) return;
+    try {
+      if (typeof formData.profile_banner_url === 'string' && formData.profile_banner_url.includes('supabase')) {
+        await deleteBannerImageAction(formData.profile_banner_url);
+      }
+    } catch (error) {
+      console.error('Erro ao deletar banner do storage:', error);
+    }
+    setFormData(prev => ({ ...prev, profile_banner_url: '' }));
+    toast.success('Banner removido!', 'O banner foi removido com sucesso.', 3000);
+  };
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -304,25 +344,9 @@ export function ProviderProfile() {
         return;
       }
 
-      // Tentar geocodificar o endereço
-      let coordinates = formData.coordenates;
-      if (fullAddress) {
-        toast.info('Processando endereço...', 'Obtendo coordenadas do endereço', 3000);
-        
-        const geocodingResult = await geocodingService.geocodeAddress(fullAddress);
-        if (geocodingResult) {
-          coordinates = {
-            latitude: geocodingResult.latitude,
-            longitude: geocodingResult.longitude,
-            raio_atuacao: formData.coordenates.raio_atuacao
-          };
-          console.log('✅ Coordenadas obtidas:', coordinates);
-        } else {
-          console.warn('⚠️ Não foi possível obter coordenadas para o endereço');
-          toast.warning('Aviso', 'Não foi possível obter coordenadas precisas do endereço', 4000);
-        }
-      }
-      
+  // Geocoding/coordinates disabled for now
+  const coordinates = formData.coordenates;
+
       const formDataToSend = new FormData();
       
       // Adicionar campos básicos
@@ -333,14 +357,14 @@ export function ProviderProfile() {
       formDataToSend.append('area_of_operation', formData.area_of_operation.trim()); // Subcategoria
       formDataToSend.append('address', fullAddress); // Endereço completo
       
-      // Adicionar coordenadas
-      formDataToSend.append('latitude', coordinates.latitude.toString());
-      formDataToSend.append('longitude', coordinates.longitude.toString());
-      formDataToSend.append('raio_atuacao', coordinates.raio_atuacao.toString());
+  // Coordinates not sent at the moment
       
       // Adicionar imagem se houver
       if (formData.profile_image) {
         formDataToSend.append('profile_image', formData.profile_image);
+      }
+      if (formData.profile_banner_url !== undefined) {
+        formDataToSend.append('profile_banner_url', formData.profile_banner_url);
       }
       
       console.log('Enviando dados:', Object.fromEntries(formDataToSend.entries()));
@@ -486,6 +510,58 @@ export function ProviderProfile() {
         animate={{ opacity: 1, y: 0 }}
         className="bg-white rounded-lg shadow-sm p-6"
       >
+        {/* Banner do Perfil */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-[#520029] mb-3">
+            Banner do Perfil
+          </label>
+          <div className="w-full h-36 md:h-48 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50 overflow-hidden relative">
+            {formData.profile_banner_url ? (
+              <img src={formData.profile_banner_url} alt="Banner do perfil" className="absolute inset-0 w-full h-full object-cover" />
+            ) : (
+              <div className="text-center">
+                <MdImage className="text-gray-400 text-2xl mx-auto mb-1" />
+                <span className="text-xs text-gray-500">Banner</span>
+              </div>
+            )}
+          </div>
+          {isEditing && (
+            <div className="flex gap-2 mt-3">
+              <input
+                ref={bannerInputRef}
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                onChange={handleBannerUpload}
+                className="hidden"
+                disabled={uploadingBanner}
+              />
+              <button
+                type="button"
+                onClick={() => bannerInputRef.current?.click()}
+                disabled={uploadingBanner}
+                className="flex items-center gap-2 px-4 py-2 bg-[#A502CA] text-white rounded-lg font-medium hover:bg-[#8B0A9E] transition-colors disabled:opacity-50"
+              >
+                <MdCloudUpload className="text-lg" />
+                {uploadingBanner ? 'Enviando...' : 'Alterar Banner'}
+              </button>
+              {formData.profile_banner_url && (
+                <button
+                  type="button"
+                  onClick={handleBannerRemove}
+                  disabled={uploadingBanner}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+                >
+                  <MdRemove className="text-lg" />
+                  Remover
+                </button>
+              )}
+            </div>
+          )}
+          {isEditing && (
+            <p className="text-xs text-gray-500 mt-2">Formatos aceitos: JPEG, PNG, WebP. Tamanho máximo: 5MB.</p>
+          )}
+        </div>
+
         {/* Logo da Empresa */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-[#520029] mb-3">
@@ -691,29 +767,12 @@ export function ProviderProfile() {
                     }}
                   />
                   
-                  {/* Seletor de Raio de Atuação */}
-                  <ServiceRadiusPicker
-                    value={formData.coordenates.raio_atuacao}
-                    onChange={(radius) => {
-                      setFormData(prev => ({
-                        ...prev,
-                        coordenates: {
-                          ...prev.coordenates,
-                          raio_atuacao: radius
-                        }
-                      }));
-                    }}
-                  />
+                  {/* Raio de Atuação temporariamente desabilitado */}
                 </div>
               ) : (
                 <div className="px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
                   <span className="text-gray-900">{generateFullAddress(formData.address) || 'Não informado'}</span>
-                  {formData.coordenates.latitude && formData.coordenates.longitude && (
-                    <div className="mt-2 text-sm text-gray-600">
-                      <p>Coordenadas: {formData.coordenates.latitude.toFixed(6)}, {formData.coordenates.longitude.toFixed(6)}</p>
-                      <p>Raio de atuação: {formData.coordenates.raio_atuacao} km</p>
-                    </div>
-                  )}
+                  {/* Exibição de coordenadas desabilitada */}
                 </div>
               )}
             </div>
