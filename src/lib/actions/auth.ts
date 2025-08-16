@@ -160,12 +160,29 @@ export async function registerClientAction(formData: FormData): Promise<ActionRe
 
     console.log('Client registration completed successfully')
     
-    return { 
-      success: true, 
-      data: { 
-        message: 'Conta criada com sucesso! Você já pode fazer login.' 
-      } 
+    // Fazer login automático após cadastro bem-sucedido
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      email: validatedData.email,
+      password: validatedData.password,
+    })
+
+    if (signInError || !signInData.user) {
+      console.error('Auto-login error after registration:', signInError)
+      // Mesmo com erro no login automático, o cadastro foi bem-sucedido
+      return { 
+        success: true, 
+        data: { 
+          message: 'Conta criada com sucesso! Faça login para continuar.',
+          requiresLogin: true
+        } 
+      }
     }
+
+    console.log('Auto-login successful for client:', signInData.user.id)
+    
+    // Revalidar cache após login
+    revalidatePath('/', 'layout')
+    revalidatePath('/auth/login', 'page')
     
   } catch (error) {
     console.error('Client registration failed:', error)
@@ -180,6 +197,10 @@ export async function registerClientAction(formData: FormData): Promise<ActionRe
       error: error instanceof Error ? error.message : 'Ocorreu um erro ao criar sua conta' 
     }
   }
+  
+  // Usar redirect para forçar navegação e estabelecer sessão
+  console.log('Redirecting to home page...')
+  redirect('/')
 }
 
 export async function registerProviderAction(formData: FormData): Promise<ActionResult> {
@@ -289,12 +310,29 @@ export async function registerProviderAction(formData: FormData): Promise<Action
 
     console.log('Provider registration completed successfully')
     
-    return { 
-      success: true, 
-      data: { 
-        message: 'Conta criada com sucesso! Você já pode fazer login.' 
-      } 
+    // Fazer login automático após cadastro bem-sucedido
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      email: validatedData.email,
+      password: validatedData.password,
+    })
+
+    if (signInError || !signInData.user) {
+      console.error('Auto-login error after provider registration:', signInError)
+      // Mesmo com erro no login automático, o cadastro foi bem-sucedido
+      return { 
+        success: true, 
+        data: { 
+          message: 'Conta criada com sucesso! Faça login para continuar.',
+          requiresLogin: true
+        } 
+      }
     }
+
+    console.log('Auto-login successful for provider:', signInData.user.id)
+    
+    // Revalidar cache após login
+    revalidatePath('/', 'layout')
+    revalidatePath('/auth/login', 'page')
     
   } catch (error) {
     console.error('Provider registration failed:', error)
@@ -309,6 +347,10 @@ export async function registerProviderAction(formData: FormData): Promise<Action
       error: error instanceof Error ? error.message : 'Ocorreu um erro ao criar sua conta' 
     }
   }
+  
+  // Usar redirect para forçar navegação e estabelecer sessão
+  console.log('Redirecting to provider dashboard...')
+  redirect('/dashboard/prestador')
 }
 
 export async function loginAction(formData: FormData): Promise<ActionResult> {

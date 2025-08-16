@@ -51,7 +51,15 @@ export function RegisterForm() {
       
       if (result.success) {
         setSuccess('Conta criada com sucesso!')
-        setTimeout(() => router.push('/auth/login'), 2000)
+        
+        // Verificar se o auto-login foi bem-sucedido
+        if (result.data?.autoLogin) {
+          // Login automático bem-sucedido, redirecionar para a página principal
+          setTimeout(() => router.push('/'), 1500)
+        } else {
+          // Auto-login falhou, redirecionar para login
+          setTimeout(() => router.push('/auth/login'), 2000)
+        }
       } else {
         setError(result.error || 'Erro ao criar conta')
       }

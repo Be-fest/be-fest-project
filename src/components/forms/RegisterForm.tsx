@@ -160,18 +160,21 @@ export const RegisterForm = ({ userType, onUserTypeChange }: RegisterFormProps) 
         6000
       );
       
-      // Redirecionar após mostrar o toast
-      const timer = setTimeout(() => {
-        try {
-          router.push('/auth/login');
-        } catch (error) {
-          console.error('Navigation error:', error);
-        }
-      }, 3000);
-      
-      return () => clearTimeout(timer);
+      // Se requiresLogin for true, redirecionar para login após 3 segundos
+      if (state.data.requiresLogin) {
+        const timer = setTimeout(() => {
+          try {
+            router.push('/auth/login');
+          } catch (error) {
+            console.error('Navigation error:', error);
+          }
+        }, 3000);
+        
+        return () => clearTimeout(timer);
+      }
+      // Se não há requiresLogin, o redirecionamento já foi feito pela Server Action
     }
-  }, [state?.success, state?.data?.message, router, toast, hasShownSuccessToast]);
+  }, [state?.success, state?.data?.message, state?.data?.requiresLogin, router, toast, hasShownSuccessToast]);
 
   useEffect(() => {
     // Mostrar toast de erro se houver e não foi mostrado ainda
