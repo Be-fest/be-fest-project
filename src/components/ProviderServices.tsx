@@ -27,11 +27,16 @@ interface ServiceCategory {
 interface ProviderServicesProps {
   services: ServiceCategory[];
   providerId?: string; // Adicionar providerId como prop
+  initialSort?: 'relevance' | 'name_asc' | 'name_desc' | 'price_asc' | 'price_desc';
+  onSortChange?: (sort: 'relevance' | 'name_asc' | 'name_desc' | 'price_asc' | 'price_desc') => void;
 }
 
-export function ProviderServices({ services, providerId }: ProviderServicesProps) {
+export function ProviderServices({ services, providerId, initialSort = 'relevance', onSortChange }: ProviderServicesProps) {
   const toast = useToastGlobal();
   const [servicesWithPrices, setServicesWithPrices] = useState<ServiceCategory[]>(services);
+  const [sort, setSort] = useState<
+    'relevance' | 'name_asc' | 'name_desc' | 'price_asc' | 'price_desc'
+  >(initialSort);
 
   useEffect(() => {
     const fetchServicePrices = async () => {
@@ -65,9 +70,28 @@ export function ProviderServices({ services, providerId }: ProviderServicesProps
         }, {} as Record<string, any[]>);
 
         // Atualizar preços dos serviços
+        const sortItems = (items: ServiceItem[]) => {
+          const sorted = [...items];
+          switch (sort) {
+            case 'name_asc':
+              sorted.sort((a, b) => a.name.localeCompare(b.name));
+              break;
+            case 'name_desc':
+              sorted.sort((a, b) => b.name.localeCompare(a.name));
+              break;
+            case 'price_asc':
+              sorted.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
+              break;
+            case 'price_desc':
+              sorted.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
+              break;
+          }
+          return sorted;
+        };
+
         const updatedServices = services.map(category => ({
           ...category,
-          items: category.items.map(item => {
+          items: sortItems(category.items.map(item => {
             const tiers = tiersByService[item.id] || [];
             let price = 0;
             
@@ -87,7 +111,7 @@ export function ProviderServices({ services, providerId }: ProviderServicesProps
               ...item,
               price
             };
-          })
+          }))
         }));
 
         setServicesWithPrices(updatedServices);
@@ -98,6 +122,40 @@ export function ProviderServices({ services, providerId }: ProviderServicesProps
 
     fetchServicePrices();
   }, [services]);
+
+  // Sort whenever sort state or prices change
+  useEffect(() => {
+    const sortItems = (items: ServiceItem[]) => {
+      const sorted = [...items];
+      switch (sort) {
+        case 'name_asc':
+          sorted.sort((a, b) => a.name.localeCompare(b.name));
+          break;
+        case 'name_desc':
+          sorted.sort((a, b) => b.name.localeCompare(a.name));
+          break;
+        case 'price_asc':
+          sorted.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
+          break;
+        case 'price_desc':
+          sorted.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
+          break;
+        default:
+          // relevance: keep original order
+          break;
+      }
+      return sorted;
+    };
+
+    setServicesWithPrices(prev =>
+      prev.map(cat => ({ ...cat, items: sortItems(cat.items) }))
+    );
+  }, [sort]);
+
+  const handleSortChange = (value: 'relevance' | 'name_asc' | 'name_desc' | 'price_asc' | 'price_desc') => {
+    setSort(value);
+    onSortChange?.(value);
+  };
 
   const handleViewService = (item: ServiceItem, categoryName: string) => {
     // Mostrar toast de informação
@@ -110,6 +168,26 @@ export function ProviderServices({ services, providerId }: ProviderServicesProps
 
   return (
     <div className="space-y-8">
+      {/* Sorting bar */}
+      <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+        <div />
+        <div className="flex items-center gap-2">
+          <label htmlFor="sort" className="text-sm text-gray-600">Ordenar por:</label>
+          <select
+            id="sort"
+            value={sort}
+            onChange={(e) => handleSortChange(e.target.value as any)}
+            className="border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-300"
+          >
+            <option value="relevance">Relevância</option>
+            <option value="name_asc">Nome (A-Z)</option>
+            <option value="name_desc">Nome (Z-A)</option>
+            <option value="price_asc">Preço (menor)</option>
+            <option value="price_desc">Preço (maior)</option>
+          </select>
+        </div>
+      </div>
+
       {servicesWithPrices.map((category, categoryIndex) => (
         <motion.div
           key={category.id}

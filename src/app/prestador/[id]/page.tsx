@@ -8,6 +8,7 @@ import { MdStar, MdLocationOn, MdArrowBack, MdWarning } from 'react-icons/md';
 import { User, ServiceWithProvider } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useServiceImage } from '@/hooks/useImagePreloader';
 import { calculatePriceWithFee } from '@/utils/pricingUtils';
 
@@ -146,6 +147,14 @@ export default function ProviderPage({ params }: PageProps) {
   const [providerData, setProviderData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const sortParam = (searchParams?.get('sort') || 'relevance') as
+    | 'relevance'
+    | 'name_asc'
+    | 'name_desc'
+    | 'price_asc'
+    | 'price_desc';
 
   useEffect(() => {
     const fetchProviderData = async () => {
@@ -314,7 +323,17 @@ export default function ProviderPage({ params }: PageProps) {
                 {providerData.services && providerData.services.length > 0 ? (
                   <ProviderServices 
                     services={providerData.services} 
-                    providerId={providerData.id} 
+                    providerId={providerData.id}
+                    initialSort={sortParam}
+                    onSortChange={(sort) => {
+                      const sp = new URLSearchParams(searchParams?.toString());
+                      if (!sort || sort === 'relevance') {
+                        sp.delete('sort');
+                      } else {
+                        sp.set('sort', sort);
+                      }
+                      router.replace(`/prestador/${id}?${sp.toString()}`);
+                    }}
                   />
                 ) : (
                   <div className="text-center py-12">
