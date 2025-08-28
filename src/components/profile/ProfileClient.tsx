@@ -376,26 +376,26 @@ export default function ProfileClient({ user, events, stats }: ProfileClientProp
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.1 }}
-                      className="p-6 hover:bg-gray-50 transition-all duration-200"
+                      className="p-3 sm:p-4 hover:bg-gray-50 transition-all duration-200"
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                          <div className="w-12 h-12 bg-gradient-to-r from-[#FF0080]/10 to-[#A502CA]/10 rounded-xl flex items-center justify-center">
-                            <MdCelebration className="text-xl text-[#FF0080]" />
+                      <div className="flex items-center justify-between flex-col sm:flex-row gap-3 sm:gap-0">
+                        <div className="flex items-center space-x-3 w-full sm:w-auto">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-[#FF0080]/10 to-[#A502CA]/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <MdCelebration className="text-sm sm:text-lg text-[#FF0080]" />
                           </div>
-                          <div>
-                            <h4 className="text-lg font-semibold text-gray-900 mb-1">
+                          <div className="min-w-0 flex-1">
+                            <h4 className="text-sm sm:text-base font-semibold text-gray-900 mb-1 truncate">
                               {event.title}
                             </h4>
-                            <div className="flex items-center space-x-4 text-sm text-gray-500">
+                            <div className="flex items-center flex-wrap gap-2 sm:gap-3 text-xs sm:text-sm text-gray-500">
                               <div className="flex items-center">
-                                <MdCalendarToday className="mr-1" />
-                                {formatDate(event.event_date)}
+                                <MdCalendarToday className="mr-1 text-xs" />
+                                <span className="truncate">{formatDate(event.event_date)}</span>
                               </div>
                               {event.location && (
-                                <div className="flex items-center">
-                                  <MdLocationOn className="mr-1" />
-                                  {event.location}
+                                <div className="flex items-center min-w-0">
+                                  <MdLocationOn className="mr-1 text-xs flex-shrink-0" />
+                                  <span className="truncate">{event.location}</span>
                                 </div>
                               )}
                             </div>
@@ -403,7 +403,7 @@ export default function ProfileClient({ user, events, stats }: ProfileClientProp
                         </div>
                         <Link
                           href={`/perfil?tab=minhas-festas&eventId=${event.id}`}
-                          className="px-4 py-2 bg-[#FF0080]/10 text-[#FF0080] hover:bg-[#FF0080] hover:text-white rounded-xl font-medium transition-all duration-200"
+                          className="px-3 py-1.5 sm:px-4 sm:py-2 bg-[#FF0080]/10 text-[#FF0080] hover:bg-[#FF0080] hover:text-white rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 w-full sm:w-auto text-center flex-shrink-0"
                         >
                           Ver Detalhes
                         </Link>
@@ -467,26 +467,26 @@ export default function ProfileClient({ user, events, stats }: ProfileClientProp
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className="p-6 hover:bg-gray-50 transition-all duration-200"
+                    className="p-3 sm:p-4 hover:bg-gray-50 transition-all duration-200"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-gradient-to-r from-[#FF0080]/10 to-[#A502CA]/10 rounded-xl flex items-center justify-center">
-                          <MdCelebration className="text-xl text-[#FF0080]" />
+                    <div className="flex items-center justify-between flex-col sm:flex-row gap-3 sm:gap-0">
+                      <div className="flex items-center space-x-3 w-full sm:w-auto">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-[#FF0080]/10 to-[#A502CA]/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <MdCelebration className="text-sm sm:text-lg text-[#FF0080]" />
                         </div>
-                        <div>
-                          <h4 className="text-lg font-semibold text-gray-900 mb-1">
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-sm sm:text-base font-semibold text-gray-900 mb-1 truncate">
                             {event.title}
                           </h4>
-                          <div className="flex items-center space-x-4 text-sm text-gray-500">
+                          <div className="flex items-center flex-wrap gap-2 sm:gap-3 text-xs sm:text-sm text-gray-500">
                             <div className="flex items-center">
-                              <MdCalendarToday className="mr-1" />
-                              {formatDate(event.event_date)}
+                              <MdCalendarToday className="mr-1 text-xs" />
+                              <span className="truncate">{formatDate(event.event_date)}</span>
                             </div>
                             {event.location && (
-                              <div className="flex items-center">
-                                <MdLocationOn className="mr-1" />
-                                {event.location}
+                              <div className="flex items-center min-w-0">
+                                <MdLocationOn className="mr-1 text-xs flex-shrink-0" />
+                                <span className="truncate">{event.location}</span>
                               </div>
                             )}
                           </div>
@@ -494,7 +494,7 @@ export default function ProfileClient({ user, events, stats }: ProfileClientProp
                       </div>
                       <Link
                         href={`/perfil?tab=minhas-festas&eventId=${event.id}`}
-                        className="px-4 py-2 bg-[#FF0080]/10 text-[#FF0080] hover:bg-[#FF0080] hover:text-white rounded-xl font-medium transition-all duration-200"
+                        className="px-3 py-1.5 sm:px-4 sm:py-2 bg-[#FF0080]/10 text-[#FF0080] hover:bg-[#FF0080] hover:text-white rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 w-full sm:w-auto text-center flex-shrink-0"
                       >
                         Ver Detalhes
                       </Link>
@@ -667,4 +667,4 @@ export default function ProfileClient({ user, events, stats }: ProfileClientProp
       />
     </div>
   );
-} 
+}

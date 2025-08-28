@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins, Roboto } from "next/font/google";
 import { GlobalToastProvider } from "@/contexts/GlobalToastContext";
 import "./globals.css";
+import "@/styles/date-input.css";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -54,6 +55,34 @@ export default function RootLayout({
                   localStorage.removeItem('be-fest-user-data');
                 }
               })();
+              
+              // Configurar formato de data brasileiro
+              document.addEventListener('DOMContentLoaded', function() {
+                // Configurar locale brasileiro para todos os campos de data
+                const dateInputs = document.querySelectorAll('input[type="date"]');
+                dateInputs.forEach(input => {
+                  input.setAttribute('lang', 'pt-BR');
+                });
+                
+                // Observer para novos campos de data adicionados dinamicamente
+                const observer = new MutationObserver(function(mutations) {
+                  mutations.forEach(function(mutation) {
+                    mutation.addedNodes.forEach(function(node) {
+                      if (node.nodeType === 1) {
+                        const newDateInputs = node.querySelectorAll ? node.querySelectorAll('input[type="date"]') : [];
+                        newDateInputs.forEach(input => {
+                          input.setAttribute('lang', 'pt-BR');
+                        });
+                      }
+                    });
+                  });
+                });
+                
+                observer.observe(document.body, {
+                  childList: true,
+                  subtree: true
+                });
+              });
             `,
           }}
         />

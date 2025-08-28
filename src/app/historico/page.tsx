@@ -73,7 +73,7 @@ export default function HistoricoPage() {
     return Array.from({ length: 5 }, (_, i) => (
       <MdStar
         key={i}
-        className={`text-lg ${i < rating ? 'text-yellow-400' : 'text-gray-300'}`}
+        className={`text-sm ${i < rating ? 'text-yellow-400' : 'text-gray-300'}`}
       />
     ));
   };
@@ -164,61 +164,62 @@ export default function HistoricoPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200"
+                  className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200"
                 >
-                  <div className="p-6">
-                    <div className="flex items-start gap-6">
+                  <div className="p-4 sm:p-5">
+                    <div className="flex items-start gap-3 sm:gap-4">
                       {/* Event Image */}
-                      <div className="w-24 h-24 bg-gradient-to-r from-[#F71875] to-[#A502CA] rounded-xl flex items-center justify-center flex-shrink-0">
-                        <MdEvent className="text-white text-2xl" />
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-[#F71875] to-[#A502CA] rounded-lg flex items-center justify-center flex-shrink-0">
+                        <MdEvent className="text-white text-lg sm:text-xl" />
                       </div>
                       
                       {/* Event Details */}
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between mb-4">
-                          <div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1.5 truncate">
                               {event.title}
                             </h3>
-                            <div className="flex items-center gap-4 text-gray-600 text-sm">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-gray-600 text-xs sm:text-sm">
                               <div className="flex items-center gap-1">
-                                <MdCalendarToday className="text-sm" />
-                                <span>{formatDate(event.date)}</span>
+                                <MdCalendarToday className="text-xs" />
+                                <span className="truncate">{formatDate(event.date)}</span>
                               </div>
                               <div className="flex items-center gap-1">
-                                <MdLocationOn className="text-sm" />
-                                <span>{event.location}</span>
+                                <MdLocationOn className="text-xs" />
+                                <span className="truncate">{event.location}</span>
                               </div>
                               <div className="flex items-center gap-1">
-                                <MdPeople className="text-sm" />
+                                <MdPeople className="text-xs" />
                                 <span>{event.guests} convidados</span>
                               </div>
                             </div>
                           </div>
                           
-                          <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                            <MdCheckCircle className="text-sm" />
-                            Realizado
+                          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium ml-2 flex-shrink-0">
+                            <MdCheckCircle className="text-xs" />
+                            <span className="hidden sm:inline">Realizado</span>
                           </div>
                         </div>
                         
                         {/* Rating and Actions */}
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-gray-700">Avaliação:</span>
-                            <div className="flex items-center gap-1">
+                            <span className="text-xs sm:text-sm font-medium text-gray-700">Avaliação:</span>
+                            <div className="flex items-center gap-0.5">
                               {renderStars(event.rating)}
                             </div>
                           </div>
                           
-                          <div className="flex items-center gap-2">
-                            <button className="px-4 py-2 text-sm font-medium text-[#F71875] hover:bg-[#F71875] hover:text-white rounded-lg transition-colors duration-200 border border-[#F71875]">
-                              <MdVisibility className="inline mr-1" />
-                              Ver Detalhes
+                          <div className="flex items-center gap-1.5 sm:gap-2">
+                            <button className="px-3 py-1.5 text-xs sm:text-sm font-medium text-[#F71875] hover:bg-[#F71875] hover:text-white rounded-md transition-colors duration-200 border border-[#F71875] flex items-center gap-1">
+                              <MdVisibility className="text-xs" />
+                              <span className="hidden sm:inline">Ver Detalhes</span>
+                              <span className="sm:hidden">Ver</span>
                             </button>
-                            <button className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors duration-200">
-                              <MdDownload className="inline mr-1" />
-                              Relatório
+                            <button className="px-3 py-1.5 text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-md transition-colors duration-200 flex items-center gap-1">
+                              <MdDownload className="text-xs" />
+                              <span className="hidden sm:inline">Relatório</span>
                             </button>
                           </div>
                         </div>

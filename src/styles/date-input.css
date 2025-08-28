@@ -1,0 +1,67 @@
+/* Estilos para campos de data com formato DD/MM/YYYY */
+input[type="date"][lang="pt-BR"] {
+  /* Força o formato brasileiro DD/MM/YYYY */
+  -webkit-locale: "pt-BR";
+  locale: "pt-BR";
+}
+
+/* Personalização adicional para navegadores WebKit */
+input[type="date"]::-webkit-datetime-edit {
+  padding: 0;
+}
+
+input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+  background: transparent;
+}
+
+input[type="date"]::-webkit-datetime-edit-text {
+  color: #6b7280;
+  padding: 0 0.25rem;
+}
+
+input[type="date"]::-webkit-datetime-edit-month-field {
+  color: #374151;
+}
+
+input[type="date"]::-webkit-datetime-edit-day-field {
+  color: #374151;
+}
+
+input[type="date"]::-webkit-datetime-edit-year-field {
+  color: #374151;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  background: transparent;
+  bottom: 0;
+  color: transparent;
+  cursor: pointer;
+  height: auto;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: auto;
+}
+
+/* Estilos para Firefox */
+input[type="date"] {
+  -moz-appearance: textfield;
+}
+
+/* Força o formato brasileiro em todos os navegadores */
+input[type="date"] {
+  text-align: left;
+  direction: ltr;
+}
+
+/* Configuração específica para o formato brasileiro */
+@supports (-webkit-appearance: none) {
+  input[type="date"][lang="pt-BR"] {
+    -webkit-appearance: none;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23374151" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>');
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+  }
+}

@@ -9,6 +9,7 @@ import { createEventAction, updateEventAction } from '@/lib/actions/events';
 import { useRouter } from 'next/navigation';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
 import { calculateGuestCount } from '@/utils/formatters';
+import DatePicker from '@/components/ui/DatePicker';
 
 interface PartyConfigFormProps {
   onComplete: () => void;
@@ -258,16 +259,28 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
             <MdCalendarToday className="inline mr-1" />
             Data do Evento *
           </label>
-          <input
-            type="date"
-            {...register('event_date')}
-            min={new Date().toISOString().split('T')[0]}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none"
+          <DatePicker
+            value={watch('event_date') ? (() => {
+              const dateStr = watch('event_date');
+              // Parse da data evitando problemas de timezone
+              const [year, month, day] = dateStr.split('-').map(Number);
+              return new Date(year, month - 1, day); // month é 0-indexed
+            })() : null}
+            onChange={(date) => {
+              if (date) {
+                // Usar getFullYear, getMonth e getDate para evitar problemas de timezone
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                setValue('event_date', `${year}-${month}-${day}`);
+              } else {
+                setValue('event_date', '');
+              }
+            }}
+            minDate={new Date()}
             disabled={loading}
+            error={errors.event_date?.message}
           />
-          {errors.event_date && (
-            <p className="text-red-500 text-sm mt-1">{errors.event_date.message}</p>
-          )}
         </div>
 
         <div>

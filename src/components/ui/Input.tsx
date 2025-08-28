@@ -20,8 +20,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             error ? 'ring-2 ring-red-500' : ''
           } ${className}`}
           style={{
-            '--tw-ring-color': error ? '#ef4444' : focusColor
+            '--tw-ring-color': error ? '#ef4444' : focusColor,
+            ...(props.type === 'date' && {
+              colorScheme: 'light',
+              WebkitAppearance: 'none',
+              MozAppearance: 'textfield'
+            })
           } as React.CSSProperties}
+          {...(props.type === 'date' && { lang: 'pt-BR' })}
           {...props}
         />
         {error && (
