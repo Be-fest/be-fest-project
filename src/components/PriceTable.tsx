@@ -43,7 +43,7 @@ export default function PriceTable({ guestTiers, className = '' }: PriceTablePro
           Tabela de Preços
         </h3>
         <p className="text-white/80 text-xs md:text-sm mt-1">
-          Preços por convidado baseados na quantidade (inclui taxa de 10%)
+          Preços por convidado baseados na quantidade
         </p>
       </div>
       
@@ -101,14 +101,6 @@ export default function PriceTable({ guestTiers, className = '' }: PriceTablePro
           </tbody>
         </table>
       </div>
-      
-      {/* Nota explicativa sobre a taxa */}
-      <div className="px-3 md:px-6 py-3 bg-gray-50 border-t border-gray-200">
-        <p className="text-xs text-gray-600 text-center">
-          * Os preços exibidos já incluem a taxa de serviço de 10%
-        </p>
-      </div>
-
     </div>
   );
 }
