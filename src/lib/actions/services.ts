@@ -616,6 +616,11 @@ export async function getPublicServicesAction(filters?: {
   try {
     const supabase = await createServerClient()
     
+    // Normalizar filtros
+    const cat = filters?.category?.trim().toLowerCase()
+    const region = filters?.location?.trim()
+    const search = filters?.search?.trim()
+    
     // Obter estado do usuário para filtrar serviços
     let userState: string | null = null
     try {
@@ -648,18 +653,22 @@ export async function getPublicServicesAction(filters?: {
       .eq('status', 'active')
       .order('created_at', { ascending: false })
     
-    // SEMPRE aplicar filtro por estado do usuário se disponível
-     if (userState) {
-       query = query.eq('provider_state', userState)
-     }
-
-    // Apply filters
-    if (filters?.category) {
-      query = query.eq('category', filters.category)
+    // Aplicar filtro de categoria (case-insensitive)
+    if (cat) {
+      query = query.ilike('category', `%${cat}%`)
     }
     
-    if (filters?.search) {
-      query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`)
+    // Aplicar filtro de região apenas se não for "Todas as regiões"
+    if (region && region !== 'all' && region !== 'Todas as regiões' && region !== '') {
+      query = query.eq('provider_state', region)
+    } else if (userState) {
+      // SEMPRE aplicar filtro por estado do usuário se disponível e não há filtro de região específico
+      query = query.eq('provider_state', userState)
+    }
+    
+    // Aplicar filtro de busca por texto
+    if (search) {
+      query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`)
     }
     
     if (filters?.min_price !== undefined) {
