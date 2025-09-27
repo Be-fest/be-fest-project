@@ -50,26 +50,22 @@ export default function LogoutButton() {
   };
 
   return (
-    <Button
+    <button
       onClick={handleLogout}
       disabled={isLoggingOut}
-      className="flex items-center space-x-4 p-3 text-red-600 hover:bg-red-50 transition-all duration-200 w-full rounded-xl group disabled:opacity-50 disabled:cursor-not-allowed"
+      className="flex items-center gap-3 p-4 text-red-600 hover:bg-red-50 active:bg-red-100 transition-all duration-200 w-full rounded-xl group disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-red-200 touch-manipulation min-h-[60px]"
     >
-      <div className="w-10 h-10 flex items-center justify-center rounded-lg bg-red-50 group-hover:bg-red-100 transition-colors">
-        {isLoggingOut ? (
-          <MdExitToApp className="text-xl animate-pulse" />
-        ) : (
-          <MdExitToApp className="text-xl" />
-        )}
+      <div className="w-12 h-12 flex items-center justify-center rounded-xl bg-red-50 group-hover:bg-red-100 group-active:bg-red-200 transition-colors flex-shrink-0">
+        <MdExitToApp className={`text-xl text-red-600 ${isLoggingOut ? 'animate-pulse' : ''}`} />
       </div>
-      <div className="flex-1 text-left">
-        <div className="font-medium">
+      <div className="flex-1 text-left min-w-0">
+        <div className="font-semibold text-sm sm:text-base text-red-600">
           {isLoggingOut ? 'Saindo...' : 'Sair'}
         </div>
-        <div className="text-xs text-red-400">
+        <div className="text-xs sm:text-sm text-red-400 truncate">
           Fazer logout da conta
         </div>
       </div>
-    </Button>
+    </button>
   );
 }

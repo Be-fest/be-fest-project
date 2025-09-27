@@ -329,12 +329,15 @@ function AdminHeader({ user, userType }: { user: any; userType: 'client' | 'prov
 
         {/* Mobile Menu Button */}
         <button
-          className="md:hidden flex flex-col items-center justify-center w-6 h-6 space-y-1"
+          className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#FF0080] focus:ring-opacity-50"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
+          aria-label={isMenuOpen ? 'Fechar menu' : 'Abrir menu'}
         >
-          <span className={`w-6 h-0.5 bg-gray-600 transition-all duration-300 ${isMenuOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
-          <span className={`w-6 h-0.5 bg-gray-600 transition-all duration-300 ${isMenuOpen ? 'opacity-0' : ''}`}></span>
-          <span className={`w-6 h-0.5 bg-gray-600 transition-all duration-300 ${isMenuOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
+          {isMenuOpen ? (
+            <MdClose className="w-6 h-6 text-gray-700" />
+          ) : (
+            <MdMenu className="w-6 h-6 text-gray-700" />
+          )}
         </button>
       </div>
 
@@ -474,12 +477,15 @@ function HomeHeader({ user, userType, loading }: { user: any; userType: 'client'
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden flex flex-col items-center justify-center w-6 h-6 space-y-1"
+            className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#FF0080] focus:ring-opacity-50"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label={isMenuOpen ? 'Fechar menu' : 'Abrir menu'}
           >
-            <span className={`w-6 h-0.5 bg-gray-600 transition-all duration-300 ${isMenuOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
-            <span className={`w-6 h-0.5 bg-gray-600 transition-all duration-300 ${isMenuOpen ? 'opacity-0' : ''}`}></span>
-            <span className={`w-6 h-0.5 bg-gray-600 transition-all duration-300 ${isMenuOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
+            {isMenuOpen ? (
+              <MdClose className="w-6 h-6 text-gray-700" />
+            ) : (
+              <MdMenu className="w-6 h-6 text-gray-700" />
+            )}
           </button>
         </div>
 
@@ -537,13 +543,13 @@ function HomeHeader({ user, userType, loading }: { user: any; userType: 'client'
                 )}
                 <Link 
                   href="/perfil" 
-                  className="flex items-center space-x-2 text-gray-600 hover:text-[#FF0080] transition-colors py-2"
+                  className="flex items-center space-x-3 text-gray-600 hover:text-[#FF0080] transition-colors py-3 px-2 rounded-lg hover:bg-gray-50"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  <div className="w-6 h-6 bg-[#FF0080] rounded-full flex items-center justify-center text-white text-xs font-medium">
+                  <div className="w-8 h-8 bg-[#FF0080] rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
                     U
                   </div>
-                  <span>Minha Área</span>
+                  <span className="font-medium">Minha Área</span>
                 </Link>
                 <div className="pt-4 border-t border-gray-200">
                   <LogoutButton />
@@ -720,12 +726,15 @@ function ProviderHeader({ user, userType, loading }: { user: any; userType: 'cli
 
         {/* Mobile Menu Button */}
         <button
-          className="md:hidden flex flex-col items-center justify-center w-6 h-6 space-y-1"
+          className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#FF0080] focus:ring-opacity-50"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
+          aria-label={isMenuOpen ? 'Fechar menu' : 'Abrir menu'}
         >
-          <span className={`w-6 h-0.5 bg-gray-600 transition-all duration-300 ${isMenuOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
-          <span className={`w-6 h-0.5 bg-gray-600 transition-all duration-300 ${isMenuOpen ? 'opacity-0' : ''}`}></span>
-          <span className={`w-6 h-0.5 bg-gray-600 transition-all duration-300 ${isMenuOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
+          {isMenuOpen ? (
+            <MdClose className="w-6 h-6 text-gray-700" />
+          ) : (
+            <MdMenu className="w-6 h-6 text-gray-700" />
+          )}
         </button>
       </div>
 
