@@ -200,18 +200,37 @@ function UserDropdown({ user, userType }: UserDropdownProps) {
   );
 }
 
+// Função para determinar o tema baseado no papel do usuário e contexto da rota
+function getTheme(userType: 'client' | 'provider' | 'admin' | null, pathname: string | null): 'client' | 'provider' {
+  // Tema PRESTADOR (roxo) apenas quando:
+  // - role === 'provider' E pathname começa com rotas específicas de prestador
+  const providerRoutes = ['/dashboard/prestador', '/seja-um-prestador'];
+  const isProviderContext = userType === 'provider' && providerRoutes.some(route => pathname?.startsWith(route));
+  
+  // Tema CLIENTE (rosa) em todos os outros casos:
+  // - usuário não logado
+  // - usuário logado com role === 'client'
+  // - role === 'provider' mas navegando em rotas públicas (incluindo /prestadores)
+  return isProviderContext ? 'provider' : 'client';
+}
+
 export function Header() {
   const pathname = usePathname();
   const { user, userData, loading } = useAuth();
   
   // Extrair o tipo de usuário dos dados do useAuth
   const userType = userData?.role as 'client' | 'provider' | 'admin' | null;
+  
+  // Determinar o tema baseado no papel e contexto
+  const theme = getTheme(userType, pathname);
 
   console.log('🔄 Header: Estado do useAuth', { 
     hasUser: !!user, 
     hasUserData: !!userData, 
     userType, 
-    loading 
+    loading,
+    theme,
+    pathname
   });
 
   // Se estiver na rota de admin, não renderizar header (admin tem seu próprio layout)
@@ -224,34 +243,22 @@ export function Header() {
     return null;
   }
 
-  // Se estiver na rota seja-um-prestador, sempre mostrar header de prestador
-  if (pathname?.startsWith('/seja-um-prestador')) {
-    return <ProviderHeader user={user} userType={userType} loading={loading} />;
-  }
-
-  // Se estiver na rota de prestadores, mostrar header de prestador
-  if (pathname?.startsWith('/prestadores')) {
-    return <ProviderHeader user={user} userType={userType} loading={loading} />;
-  }
-
   // Se ainda está carregando, mostrar skeleton
   if (loading) {
     return <HeaderSkeleton />;
   }
 
-  // Para outras rotas, mostrar header baseado no role do usuário
+  // Para outras rotas, mostrar header baseado no tema calculado
   if (user && !loading) {
     if (userType === 'admin') {
       return <AdminHeader user={user} userType={userType} />;
-    } else if (userType === 'provider') {
-      return <ProviderHeader user={user} userType={userType} loading={loading} />;
     } else {
-      return <HomeHeader user={user} userType={userType} loading={loading} />;
+      return <ThemeHeader user={user} userType={userType} loading={loading} theme={theme} />;
     }
   }
 
-  // Se não estiver logado, mostrar header padrão
-  return <HomeHeader user={user} userType={userType} loading={loading} />;
+  // Se não estiver logado, mostrar header padrão com tema cliente
+  return <ThemeHeader user={user} userType={userType} loading={loading} theme={theme} />;
 }
 
 // Componente Skeleton para o header durante carregamento
@@ -380,8 +387,31 @@ function AdminHeader({ user, userType }: { user: any; userType: 'client' | 'prov
   );
 }
 
-function HomeHeader({ user, userType, loading }: { user: any; userType: 'client' | 'provider' | 'admin' | null; loading: boolean }) {
+function ThemeHeader({ user, userType, loading, theme }: { 
+  user: any; 
+  userType: 'client' | 'provider' | 'admin' | null; 
+  loading: boolean;
+  theme: 'client' | 'provider';
+}) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // Definir cores baseadas no tema
+  const themeColors = {
+    client: {
+      primary: '#FF0080',
+      hover: 'hover:text-[#FF0080]',
+      button: 'bg-[#FF0080] hover:bg-[#E6006F]',
+      focus: 'focus:ring-[#FF0080]'
+    },
+    provider: {
+      primary: '#8B5CF6',
+      hover: 'hover:text-[#8B5CF6]',
+      button: 'bg-[#8B5CF6] hover:bg-[#7C3AED]',
+      focus: 'focus:ring-[#8B5CF6]'
+    }
+  };
+
+  const colors = themeColors[theme];
 
   return (
     <>
@@ -397,7 +427,7 @@ function HomeHeader({ user, userType, loading }: { user: any; userType: 'client'
           <nav className="hidden md:flex items-center space-x-8">
             <Link 
               href="/servicos"
-              className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
+              className={`text-gray-600 ${colors.hover} transition-colors font-poppins`}
             >
               Serviços
             </Link>
@@ -405,13 +435,13 @@ function HomeHeader({ user, userType, loading }: { user: any; userType: 'client'
               to="como-funciona" 
               smooth={true} 
               duration={500} 
-              className="text-gray-600 hover:text-[#FF0080] transition-colors cursor-pointer font-poppins"
+              className={`text-gray-600 ${colors.hover} transition-colors cursor-pointer font-poppins`}
             >
               Como Funciona
             </ScrollLink>
             <Link
               href="/prestadores"
-              className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
+              className={`text-gray-600 ${colors.hover} transition-colors font-poppins`}
             >
               Prestadores
             </Link>
@@ -420,7 +450,7 @@ function HomeHeader({ user, userType, loading }: { user: any; userType: 'client'
                 {userType === 'provider' && (
                   <Link 
                     href="/dashboard/prestador" 
-                    className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
+                    className={`text-gray-600 ${colors.hover} transition-colors font-poppins`}
                   >
                     Dashboard
                   </Link>
@@ -428,7 +458,7 @@ function HomeHeader({ user, userType, loading }: { user: any; userType: 'client'
                 {userType === 'admin' && (
                   <Link 
                     href="/admin" 
-                    className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins flex items-center gap-2"
+                    className={`text-gray-600 ${colors.hover} transition-colors font-poppins flex items-center gap-2`}
                   >
                     <MdAdminPanelSettings className="text-lg" />
                     Admin
@@ -439,7 +469,7 @@ function HomeHeader({ user, userType, loading }: { user: any; userType: 'client'
               <> 
                 <Link 
                   href="/seja-um-prestador" 
-                  className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
+                  className={`text-gray-600 ${colors.hover} transition-colors font-poppins`}
                 >
                   Seja um Prestador
                 </Link>
@@ -461,13 +491,13 @@ function HomeHeader({ user, userType, loading }: { user: any; userType: 'client'
               <>
                 <Link 
                   href="/auth/login"
-                  className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
+                  className={`text-gray-600 ${colors.hover} transition-colors font-poppins`}
                 >
                   Entrar
                 </Link>
                 <Link 
                   href="/auth/register"
-                  className="bg-[#FF0080] hover:bg-[#E6006F] text-white px-4 py-2 rounded-lg transition-colors font-poppins"
+                  className={`${colors.button} text-white px-4 py-2 rounded-lg transition-colors font-poppins`}
                 >
                   Cadastrar
                 </Link>
@@ -477,7 +507,7 @@ function HomeHeader({ user, userType, loading }: { user: any; userType: 'client'
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#FF0080] focus:ring-opacity-50"
+            className={`md:hidden flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 ${colors.focus} focus:ring-opacity-50`}
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             aria-label={isMenuOpen ? 'Fechar menu' : 'Abrir menu'}
           >
@@ -499,7 +529,7 @@ function HomeHeader({ user, userType, loading }: { user: any; userType: 'client'
           <nav className="px-6 py-4 space-y-4">
             <Link 
               href="/servicos"
-              className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
+              className={`block text-gray-600 ${colors.hover} transition-colors py-2`}
               onClick={() => setIsMenuOpen(false)}
             >
               Serviços
@@ -508,14 +538,14 @@ function HomeHeader({ user, userType, loading }: { user: any; userType: 'client'
               to="como-funciona" 
               smooth={true} 
               duration={500} 
-              className="block text-gray-600 hover:text-[#FF0080] transition-colors cursor-pointer py-2"
+              className={`block text-gray-600 ${colors.hover} transition-colors cursor-pointer py-2`}
               onClick={() => setIsMenuOpen(false)}
             >
               Como Funciona
             </ScrollLink>
             <Link
               href="/prestadores"
-              className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
+              className={`block text-gray-600 ${colors.hover} transition-colors py-2`}
               onClick={() => setIsMenuOpen(false)}
             >
               Prestadores
@@ -525,7 +555,7 @@ function HomeHeader({ user, userType, loading }: { user: any; userType: 'client'
                 {userType === 'provider' && (
                   <Link 
                     href="/dashboard/prestador" 
-                    className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
+                    className={`block text-gray-600 ${colors.hover} transition-colors py-2`}
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Dashboard
@@ -534,7 +564,7 @@ function HomeHeader({ user, userType, loading }: { user: any; userType: 'client'
                 {userType === 'admin' && (
                   <Link 
                     href="/admin" 
-                    className="flex items-center gap-2 text-gray-600 hover:text-[#FF0080] transition-colors py-2"
+                    className={`flex items-center gap-2 text-gray-600 ${colors.hover} transition-colors py-2`}
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <MdAdminPanelSettings className="text-lg" />
@@ -543,10 +573,10 @@ function HomeHeader({ user, userType, loading }: { user: any; userType: 'client'
                 )}
                 <Link 
                   href="/perfil" 
-                  className="flex items-center space-x-3 text-gray-600 hover:text-[#FF0080] transition-colors py-3 px-2 rounded-lg hover:bg-gray-50"
+                  className={`flex items-center space-x-3 text-gray-600 ${colors.hover} transition-colors py-3 px-2 rounded-lg hover:bg-gray-50`}
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  <div className="w-8 h-8 bg-[#FF0080] rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0`} style={{ backgroundColor: colors.primary }}>
                     U
                   </div>
                   <span className="font-medium">Minha Área</span>
@@ -560,7 +590,7 @@ function HomeHeader({ user, userType, loading }: { user: any; userType: 'client'
                 <Link 
                   href="/perfil?tab=minhas-festas"
                   onClick={() => setIsMenuOpen(false)}
-                  className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
+                  className={`block text-gray-600 ${colors.hover} transition-colors py-2`}
                 >
                   New Fest
                 </Link>
@@ -568,14 +598,14 @@ function HomeHeader({ user, userType, loading }: { user: any; userType: 'client'
                   to="contatos" 
                   smooth={true} 
                   duration={500} 
-                  className="block text-gray-600 hover:text-[#FF0080] transition-colors cursor-pointer py-2"
+                  className={`block text-gray-600 ${colors.hover} transition-colors cursor-pointer py-2`}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Contatos
                 </ScrollLink>
                 <Link 
                   href="/seja-um-prestador" 
-                  className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
+                  className={`block text-gray-600 ${colors.hover} transition-colors py-2`}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Seja um Prestador
@@ -583,14 +613,14 @@ function HomeHeader({ user, userType, loading }: { user: any; userType: 'client'
                 <div className="pt-4 border-t border-gray-200 space-y-2">
                   <Link 
                     href="/auth/login"
-                    className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
+                    className={`block text-gray-600 ${colors.hover} transition-colors py-2`}
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Entrar
                   </Link>
                   <Link 
                     href="/auth/register"
-                    className="block bg-[#FF0080] hover:bg-[#E6006F] text-white px-4 py-2 rounded-lg transition-colors text-center"
+                    className={`block ${colors.button} text-white px-4 py-2 rounded-lg transition-colors text-center`}
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Cadastrar
@@ -605,253 +635,4 @@ function HomeHeader({ user, userType, loading }: { user: any; userType: 'client'
   );
 }
 
-// Header para a página de prestadores
-function ProviderHeader({ user, userType, loading }: { user: any; userType: 'client' | 'provider' | 'admin' | null; loading: boolean }) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  return (
-    <header className="w-full bg-white shadow-sm py-3 md:py-4 px-3 md:px-6 fixed top-0 z-50">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <Link href="/" className="flex items-center">
-          <img 
-            src="/be-fest-provider-logo.png" 
-            alt="Be Fest Provider Logo" 
-            className="h-8 md:h-10 w-auto"
-          />
-        </Link>
-        
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-8">
-          {user && userType === 'provider' ? (
-            <>
-              <Link 
-                href="/dashboard/prestador"
-                className="text-gray-600 hover:text-[#A502CA] transition-colors font-poppins"
-              >
-                Dashboard
-              </Link>
-              <Link 
-                href="/servicos"
-                className="text-gray-600 hover:text-[#A502CA] transition-colors font-poppins"
-              >
-                Serviços
-              </Link>
-              <Link 
-                href="/prestadores"
-                className="text-gray-600 hover:text-[#A502CA] transition-colors font-poppins"
-              >
-                Prestadores
-              </Link>
-              <Link 
-                href="/seja-um-prestador"
-                className="text-gray-600 hover:text-[#A502CA] transition-colors font-poppins"
-              >
-                Seja um Prestador
-              </Link>
-            </>
-          ) : user && userType === 'admin' ? (
-            <>
-              <Link 
-                href="/admin"
-                className="text-gray-600 hover:text-[#A502CA] transition-colors font-poppins flex items-center gap-2"
-              >
-                <MdAdminPanelSettings className="text-lg" />
-                Admin
-              </Link>
-            </>
-          ) : (
-            <>
-              <ScrollLink 
-                to="beneficios"
-                smooth={true} 
-                duration={500}
-                className="text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer font-poppins"
-              >
-                Benefícios
-              </ScrollLink>
-              <ScrollLink 
-                to="como-funciona"
-                smooth={true} 
-                duration={500}
-                className="text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer font-poppins"
-              >
-                Como Funciona
-              </ScrollLink>
-              <ScrollLink 
-                to="faq"
-                smooth={true} 
-                duration={500}
-                className="text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer font-poppins"
-              >
-                FAQ
-              </ScrollLink>
-              <ScrollLink 
-                to="contato"
-                smooth={true} 
-                duration={500}
-                className="text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer font-poppins"
-              >
-                Contato
-              </ScrollLink>
-            </>
-          )}
-        </nav>
-
-        {/* Desktop Auth Buttons */}
-        <div className="hidden md:flex items-center space-x-4">
-          {loading ? (
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gray-200 animate-pulse rounded-full"></div>
-              <div className="w-16 h-4 bg-gray-200 animate-pulse rounded"></div>
-            </div>
-          ) : user ? (
-            <UserDropdown user={user} userType={userType} />
-          ) : (
-            <>
-              <Link 
-                href="/auth/login"
-                className="text-gray-600 hover:text-[#A502CA] transition-colors font-poppins"
-              >
-                Entrar
-              </Link>
-              <Link 
-                href="/auth/register"
-                className="bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-3 lg:px-4 py-2 rounded-lg transition-colors font-poppins text-sm lg:text-base"
-              >
-                Cadastrar
-              </Link>
-            </>
-          )}
-        </div>
-
-        {/* Mobile Menu Button */}
-        <button
-          className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#FF0080] focus:ring-opacity-50"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          aria-label={isMenuOpen ? 'Fechar menu' : 'Abrir menu'}
-        >
-          {isMenuOpen ? (
-            <MdClose className="w-6 h-6 text-gray-700" />
-          ) : (
-            <MdMenu className="w-6 h-6 text-gray-700" />
-          )}
-        </button>
-      </div>
-
-      {/* Mobile Menu */}
-      <motion.div 
-        className={`md:hidden bg-white border-t border-gray-200 ${isMenuOpen ? 'block' : 'hidden'}`}
-        initial={{ opacity: 0, height: 0 }}
-        animate={{ opacity: isMenuOpen ? 1 : 0, height: isMenuOpen ? 'auto' : 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        <nav className="px-6 py-4 space-y-4">
-          {user && userType === 'provider' ? (
-            <>
-              <Link 
-                href="/dashboard/prestador"
-                className="block text-gray-600 hover:text-[#A502CA] transition-colors py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Dashboard
-              </Link>
-              <Link 
-                href="/servicos"
-                className="block text-gray-600 hover:text-[#A502CA] transition-colors py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Serviços
-              </Link>
-              <Link 
-                href="/prestadores"
-                className="block text-gray-600 hover:text-[#A502CA] transition-colors py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Prestadores
-              </Link>
-              <Link 
-                href="/seja-um-prestador"
-                className="block text-gray-600 hover:text-[#A502CA] transition-colors py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Seja um Prestador
-              </Link>
-              <div className="pt-4 border-t border-gray-200">
-                <UserDropdown user={user} userType={userType} />
-              </div>
-            </>
-          ) : user && userType === 'admin' ? (
-            <>
-              <Link 
-                href="/admin"
-                className="flex items-center gap-2 text-gray-600 hover:text-[#A502CA] transition-colors py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <MdAdminPanelSettings className="text-lg" />
-                Admin
-              </Link>
-              <div className="pt-4 border-t border-gray-200">
-                <UserDropdown user={user} userType={userType} />
-              </div>
-            </>
-          ) : (
-            <>
-              <ScrollLink 
-                to="beneficios"
-                smooth={true} 
-                duration={500}
-                className="block text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Benefícios
-              </ScrollLink>
-              <ScrollLink 
-                to="como-funciona"
-                smooth={true} 
-                duration={500}
-                className="block text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Como Funciona
-              </ScrollLink>
-              <ScrollLink 
-                to="faq"
-                smooth={true} 
-                duration={500}
-                className="block text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                FAQ
-              </ScrollLink>
-              <ScrollLink 
-                to="contato"
-                smooth={true} 
-                duration={500}
-                className="block text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Contato
-              </ScrollLink>
-              <div className="pt-4 border-t border-gray-200 space-y-2">
-                <Link 
-                  href="/auth/login"
-                  className="block text-gray-600 hover:text-[#A502CA] transition-colors py-2"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Entrar
-                </Link>
-                <Link 
-                  href="/auth/register"
-                  className="block bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-4 py-2 rounded-lg transition-colors text-center"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Cadastrar
-                </Link>
-              </div>
-            </>
-          )}
-        </nav>
-      </motion.div>
-    </header>
-  );
-}
