@@ -395,6 +395,17 @@ function ThemeHeader({ user, userType, loading, theme }: {
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  // Função para determinar o link do botão "Criar minha festa"
+  const getCreatePartyLink = () => {
+    if (user && userType === 'client') {
+      // Cliente logado vai diretamente para criação de festa
+      return '/perfil?tab=minhas-festas&new=true';
+    } else {
+      // Usuário não logado vai para login com parâmetro next
+      return '/auth/login?returnUrl=' + encodeURIComponent('/perfil?tab=minhas-festas&new=true');
+    }
+  };
+
   // Definir cores baseadas no tema
   const themeColors = {
     client: {
@@ -479,6 +490,16 @@ function ThemeHeader({ user, userType, loading, theme }: {
 
           {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center space-x-4">
+            {/* Botão Criar minha festa - apenas no tema cliente */}
+            {theme === 'client' && (
+              <Link 
+                href={getCreatePartyLink()}
+                className={`${colors.button} text-white px-4 py-2 rounded-lg transition-all duration-200 font-poppins font-medium hover:scale-105 focus:outline-none focus:ring-2 ${colors.focus} focus:ring-opacity-50`}
+              >
+                Criar minha festa
+              </Link>
+            )}
+
             {loading ? (
               // Skeleton apenas no carregamento inicial e por pouco tempo
               <div className="flex items-center space-x-2">
@@ -550,6 +571,17 @@ function ThemeHeader({ user, userType, loading, theme }: {
             >
               Prestadores
             </Link>
+            {/* Botão Criar minha festa - apenas no tema cliente */}
+            {theme === 'client' && (
+              <Link 
+                href={getCreatePartyLink()}
+                className={`block ${colors.button} text-white px-4 py-3 rounded-lg transition-all duration-200 font-poppins font-medium text-center hover:scale-105 focus:outline-none focus:ring-2 ${colors.focus} focus:ring-opacity-50`}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                🎉 Criar minha festa
+              </Link>
+            )}
+
             {user ? (
               <>
                 {userType === 'provider' && (
@@ -587,13 +619,6 @@ function ThemeHeader({ user, userType, loading, theme }: {
               </>
             ) : (
               <>
-                <Link 
-                  href="/perfil?tab=minhas-festas"
-                  onClick={() => setIsMenuOpen(false)}
-                  className={`block text-gray-600 ${colors.hover} transition-colors py-2`}
-                >
-                  New Fest
-                </Link>
                 <ScrollLink 
                   to="contatos" 
                   smooth={true} 
