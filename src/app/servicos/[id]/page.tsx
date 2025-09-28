@@ -376,10 +376,11 @@ export default function ServiceDetailsPage() {
               {service.description && (
                 <div className="mb-8">
                   <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6">Descrição do Serviço</h2>
-                  <div className="text-gray-700 leading-relaxed text-sm md:text-base lg:text-lg">
+                  <div className="text-gray-700 leading-relaxed text-sm md:text-base lg:text-lg prose prose-gray max-w-none">
                     <SafeHTML 
                       html={service.description} 
                       fallback="Sem descrição disponível"
+                      className="rich-text-content"
                     />
                   </div>
                 </div>
