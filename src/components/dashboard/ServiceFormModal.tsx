@@ -19,9 +19,9 @@ interface ServiceFormModalProps {
 // Definição do tipo para faixa de convidados
 export type GuestTier = {
   id?: string;
-  min_total_guests: number;
+  min_total_guests: number | string;
   max_total_guests: number | null;
-  base_price_per_adult: number;
+  base_price_per_adult: number | string;
   tier_description: string;
 };
 
@@ -127,15 +127,32 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
       return;
     }
 
-    // Ordenação automática
-    const sorted = [...guestTiers].sort((a, b) => a.min_total_guests - b.min_total_guests);
+    // Validar se todos os campos obrigatórios estão preenchidos
+    for (let i = 0; i < guestTiers.length; i++) {
+      const tier = guestTiers[i];
+      
+      if (!tier.min_total_guests || tier.min_total_guests === '' || Number(tier.min_total_guests) < 1) {
+        setTiersError(`Na faixa ${i + 1}, o número mínimo de convidados deve ser pelo menos 1.`);
+        return;
+      }
+      
+      if (!tier.base_price_per_adult || tier.base_price_per_adult === '' || Number(tier.base_price_per_adult) <= 0) {
+        setTiersError(`Na faixa ${i + 1}, o preço por adulto deve ser maior que zero.`);
+        return;
+      }
+    }
+
+    // Ordenação automática (convertendo para numbers)
+    const sorted = [...guestTiers].sort((a, b) => Number(a.min_total_guests) - Number(b.min_total_guests));
     
     // Checar gaps e sobreposição
     for (let i = 0; i < sorted.length; i++) {
       const tier = sorted[i];
+      const minGuests = Number(tier.min_total_guests);
+      const maxGuests = tier.max_total_guests ? Number(tier.max_total_guests) : null;
       
       // Validar min < max
-      if (tier.max_total_guests && tier.min_total_guests >= tier.max_total_guests) {
+      if (maxGuests && minGuests >= maxGuests) {
         setTiersError(`Na faixa ${i + 1}, o mínimo deve ser menor que o máximo.`);
         return;
       }
@@ -230,8 +247,13 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
       formDataToSend.append('category', formData.category);
       formDataToSend.append('is_active', formData.is_active.toString());
       
-      // Adicionar faixas de preço
-      formDataToSend.append('guest_tiers', JSON.stringify(guestTiers));
+      // Adicionar faixas de preço (convertendo strings para numbers)
+      const processedTiers = guestTiers.map(tier => ({
+        ...tier,
+        min_total_guests: Number(tier.min_total_guests),
+        base_price_per_adult: Number(tier.base_price_per_adult)
+      }));
+      formDataToSend.append('guest_tiers', JSON.stringify(processedTiers));
       
       // Adicionar imagens
       console.log('📸 [SERVICE_FORM] Enviando imagens:', formData.images_urls);
@@ -458,16 +480,17 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
                     <input
                       type="number"
                       min={1}
-                      value={tier.min_total_guests}
-                      onChange={e => handleTierChange(idx, 'min_total_guests', parseInt(e.target.value) || 1)}
+                      value={tier.min_total_guests || ''}
+                      onChange={e => handleTierChange(idx, 'min_total_guests', e.target.value ? parseInt(e.target.value) : '')}
                       className="w-24 px-2 py-1 border border-gray-300 rounded text-sm"
+                      placeholder="1"
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Max. Convidados</label>
                     <input
                       type="number"
-                      min={tier.min_total_guests + 1}
+                      min={tier.min_total_guests ? Number(tier.min_total_guests) + 1 : 2}
                       value={tier.max_total_guests || ''}
                       onChange={e => handleTierChange(idx, 'max_total_guests', e.target.value ? parseInt(e.target.value) : null)}
                       className="w-24 px-2 py-1 border border-gray-300 rounded text-sm"
@@ -478,11 +501,12 @@ export function ServiceFormModal({ isOpen, onClose, service, onSubmit }: Service
                     <label className="block text-xs font-medium text-gray-600 mb-1">Preço por Adulto (R$)</label>
                     <input
                       type="number"
-                      min={0}
+                      min={0.01}
                       step={0.01}
-                      value={tier.base_price_per_adult}
-                      onChange={e => handleTierChange(idx, 'base_price_per_adult', parseFloat(e.target.value) || 0)}
+                      value={tier.base_price_per_adult || ''}
+                      onChange={e => handleTierChange(idx, 'base_price_per_adult', e.target.value ? parseFloat(e.target.value) : '')}
                       className="w-32 px-2 py-1 border border-gray-300 rounded text-sm"
+                      placeholder="0,00"
                     />
                   </div>
                   <div className="flex-1">
