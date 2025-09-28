@@ -229,7 +229,7 @@ export function ProviderServices({ services, providerId, initialSort = 'relevanc
                     <span className="text-lg md:text-xl font-bold text-[#FF0080]">
                       A partir de R$ {(item.price || 0).toFixed(2)}
                     </span>
-                    <Link href={`/servicos/${item.id}`} className="w-full md:w-auto">
+                    <Link href={`/servicos/${item.id}?from=provider-site&providerId=${providerId}`} className="w-full md:w-auto">
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}

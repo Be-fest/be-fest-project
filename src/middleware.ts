@@ -31,18 +31,37 @@ export async function middleware(request: NextRequest) {
         .single();
 
       if (userData?.role === 'provider') {
-        // Rotas permitidas para prestadores
-        const allowedProviderRoutes = [
-          '/dashboard/prestador',
-          `/prestador/${userData.id}`
+        // Rotas públicas que prestadores podem acessar (sem redirecionamento)
+        const publicRoutes = [
+          '/servicos',
+          '/prestadores',
+          `/prestador/${userData.id}` // Apenas o site público próprio do prestador
         ];
 
-        // Verificar se a rota atual é permitida
+        // Rotas privadas permitidas para prestadores
+        const allowedProviderRoutes = [
+          '/dashboard/prestador',
+          '/prestador' // Permitir acesso às páginas do próprio prestador
+        ];
+
+        // Verificar se é uma rota pública (não redirecionar)
+        const isPublicRoute = publicRoutes.some(route => 
+          pathname === route || 
+          pathname.startsWith(route + '/') ||
+          pathname.startsWith('/servicos/') // Permitir páginas de serviços
+        );
+
+        // Se é rota pública, permitir acesso
+        if (isPublicRoute) {
+          return NextResponse.next();
+        }
+
+        // Verificar se é uma rota privada permitida
         const isAllowedRoute = allowedProviderRoutes.some(route => 
           pathname === route || pathname.startsWith(route + '/')
         );
 
-        // Se não é uma rota permitida, redirecionar
+        // Se não é nem pública nem privada permitida, redirecionar
         if (!isAllowedRoute) {
           return NextResponse.redirect(new URL('/dashboard/prestador', request.url));
         }
