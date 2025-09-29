@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Hero } from '@/components/Hero';
+import { CreatePartyCTA } from '@/components/CreatePartyCTA';
 import { CategoriesSection } from '@/components/CategoriesSection';
 import { ServicesSection } from '@/components/ServicesSection';
 import { HowItWorks } from '@/components/HowItWorks';
@@ -22,6 +23,7 @@ export default function Home() {
     <ClientOnlyGuard>
       <main className="min-h-screen">
         <Hero />
+        <CreatePartyCTA />
         <div id="servicos">
           <ServicesSection />
         </div>

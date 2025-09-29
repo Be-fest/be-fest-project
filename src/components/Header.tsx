@@ -21,6 +21,7 @@ import {
   MdClose,
   MdAdminPanelSettings
 } from 'react-icons/md';
+import { goToCreateParty, trackCreatePartyClick } from '@/utils/navigationHelpers';
 
 // Componente UserDropdown
 interface UserDropdownProps {
@@ -201,17 +202,27 @@ function UserDropdown({ user, userType }: UserDropdownProps) {
 }
 
 // Função para determinar o tema baseado no papel do usuário e contexto da rota
-function getTheme(userType: 'client' | 'provider' | 'admin' | null, pathname: string | null): 'client' | 'provider' {
+function getTheme(userType: 'client' | 'provider' | 'admin' | null, pathname: string | null, searchParams?: URLSearchParams | null, userId?: string): 'client' | 'provider' {
   // Tema PRESTADOR (roxo) quando:
-  // - role === 'provider' E pathname começa com rotas de prestador (dashboard ou páginas públicas)
-  const providerRoutes = ['/dashboard/prestador', '/prestador/'];
-  const isProviderContext = userType === 'provider' && providerRoutes.some(route => pathname?.startsWith(route));
+  // - usuário logado como PRESTADOR E está em áreas do prestador (dashboard ou sua página pública)
+  // - OU prestador acessando serviço de sua própria página
+  const isProviderArea = userType === 'provider' && (
+    pathname?.startsWith('/dashboard/prestador') ||
+    pathname?.startsWith('/prestador/')
+  );
+  
+  // Verificar se prestador está acessando serviço de sua própria página
+  const isProviderOwnService = userType === 'provider' &&
+    pathname?.startsWith('/servicos/') &&
+    searchParams?.get('from') === 'provider-site' &&
+    searchParams?.get('providerId') === userId;
   
   // Tema CLIENTE (rosa) em todos os outros casos:
-  // - usuário não logado
-  // - usuário logado com role === 'client'
-  // - role === 'provider' mas navegando em outras rotas
-  return isProviderContext ? 'provider' : 'client';
+  // - usuário não logado (anônimo) 
+  // - usuário logado como cliente
+  // - prestador navegando em páginas gerais do site
+  // - prestador navegando em páginas de outros prestadores
+  return (isProviderArea || isProviderOwnService) ? 'provider' : 'client';
 }
 
 // Função para detectar se estamos no contexto público de um prestador
@@ -238,14 +249,14 @@ interface HeaderProps {
 
 export function Header({ providerContext }: HeaderProps = {}) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user, userData, loading } = useAuth();
   
   // Extrair o tipo de usuário dos dados do useAuth
   const userType = userData?.role as 'client' | 'provider' | 'admin' | null;
   
-  // Determinar o tema baseado no papel e contexto
-  // Se temos contexto de prestador, forçar tema de prestador
-  const theme = providerContext?.isFromProviderSite ? 'provider' : getTheme(userType, pathname);
+  // Determinar o tema baseado no papel do usuário logado, contexto de navegação e parâmetros
+  const theme = getTheme(userType, pathname, searchParams, user?.id);
 
   console.log('🔄 Header: Estado do useAuth', { 
     hasUser: !!user, 
@@ -420,21 +431,27 @@ function ThemeHeader({ user, userType, loading, theme, providerContext }: {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const router = useRouter();
   
   // Detectar contexto público do prestador
   const publicProviderContext = getPublicProviderContext(pathname, userType);
   const fromProviderSite = providerContext?.isFromProviderSite || searchParams?.get('from') === 'provider-site';
   const contextProviderId = providerContext?.providerId || searchParams?.get('providerId') || publicProviderContext?.providerId;
 
-  // Função para determinar o link do botão "Criar minha festa"
-  const getCreatePartyLink = () => {
-    if (user && userType === 'client') {
-      // Cliente logado vai diretamente para criação de festa
-      return '/perfil?tab=minhas-festas&new=true';
-    } else {
-      // Usuário não logado vai para login com parâmetro next
-      return '/auth/login?returnUrl=' + encodeURIComponent('/perfil?tab=minhas-festas&new=true');
-    }
+  // Verificar se o prestador está em sua própria área
+  const isProviderInOwnArea = user && userType === 'provider' && (
+    pathname?.startsWith('/dashboard/prestador') ||
+    (pathname?.startsWith('/prestador/') && pathname.includes(user.id)) ||
+    (pathname?.startsWith('/servicos/') && 
+     searchParams?.get('from') === 'provider-site' && 
+     searchParams?.get('providerId') === user.id)
+  );
+
+  // Função para navegar para criação de festa
+  const handleCreatePartyClick = (e: React.MouseEvent, source: 'topbar' | 'mobile') => {
+    e.preventDefault();
+    trackCreatePartyClick(source);
+    goToCreateParty(router, !!user);
   };
 
   // Função para ajustar links baseado no contexto público do prestador
@@ -483,8 +500,8 @@ function ThemeHeader({ user, userType, loading, theme, providerContext }: {
           
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            {/* Navegação específica para prestador */}
-            {user && userType === 'provider' ? (
+            {/* Navegação específica para prestador - em sua própria área */}
+            {isProviderInOwnArea ? (
               <>
                 <Link 
                   href="/dashboard/prestador" 
@@ -513,67 +530,41 @@ function ThemeHeader({ user, userType, loading, theme, providerContext }: {
                 <MdAdminPanelSettings className="text-lg" />
                 Admin
               </Link>
-            ) : !user ? (
+            ) : theme === 'client' ? (
               <>
+                {/* Navegação pública para clientes - sempre a mesma estrutura */}
                 <Link 
-                  href={getContextualLink('/servicos')}
+                  href="/servicos"
                   className={`text-gray-600 ${colors.hover} transition-colors font-poppins`}
                 >
                   Serviços
                 </Link>
-                {!contextProviderId && (
-                  <ScrollLink 
-                    to="como-funciona" 
-                    smooth={true} 
-                    duration={500} 
-                    className={`text-gray-600 ${colors.hover} transition-colors cursor-pointer font-poppins`}
+                <button
+                  onClick={(e) => handleCreatePartyClick(e, 'topbar')}
+                  className={`text-gray-600 ${colors.hover} transition-colors font-poppins focus:outline-none`}
+                >
+                  Criar minha festa
+                </button>
+                <Link
+                  href="/prestadores"
+                  className={`text-gray-600 ${colors.hover} transition-colors font-poppins`}
+                >
+                  Prestadores
+                </Link>
+                {!user && (
+                  <Link 
+                    href="/seja-um-prestador" 
+                    className={`text-gray-600 ${colors.hover} transition-colors font-poppins`}
                   >
-                    Como Funciona
-                  </ScrollLink>
+                    Seja um Prestador
+                  </Link>
                 )}
-                <Link
-                  href={getContextualLink('/prestadores')}
-                  className={`text-gray-600 ${colors.hover} transition-colors font-poppins`}
-                >
-                  {contextProviderId ? 'Sobre' : 'Prestadores'}
-                </Link>
-                <Link 
-                  href="/seja-um-prestador" 
-                  className={`text-gray-600 ${colors.hover} transition-colors font-poppins`}
-                >
-                  Seja um Prestador
-                </Link>
               </>
-            ) : (
-              <>
-                <Link 
-                  href={getContextualLink('/servicos')}
-                  className={`text-gray-600 ${colors.hover} transition-colors font-poppins`}
-                >
-                  Serviços
-                </Link>
-                <Link
-                  href={getContextualLink('/prestadores')}
-                  className={`text-gray-600 ${colors.hover} transition-colors font-poppins`}
-                >
-                  {contextProviderId ? 'Sobre' : 'Prestadores'}
-                </Link>
-              </>
-            )}
+            ) : null}
           </nav>
 
           {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            {/* Botão Criar minha festa - apenas no tema cliente */}
-            {theme === 'client' && (
-              <Link 
-                href={getCreatePartyLink()}
-                className={`${colors.button} text-white px-4 py-2 rounded-lg transition-all duration-200 font-poppins font-medium hover:scale-105 focus:outline-none focus:ring-2 ${colors.focus} focus:ring-opacity-50`}
-              >
-                Criar minha festa
-              </Link>
-            )}
-
             {loading ? (
               // Skeleton apenas no carregamento inicial e por pouco tempo
               <div className="flex items-center space-x-2">
@@ -622,7 +613,7 @@ function ThemeHeader({ user, userType, loading, theme, providerContext }: {
           transition={{ duration: 0.3 }}
         >
           <nav className="px-6 py-4 space-y-4">
-            {user && userType === 'provider' ? (
+            {isProviderInOwnArea ? (
               <>
                 <Link 
                   href="/dashboard/prestador" 
@@ -646,45 +637,52 @@ function ThemeHeader({ user, userType, loading, theme, providerContext }: {
                   Meu Site
                 </Link>
               </>
-            ) : (
+            ) : user && userType === 'admin' ? (
+              <Link 
+                href="/admin" 
+                className={`flex items-center gap-2 text-gray-600 ${colors.hover} transition-colors py-2`}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <MdAdminPanelSettings className="text-lg" />
+                Admin
+              </Link>
+            ) : theme === 'client' ? (
               <>
+                {/* Navegação pública para clientes - sempre a mesma estrutura */}
                 <Link 
-                  href={getContextualLink('/servicos')}
+                  href="/servicos"
                   className={`block text-gray-600 ${colors.hover} transition-colors py-2`}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Serviços
                 </Link>
-                {!contextProviderId && (
-                  <ScrollLink 
-                    to="como-funciona" 
-                    smooth={true} 
-                    duration={500} 
-                    className={`block text-gray-600 ${colors.hover} transition-colors cursor-pointer py-2`}
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Como Funciona
-                  </ScrollLink>
-                )}
+                <button
+                  onClick={(e) => {
+                    handleCreatePartyClick(e, 'mobile');
+                    setIsMenuOpen(false);
+                  }}
+                  className={`block text-gray-600 ${colors.hover} transition-colors py-2 focus:outline-none text-left`}
+                >
+                  Criar minha festa
+                </button>
                 <Link
-                  href={getContextualLink('/prestadores')}
+                  href="/prestadores"
                   className={`block text-gray-600 ${colors.hover} transition-colors py-2`}
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  {contextProviderId ? 'Sobre' : 'Prestadores'}
+                  Prestadores
                 </Link>
-                {/* Botão Criar minha festa - apenas no tema cliente */}
-                {theme === 'client' && (
+                {!user && (
                   <Link 
-                    href={getCreatePartyLink()}
-                    className={`block ${colors.button} text-white px-4 py-3 rounded-lg transition-all duration-200 font-poppins font-medium text-center hover:scale-105 focus:outline-none focus:ring-2 ${colors.focus} focus:ring-opacity-50`}
+                    href="/seja-um-prestador" 
+                    className={`block text-gray-600 ${colors.hover} transition-colors py-2`}
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    🎉 Criar minha festa
+                    Seja um Prestador
                   </Link>
                 )}
               </>
-            )}
+            ) : null}
 
             {user ? (
               <>
@@ -714,22 +712,6 @@ function ThemeHeader({ user, userType, loading, theme, providerContext }: {
               </>
             ) : (
               <>
-                <ScrollLink 
-                  to="contatos" 
-                  smooth={true} 
-                  duration={500} 
-                  className={`block text-gray-600 ${colors.hover} transition-colors cursor-pointer py-2`}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Contatos
-                </ScrollLink>
-                <Link 
-                  href="/seja-um-prestador" 
-                  className={`block text-gray-600 ${colors.hover} transition-colors py-2`}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Seja um Prestador
-                </Link>
                 <div className="pt-4 border-t border-gray-200 space-y-2">
                   <Link 
                     href="/auth/login"
