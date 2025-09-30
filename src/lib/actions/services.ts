@@ -715,6 +715,7 @@ export async function getProviderStatsAction(): Promise<ActionResult<{
   approvedRequests: number
   activeServices: number
   totalRevenue: number
+  paidRevenue: number
   completedEvents: number
 }>> {
   try {
@@ -770,17 +771,26 @@ export async function getProviderStatsAction(): Promise<ActionResult<{
     // Calcular estatísticas
     const totalRequests = eventServices?.length || 0
     const pendingRequests = eventServices?.filter(es => es.booking_status === 'pending_provider_approval').length || 0
-          const approvedRequests = eventServices?.filter(es => es.booking_status === 'approved').length || 0
+    const approvedRequests = eventServices?.filter(es => es.booking_status === 'approved').length || 0
     const activeServicesCount = activeServices?.length || 0
     
-    // Calcular receita total estimada
+    // Calcular receita total estimada (todos os serviços)
     const totalRevenue = eventServices?.reduce((sum, es) => {
       return sum + (es.total_estimated_price || 0)
     }, 0) || 0
 
+    // Calcular receita recebida (apenas serviços pagos/aprovados)
+    const paidRevenue = eventServices?.reduce((sum, es) => {
+      // Apenas somar serviços com status 'approved' (pagos)
+      if (es.booking_status === 'approved') {
+        return sum + (es.total_estimated_price || 0)
+      }
+      return sum
+    }, 0) || 0
+
     // Eventos realizados (com status confirmed ou completed)
     const completedEvents = eventServices?.filter(es => 
-              es.booking_status === 'completed'
+      es.booking_status === 'completed'
     ).length || 0
 
     const stats = {
@@ -789,6 +799,7 @@ export async function getProviderStatsAction(): Promise<ActionResult<{
       approvedRequests,
       activeServices: activeServicesCount,
       totalRevenue,
+      paidRevenue,
       completedEvents
     }
 

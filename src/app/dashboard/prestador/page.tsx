@@ -44,12 +44,14 @@ export default function ProviderDashboard() {
     pendingRequests: number
     activeServices: number
     totalRevenue: number
+    paidRevenue: number
     completedEvents: number
   }>({
     totalRequests: 0,
     pendingRequests: 0,
     activeServices: 0,
     totalRevenue: 0,
+    paidRevenue: 0,
     completedEvents: 0
   });
   const [loading, setLoading] = useState(true);
@@ -259,22 +261,25 @@ export default function ProviderDashboard() {
         <ProviderLayout>
           <div className="min-h-screen bg-gray-50 p-3 sm:p-6">
             <div className="max-w-7xl mx-auto">
-              {/* Navigation Tabs - Static Structure */}
+              {/* Navigation Tabs - Skeleton */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 mb-6 sm:mb-8">
-                <div className="flex flex-wrap items-center gap-2 overflow-x-auto">
-                  {[
-                    { label: 'Visão Geral', icon: MdDashboard },
-                    { label: 'Solicitações', icon: MdPendingActions },
-                    { label: 'Aguardando Pagamento', icon: MdPayment },
-                    { label: 'Pagos', icon: MdCheckCircle },
-                    { label: 'Cancelados', icon: MdCancel },
-                    { label: 'Configurações', icon: MdSettings }
-                  ].map((tab, i) => (
-                    <div key={i} className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-xl bg-gray-100">
-                      <tab.icon className="text-gray-400 text-sm sm:text-base" size={18} />
-                      <span className="text-gray-400 font-medium text-xs sm:text-sm whitespace-nowrap">{tab.label}</span>
-                    </div>
-                  ))}
+                <div className="overflow-x-auto scrollbar-hide">
+                  <nav className="flex space-x-2 min-w-max">
+                    {[
+                      { label: 'Visão Geral', icon: MdDashboard },
+                      { label: 'Solicitações', icon: MdPendingActions },
+                      { label: 'Aguardando Pagamento', icon: MdPayment },
+                      { label: 'Pagos', icon: MdCheckCircle },
+                      { label: 'Meus Serviços', icon: MdBusinessCenter },
+                      { label: 'Perfil', icon: MdSettings }
+                    ].map((tab, i) => (
+                      <div key={i} className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 rounded-xl bg-gray-100">
+                        <tab.icon className="text-gray-400 text-sm sm:text-base md:text-lg" />
+                        <span className="text-gray-400 font-medium text-xs sm:text-sm whitespace-nowrap hidden md:inline">{tab.label}</span>
+                        <span className="text-gray-400 font-medium text-xs sm:text-sm whitespace-nowrap md:hidden">{tab.label.split(' ')[0]}</span>
+                      </div>
+                    ))}
+                  </nav>
                 </div>
               </div>
 
@@ -286,70 +291,70 @@ export default function ProviderDashboard() {
                 <p className="text-purple-100 text-sm sm:text-base">Gerencie seus serviços e acompanhe suas solicitações</p>
               </div>
 
-              {/* Stats Cards - Static Structure with Dynamic Values */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-6 mb-8">
-                {[
-                  { title: 'Total de Solicitações', icon: MdBusinessCenter },
-                  { title: 'Solicitações Pendentes', icon: MdPendingActions },
-                  { title: 'Serviços Ativos', icon: MdCheckCircle },
-                  { title: 'Receita Total', icon: MdAttachMoney },
-                  { title: 'Eventos Concluídos', icon: MdCheckCircle }
-                ].map((stat, i) => (
-                  <div key={i} className="bg-white rounded-2xl p-3 sm:p-4 lg:p-6 shadow-sm">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 sm:mb-3 lg:mb-4">
-                      <stat.icon className="text-purple-600 text-base sm:text-lg lg:text-xl mb-1 sm:mb-0" size={24} />
-                      <span className="text-xs text-gray-500 hidden sm:inline">+0%</span>
-                    </div>
-                    <div className="space-y-1 sm:space-y-2">
-                      <div className="h-4 sm:h-5 lg:h-6 w-10 sm:w-12 lg:w-16 bg-gray-300 rounded animate-pulse"></div>
-                      <p className="text-xs sm:text-sm text-gray-600 leading-tight">{stat.title}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Revenue Stats - Static Structure with Dynamic Values */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6 mb-8">
-                {[
-                  { title: 'Receita Este Mês', icon: MdTrendingUp },
-                  { title: 'Receita Total', icon: MdAttachMoney }
-                ].map((stat, i) => (
-                  <div key={i} className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
-                    <div className="flex items-center justify-between mb-3 sm:mb-4">
-                      <stat.icon className="text-green-600 text-lg sm:text-xl" />
-                      <span className="text-xs text-gray-500">+0%</span>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="h-5 sm:h-6 w-16 sm:w-20 bg-gray-300 rounded animate-pulse"></div>
-                      <p className="text-xs sm:text-sm text-gray-600">{stat.title}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Recent Requests - Static Structure with Dynamic Content */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">Solicitações Recentes</h3>
-                  <button className="text-sm text-purple-600 hover:text-purple-700 font-medium self-start">
-                    Ver todas
-                  </button>
-                </div>
-                <div className="space-y-3 sm:space-y-4">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-xl">
-                      <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-300 rounded-lg animate-pulse flex-shrink-0"></div>
-                        <div className="space-y-1 sm:space-y-2 min-w-0 flex-1">
-                          <div className="h-3 sm:h-4 w-24 sm:w-32 bg-gray-300 rounded animate-pulse"></div>
-                          <div className="h-2 sm:h-3 w-32 sm:w-48 bg-gray-200 rounded animate-pulse"></div>
-                        </div>
+                {/* Stats Cards - Static Structure with Dynamic Values */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-6 mb-8">
+                  {[
+                    { title: 'Total de Solicitações', icon: MdBusinessCenter },
+                    { title: 'Solicitações Pendentes', icon: MdPendingActions },
+                    { title: 'Serviços Ativos', icon: MdCheckCircle },
+                    { title: 'Receita Total', icon: MdAttachMoney },
+                    { title: 'Eventos Concluídos', icon: MdCheckCircle }
+                  ].map((stat, i) => (
+                    <div key={i} className="bg-white rounded-2xl p-3 sm:p-4 lg:p-6 shadow-sm">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 sm:mb-3 lg:mb-4">
+                        <stat.icon className="text-purple-600 text-base sm:text-lg lg:text-xl mb-1 sm:mb-0" size={24} />
+                        <span className="text-xs text-gray-500 hidden sm:inline">+0%</span>
                       </div>
-                      <div className="h-5 sm:h-6 w-16 sm:w-20 bg-gray-300 rounded-full animate-pulse self-start sm:self-center"></div>
+                      <div className="space-y-1 sm:space-y-2">
+                        <div className="h-4 sm:h-5 lg:h-6 w-10 sm:w-12 lg:w-16 bg-gray-300 rounded animate-pulse"></div>
+                        <p className="text-xs sm:text-sm text-gray-600 leading-tight">{stat.title}</p>
+                      </div>
                     </div>
                   ))}
                 </div>
-              </div>
+
+                {/* Revenue Stats - Static Structure with Dynamic Values */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6 mb-8">
+                  {[
+                    { title: 'Receita Este Mês', icon: MdTrendingUp },
+                    { title: 'Receita Total', icon: MdAttachMoney }
+                  ].map((stat, i) => (
+                    <div key={i} className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
+                      <div className="flex items-center justify-between mb-3 sm:mb-4">
+                        <stat.icon className="text-green-600 text-lg sm:text-xl" />
+                        <span className="text-xs text-gray-500">+0%</span>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="h-5 sm:h-6 w-16 sm:w-20 bg-gray-300 rounded animate-pulse"></div>
+                        <p className="text-xs sm:text-sm text-gray-600">{stat.title}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Recent Requests - Static Structure with Dynamic Content */}
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
+                    <h3 className="text-lg font-semibold text-gray-900">Solicitações Recentes</h3>
+                    <button className="text-sm text-purple-600 hover:text-purple-700 font-medium self-start">
+                      Ver todas
+                    </button>
+                  </div>
+                  <div className="space-y-3 sm:space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-xl">
+                        <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-300 rounded-lg animate-pulse flex-shrink-0"></div>
+                          <div className="space-y-1 sm:space-y-2 min-w-0 flex-1">
+                            <div className="h-3 sm:h-4 w-24 sm:w-32 bg-gray-300 rounded animate-pulse"></div>
+                            <div className="h-2 sm:h-3 w-32 sm:w-48 bg-gray-200 rounded animate-pulse"></div>
+                          </div>
+                        </div>
+                        <div className="h-5 sm:h-6 w-16 sm:w-20 bg-gray-300 rounded-full animate-pulse self-start sm:self-center"></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
             </div>
           </div>
         </ProviderLayout>
@@ -374,6 +379,7 @@ export default function ProviderDashboard() {
   ).length;
   const activeServices = providerStats.activeServices;
   const totalRevenue = providerStats.totalRevenue;
+  const paidRevenue = providerStats.paidRevenue;
   const completedEvents = providerStats.completedEvents;
 
   const calculateEstimatedPriceForEvent = (service: any, event: any) => {
@@ -770,8 +776,8 @@ export default function ProviderDashboard() {
 
   const revenueStats = [
     {
-      title: 'Receita Total Estimada',
-      value: formatCurrency(totalRevenue),
+      title: 'Receita Recebida',
+      value: formatCurrency(paidRevenue),
       icon: MdAttachMoney,
       color: 'bg-green-500',
       bgColor: 'bg-green-50',
@@ -1467,30 +1473,40 @@ export default function ProviderDashboard() {
         <div className="min-h-screen bg-gray-50 p-3 sm:p-6">
           <div className="max-w-7xl mx-auto">
             {/* Navigation Tabs */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 mb-8">
-              <div className="flex flex-wrap items-center gap-2 overflow-x-auto">
-                {[
-                  { id: 'overview', label: 'Visão Geral', icon: MdDashboard },
-                  { id: 'requests', label: 'Solicitações', icon: MdPendingActions },
-                  { id: 'waiting_payment', label: 'Aguardando Pagamento', icon: MdPayment },
-                  { id: 'paid', label: 'Pagos', icon: MdCheckCircle },
-                  { id: 'services', label: 'Meus Serviços', icon: MdBusinessCenter },
-                  { id: 'profile', label: 'Perfil', icon: MdSettings }
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
-                    className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 sm:py-3 rounded-xl font-medium transition-all duration-200 text-xs sm:text-sm whitespace-nowrap ${
-                      activeTab === tab.id
-                        ? 'bg-purple-100 text-purple-700'
-                        : 'text-gray-600 hover:text-purple-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    <tab.icon className="text-sm sm:text-lg flex-shrink-0" />
-                    <span className="hidden sm:inline">{tab.label}</span>
-                    <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
-                  </button>
-                ))}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 mb-6 sm:mb-8">
+              <div className="overflow-x-auto scrollbar-hide">
+                <nav className="flex space-x-2 min-w-max" role="tablist">
+                  {[
+                    { id: 'overview', label: 'Visão Geral', icon: MdDashboard, shortLabel: 'Visão' },
+                    { id: 'requests', label: 'Solicitações', icon: MdPendingActions, shortLabel: 'Solicitações' },
+                    { id: 'waiting_payment', label: 'Aguardando Pagamento', icon: MdPayment, shortLabel: 'Aguardando' },
+                    { id: 'paid', label: 'Pagos', icon: MdCheckCircle, shortLabel: 'Pagos' },
+                    { id: 'services', label: 'Meus Serviços', icon: MdBusinessCenter, shortLabel: 'Serviços' },
+                    { id: 'profile', label: 'Perfil', icon: MdSettings, shortLabel: 'Perfil' }
+                  ].map((tab) => {
+                    const isActive = activeTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id as any)}
+                        role="tab"
+                        aria-selected={isActive}
+                        aria-label={tab.label}
+                        className={`
+                          flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-medium transition-all duration-200 text-xs sm:text-sm whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2
+                          ${isActive 
+                            ? 'bg-purple-100 text-purple-700' 
+                            : 'text-gray-600 hover:text-purple-600 hover:bg-gray-50'
+                          }
+                        `}
+                      >
+                        <tab.icon className="text-sm sm:text-base md:text-lg flex-shrink-0" />
+                        <span className="hidden md:inline">{tab.label}</span>
+                        <span className="md:hidden">{tab.shortLabel}</span>
+                      </button>
+                    );
+                  })}
+                </nav>
               </div>
             </div>
 
