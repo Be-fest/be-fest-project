@@ -121,7 +121,7 @@ export function RoutesModal() {
                     Este modal é apenas para apresentação e deve ser removido após a demonstração.
                   </p>
                   <p className="text-sm text-gray-600 mt-2">
-                    Nota: O botão "New Fest" abre um modal de carrinho e não é uma rota separada.
+                    Nota: O botão "Criar minha festa" abre um modal de carrinho e não é uma rota separada.
                   </p>
                 </div>
               </div>

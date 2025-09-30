@@ -121,9 +121,6 @@ export function CpfCnpjField({
     const rawValue = e.target.value;
     const digits = rawValue.replace(/\D/g, '');
 
-    // Auto-detector: REMOVIDO - não mostrar mais o modal
-    // O usuário escolhe o tipo manualmente via seletor
-
     // Aplicar máscara apropriada
     const maskedValue = documentType === 'cpf' 
       ? applyCpfMask(rawValue)

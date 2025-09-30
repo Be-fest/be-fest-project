@@ -44,7 +44,7 @@ export function Footer() {
                   Categorias
                 </ScrollLink>
               </li>
-              <li><Link href="/faca-festa" className="hover:text-[#FF0080] transition-colors">New Fest</Link></li>
+              <li><Link href="/faca-festa" className="hover:text-[#FF0080] transition-colors">Criar minha festa</Link></li>
               <li><Link href="/sobre" className="hover:text-[#FF0080] transition-colors">Sobre nós</Link></li>
               <li><Link href="/ajuda" className="hover:text-[#FF0080] transition-colors">Ajuda</Link></li>
             </ul>
