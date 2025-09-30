@@ -660,61 +660,62 @@ const MinhasFestasTab = ({ onShowPartyDetails }: { onShowPartyDetails?: (eventId
       </div>
 
       {/* Events Grid */}
-      <div className="grid gap-6">
+      <div className="grid gap-4">
         {filteredEvents.map((event, index) => (
           <motion.div
             key={event.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: index * 0.1 }}
-            className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden border border-gray-100"
+            className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden border border-gray-100"
           >
-            <div className="h-56 bg-gradient-to-r from-[#F71875] to-[#A502CA] relative overflow-hidden">
+            {/* Banner compacto - altura reduzida */}
+            <div className="h-32 md:h-40 bg-gradient-to-r from-[#F71875] to-[#A502CA] relative overflow-hidden">
               <div className="absolute inset-0 bg-black/20"></div>
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-              <div className="absolute bottom-6 left-6 text-white">
-                <h3 className="text-2xl font-bold mb-2">{event.title}</h3>
-                <div className="flex items-center gap-2 text-pink-100">
-                  <MdCalendarToday className="text-lg" />
+              <div className="absolute bottom-3 md:bottom-4 left-4 md:left-6 text-white">
+                <h3 className="text-lg md:text-xl font-bold mb-1 line-clamp-1">{event.title}</h3>
+                <div className="flex items-center gap-2 text-pink-100 text-sm md:text-base">
+                  <MdCalendarToday className="text-base flex-shrink-0" />
                   <span className="font-medium">{formatDate(event.event_date)}</span>
                 </div>
               </div>
-             
             </div>
 
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div className="flex items-center gap-3 text-gray-600">
-                  <MdLocationOn className="text-lg text-gray-400" />
-                  <span className="font-medium">{event.location || 'Local não definido'}</span>
+            {/* Conteúdo compacto - padding reduzido */}
+            <div className="p-4 md:p-5">
+              {/* Informações em grid responsivo */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                <div className="flex items-center gap-2 text-gray-600 text-sm">
+                  <MdLocationOn className="text-base text-gray-400 flex-shrink-0" />
+                  <span className="font-medium truncate">{event.location || 'Local não definido'}</span>
                 </div>
-                <div className="flex items-center gap-3 text-gray-600">
-                  <MdPeople className="text-lg text-gray-400" />
+                <div className="flex items-center gap-2 text-gray-600 text-sm">
+                  <MdPeople className="text-base text-gray-400 flex-shrink-0" />
                   <span className="font-medium">{event.guest_count} convidados</span>
                 </div>
               </div>
 
+              {/* Descrição mais compacta */}
               {event.description && (
-                <p className="text-gray-600 mb-6 line-clamp-2">
+                <p className="text-gray-600 text-sm mb-4 line-clamp-2">
                   {event.description}
                 </p>
               )}
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <MdWorkOutline className="text-lg" />
+              {/* Footer com ações */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-xs md:text-sm text-gray-500">
+                  <MdWorkOutline className="text-base flex-shrink-0" />
                   <span>{eventServices[event.id] || 0} serviços contratados</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => onShowPartyDetails?.(event.id)}
-                    className="bg-[#F71875] hover:bg-[#E6006F] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-                  >
-                    <MdListAlt className="text-lg" />
-                    Ver Detalhes
-                  </button>
-                  
-                </div>
+                <button
+                  onClick={() => onShowPartyDetails?.(event.id)}
+                  className="bg-[#F71875] hover:bg-[#E6006F] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 w-full sm:w-auto justify-center"
+                >
+                  <MdListAlt className="text-base" />
+                  Ver Detalhes
+                </button>
               </div>
             </div>
           </motion.div>
