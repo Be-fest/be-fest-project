@@ -1206,7 +1206,7 @@ function ProfilePageContent() {
                     <span className="sm:hidden">
                       {tab.id === 'dashboard' ? 'Dashboard' : 
                        tab.id === 'minhas-festas' ? 'Festas' : 
-                       'Config'}
+                       'Configurações'}
                     </span>
                   </button>
                 );
