@@ -5,6 +5,9 @@ import { motion } from 'framer-motion'
 import { MdPerson, MdEmail, MdLock, MdPhone, MdVisibility, MdVisibilityOff } from 'react-icons/md'
 import { useRouter } from 'next/navigation'
 import { registerClientAction } from '@/lib/actions/auth'
+import { CpfCnpjField, getDigitsOnly, isValidCpf, isValidCnpj } from '@/components/forms/CpfCnpjField'
+
+type DocumentType = 'cpf' | 'cnpj'
 
 export function RegisterForm() {
   const router = useRouter()
@@ -15,16 +18,55 @@ export function RegisterForm() {
     password: '',
     confirmPassword: '',
     whatsapp: '',
+    document: '',
   })
+  const [documentType, setDocumentType] = useState<DocumentType>('cpf')
+  const [documentError, setDocumentError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
+  const validateDocument = (): boolean => {
+    const digits = getDigitsOnly(formData.document)
+    
+    if (!digits) {
+      setDocumentError('Campo obrigatório')
+      return false
+    }
+
+    if (documentType === 'cpf') {
+      if (digits.length !== 11) {
+        setDocumentError('CPF deve ter 11 dígitos')
+        return false
+      }
+      if (!isValidCpf(formData.document)) {
+        setDocumentError('CPF inválido')
+        return false
+      }
+    } else {
+      if (digits.length !== 14) {
+        setDocumentError('CNPJ deve ter 14 dígitos')
+        return false
+      }
+      if (!isValidCnpj(formData.document)) {
+        setDocumentError('CNPJ inválido')
+        return false
+      }
+    }
+
+    setDocumentError('')
+    return true
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setSuccess('')
+
+    if (!validateDocument()) {
+      return
+    }
 
     if (formData.password !== formData.confirmPassword) {
       setError('As senhas não coincidem')
@@ -44,8 +86,17 @@ export function RegisterForm() {
       formDataObj.append('email', formData.email)
       formDataObj.append('password', formData.password)
       formDataObj.append('confirmPassword', formData.confirmPassword)
-      formDataObj.append('cpf', '000.000.000-00') // Campo obrigatório, usar valor padrão
       formDataObj.append('phone', formData.whatsapp)
+      
+      // Adicionar CPF ou CNPJ (apenas dígitos)
+      const digits = getDigitsOnly(formData.document)
+      if (documentType === 'cpf') {
+        formDataObj.append('cpf', digits)
+        formDataObj.append('cnpj', '') // Garantir que CNPJ seja null
+      } else {
+        formDataObj.append('cnpj', digits)
+        formDataObj.append('cpf', '') // Garantir que CPF seja null
+      }
       
       const result = await registerClientAction(formDataObj)
       
@@ -75,6 +126,15 @@ export function RegisterForm() {
       ...prev,
       [e.target.name]: e.target.value
     }))
+  }
+
+  const handleDocumentChange = (value: string, type: DocumentType) => {
+    setFormData(prev => ({
+      ...prev,
+      document: value
+    }))
+    setDocumentType(type)
+    setDocumentError('')
   }
 
   return (
@@ -148,6 +208,17 @@ export function RegisterForm() {
             placeholder="(11) 99999-9999"
           />
         </div>
+      </div>
+
+      {/* Campo CPF/CNPJ - Novo componente com seletor e validação */}
+      <div>
+        <CpfCnpjField
+          value={formData.document}
+          onChange={handleDocumentChange}
+          error={documentError}
+          label="CPF ou CNPJ"
+          required
+        />
       </div>
 
       <div>

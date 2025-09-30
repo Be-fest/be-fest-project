@@ -14,11 +14,15 @@ const registerClientSchema = z.object({
   email: z.string().email('Email inválido'),
   password: z.string().min(8, 'Senha deve ter pelo menos 8 caracteres'),
   confirmPassword: z.string(),
-  cpf: z.string().min(11, 'CPF inválido'),
+  cpf: z.string().optional(),
+  cnpj: z.string().optional(),
   phone: z.string().min(10, 'Telefone inválido')
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Senhas não coincidem",
   path: ["confirmPassword"],
+}).refine((data) => data.cpf || data.cnpj, {
+  message: "CPF ou CNPJ é obrigatório",
+  path: ["cpf"],
 })
 
 const registerProviderSchema = z.object({
@@ -67,6 +71,7 @@ export async function registerClientAction(formData: FormData): Promise<ActionRe
       password: formData.get('password') as string,
       confirmPassword: formData.get('confirmPassword') as string,
       cpf: formData.get('cpf') as string,
+      cnpj: formData.get('cnpj') as string,
       phone: formData.get('phone') as string,
       address: formData.get('address') as string,
       state: formData.get('state') as string,
@@ -74,13 +79,19 @@ export async function registerClientAction(formData: FormData): Promise<ActionRe
 
     console.log('Raw form data:', rawData)
 
+    // Validar que ao menos um documento (CPF ou CNPJ) foi fornecido
+    if (!rawData.cpf && !rawData.cnpj) {
+      return { success: false, error: 'CPF ou CNPJ é obrigatório' }
+    }
+
     const validatedData = registerClientSchema.parse(rawData)
 
-    // Clean masks
-    const cpf = removeMask(validatedData.cpf)
+    // Clean masks - apenas para o documento que foi fornecido
+    const cpf = rawData.cpf && validatedData.cpf ? removeMask(validatedData.cpf) : null
+    const cnpj = rawData.cnpj && validatedData.cnpj ? removeMask(validatedData.cnpj) : null
     const phone = removeMask(validatedData.phone)
 
-    console.log('Cleaned data:', { cpf, phone })
+    console.log('Cleaned data:', { cpf, cnpj, phone })
 
     // Usar createServerClient que usa a anon key
     const supabase = await createServerClient()
@@ -95,6 +106,7 @@ export async function registerClientAction(formData: FormData): Promise<ActionRe
         data: {
           full_name: validatedData.fullName,
           cpf: cpf,
+          cnpj: cnpj,
           whatsapp_number: phone
         }
       }
@@ -127,6 +139,7 @@ export async function registerClientAction(formData: FormData): Promise<ActionRe
       full_name: validatedData.fullName,
       email: validatedData.email,
       cpf: cpf,
+      cnpj: cnpj,
       whatsapp_number: phone,
       address: rawData.address,
       state: rawData.state

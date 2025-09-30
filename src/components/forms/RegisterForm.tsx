@@ -10,6 +10,9 @@ import { registerClientAction, registerProviderAction } from '@/lib/actions/auth
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
 import AreaOfOperationSelect from '@/components/ui/AreaOfOperationSelect';
 import { geocodingService } from '@/lib/services/geocoding';
+import { CpfCnpjField, getDigitsOnly, isValidCpf, isValidCnpj } from './CpfCnpjField';
+
+type DocumentType = 'cpf' | 'cnpj';
 
 interface RegisterFormProps {
   userType: 'client' | 'service_provider';
@@ -104,6 +107,11 @@ export const RegisterForm = ({ userType, onUserTypeChange }: RegisterFormProps) 
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const router = useRouter();
   const toast = useToastGlobal();
+  
+  // Estados para CPF/CNPJ
+  const [document, setDocument] = useState('');
+  const [documentType, setDocumentType] = useState<DocumentType>('cpf');
+  const [documentError, setDocumentError] = useState('');
   
   // Estado para campos de endereço
   const [addressData, setAddressData] = useState({
@@ -303,17 +311,29 @@ export const RegisterForm = ({ userType, onUserTypeChange }: RegisterFormProps) 
               />
             </div>
 
+            {/* Campo CPF ou CNPJ */}
             <div className="space-y-2">
-              <label htmlFor="cpf" className="block text-sm font-medium text-gray-700">
-                CPF
-              </label>
-              <Input
-                id="cpf"
-                name="cpf"
-                type="text"
+              <CpfCnpjField
+                value={document}
+                onChange={(value, type) => {
+                  setDocument(value);
+                  setDocumentType(type);
+                  setDocumentError('');
+                }}
+                error={documentError}
+                label="CPF ou CNPJ"
                 required
-                placeholder="000.000.000-00"
-                className="w-full"
+              />
+              {/* Hidden inputs para enviar no FormData */}
+              <input 
+                type="hidden" 
+                name="cpf" 
+                value={documentType === 'cpf' ? getDigitsOnly(document) : ''} 
+              />
+              <input 
+                type="hidden" 
+                name="cnpj" 
+                value={documentType === 'cnpj' ? getDigitsOnly(document) : ''} 
               />
             </div>
 
