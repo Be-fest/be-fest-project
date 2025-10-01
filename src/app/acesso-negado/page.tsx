@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { MdBlock, MdArrowBack, MdDashboard } from 'react-icons/md';
 import { Header } from '@/components/Header';
 import { useAuth } from '@/hooks/useAuth';
 
-export default function AcessoNegadoPage() {
+function AcessoNegadoContent() {
   const router = useRouter();
   const { userData } = useAuth();
   const [countdown, setCountdown] = useState(5);
@@ -109,4 +109,16 @@ export default function AcessoNegadoPage() {
       </div>
     </>
   );
-} 
+}
+
+export default function AcessoNegadoPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+      </div>
+    }>
+      <AcessoNegadoContent />
+    </Suspense>
+  );
+}

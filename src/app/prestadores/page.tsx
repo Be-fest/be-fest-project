@@ -216,7 +216,9 @@ function PrestadoresContent() {
   if (loading) {
     return (
       <>
-        <Header />
+        <Suspense fallback={<div className="h-16 bg-white shadow-sm"></div>}>
+          <Header />
+        </Suspense>
         <div className="min-h-screen bg-[#FFF6FB] pt-20">
           <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-8">
             <div className="mb-8">
@@ -247,7 +249,9 @@ function PrestadoresContent() {
 
   return (
     <ClientOnlyGuard>
-      <Header />
+      <Suspense fallback={<div className="h-16 bg-white shadow-sm"></div>}>
+        <Header />
+      </Suspense>
       <div className="min-h-screen bg-[#FFF6FB] pt-20">
         <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-8">
           {/* Header */}
@@ -436,7 +440,9 @@ function PrestadoresContent() {
 function PrestadoresLoading() {
   return (
     <>
-      <Header />
+      <Suspense fallback={<div className="h-16 bg-white shadow-sm"></div>}>
+        <Header />
+      </Suspense>
       <div className="min-h-screen bg-[#FFF6FB] pt-20">
         <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-8">
           <div className="mb-8">
