@@ -39,6 +39,19 @@ export default function ServiceDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedParty, setSelectedParty] = useState<{ id: string; name: string } | null>(null);
+  const [providerContext, setProviderContext] = useState<{ isFromProviderSite: boolean; providerId?: string } | null>(null);
+
+  // Detectar contexto do prestador nos parâmetros da URL
+  useEffect(() => {
+    const from = searchParams.get('from');
+    const providerId = searchParams.get('providerId');
+    
+    if (from === 'provider-site' && providerId) {
+      setProviderContext({ isFromProviderSite: true, providerId });
+    } else {
+      setProviderContext(null);
+    }
+  }, [searchParams]);
 
   // Detectar se estamos adicionando serviço para uma festa específica
   useEffect(() => {
@@ -259,17 +272,20 @@ export default function ServiceDetailsPage() {
 
   return (
     <>
-      <Header />
+      <Header providerContext={providerContext} />
       <div className="pt-20 pb-8 min-h-screen bg-[#FFF6FB]">
         <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
           {/* Botão Voltar */}
           <div className="mb-6 pt-4">
             <Link
-              href="/servicos"
+              href={providerContext?.isFromProviderSite && providerContext.providerId 
+                ? `/prestador/${providerContext.providerId}` 
+                : "/servicos"
+              }
               className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
             >
               <MdArrowBack className="text-xl" />
-              Voltar aos Serviços
+              {providerContext?.isFromProviderSite ? "Voltar ao Prestador" : "Voltar aos Serviços"}
             </Link>
           </div>
 
@@ -376,10 +392,11 @@ export default function ServiceDetailsPage() {
               {service.description && (
                 <div className="mb-8">
                   <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6">Descrição do Serviço</h2>
-                  <div className="text-gray-700 leading-relaxed text-sm md:text-base lg:text-lg">
+                  <div className="text-gray-700 leading-relaxed text-sm md:text-base lg:text-lg prose prose-gray max-w-none">
                     <SafeHTML 
                       html={service.description} 
                       fallback="Sem descrição disponível"
+                      className="rich-text-content"
                     />
                   </div>
                 </div>

@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useServiceImage } from '@/hooks/useImagePreloader';
 import { calculatePriceWithFee } from '@/utils/pricingUtils';
+import { SafeHTML } from '@/components/ui/SafeHTML';
 
 interface PageProps {
   params: Promise<{
@@ -329,7 +330,13 @@ export default function ProviderPage({ params }: PageProps) {
             <div className="p-3 md:p-6 lg:p-8">
               <div className="mb-4 md:mb-8">
                 <h2 className="text-lg md:text-2xl font-bold text-[#520029] mb-3 md:mb-4">Sobre</h2>
-                <p className="text-gray-600 text-sm md:text-base leading-relaxed">{providerData.description}</p>
+                <div className="text-gray-600 text-sm md:text-base leading-relaxed prose prose-gray max-w-none rich-text-content">
+                  <SafeHTML 
+                    html={providerData.description} 
+                    fallback="Prestador de serviços para festas e eventos"
+                    className="rich-text-content"
+                  />
+                </div>
               </div>
 
               <div>

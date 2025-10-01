@@ -229,7 +229,7 @@ export function ProviderServices({ services, providerId, initialSort = 'relevanc
                     <span className="text-lg md:text-xl font-bold text-[#FF0080]">
                       A partir de R$ {(item.price || 0).toFixed(2)}
                     </span>
-                    <Link href={`/servicos/${item.id}`} className="w-full md:w-auto">
+                    <Link href={`/servicos/${item.id}?from=provider-site&providerId=${providerId}`} className="w-full md:w-auto">
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
@@ -266,11 +266,11 @@ export function ProviderServices({ services, providerId, initialSort = 'relevanc
             onClick={() => toast.info('Redirecionando...', 'Você será redirecionado para criar sua festa.', 2000)}
             className="w-full md:w-auto bg-white text-[#FF0080] px-6 md:px-8 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors duration-300"
           >
-            New Fest
+            Criar minha festa
           </motion.button>
           <div className="w-full md:w-auto">
             <ShareButton 
-              title="Prestador New Fest"
+              title="Prestador Be-Fest"
               description="Interessado nos nossos serviços? Compartilhe e personalize seu evento dos sonhos!"
             />
           </div>

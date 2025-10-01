@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Link as ScrollLink } from 'react-scroll';
 import { Logo } from '@/components/ui';
 import { useState, useEffect } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import LogoutButton from './LogoutButton';
 import { 
@@ -21,6 +21,7 @@ import {
   MdClose,
   MdAdminPanelSettings
 } from 'react-icons/md';
+import { goToCreateParty, trackCreatePartyClick } from '@/utils/navigationHelpers';
 
 // Componente UserDropdown
 interface UserDropdownProps {
@@ -200,18 +201,70 @@ function UserDropdown({ user, userType }: UserDropdownProps) {
   );
 }
 
-export function Header() {
+// Função para determinar o tema baseado no papel do usuário e contexto da rota
+function getTheme(userType: 'client' | 'provider' | 'admin' | null, pathname: string | null, searchParams?: URLSearchParams | null, userId?: string): 'client' | 'provider' {
+  // Tema PRESTADOR (roxo) quando:
+  // - usuário logado como PRESTADOR E está em áreas do prestador (dashboard ou sua página pública)
+  // - OU prestador acessando serviço de sua própria página
+  const isProviderArea = userType === 'provider' && (
+    pathname?.startsWith('/dashboard/prestador') ||
+    pathname?.startsWith('/prestador/')
+  );
+  
+  // Verificar se prestador está acessando serviço de sua própria página
+  const isProviderOwnService = userType === 'provider' &&
+    pathname?.startsWith('/servicos/') &&
+    searchParams?.get('from') === 'provider-site' &&
+    searchParams?.get('providerId') === userId;
+  
+  // Tema CLIENTE (rosa) em todos os outros casos:
+  // - usuário não logado (anônimo) 
+  // - usuário logado como cliente
+  // - prestador navegando em páginas gerais do site
+  // - prestador navegando em páginas de outros prestadores
+  return (isProviderArea || isProviderOwnService) ? 'provider' : 'client';
+}
+
+// Função para detectar se estamos no contexto público de um prestador
+function getPublicProviderContext(pathname: string | null, userType: 'client' | 'provider' | 'admin' | null) {
+  if (!pathname) return null;
+  
+  // Se estamos na página pública de um prestador (/prestador/[id])
+  const providerPageMatch = pathname.match(/^\/prestador\/([^\/]+)$/);
+  if (providerPageMatch) {
+    return { providerId: providerPageMatch[1], isOwner: false };
+  }
+  
+  // Se estamos numa página de serviço vinda de um prestador público (verificar searchParams depois)
+  if (pathname.startsWith('/servicos/')) {
+    return { providerId: null, isOwner: false };
+  }
+  
+  return null;
+}
+
+interface HeaderProps {
+  providerContext?: { isFromProviderSite: boolean; providerId?: string } | null;
+}
+
+export function Header({ providerContext }: HeaderProps = {}) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user, userData, loading } = useAuth();
   
   // Extrair o tipo de usuário dos dados do useAuth
   const userType = userData?.role as 'client' | 'provider' | 'admin' | null;
+  
+  // Determinar o tema baseado no papel do usuário logado, contexto de navegação e parâmetros
+  const theme = getTheme(userType, pathname, searchParams, user?.id);
 
   console.log('🔄 Header: Estado do useAuth', { 
     hasUser: !!user, 
     hasUserData: !!userData, 
     userType, 
-    loading 
+    loading,
+    theme,
+    pathname
   });
 
   // Se estiver na rota de admin, não renderizar header (admin tem seu próprio layout)
@@ -224,34 +277,22 @@ export function Header() {
     return null;
   }
 
-  // Se estiver na rota seja-um-prestador, sempre mostrar header de prestador
-  if (pathname?.startsWith('/seja-um-prestador')) {
-    return <ProviderHeader user={user} userType={userType} loading={loading} />;
-  }
-
-  // Se estiver na rota de prestadores, mostrar header de prestador
-  if (pathname?.startsWith('/prestadores')) {
-    return <ProviderHeader user={user} userType={userType} loading={loading} />;
-  }
-
   // Se ainda está carregando, mostrar skeleton
   if (loading) {
     return <HeaderSkeleton />;
   }
 
-  // Para outras rotas, mostrar header baseado no role do usuário
+  // Para outras rotas, mostrar header baseado no tema calculado
   if (user && !loading) {
     if (userType === 'admin') {
       return <AdminHeader user={user} userType={userType} />;
-    } else if (userType === 'provider') {
-      return <ProviderHeader user={user} userType={userType} loading={loading} />;
     } else {
-      return <HomeHeader user={user} userType={userType} loading={loading} />;
+      return <ThemeHeader user={user} userType={userType} loading={loading} theme={theme} providerContext={providerContext} />;
     }
   }
 
-  // Se não estiver logado, mostrar header padrão
-  return <HomeHeader user={user} userType={userType} loading={loading} />;
+  // Se não estiver logado, mostrar header padrão com tema cliente
+  return <ThemeHeader user={user} userType={userType} loading={loading} theme={theme} providerContext={providerContext} />;
 }
 
 // Componente Skeleton para o header durante carregamento
@@ -329,12 +370,15 @@ function AdminHeader({ user, userType }: { user: any; userType: 'client' | 'prov
 
         {/* Mobile Menu Button */}
         <button
-          className="md:hidden flex flex-col items-center justify-center w-6 h-6 space-y-1"
+          className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#FF0080] focus:ring-opacity-50"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
+          aria-label={isMenuOpen ? 'Fechar menu' : 'Abrir menu'}
         >
-          <span className={`w-6 h-0.5 bg-gray-600 transition-all duration-300 ${isMenuOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
-          <span className={`w-6 h-0.5 bg-gray-600 transition-all duration-300 ${isMenuOpen ? 'opacity-0' : ''}`}></span>
-          <span className={`w-6 h-0.5 bg-gray-600 transition-all duration-300 ${isMenuOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
+          {isMenuOpen ? (
+            <MdClose className="w-6 h-6 text-gray-700" />
+          ) : (
+            <MdMenu className="w-6 h-6 text-gray-700" />
+          )}
         </button>
       </div>
 
@@ -377,8 +421,72 @@ function AdminHeader({ user, userType }: { user: any; userType: 'client' | 'prov
   );
 }
 
-function HomeHeader({ user, userType, loading }: { user: any; userType: 'client' | 'provider' | 'admin' | null; loading: boolean }) {
+function ThemeHeader({ user, userType, loading, theme, providerContext }: { 
+  user: any; 
+  userType: 'client' | 'provider' | 'admin' | null; 
+  loading: boolean;
+  theme: 'client' | 'provider';
+  providerContext?: { isFromProviderSite: boolean; providerId?: string } | null;
+}) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  
+  // Detectar contexto público do prestador
+  const publicProviderContext = getPublicProviderContext(pathname, userType);
+  const fromProviderSite = providerContext?.isFromProviderSite || searchParams?.get('from') === 'provider-site';
+  const contextProviderId = providerContext?.providerId || searchParams?.get('providerId') || publicProviderContext?.providerId;
+
+  // Verificar se o prestador está em sua própria área
+  const isProviderInOwnArea = user && userType === 'provider' && (
+    pathname?.startsWith('/dashboard/prestador') ||
+    (pathname?.startsWith('/prestador/') && pathname.includes(user.id)) ||
+    (pathname?.startsWith('/servicos/') && 
+     searchParams?.get('from') === 'provider-site' && 
+     searchParams?.get('providerId') === user.id)
+  );
+
+  // Função para navegar para criação de festa
+  const handleCreatePartyClick = (e: React.MouseEvent, source: 'topbar' | 'mobile') => {
+    e.preventDefault();
+    trackCreatePartyClick(source);
+    goToCreateParty(router, !!user);
+  };
+
+  // Função para ajustar links baseado no contexto público do prestador
+  const getContextualLink = (defaultPath: string) => {
+    // Se estamos no contexto público de um prestador específico
+    if (contextProviderId) {
+      switch (defaultPath) {
+        case '/servicos':
+          return `/prestador/${contextProviderId}#servicos`;
+        case '/prestadores':
+          return `/prestador/${contextProviderId}`;
+        default:
+          return defaultPath;
+      }
+    }
+    return defaultPath;
+  };
+
+  // Definir cores baseadas no tema
+  const themeColors = {
+    client: {
+      primary: '#FF0080',
+      hover: 'hover:text-[#FF0080]',
+      button: 'bg-[#FF0080] hover:bg-[#E6006F]',
+      focus: 'focus:ring-[#FF0080]'
+    },
+    provider: {
+      primary: '#8B5CF6',
+      hover: 'hover:text-[#8B5CF6]',
+      button: 'bg-[#8B5CF6] hover:bg-[#7C3AED]',
+      focus: 'focus:ring-[#8B5CF6]'
+    }
+  };
+
+  const colors = themeColors[theme];
 
   return (
     <>
@@ -387,61 +495,72 @@ function HomeHeader({ user, userType, loading }: { user: any; userType: 'client'
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center">
-            <Logo />
+            <Logo theme={theme} />
           </Link>
           
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            <Link 
-              href="/servicos"
-              className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
-            >
-              Serviços
-            </Link>
-            <ScrollLink 
-              to="como-funciona" 
-              smooth={true} 
-              duration={500} 
-              className="text-gray-600 hover:text-[#FF0080] transition-colors cursor-pointer font-poppins"
-            >
-              Como Funciona
-            </ScrollLink>
-            <Link
-              href="/prestadores"
-              className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
-            >
-              Prestadores
-            </Link>
-            {user ? (
+            {/* Navegação específica para prestador - em sua própria área */}
+            {isProviderInOwnArea ? (
               <>
-                {userType === 'provider' && (
-                  <Link 
-                    href="/dashboard/prestador" 
-                    className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
-                  >
-                    Dashboard
-                  </Link>
-                )}
-                {userType === 'admin' && (
-                  <Link 
-                    href="/admin" 
-                    className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins flex items-center gap-2"
-                  >
-                    <MdAdminPanelSettings className="text-lg" />
-                    Admin
-                  </Link>
-                )}
-              </>
-            ) : (
-              <> 
                 <Link 
-                  href="/seja-um-prestador" 
-                  className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
+                  href="/dashboard/prestador" 
+                  className={`text-gray-600 ${colors.hover} transition-colors font-poppins`}
                 >
-                  Seja um Prestador
+                  Dashboard
+                </Link>
+                <Link 
+                  href={getContextualLink('/servicos')}
+                  className={`text-gray-600 ${colors.hover} transition-colors font-poppins`}
+                >
+                  Serviços
+                </Link>
+                <Link 
+                  href={`/prestador/${user.id}`}
+                  className={`text-gray-600 ${colors.hover} transition-colors font-poppins`}
+                >
+                  Meu Site
                 </Link>
               </>
-            )}
+            ) : user && userType === 'admin' ? (
+              <Link 
+                href="/admin" 
+                className={`text-gray-600 ${colors.hover} transition-colors font-poppins flex items-center gap-2`}
+              >
+                <MdAdminPanelSettings className="text-lg" />
+                Admin
+              </Link>
+            ) : theme === 'client' ? (
+              <>
+                {/* Navegação pública para clientes - sempre a mesma estrutura */}
+                <Link 
+                  href="/servicos"
+                  className={`text-gray-600 ${colors.hover} transition-colors font-poppins`}
+                >
+                  Serviços
+                </Link>
+                <button
+                  onClick={(e) => handleCreatePartyClick(e, 'topbar')}
+                  className={`text-gray-600 ${colors.hover} transition-colors font-poppins focus:outline-none`}
+                >
+                  Criar minha festa
+                </button>
+                <Link
+                  href="/prestadores"
+                  className={`text-gray-600 ${colors.hover} transition-colors font-poppins`}
+                >
+                  Prestadores
+                </Link>
+                {!user && (
+                  <Link 
+                    href="/seja-um-prestador" 
+                    className={`text-gray-600 ${colors.hover} transition-colors font-poppins`}
+                  >
+                    Seja um Prestador
+                  </Link>
+                )}
+              </>
+            ) : null}
           </nav>
 
           {/* Desktop Auth Buttons */}
@@ -458,13 +577,13 @@ function HomeHeader({ user, userType, loading }: { user: any; userType: 'client'
               <>
                 <Link 
                   href="/auth/login"
-                  className="text-gray-600 hover:text-[#FF0080] transition-colors font-poppins"
+                  className={`text-gray-600 ${colors.hover} transition-colors font-poppins`}
                 >
                   Entrar
                 </Link>
                 <Link 
                   href="/auth/register"
-                  className="bg-[#FF0080] hover:bg-[#E6006F] text-white px-4 py-2 rounded-lg transition-colors font-poppins"
+                  className={`${colors.button} text-white px-4 py-2 rounded-lg transition-colors font-poppins`}
                 >
                   Cadastrar
                 </Link>
@@ -474,12 +593,15 @@ function HomeHeader({ user, userType, loading }: { user: any; userType: 'client'
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden flex flex-col items-center justify-center w-6 h-6 space-y-1"
+            className={`md:hidden flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 ${colors.focus} focus:ring-opacity-50`}
             onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label={isMenuOpen ? 'Fechar menu' : 'Abrir menu'}
           >
-            <span className={`w-6 h-0.5 bg-gray-600 transition-all duration-300 ${isMenuOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
-            <span className={`w-6 h-0.5 bg-gray-600 transition-all duration-300 ${isMenuOpen ? 'opacity-0' : ''}`}></span>
-            <span className={`w-6 h-0.5 bg-gray-600 transition-all duration-300 ${isMenuOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
+            {isMenuOpen ? (
+              <MdClose className="w-6 h-6 text-gray-700" />
+            ) : (
+              <MdMenu className="w-6 h-6 text-gray-700" />
+            )}
           </button>
         </div>
 
@@ -491,44 +613,83 @@ function HomeHeader({ user, userType, loading }: { user: any; userType: 'client'
           transition={{ duration: 0.3 }}
         >
           <nav className="px-6 py-4 space-y-4">
-            <Link 
-              href="/servicos"
-              className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Serviços
-            </Link>
-            <ScrollLink 
-              to="como-funciona" 
-              smooth={true} 
-              duration={500} 
-              className="block text-gray-600 hover:text-[#FF0080] transition-colors cursor-pointer py-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Como Funciona
-            </ScrollLink>
-            <Link
-              href="/prestadores"
-              className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Prestadores
-            </Link>
-            {user ? (
+            {isProviderInOwnArea ? (
               <>
-                {userType === 'provider' && (
+                <Link 
+                  href="/dashboard/prestador" 
+                  className={`block text-gray-600 ${colors.hover} transition-colors py-2`}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Dashboard
+                </Link>
+                <Link 
+                  href={getContextualLink('/servicos')}
+                  className={`block text-gray-600 ${colors.hover} transition-colors py-2`}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Serviços
+                </Link>
+                <Link 
+                  href={`/prestador/${user.id}`}
+                  className={`block text-gray-600 ${colors.hover} transition-colors py-2`}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Meu Site
+                </Link>
+              </>
+            ) : user && userType === 'admin' ? (
+              <Link 
+                href="/admin" 
+                className={`flex items-center gap-2 text-gray-600 ${colors.hover} transition-colors py-2`}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <MdAdminPanelSettings className="text-lg" />
+                Admin
+              </Link>
+            ) : theme === 'client' ? (
+              <>
+                {/* Navegação pública para clientes - sempre a mesma estrutura */}
+                <Link 
+                  href="/servicos"
+                  className={`block text-gray-600 ${colors.hover} transition-colors py-2`}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Serviços
+                </Link>
+                <button
+                  onClick={(e) => {
+                    handleCreatePartyClick(e, 'mobile');
+                    setIsMenuOpen(false);
+                  }}
+                  className={`block text-gray-600 ${colors.hover} transition-colors py-2 focus:outline-none text-left`}
+                >
+                  Criar minha festa
+                </button>
+                <Link
+                  href="/prestadores"
+                  className={`block text-gray-600 ${colors.hover} transition-colors py-2`}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Prestadores
+                </Link>
+                {!user && (
                   <Link 
-                    href="/dashboard/prestador" 
-                    className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
+                    href="/seja-um-prestador" 
+                    className={`block text-gray-600 ${colors.hover} transition-colors py-2`}
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    Dashboard
+                    Seja um Prestador
                   </Link>
                 )}
+              </>
+            ) : null}
+
+            {user ? (
+              <>
                 {userType === 'admin' && (
                   <Link 
                     href="/admin" 
-                    className="flex items-center gap-2 text-gray-600 hover:text-[#FF0080] transition-colors py-2"
+                    className={`flex items-center gap-2 text-gray-600 ${colors.hover} transition-colors py-2`}
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <MdAdminPanelSettings className="text-lg" />
@@ -537,13 +698,13 @@ function HomeHeader({ user, userType, loading }: { user: any; userType: 'client'
                 )}
                 <Link 
                   href="/perfil" 
-                  className="flex items-center space-x-2 text-gray-600 hover:text-[#FF0080] transition-colors py-2"
+                  className={`flex items-center space-x-3 text-gray-600 ${colors.hover} transition-colors py-3 px-2 rounded-lg hover:bg-gray-50`}
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  <div className="w-6 h-6 bg-[#FF0080] rounded-full flex items-center justify-center text-white text-xs font-medium">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0`} style={{ backgroundColor: colors.primary }}>
                     U
                   </div>
-                  <span>Minha Área</span>
+                  <span className="font-medium">Minha Área</span>
                 </Link>
                 <div className="pt-4 border-t border-gray-200">
                   <LogoutButton />
@@ -551,40 +712,17 @@ function HomeHeader({ user, userType, loading }: { user: any; userType: 'client'
               </>
             ) : (
               <>
-                <Link 
-                  href="/perfil?tab=minhas-festas"
-                  onClick={() => setIsMenuOpen(false)}
-                  className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
-                >
-                  New Fest
-                </Link>
-                <ScrollLink 
-                  to="contatos" 
-                  smooth={true} 
-                  duration={500} 
-                  className="block text-gray-600 hover:text-[#FF0080] transition-colors cursor-pointer py-2"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Contatos
-                </ScrollLink>
-                <Link 
-                  href="/seja-um-prestador" 
-                  className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Seja um Prestador
-                </Link>
                 <div className="pt-4 border-t border-gray-200 space-y-2">
                   <Link 
                     href="/auth/login"
-                    className="block text-gray-600 hover:text-[#FF0080] transition-colors py-2"
+                    className={`block text-gray-600 ${colors.hover} transition-colors py-2`}
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Entrar
                   </Link>
                   <Link 
                     href="/auth/register"
-                    className="block bg-[#FF0080] hover:bg-[#E6006F] text-white px-4 py-2 rounded-lg transition-colors text-center"
+                    className={`block ${colors.button} text-white px-4 py-2 rounded-lg transition-colors text-center`}
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Cadastrar
@@ -599,250 +737,4 @@ function HomeHeader({ user, userType, loading }: { user: any; userType: 'client'
   );
 }
 
-// Header para a página de prestadores
-function ProviderHeader({ user, userType, loading }: { user: any; userType: 'client' | 'provider' | 'admin' | null; loading: boolean }) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  return (
-    <header className="w-full bg-white shadow-sm py-3 md:py-4 px-3 md:px-6 fixed top-0 z-50">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <Link href="/" className="flex items-center">
-          <img 
-            src="/be-fest-provider-logo.png" 
-            alt="Be Fest Provider Logo" 
-            className="h-8 md:h-10 w-auto"
-          />
-        </Link>
-        
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-8">
-          {user && userType === 'provider' ? (
-            <>
-              <Link 
-                href="/dashboard/prestador"
-                className="text-gray-600 hover:text-[#A502CA] transition-colors font-poppins"
-              >
-                Dashboard
-              </Link>
-              <Link 
-                href="/servicos"
-                className="text-gray-600 hover:text-[#A502CA] transition-colors font-poppins"
-              >
-                Serviços
-              </Link>
-              <Link 
-                href="/prestadores"
-                className="text-gray-600 hover:text-[#A502CA] transition-colors font-poppins"
-              >
-                Prestadores
-              </Link>
-              <Link 
-                href="/seja-um-prestador"
-                className="text-gray-600 hover:text-[#A502CA] transition-colors font-poppins"
-              >
-                Seja um Prestador
-              </Link>
-            </>
-          ) : user && userType === 'admin' ? (
-            <>
-              <Link 
-                href="/admin"
-                className="text-gray-600 hover:text-[#A502CA] transition-colors font-poppins flex items-center gap-2"
-              >
-                <MdAdminPanelSettings className="text-lg" />
-                Admin
-              </Link>
-            </>
-          ) : (
-            <>
-              <ScrollLink 
-                to="beneficios"
-                smooth={true} 
-                duration={500}
-                className="text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer font-poppins"
-              >
-                Benefícios
-              </ScrollLink>
-              <ScrollLink 
-                to="como-funciona"
-                smooth={true} 
-                duration={500}
-                className="text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer font-poppins"
-              >
-                Como Funciona
-              </ScrollLink>
-              <ScrollLink 
-                to="faq"
-                smooth={true} 
-                duration={500}
-                className="text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer font-poppins"
-              >
-                FAQ
-              </ScrollLink>
-              <ScrollLink 
-                to="contato"
-                smooth={true} 
-                duration={500}
-                className="text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer font-poppins"
-              >
-                Contato
-              </ScrollLink>
-            </>
-          )}
-        </nav>
-
-        {/* Desktop Auth Buttons */}
-        <div className="hidden md:flex items-center space-x-4">
-          {loading ? (
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gray-200 animate-pulse rounded-full"></div>
-              <div className="w-16 h-4 bg-gray-200 animate-pulse rounded"></div>
-            </div>
-          ) : user ? (
-            <UserDropdown user={user} userType={userType} />
-          ) : (
-            <>
-              <Link 
-                href="/auth/login"
-                className="text-gray-600 hover:text-[#A502CA] transition-colors font-poppins"
-              >
-                Entrar
-              </Link>
-              <Link 
-                href="/auth/register"
-                className="bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-3 lg:px-4 py-2 rounded-lg transition-colors font-poppins text-sm lg:text-base"
-              >
-                Cadastrar
-              </Link>
-            </>
-          )}
-        </div>
-
-        {/* Mobile Menu Button */}
-        <button
-          className="md:hidden flex flex-col items-center justify-center w-6 h-6 space-y-1"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-        >
-          <span className={`w-6 h-0.5 bg-gray-600 transition-all duration-300 ${isMenuOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
-          <span className={`w-6 h-0.5 bg-gray-600 transition-all duration-300 ${isMenuOpen ? 'opacity-0' : ''}`}></span>
-          <span className={`w-6 h-0.5 bg-gray-600 transition-all duration-300 ${isMenuOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
-        </button>
-      </div>
-
-      {/* Mobile Menu */}
-      <motion.div 
-        className={`md:hidden bg-white border-t border-gray-200 ${isMenuOpen ? 'block' : 'hidden'}`}
-        initial={{ opacity: 0, height: 0 }}
-        animate={{ opacity: isMenuOpen ? 1 : 0, height: isMenuOpen ? 'auto' : 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        <nav className="px-6 py-4 space-y-4">
-          {user && userType === 'provider' ? (
-            <>
-              <Link 
-                href="/dashboard/prestador"
-                className="block text-gray-600 hover:text-[#A502CA] transition-colors py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Dashboard
-              </Link>
-              <Link 
-                href="/servicos"
-                className="block text-gray-600 hover:text-[#A502CA] transition-colors py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Serviços
-              </Link>
-              <Link 
-                href="/prestadores"
-                className="block text-gray-600 hover:text-[#A502CA] transition-colors py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Prestadores
-              </Link>
-              <Link 
-                href="/seja-um-prestador"
-                className="block text-gray-600 hover:text-[#A502CA] transition-colors py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Seja um Prestador
-              </Link>
-              <div className="pt-4 border-t border-gray-200">
-                <UserDropdown user={user} userType={userType} />
-              </div>
-            </>
-          ) : user && userType === 'admin' ? (
-            <>
-              <Link 
-                href="/admin"
-                className="flex items-center gap-2 text-gray-600 hover:text-[#A502CA] transition-colors py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <MdAdminPanelSettings className="text-lg" />
-                Admin
-              </Link>
-              <div className="pt-4 border-t border-gray-200">
-                <UserDropdown user={user} userType={userType} />
-              </div>
-            </>
-          ) : (
-            <>
-              <ScrollLink 
-                to="beneficios"
-                smooth={true} 
-                duration={500}
-                className="block text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Benefícios
-              </ScrollLink>
-              <ScrollLink 
-                to="como-funciona"
-                smooth={true} 
-                duration={500}
-                className="block text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Como Funciona
-              </ScrollLink>
-              <ScrollLink 
-                to="faq"
-                smooth={true} 
-                duration={500}
-                className="block text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                FAQ
-              </ScrollLink>
-              <ScrollLink 
-                to="contato"
-                smooth={true} 
-                duration={500}
-                className="block text-gray-600 hover:text-[#A502CA] transition-colors cursor-pointer py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Contato
-              </ScrollLink>
-              <div className="pt-4 border-t border-gray-200 space-y-2">
-                <Link 
-                  href="/auth/login"
-                  className="block text-gray-600 hover:text-[#A502CA] transition-colors py-2"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Entrar
-                </Link>
-                <Link 
-                  href="/auth/register"
-                  className="block bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-4 py-2 rounded-lg transition-colors text-center"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Cadastrar
-                </Link>
-              </div>
-            </>
-          )}
-        </nav>
-      </motion.div>
-    </header>
-  );
-}

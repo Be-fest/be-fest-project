@@ -100,10 +100,10 @@ export function ClientSidebar({
         {onClose && (
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/20 transition-all duration-200"
+            className="absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-all duration-200 active:scale-95 touch-manipulation"
             aria-label="Fechar menu"
           >
-            <MdClose className="text-xl" />
+            <MdClose className="text-xl text-white" />
           </button>
         )}
 
@@ -225,7 +225,9 @@ export function ClientSidebar({
 
       {/* Logout Button */}
       <div className="p-4 border-t border-gray-100">
-        <LogoutButton />
+        <div className="w-full">
+          <LogoutButton />
+        </div>
       </div>
     </motion.aside>
   );

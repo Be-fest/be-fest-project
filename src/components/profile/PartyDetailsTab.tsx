@@ -25,6 +25,7 @@ import {
   MdSchedule,
   MdCheckBox,
   MdCheckBoxOutlineBlank,
+  MdMoreVert,
 } from 'react-icons/md';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PartyConfigForm } from '@/components/PartyConfigForm';
@@ -52,6 +53,7 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
   const [serviceToCancel, setServiceToCancel] = useState<string | null>(null);
   const [selectedServices, setSelectedServices] = useState<Set<string>>(new Set());
   const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
 
 
 
@@ -262,298 +264,305 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="space-y-2 md:space-y-0">
-        {/* Título e botão voltar */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-1.5 text-gray-600 hover:text-gray-800 transition-colors"
-          >
-            <MdArrowBack className="text-base" />
-            <span className="hidden sm:inline text-sm">Voltar para Minhas Festas</span>
-            <span className="sm:hidden text-sm">Voltar</span>
-          </button>
-          <div>
-            <h1 className="text-base sm:text-lg font-bold text-gray-900">{event.title}</h1>
+    <div className="space-y-4">
+      {/* Header com voltar */}
+      <button
+        onClick={onBack}
+        className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors mb-4"
+      >
+        <MdArrowBack className="text-lg" />
+        <span className="text-sm font-medium">Voltar</span>
+      </button>
+
+      {/* Card Único com todos os detalhes */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {/* Header do Card - Título e Menu de Opções */}
+        <div className="bg-gradient-to-r from-[#F71875] to-[#A502CA] p-4">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <h1 className="text-xl md:text-2xl font-bold text-white mb-1">
+                {event.title}
+              </h1>
+              <div className="flex items-center gap-2 text-pink-100 text-sm">
+                <MdCalendarToday className="text-base" />
+                <span>
+                  {event.event_date ? new Date(event.event_date + 'T00:00:00').toLocaleDateString('pt-BR', { 
+                    day: '2-digit', 
+                    month: 'long', 
+                    year: 'numeric' 
+                  }) : 'Data não definida'}
+                </span>
+              </div>
+            </div>
+            
+            {/* Menu de 3 pontinhos */}
+            <div className="relative">
+              <button
+                onClick={() => setShowOptionsMenu(!showOptionsMenu)}
+                className="p-2 text-white hover:bg-white/20 rounded-lg transition-colors"
+              >
+                <MdMoreVert className="text-xl" />
+              </button>
+              
+              {/* Dropdown Menu */}
+              <AnimatePresence>
+                {showOptionsMenu && (
+                  <>
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50"
+                    >
+                      <button
+                        onClick={() => {
+                          setShowOptionsMenu(false);
+                          setEditModalOpen(true);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 transition-colors text-left"
+                      >
+                        <MdEdit className="text-lg text-blue-600" />
+                        <span className="text-sm font-medium">Editar Festa</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowOptionsMenu(false);
+                          setDeleteModalOpen(true);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-red-600 hover:bg-red-50 transition-colors text-left"
+                      >
+                        <MdDelete className="text-lg" />
+                        <span className="text-sm font-medium">Excluir Festa</span>
+                      </button>
+                    </motion.div>
+                    
+                    {/* Backdrop */}
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowOptionsMenu(false)}
+                    />
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
-        
-        {/* Botões de ação - responsivos */}
-        <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-1.5 sm:justify-end">
-          <button
-            onClick={() => setEditModalOpen(true)}
-            className="flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-2.5 sm:py-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors font-medium min-h-[36px] sm:min-h-auto text-xs"
-          >
-            <MdEdit className="text-sm" />
-            Editar
-          </button>
-          <button
-            onClick={() => setDeleteModalOpen(true)}
-            className="flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-2.5 sm:py-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors font-medium min-h-[36px] sm:min-h-auto text-xs"
-          >
-            <MdDelete className="text-sm" />
-            Excluir
-          </button>
-        </div>
-      </div>
 
-      {/* Event Details */}
-      <div className="bg-white rounded-lg shadow-sm p-3">
-        <h2 className="text-base font-semibold text-gray-900 mb-3">Detalhes da Festa</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="space-y-2.5">
-            <div className="flex items-center gap-1.5">
-              <MdCalendarToday className="text-[#A502CA] text-base" />
-              <div>
-                <p className="text-xs text-gray-600">Data</p>
-                <p className="font-medium text-xs">
-                  {event.event_date ? new Date(event.event_date + 'T00:00:00').toLocaleDateString('pt-BR') : 'Não definida'}
+        {/* Detalhes da Festa */}
+        <div className="p-4 space-y-4">
+          <h2 className="text-lg font-semibold text-gray-900">Detalhes da Festa</h2>
+          
+          {/* Grid de informações */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <MdLocationOn className="text-purple-600 text-xl" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-gray-600 mb-1">Local</p>
+                <p className="font-medium text-sm text-gray-900">{event.location || 'Não definido'}</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+              <div className="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <MdPeople className="text-pink-600 text-xl" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-gray-600 mb-1">Convidados</p>
+                <p className="font-medium text-sm text-gray-900">
+                  {event.full_guests + event.half_guests + event.free_guests} convidados
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <MdLocationOn className="text-[#A502CA] text-base" />
-              <div>
-                <p className="text-xs text-gray-600">Local</p>
-                <p className="font-medium text-xs">{event.location || 'Não definido'}</p>
-              </div>
+          </div>
+
+          {/* Descrição (se existir) */}
+          {event.description && (
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-600 mb-1">Descrição</p>
+              <p className="text-sm text-gray-700">{event.description}</p>
             </div>
-          </div>
-          <div className="space-y-2.5">
-            <div className="flex items-center gap-1.5">
-              <MdPeople className="text-[#A502CA] text-base" />
-              <div>
-                <p className="text-xs text-gray-600">Convidados</p>
-                <p className="font-medium text-xs">{event.full_guests + event.half_guests + event.free_guests} convidados</p>
-              </div>
+          )}
+
+          {/* Separador */}
+          <div className="border-t border-gray-200 pt-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Serviços</h3>
+              <Link
+                href={`/servicos?partyId=${eventId}&partyName=${encodeURIComponent(event.title)}`}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#F71875] to-[#A502CA] text-white rounded-lg hover:from-[#E6006F] hover:to-[#9400B8] transition-all text-sm font-medium shadow-sm"
+              >
+                <MdAdd className="text-lg" />
+                <span className="hidden sm:inline">Adicionar Serviço</span>
+                <span className="sm:hidden">Adicionar</span>
+              </Link>
             </div>
-            {event.description && (
-              <div className="flex items-start gap-1.5">
-                <MdEvent className="text-[#A502CA] text-base mt-0.5" />
-                <div>
-                  <p className="text-xs text-gray-600">Descrição</p>
-                  <p className="font-medium text-xs">{event.description}</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
 
-
-
-      {/* Services */}
-      <div className="bg-white rounded-lg shadow-sm p-3">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-1.5">
-            <h3 className="text-sm font-semibold text-gray-900">Serviços</h3>
-            {selectedServices.size > 0 && (
-              <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                {selectedServices.size} selecionado{selectedServices.size > 1 ? 's' : ''}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {/* Controles de seleção múltipla */}
-            {eventServices.some(service => service.booking_status === 'waiting_payment') && (
-              <>
-                {selectedServices.size > 0 ? (
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-xs text-gray-600">
+            {/* Lista de Serviços ou Empty State */}
+            {eventServices.length > 0 ? (
+              <div className="space-y-3">
+                {/* Controles de seleção múltipla para pagamento */}
+                {eventServices.some(service => service.booking_status === 'waiting_payment') && selectedServices.size > 0 && (
+                  <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <span className="text-sm text-green-700 font-medium">
                       {selectedServices.size} serviço{selectedServices.size > 1 ? 's' : ''} selecionado{selectedServices.size > 1 ? 's' : ''}
                     </span>
-                    <button
-                      onClick={clearSelection}
-                      className="px-1.5 py-0.5 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                      Limpar
-                    </button>
-                    <button
-                      onClick={handlePaySelectedServices}
-                      className="flex items-center gap-1 px-2.5 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-xs font-medium"
-                    >
-                      <MdPayment className="text-xs" />
-                      Pagar Selecionados ({formatPrice(getSelectedServicesTotal())})
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={selectAllWaitingPayment}
-                      className="px-1.5 py-0.5 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
-                    >
-                      Selecionar Todos para Pagamento
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={clearSelection}
+                        className="px-3 py-1.5 text-sm text-green-700 hover:bg-green-100 rounded-lg transition-colors"
+                      >
+                        Limpar
+                      </button>
+                      <button
+                        onClick={handlePaySelectedServices}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                      >
+                        <MdPayment className="text-base" />
+                        Pagar ({formatPrice(getSelectedServicesTotal())})
+                      </button>
+                    </div>
                   </div>
                 )}
-              </>
-            )}
-            <Link
-              href={`/servicos?partyId=${eventId}&partyName=${encodeURIComponent(event.title)}`}
-              className="flex items-center gap-1 px-2.5 py-1 bg-[#A502CA] text-white rounded-lg hover:bg-[#8B0A9E] transition-colors text-xs"
-            >
-              <MdAdd className="text-xs" />
-              Adicionar Serviço
-            </Link>
-          </div>
-        </div>
-        
-        {eventServices.length > 0 ? (
-          <div className="space-y-2">
-            {eventServices.map((service) => (
-              <div
-                key={service.id}
-                className={`p-2.5 border rounded-lg hover:shadow-sm transition-shadow ${
-                  selectedServices.has(service.id) 
-                    ? 'border-green-500 bg-green-50' 
-                    : 'border-gray-200'
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-2.5 flex-1">
-                    {/* Checkbox para seleção - apenas para serviços aguardando pagamento */}
-                    {service.booking_status === 'waiting_payment' && (
-                      <button
-                        onClick={() => toggleServiceSelection(service.id)}
-                        className="mt-0.5 p-0.5 hover:bg-gray-100 rounded transition-colors"
-                      >
-                        {selectedServices.has(service.id) ? (
-                          <MdCheckBox className="w-3.5 h-3.5 text-green-600" />
-                        ) : (
-                          <MdCheckBoxOutlineBlank className="w-3.5 h-3.5 text-gray-400" />
-                        )}
-                      </button>
-                    )}
-                    
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-gray-900 text-xs sm:text-sm truncate">{service.service?.name || 'Serviço Indisponível'}</h4>
-                          <p className="text-xs text-gray-600 mb-1.5 truncate">
-                            por {service.provider?.full_name || service.provider?.organization_name || 'Prestador Indisponível'}
-                          </p>
+
+                {/* Card de cada serviço */}
+                {eventServices.map((service) => (
+                  <div
+                    key={service.id}
+                    className={`p-3 border rounded-lg hover:shadow-sm transition-all ${
+                      selectedServices.has(service.id) 
+                        ? 'border-green-500 bg-green-50' 
+                        : 'border-gray-200 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      {/* Checkbox para seleção - apenas para serviços aguardando pagamento */}
+                      {service.booking_status === 'waiting_payment' && (
+                        <button
+                          onClick={() => toggleServiceSelection(service.id)}
+                          className="mt-1 p-1 hover:bg-gray-100 rounded transition-colors flex-shrink-0"
+                        >
+                          {selectedServices.has(service.id) ? (
+                            <MdCheckBox className="w-5 h-5 text-green-600" />
+                          ) : (
+                            <MdCheckBoxOutlineBlank className="w-5 h-5 text-gray-400" />
+                          )}
+                        </button>
+                      )}
+                      
+                      <div className="flex-1 min-w-0">
+                        {/* Header do Serviço */}
+                        <div className="flex items-start justify-between gap-3 mb-2">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-sm text-gray-900 truncate">
+                              {service.service?.name || 'Serviço Indisponível'}
+                            </h4>
+                            <p className="text-xs text-gray-600 truncate">
+                              {service.provider?.full_name || service.provider?.organization_name || 'Prestador Indisponível'}
+                            </p>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <span className="font-bold text-sm text-gray-900">
+                              {service && service.service ? 
+                                formatPrice(calculateAdvancedPrice(service, event.full_guests, event.half_guests, event.free_guests))
+                                : 'Indisponível'
+                              }
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Status Badge */}
+                        <div className="mb-2">
                           {getServiceStatusBadge(service.booking_status)}
                         </div>
-                        <div className="text-right ml-2 flex-shrink-0">
-                          <span className="font-medium text-gray-900 text-xs sm:text-sm">
-                            {service && service.service ? 
-                              formatPrice(calculateAdvancedPrice(service, event.full_guests, event.half_guests, event.free_guests))
-                              : 'Preço indisponível'
-                            }
-                          </span>
-                        </div>
-                      </div>
-                      
-                      {/* Ações específicas por status */}
-                      <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
-                        {service.booking_status === 'waiting_payment' && (
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <motion.button
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                              onClick={() => router.push(`/pagamento?eventId=${eventId}&services=${service.id}`)}
-                              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-2.5 py-1 rounded-md font-medium transition-all duration-200 flex items-center gap-1 text-xs"
-                            >
-                              <MdPayment className="text-xs" />
-                              Pagar Agora
-                            </motion.button>
-                            <button
-                              onClick={() => toggleServiceSelection(service.id)}
-                              className={`px-2 py-1 text-xs rounded-md transition-colors ${
-                                selectedServices.has(service.id)
-                                  ? 'bg-green-100 text-green-700 border border-green-300'
-                                  : 'bg-gray-200'
-                              }`}
-                            >
-                              {selectedServices.has(service.id) ? 'Selecionado' : 'Selecionar'}
-                            </button>
-                          </div>
-                        )}
 
-                        {service.booking_status === 'approved' && (
-                          <div className="flex items-center gap-1.5">
-                            <div className="text-xs text-green-600 font-medium">
-                              Pagamento confirmado - Prestador notificado
+                        {/* Ações específicas por status */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {service.booking_status === 'waiting_payment' && (
+                            <>
+                              <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => router.push(`/pagamento?eventId=${eventId}&services=${service.id}`)}
+                                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-3 py-1.5 rounded-lg font-medium transition-all duration-200 flex items-center gap-1.5 text-xs"
+                              >
+                                <MdPayment className="text-base" />
+                                Pagar Agora
+                              </motion.button>
+                            </>
+                          )}
+
+                          {service.booking_status === 'approved' && (
+                            <div className="text-xs text-green-600 font-medium flex items-center gap-1">
+                              <MdCheckCircle className="text-base" />
+                              Pagamento confirmado
                             </div>
-                          </div>
-                        )}
+                          )}
 
-                        {service.booking_status === 'completed' && (
-                          <>
+                          {service.booking_status === 'completed' && (
+                            <a
+                              href={`https://wa.me/5511999999999?text=Olá! Gostaria de falar sobre o serviço ${service.service.name} para minha festa.`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg text-xs font-medium transition-colors"
+                            >
+                              <MdWhatsapp className="text-base" />
+                              WhatsApp
+                            </a>
+                          )}
+
+                          {service.booking_status === 'pending_provider_approval' && (
+                            <div className="text-xs text-gray-500 italic flex items-center gap-1">
+                              <MdSchedule className="text-base" />
+                              Aguardando resposta do prestador...
+                            </div>
+                          )}
+
+                          {service.booking_status === 'cancelled' && (
+                            <>
+                              <div className="text-xs text-gray-500 italic">
+                                Serviço cancelado
+                              </div>
+                              <Link
+                                href="/servicos"
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-xs font-medium"
+                              >
+                                <MdSearch className="text-base" />
+                                Procurar Outro
+                              </Link>
+                            </>
+                          )}
+
+                          {/* Botão de remoção */}
+                          {service.booking_status !== 'completed' && (
                             <button
                               onClick={() => {
                                 setServiceToCancel(service.id);
                                 setCancelModalOpen(true);
                               }}
-                              className="px-2.5 py-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md text-xs font-medium transition-colors"
+                              className="flex items-center gap-1 px-2.5 py-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg text-xs font-medium transition-colors ml-auto"
                             >
-                              Cancelar Serviço
+                              <MdDelete className="text-base" />
+                              Remover
                             </button>
-                            <a
-                              href={`https://wa.me/5511999999999?text=Olá! Gostaria de falar sobre o serviço ${service.service.name} para minha festa.`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-1 px-2.5 py-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md text-xs font-medium transition-colors"
-                            >
-                              <MdWhatsapp className="text-xs" />
-                              WhatsApp
-                            </a>
-                          </>
-                        )}
-
-                        {service.booking_status === 'cancelled' && (
-                          <Link
-                            href="/servicos"
-                            className="flex items-center gap-1 px-2.5 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-xs font-medium"
-                          >
-                            <MdSearch className="text-xs" />
-                            Procurar Outro Serviço
-                          </Link>
-                        )}
-
-                        {service.booking_status === 'pending_provider_approval' && (
-                          <div className="flex items-center gap-1.5">
-                            <div className="text-xs text-gray-500 italic">
-                              Aguardando resposta do prestador...
-                            </div>
-                          </div>
-                        )}
-
-                        {service.booking_status === 'cancelled' && (
-                          <div className="text-xs text-gray-500 italic">
-                            Serviço cancelado
-                          </div>
-                        )}
-
-                        {/* Botão de remoção para todos os status */}
-                        {service.booking_status !== 'completed' && (
-                          <button
-                            onClick={() => {
-                              setServiceToCancel(service.id);
-                              setCancelModalOpen(true);
-                            }}
-                            className="flex items-center gap-1 px-2 py-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md text-xs font-medium transition-colors"
-                          >
-                            <MdDelete className="text-xs" />
-                            Remover
-                          </button>
-                        )}
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                ))}
               </div>
-            ))}
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <MdSearch className="text-4xl mx-auto mb-3 text-gray-300" />
+                <p className="text-sm font-medium mb-1">Nenhum serviço adicionado ainda</p>
+                <p className="text-xs text-gray-400">Explore nossos serviços e adicione à sua festa</p>
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="text-center py-4 text-gray-500">
-            <MdSearch className="text-2xl mx-auto mb-1.5 text-gray-300" />
-            <p className="text-xs sm:text-sm">Nenhum serviço adicionado ainda</p>
-            <p className="text-xs">Explore nossos serviços e adicione à sua festa</p>
-          </div>
-        )}
+        </div>
       </div>
 
       {/* Edit Modal */}
