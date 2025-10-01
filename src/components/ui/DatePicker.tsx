@@ -1,10 +1,11 @@
-import React, { forwardRef } from 'react';
-import DatePicker, { registerLocale } from 'react-datepicker';
+import React, { forwardRef, useRef, useImperativeHandle } from 'react';
+import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { ptBR } from 'date-fns/locale';
 import { MdCalendarToday } from 'react-icons/md';
 
 // Registrar a localização portuguesa brasileira
+import { registerLocale } from 'react-datepicker';
 registerLocale('pt-BR', ptBR);
 
 interface DatePickerProps {
@@ -21,6 +22,24 @@ interface DatePickerProps {
 
 const CustomDatePicker = forwardRef<HTMLInputElement, DatePickerProps>(
   ({ label, error, value, onChange, minDate, disabled, className, placeholder, required }, ref) => {
+    const datePickerRef = useRef<DatePicker>(null);
+
+    // Expor métodos do input para o ref externo se necessário
+    useImperativeHandle(ref, () => ({
+      focus: () => {
+        if (datePickerRef.current) {
+          // @ts-ignore - DatePicker tem um método setFocus
+          datePickerRef.current.setFocus?.();
+        }
+      },
+      blur: () => {
+        if (datePickerRef.current) {
+          // @ts-ignore
+          datePickerRef.current.setBlur?.();
+        }
+      }
+    } as any));
+
     return (
       <div className={className}>
         {label && (
@@ -58,7 +77,7 @@ const CustomDatePicker = forwardRef<HTMLInputElement, DatePickerProps>(
               }
               return 'hover:bg-gray-100 rounded';
             }}
-            ref={ref}
+            ref={datePickerRef}
           />
         </div>
         {error && (
