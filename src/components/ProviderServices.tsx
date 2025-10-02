@@ -259,21 +259,20 @@ export function ProviderServices({ services, providerId, initialSort = 'relevanc
         <p className="text-pink-100 mb-4 md:mb-6 max-w-2xl mx-auto text-sm md:text-base">
           Compartilhe este prestador e ajude outros a encontrarem serviços incríveis para seus eventos!
         </p>        
-        <div className="flex flex-col gap-3 md:gap-4 justify-center">
+        <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center items-stretch sm:items-center">
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => toast.info('Redirecionando...', 'Você será redirecionado para criar sua festa.', 2000)}
-            className="w-full md:w-auto bg-white text-[#FF0080] px-6 md:px-8 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors duration-300"
+            className="w-full sm:w-auto bg-white text-[#FF0080] px-6 md:px-8 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors duration-300 touch-target"
           >
             Criar minha festa
           </motion.button>
-          <div className="w-full md:w-auto">
-            <ShareButton 
-              title="Prestador Be-Fest"
-              description="Interessado nos nossos serviços? Compartilhe e personalize seu evento dos sonhos!"
-            />
-          </div>
+          <ShareButton 
+            title="Prestador Be-Fest"
+            description="Interessado nos nossos serviços? Compartilhe e personalize seu evento dos sonhos!"
+            className="w-full sm:w-auto"
+          />
         </div>
       </motion.div>
     </div>

@@ -66,12 +66,12 @@ export function ShareButton({
   };
 
   return (
-    <div className="relative">
+    <div className={`relative ${className}`}>
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={handleNativeShare}
-        className={`flex items-center gap-1 md:gap-2 border-2 border-white text-white px-4 md:px-8 py-2 md:py-3 rounded-lg font-semibold hover:bg-white hover:text-[#FF0080] transition-all duration-300 text-sm md:text-base ${className}`}
+        className="w-full flex items-center justify-center gap-2 border-2 border-white text-white px-6 md:px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-[#FF0080] transition-all duration-300 text-base touch-target"
       >
         <MdShare className="text-lg md:text-xl" />
         <span>Compartilhar</span>
