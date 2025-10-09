@@ -384,26 +384,30 @@ export default function ProviderDashboard() {
 
   const calculateEstimatedPriceForEvent = (service: any, event: any) => {
     try {
+      // PRIORIDADE 1: Se já tem preço total salvo no banco, usar ele (é o valor correto e autorizado)
+      if (service.total_estimated_price && service.total_estimated_price > 0) {
+        // O total_estimated_price inclui a taxa de 10% para o cliente
+        // Para o prestador, precisamos remover essa taxa (dividir por 1.10)
+        return Math.round(service.total_estimated_price / 1.10);
+      }
+
+      // Apenas calcular dinamicamente se não houver preço salvo
       const fullGuests = event.full_guests || 0;
       const halfGuests = event.half_guests || 0;
       
       let calculatedPrice = 0;
       
-      // Prioridade 1: Usar preço por convidado no booking (já calculado pelo sistema) - SEMPRE CALCULAR CORRETAMENTE
+      // Prioridade 2: Usar preço por convidado no booking (já calculado pelo sistema) - SEMPRE CALCULAR CORRETAMENTE
       if (service.price_per_guest_at_booking && service.price_per_guest_at_booking > 0) {
         calculatedPrice = calculateServiceTotalValue(fullGuests, halfGuests, service.price_per_guest_at_booking, service, true);
       }
-      // Prioridade 2: Usar preço por convidado do serviço
+      // Prioridade 3: Usar preço por convidado do serviço
       else if (service.service?.price_per_guest && service.service.price_per_guest > 0) {
         calculatedPrice = calculateServiceTotalValue(fullGuests, halfGuests, service.service.price_per_guest, service);
       }
-      // Prioridade 3: Se tem preço base definido
+      // Prioridade 4: Se tem preço base definido
       else if (service.service?.base_price && service.service.base_price > 0) {
         calculatedPrice = service.service.base_price;
-      }
-      // Prioridade 4: Se já tem preço total definido
-      else if (service.total_estimated_price && service.total_estimated_price > 0) {
-        calculatedPrice = service.total_estimated_price;
       }
       // Fallback: Preços estimados baseados na categoria
       else {
@@ -445,26 +449,30 @@ export default function ProviderDashboard() {
 
   const calculateBasePriceForEvent = (service: any, event: any) => {
     try {
+      // PRIORIDADE 1: Se já tem preço total salvo no banco, usar ele (é o valor correto e autorizado)
+      if (service.total_estimated_price && service.total_estimated_price > 0) {
+        // O total_estimated_price inclui a taxa de 10% para o cliente
+        // Para o prestador, precisamos remover essa taxa (dividir por 1.10)
+        return Math.round(service.total_estimated_price / 1.10);
+      }
+
+      // Apenas calcular dinamicamente se não houver preço salvo
       const fullGuests = event.full_guests || 0;
       const halfGuests = event.half_guests || 0;
       
       let calculatedPrice = 0;
       
-      // Prioridade 1: Usar preço por convidado no booking (já calculado pelo sistema) - SEMPRE CALCULAR CORRETAMENTE
+      // Prioridade 2: Usar preço por convidado no booking (já calculado pelo sistema) - SEMPRE CALCULAR CORRETAMENTE
       if (service.price_per_guest_at_booking && service.price_per_guest_at_booking > 0) {
         calculatedPrice = calculateServiceTotalValue(fullGuests, halfGuests, service.price_per_guest_at_booking, service, true);
       }
-      // Prioridade 2: Usar preço por convidado do serviço
+      // Prioridade 3: Usar preço por convidado do serviço
       else if (service.service?.price_per_guest && service.service.price_per_guest > 0) {
         calculatedPrice = calculateServiceTotalValue(fullGuests, halfGuests, service.service.price_per_guest, service);
       }
-      // Prioridade 3: Se tem preço base definido
+      // Prioridade 4: Se tem preço base definido
       else if (service.service?.base_price && service.service.base_price > 0) {
         calculatedPrice = service.service.base_price;
-      }
-      // Prioridade 4: Se já tem preço total definido
-      else if (service.total_estimated_price && service.total_estimated_price > 0) {
-        calculatedPrice = service.total_estimated_price;
       }
       // Fallback: Preços estimados baseados na categoria
       else {

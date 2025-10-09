@@ -216,13 +216,12 @@ export const calculateAdjustedPricePerGuest = (
     minimumGuests = service.service.min_guests;
   }
   
-  // Se o cliente tem menos convidados que o mínimo, calcular preço ajustado
+  // Se o cliente tem menos convidados que o mínimo, RETORNAR O PREÇO ORIGINAL
+  // A lógica de cobrar pelo mínimo será aplicada em calculateServiceTotalValue
   if (minimumGuests > 0 && totalClientGuests > 0 && totalClientGuests < minimumGuests) {
-    // NOVA LÓGICA: Calcular preço ajustado baseado no mínimo
-    // Exemplo: 30 convidados mínimos × R$ 140 = R$ 4.200
-    // Com 20 convidados reais: R$ 4.200 ÷ 20 = R$ 210 por convidado
-    const totalPriceForMinimum = minimumGuests * normalizedPricePerGuest;
-    return Math.ceil(totalPriceForMinimum / totalClientGuests);
+    // NÃO ajustar o preço por convidado, apenas retornar o preço original
+    // O cálculo do total já considera o mínimo de convidados
+    return normalizedPricePerGuest;
   }
   
   // Retornar preço original se não há ajuste necessário
@@ -343,27 +342,30 @@ export const calculateAdvancedPrice = (
   halfGuests: number,
   freeGuests: number = 0
 ): number => {
+  // PRIORIDADE 1: Se já tem preço total salvo no banco, usar ele (é o valor correto e autorizado)
+  if (service.total_estimated_price && service.total_estimated_price > 0) {
+    return service.total_estimated_price;
+  }
+
+  // Apenas calcular dinamicamente se não houver preço salvo
   // Normalizar valores para garantir números válidos
   const normalizedFullGuests = fullGuests || 0;
   const normalizedHalfGuests = halfGuests || 0;
   
   let calculatedPrice = 0;
   
-  // Prioridade 1: Usar preço por convidado no booking (já calculado pelo sistema) - SEMPRE CALCULAR CORRETAMENTE
+  // Prioridade 2: Usar preço por convidado no booking (já calculado pelo sistema)
+  // IMPORTANTE: Não pular a lógica de mínimo - sempre aplicar
   if (service.price_per_guest_at_booking && service.price_per_guest_at_booking > 0) {
-    calculatedPrice = calculateServiceTotalValue(normalizedFullGuests, normalizedHalfGuests, service.price_per_guest_at_booking, service, true);
+    calculatedPrice = calculateServiceTotalValue(normalizedFullGuests, normalizedHalfGuests, service.price_per_guest_at_booking, service, false);
   }
-  // Prioridade 2: Usar preço por convidado do serviço (services.price_per_guest)
+  // Prioridade 3: Usar preço por convidado do serviço (services.price_per_guest)
   else if (service.service?.price_per_guest && service.service.price_per_guest > 0) {
     calculatedPrice = calculateServiceTotalValue(normalizedFullGuests, normalizedHalfGuests, service.service.price_per_guest, service);
   }
-  // Prioridade 3: Se tem preço base definido
+  // Prioridade 4: Se tem preço base definido
   else if (service.service?.base_price && service.service.base_price > 0) {
     calculatedPrice = service.service.base_price;
-  }
-  // Prioridade 4: Se já tem preço total definido (usar apenas se não tiver price_per_guest_at_booking)
-  else if (service.total_estimated_price && service.total_estimated_price > 0) {
-    calculatedPrice = service.total_estimated_price;
   }
   // Fallback: Preços estimados baseados na categoria
   else {

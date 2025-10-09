@@ -329,19 +329,15 @@ export async function addServiceToCartAction(serviceData: {
       return { success: false, error: 'Erro ao calcular preço do serviço' }
     }
 
-    // Calcular o preço ajustado por convidado considerando convidados mínimos
-    const adjustedPricePerGuest = calculateAdjustedPricePerGuest(
-      eventData.full_guests || 0,
-      eventData.half_guests || 0,
-      pricePerGuest,
-      { service: fullServiceData }
-    )
+    // NÃO ajustar o preço por convidado - deixar o preço original
+    // A lógica de convidados mínimos será aplicada em calculateAdvancedPrice
+    const pricePerGuestToSave = pricePerGuest;
     
     // Usar o mesmo cálculo que está sendo usado no PartyDetailsTab.tsx
     const calculatedPrice = calculateAdvancedPrice(
       { 
         ...fullServiceData, 
-        price_per_guest_at_booking: adjustedPricePerGuest 
+        price_per_guest_at_booking: pricePerGuestToSave 
       },
       eventData.full_guests || 0,
       eventData.half_guests || 0,
@@ -352,7 +348,7 @@ export async function addServiceToCartAction(serviceData: {
       event_id: validatedData.event_id,
       service_id: validatedData.service_id,
       provider_id: validatedData.provider_id,
-      price_per_guest_at_booking: adjustedPricePerGuest,
+      price_per_guest_at_booking: pricePerGuestToSave,
       total_estimated_price: calculatedPrice, // Usar o cálculo correto com taxa de 10% e Math.ceil
       booking_status: 'pending_provider_approval'
     });
@@ -364,7 +360,7 @@ export async function addServiceToCartAction(serviceData: {
         event_id: validatedData.event_id,
         service_id: validatedData.service_id,
         provider_id: validatedData.provider_id,
-        price_per_guest_at_booking: adjustedPricePerGuest, // Usar o preço ajustado
+        price_per_guest_at_booking: pricePerGuestToSave, // Usar o preço original (não ajustado)
         total_estimated_price: calculatedPrice, // Usar o cálculo correto com taxa de 10% e Math.ceil
         booking_status: 'pending_provider_approval' // Usar o enum correto
       })
