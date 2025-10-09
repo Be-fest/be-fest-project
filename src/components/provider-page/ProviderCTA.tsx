@@ -34,7 +34,7 @@ export function ProviderCTA() {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="w-full md:w-auto bg-[#FF0080] hover:bg-[#E6006F] text-white px-6 md:px-8 py-3 md:py-4 rounded-full font-bold text-base md:text-lg shadow-lg hover:shadow-xl transition-all duration-300"
+                  className="w-full md:w-auto bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-6 md:px-8 py-3 md:py-4 rounded-full font-bold text-base md:text-lg shadow-lg hover:shadow-xl transition-all duration-300"
                 >
                   Cadastrar-se Agora
                 </motion.button>

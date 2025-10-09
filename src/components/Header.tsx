@@ -206,6 +206,7 @@ function getTheme(userType: 'client' | 'provider' | 'admin' | null, pathname: st
   // Tema PRESTADOR (roxo) quando:
   // - usuário logado como PRESTADOR E está em áreas do prestador (dashboard ou sua página pública)
   // - OU prestador acessando serviço de sua própria página
+  // - OU está na página /seja-um-prestador (independente de estar logado ou não)
   const isProviderArea = userType === 'provider' && (
     pathname?.startsWith('/dashboard/prestador') ||
     pathname?.startsWith('/prestador/')
@@ -217,12 +218,15 @@ function getTheme(userType: 'client' | 'provider' | 'admin' | null, pathname: st
     searchParams?.get('from') === 'provider-site' &&
     searchParams?.get('providerId') === userId;
   
+  // Verificar se está na página seja-um-prestador (sempre usa tema roxo)
+  const isSejaUmPrestadorPage = pathname === '/seja-um-prestador';
+  
   // Tema CLIENTE (rosa) em todos os outros casos:
   // - usuário não logado (anônimo) 
   // - usuário logado como cliente
   // - prestador navegando em páginas gerais do site
   // - prestador navegando em páginas de outros prestadores
-  return (isProviderArea || isProviderOwnService) ? 'provider' : 'client';
+  return (isProviderArea || isProviderOwnService || isSejaUmPrestadorPage) ? 'provider' : 'client';
 }
 
 // Função para detectar se estamos no contexto público de um prestador
@@ -530,9 +534,9 @@ function ThemeHeader({ user, userType, loading, theme, providerContext }: {
                 <MdAdminPanelSettings className="text-lg" />
                 Admin
               </Link>
-            ) : theme === 'client' ? (
+            ) : (
               <>
-                {/* Navegação pública para clientes - sempre a mesma estrutura */}
+                {/* Navegação pública - usa as cores do tema (client rosa ou provider roxo) */}
                 <Link 
                   href="/servicos"
                   className={`text-gray-600 ${colors.hover} transition-colors font-poppins`}
@@ -560,7 +564,7 @@ function ThemeHeader({ user, userType, loading, theme, providerContext }: {
                   </Link>
                 )}
               </>
-            ) : null}
+            )}
           </nav>
 
           {/* Desktop Auth Buttons */}
@@ -646,9 +650,9 @@ function ThemeHeader({ user, userType, loading, theme, providerContext }: {
                 <MdAdminPanelSettings className="text-lg" />
                 Admin
               </Link>
-            ) : theme === 'client' ? (
+            ) : (
               <>
-                {/* Navegação pública para clientes - sempre a mesma estrutura */}
+                {/* Navegação pública mobile - usa as cores do tema (client rosa ou provider roxo) */}
                 <Link 
                   href="/servicos"
                   className={`block text-gray-600 ${colors.hover} transition-colors py-2`}
@@ -682,7 +686,7 @@ function ThemeHeader({ user, userType, loading, theme, providerContext }: {
                   </Link>
                 )}
               </>
-            ) : null}
+            )}
 
             {user ? (
               <>
