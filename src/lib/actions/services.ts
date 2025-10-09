@@ -775,15 +775,19 @@ export async function getProviderStatsAction(): Promise<ActionResult<{
     const activeServicesCount = activeServices?.length || 0
     
     // Calcular receita total estimada (todos os serviços)
+    // Para o prestador, remover a taxa de 10% da plataforma
     const totalRevenue = eventServices?.reduce((sum, es) => {
-      return sum + (es.total_estimated_price || 0)
+      const providerValue = es.total_estimated_price ? Math.round(es.total_estimated_price / 1.10) : 0
+      return sum + providerValue
     }, 0) || 0
 
     // Calcular receita recebida (apenas serviços pagos/aprovados)
+    // Para o prestador, remover a taxa de 10% da plataforma
     const paidRevenue = eventServices?.reduce((sum, es) => {
       // Apenas somar serviços com status 'approved' (pagos)
       if (es.booking_status === 'approved') {
-        return sum + (es.total_estimated_price || 0)
+        const providerValue = es.total_estimated_price ? Math.round(es.total_estimated_price / 1.10) : 0
+        return sum + providerValue
       }
       return sum
     }, 0) || 0
