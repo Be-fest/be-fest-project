@@ -492,7 +492,7 @@ export type ServiceWithDetails = Service & {
 }
 
 export type EventWithServices = Event & {
-  client: Pick<User, 'id' | 'full_name' | 'email' | 'whatsapp_number'>
+  client: Pick<User, 'id' | 'full_name' | 'organization_name' | 'email' | 'whatsapp_number'>
   event_services: (EventService & {
     service: ServiceWithProvider
   })[]

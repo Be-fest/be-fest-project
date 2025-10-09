@@ -33,7 +33,7 @@ import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { getEventByIdAction, deleteEventAction } from '@/lib/actions/events';
 import { getEventServicesAction, deleteEventServiceAction } from '@/lib/actions/event-services';
 import { Event, EventWithServices, EventServiceWithDetails } from '@/types/database';
-import { calculateAdvancedPrice, formatGuestsInfo } from '@/utils/formatters';
+import { calculateAdvancedPrice, formatGuestsInfo, formatEventDateLong } from '@/utils/formatters';
 
 interface PartyDetailsTabProps {
   eventId: string;
@@ -286,11 +286,7 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
               <div className="flex items-center gap-2 text-pink-100 text-sm">
                 <MdCalendarToday className="text-base" />
                 <span>
-                  {event.event_date ? new Date(event.event_date + 'T00:00:00').toLocaleDateString('pt-BR', { 
-                    day: '2-digit', 
-                    month: 'long', 
-                    year: 'numeric' 
-                  }) : 'Data não definida'}
+                  {event.event_date ? formatEventDateLong(event.event_date) : 'Data não definida'}
                 </span>
               </div>
             </div>

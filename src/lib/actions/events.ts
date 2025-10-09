@@ -160,6 +160,13 @@ export async function getProviderEventsAction(): Promise<ActionResult<EventWithS
       .from('events')
       .select(`
         *,
+        client:users!events_client_id_fkey(
+          id,
+          full_name,
+          organization_name,
+          email,
+          whatsapp_number
+        ),
         event_services(
           id,
           service_id,

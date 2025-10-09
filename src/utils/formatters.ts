@@ -602,3 +602,85 @@ export const formatMinimumPrice = (guestTiers: any[], basePrice?: number): strin
   
   return 'Preço sob consulta';
 };
+
+/**
+ * Formata uma data no formato ISO (YYYY-MM-DD) para exibição em português
+ * IMPORTANTE: Esta função corrige problemas de timezone ao interpretar a data
+ * como horário local ao invés de UTC, evitando que datas sejam exibidas com um dia a menos
+ * 
+ * @param dateString - Data no formato ISO (YYYY-MM-DD) ex: "2025-11-15"
+ * @param options - Opções de formatação (opcional)
+ * @returns String formatada da data
+ * 
+ * @example
+ * // Entrada: "2025-11-15"
+ * // Saída: "15 de nov. de 2025"
+ * formatEventDate("2025-11-15")
+ */
+export const formatEventDate = (
+  dateString: string,
+  options: Intl.DateTimeFormatOptions = {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'America/Sao_Paulo'
+  }
+): string => {
+  if (!dateString) return '';
+  
+  try {
+    // Se a data vier no formato YYYY-MM-DD (sem hora), adicionar T00:00:00
+    // para garantir que seja interpretada como meia-noite local
+    const dateToFormat = dateString.includes('T') 
+      ? dateString 
+      : `${dateString}T00:00:00`;
+    
+    // Criar a data garantindo que seja interpretada como horário local de São Paulo
+    const date = new Date(dateToFormat);
+    
+    return date.toLocaleDateString('pt-BR', options);
+  } catch (error) {
+    console.error('Erro ao formatar data:', error);
+    return dateString;
+  }
+};
+
+/**
+ * Formata uma data no formato ISO para exibição completa em português
+ * 
+ * @param dateString - Data no formato ISO (YYYY-MM-DD)
+ * @returns String formatada da data por extenso
+ * 
+ * @example
+ * // Entrada: "2025-11-15"
+ * // Saída: "15 de novembro de 2025"
+ * formatEventDateLong("2025-11-15")
+ */
+export const formatEventDateLong = (dateString: string): string => {
+  return formatEventDate(dateString, {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'America/Sao_Paulo'
+  });
+};
+
+/**
+ * Formata uma data no formato ISO para exibição curta
+ * 
+ * @param dateString - Data no formato ISO (YYYY-MM-DD)
+ * @returns String formatada da data (DD/MM/YYYY)
+ * 
+ * @example
+ * // Entrada: "2025-11-15"
+ * // Saída: "15/11/2025"
+ * formatEventDateShort("2025-11-15")
+ */
+export const formatEventDateShort = (dateString: string): string => {
+  return formatEventDate(dateString, {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: 'America/Sao_Paulo'
+  });
+};

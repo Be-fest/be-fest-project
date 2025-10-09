@@ -31,6 +31,7 @@ import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
 import { useAuth } from '@/hooks/useAuth';
+import { formatEventDateShort } from '@/utils/formatters';
 
 interface User {
   id: string;
@@ -222,9 +223,7 @@ export default function ProfileClient({ user, events, stats }: ProfileClientProp
     }).format(value);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
-  };
+  // Removida a função formatDate local - agora usa formatEventDateShort importada de formatters.ts
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -390,7 +389,7 @@ export default function ProfileClient({ user, events, stats }: ProfileClientProp
                             <div className="flex items-center flex-wrap gap-2 sm:gap-3 text-xs sm:text-sm text-gray-500">
                               <div className="flex items-center">
                                 <MdCalendarToday className="mr-1 text-xs" />
-                                <span className="truncate">{formatDate(event.event_date)}</span>
+                                <span className="truncate">{formatEventDateShort(event.event_date)}</span>
                               </div>
                               {event.location && (
                                 <div className="flex items-center min-w-0">
@@ -481,7 +480,7 @@ export default function ProfileClient({ user, events, stats }: ProfileClientProp
                           <div className="flex items-center flex-wrap gap-2 sm:gap-3 text-xs sm:text-sm text-gray-500">
                             <div className="flex items-center">
                               <MdCalendarToday className="mr-1 text-xs" />
-                              <span className="truncate">{formatDate(event.event_date)}</span>
+                              <span className="truncate">{formatEventDateShort(event.event_date)}</span>
                             </div>
                             {event.location && (
                               <div className="flex items-center min-w-0">

@@ -33,7 +33,7 @@ import { getProviderServicesAction, getProviderStatsAction } from '@/lib/actions
 import { updateEventServiceStatusAction, updateEventServiceAction } from '@/lib/actions/event-services';
 import { EventWithServices, Service } from '@/types/database';
 import { useAuth } from '@/hooks/useAuth';
-import { formatGuestsInfo, calculateServiceTotalValue } from '@/utils/formatters';
+import { formatGuestsInfo, calculateServiceTotalValue, formatEventDate } from '@/utils/formatters';
 
 export default function ProviderDashboard() {
   const { userData, loading: authLoading, error: authError } = useAuth();
@@ -516,13 +516,7 @@ export default function ProviderDashboard() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
-  };
+  // Removida a função formatDate local - agora usa a importada de formatters.ts
 
   const formatTime = (timeString: string | null) => {
     if (!timeString) return '';
@@ -908,10 +902,17 @@ export default function ProviderDashboard() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <h4 className="font-medium text-gray-900 text-sm sm:text-base truncate">{event.title}</h4>
+                        {event.client && (
+                          <p className="text-xs text-gray-500 mb-1">
+                            Contratante: <span className="font-medium text-gray-700">
+                              {event.client.organization_name || event.client.full_name || 'Não informado'}
+                            </span>
+                          </p>
+                        )}
                         <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
                           <span className="flex items-center gap-1">
                             <MdCalendarToday className="text-xs" />
-                            <span className="truncate">{formatDate(event.event_date)}</span>
+                            <span className="truncate">{formatEventDate(event.event_date)}</span>
                           </span>
                           <span className="flex items-center gap-1">
                             <MdLocationOn className="text-xs" />
@@ -1061,10 +1062,15 @@ export default function ProviderDashboard() {
                   <div className="flex items-start justify-between mb-4">
                     <div>
                       <h3 className="text-xl font-bold text-gray-900 mb-2">{event.title}</h3>
+                      {event.client && (
+                        <p className="text-sm text-gray-600 mb-2">
+                          <strong>Contratante:</strong> {event.client.organization_name || event.client.full_name || 'Não informado'}
+                        </p>
+                      )}
                       <div className="flex items-center gap-6 text-gray-600">
                         <span className="flex items-center gap-1">
                           <MdCalendarToday className="text-sm" />
-                          {formatDate(event.event_date)}
+                          {formatEventDate(event.event_date)}
                           {event.start_time && ` às ${formatTime(event.start_time)}`}
                         </span>
                         <span className="flex items-center gap-1">
@@ -1225,10 +1231,15 @@ export default function ProviderDashboard() {
                   <div className="flex items-start justify-between mb-4">
                     <div>
                       <h3 className="text-xl font-bold text-gray-900 mb-2">{event.title}</h3>
+                      {event.client && (
+                        <p className="text-sm text-gray-600 mb-2">
+                          <strong>Contratante:</strong> {event.client.organization_name || event.client.full_name || 'Não informado'}
+                        </p>
+                      )}
                       <div className="flex items-center gap-6 text-gray-600">
                         <span className="flex items-center gap-1">
                           <MdCalendarToday className="text-sm" />
-                          {formatDate(event.event_date)}
+                          {formatEventDate(event.event_date)}
                           {event.start_time && ` às ${formatTime(event.start_time)}`}
                         </span>
                         <span className="flex items-center gap-1">
@@ -1334,10 +1345,15 @@ export default function ProviderDashboard() {
                   <div className="flex items-start justify-between mb-4">
                     <div>
                       <h3 className="text-xl font-bold text-gray-900 mb-2">{event.title}</h3>
+                      {event.client && (
+                        <p className="text-sm text-gray-600 mb-2">
+                          <strong>Contratante:</strong> {event.client.organization_name || event.client.full_name || 'Não informado'}
+                        </p>
+                      )}
                       <div className="flex items-center gap-6 text-gray-600">
                         <span className="flex items-center gap-1">
                           <MdCalendarToday className="text-sm" />
-                          {formatDate(event.event_date)}
+                          {formatEventDate(event.event_date)}
                         </span>
                         <span className="flex items-center gap-1">
                           <MdLocationOn className="text-sm" />
@@ -1388,7 +1404,7 @@ export default function ProviderDashboard() {
                         <div className="flex items-center gap-3">
                           <div className="flex items-center gap-2 text-sm text-gray-600">
                             <MdEvent className="text-lg" />
-                            <span>Evento em: {formatDate(event.event_date)}{event.start_time && ` às ${formatTime(event.start_time)}`}</span>
+                            <span>Evento em: {formatEventDate(event.event_date)}{event.start_time && ` às ${formatTime(event.start_time)}`}</span>
                           </div>
                           <div className="flex items-center gap-2 text-sm text-gray-600">
                             <MdLocationOn className="text-lg" />
@@ -1398,7 +1414,7 @@ export default function ProviderDashboard() {
 
                         <div className="mt-4 flex items-center gap-3">
                           <a
-                            href={`https://wa.me/5511999999999?text=Olá! Sou o prestador do serviço ${service.service?.name} para o evento ${event.title} em ${formatDate(event.event_date)}. Preciso de suporte administrativo.`}
+                            href={`https://wa.me/5511999999999?text=Olá! Sou o prestador do serviço ${service.service?.name} para o evento ${event.title} em ${formatEventDate(event.event_date)}. Preciso de suporte administrativo.`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm font-medium"
