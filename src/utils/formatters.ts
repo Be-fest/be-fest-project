@@ -131,20 +131,13 @@ export const calculateServiceTotalValue = (
   // Verificar se há convidados mínimos definidos
   let minimumGuests = 0;
   
-  // Prioridade 1: Verificar guest_tiers (faixas de preço)
-  if (service?.guest_tiers && service.guest_tiers.length > 0) {
-    const sortedTiers = [...service.guest_tiers].sort((a, b) => a.min_total_guests - b.min_total_guests);
-    const applicableTier = sortedTiers.find(tier => 
-      totalClientGuests >= tier.min_total_guests && 
-      (tier.max_total_guests === null || totalClientGuests <= tier.max_total_guests)
-    );
+  // Prioridade 1: Verificar guest_tiers OU service_guest_tiers (faixas de preço)
+  const tiers = service?.guest_tiers || service?.service_guest_tiers;
+  if (tiers && tiers.length > 0) {
+    const sortedTiers = [...tiers].sort((a, b) => a.min_total_guests - b.min_total_guests);
     
-    if (applicableTier) {
-      minimumGuests = applicableTier.min_total_guests;
-    } else if (sortedTiers.length > 0) {
-      // Se não encontrou faixa aplicável, usar a primeira (menor)
-      minimumGuests = sortedTiers[0].min_total_guests;
-    }
+    // SEMPRE usar o menor tier disponível como mínimo
+    minimumGuests = sortedTiers[0].min_total_guests;
   }
   // Prioridade 2: Verificar min_guests do serviço
   else if (service?.min_guests && service.min_guests > 0) {
@@ -157,9 +150,9 @@ export const calculateServiceTotalValue = (
   
   // Se o cliente tem menos convidados que o mínimo, SEMPRE cobrar pelo mínimo
   if (minimumGuests > 0 && totalClientGuests > 0 && totalClientGuests < minimumGuests) {
-    // NOVA LÓGICA: Sempre calcular baseado no mínimo de convidados
-    // Exemplo: preço R$ 140, mínimo 30 convidados, cliente tem 20 convidados
-    // Resultado: 30 × R$ 140 = R$ 4.200 (cliente sempre paga pelo mínimo)
+    // LÓGICA CORRETA: Sempre calcular baseado no mínimo de convidados
+    // Exemplo: preço R$ 80, mínimo 30 convidados, cliente tem 12 convidados
+    // Resultado: 30 × R$ 80 = R$ 2.400 (cliente sempre paga pelo mínimo)
     return minimumGuests * normalizedPricePerGuest;
   }
   
@@ -193,19 +186,13 @@ export const calculateAdjustedPricePerGuest = (
   // Verificar se há convidados mínimos definidos
   let minimumGuests = 0;
   
-  // Prioridade 1: Verificar guest_tiers (faixas de preço)
-  if (service?.guest_tiers && service.guest_tiers.length > 0) {
-    const sortedTiers = [...service.guest_tiers].sort((a, b) => a.min_total_guests - b.min_total_guests);
-    const applicableTier = sortedTiers.find(tier => 
-      totalClientGuests >= tier.min_total_guests && 
-      (tier.max_total_guests === null || totalClientGuests <= tier.max_total_guests)
-    );
+  // Prioridade 1: Verificar guest_tiers OU service_guest_tiers (faixas de preço)
+  const tiers = service?.guest_tiers || service?.service_guest_tiers;
+  if (tiers && tiers.length > 0) {
+    const sortedTiers = [...tiers].sort((a, b) => a.min_total_guests - b.min_total_guests);
     
-    if (applicableTier) {
-      minimumGuests = applicableTier.min_total_guests;
-    } else if (sortedTiers.length > 0) {
-      minimumGuests = sortedTiers[0].min_total_guests;
-    }
+    // SEMPRE usar o menor tier disponível como mínimo
+    minimumGuests = sortedTiers[0].min_total_guests;
   }
   // Prioridade 2: Verificar min_guests do serviço
   else if (service?.min_guests && service.min_guests > 0) {
