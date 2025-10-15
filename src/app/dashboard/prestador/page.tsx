@@ -380,7 +380,6 @@ export default function ProviderDashboard() {
   ).length;
   const activeServices = providerStats.activeServices;
   const totalRevenue = providerStats.totalRevenue;
-  const paidRevenue = providerStats.paidRevenue;
   
   // Contar eventos concluídos localmente (serviços com status 'completed')
   const completedEvents = events.flatMap(event => 
@@ -519,6 +518,18 @@ export default function ProviderDashboard() {
       return 0;
     }
   };
+
+  // Calcular receita recebida localmente (incluindo serviços pagos e concluídos)
+  const paidRevenue = events.flatMap(event => 
+    event.event_services?.filter(service => 
+      service.provider_id === userData?.id &&
+      (service.booking_status === 'approved' || service.booking_status === 'completed')
+    ).map(service => {
+      // Calcular o valor que o prestador recebe (sem a taxa de 10%)
+      const estimatedPrice = calculateEstimatedPriceForEvent(service, event);
+      return estimatedPrice;
+    }) || []
+  ).reduce((total, price) => total + price, 0);
 
   const formatCurrency = (value: number) => {
     try {
@@ -1361,7 +1372,9 @@ export default function ProviderDashboard() {
             <MdPayment className="text-gray-400 text-6xl mx-auto mb-4" />
             <h3 className="text-xl font-bold text-gray-900 mb-2">Nenhum serviço pago</h3>
             <p className="text-gray-600">
-              Os serviços que foram pagos e você precisa prestar aparecerão aqui.
+              Os serviços que já foram pagos e que você ainda precisa prestar aparecerão aqui.
+              <br />
+              Caso já tenham sido realizados, estarão na aba Concluídos!
             </p>
           </div>
         ) : (
