@@ -380,7 +380,14 @@ export default function ProviderDashboard() {
   const activeServices = providerStats.activeServices;
   const totalRevenue = providerStats.totalRevenue;
   const paidRevenue = providerStats.paidRevenue;
-  const completedEvents = providerStats.completedEvents;
+  
+  // Contar eventos concluídos localmente (serviços com status 'completed')
+  const completedEvents = events.flatMap(event => 
+    event.event_services?.filter(service => 
+      service.provider_id === userData?.id &&
+      service.booking_status === 'completed'
+    ) || []
+  ).length;
 
   const calculateEstimatedPriceForEvent = (service: any, event: any) => {
     try {
