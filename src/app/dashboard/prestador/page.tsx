@@ -371,10 +371,11 @@ export default function ProviderDashboard() {
       service.booking_status === 'waiting_payment'
     ) || []
   ).length;
+  // Contar serviços pagos (incluindo os já concluídos, pois foram pagos antes)
   const paidRequests = events.flatMap(event => 
     event.event_services?.filter(service => 
       service.provider_id === userData?.id &&
-      service.booking_status === 'approved'
+      (service.booking_status === 'approved' || service.booking_status === 'completed')
     ) || []
   ).length;
   const activeServices = providerStats.activeServices;
