@@ -56,7 +56,7 @@ export default function ProviderDashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'requests' | 'waiting_payment' | 'paid' | 'services' | 'profile'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'requests' | 'waiting_payment' | 'paid' | 'completed' | 'services' | 'profile'>('overview');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [selectedServices, setSelectedServices] = useState<Set<string>>(new Set());
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -126,7 +126,7 @@ export default function ProviderDashboard() {
                     { label: 'Visão Geral', icon: MdDashboard },
                     { label: 'Solicitações', icon: MdPendingActions },
                     { label: 'Aguardando Pagamento', icon: MdPayment },
-                    { label: 'Pagos', icon: MdCheckCircle }
+                    { label: 'Pagos', icon: MdAttachMoney }
                   ].map((tab, i) => (
                     <div key={i} className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-xl bg-gray-100">
                       <tab.icon className="text-gray-400 text-sm sm:text-base" />
@@ -269,7 +269,7 @@ export default function ProviderDashboard() {
                       { label: 'Visão Geral', icon: MdDashboard },
                       { label: 'Solicitações', icon: MdPendingActions },
                       { label: 'Aguardando Pagamento', icon: MdPayment },
-                      { label: 'Pagos', icon: MdCheckCircle },
+                      { label: 'Pagos', icon: MdAttachMoney },
                       { label: 'Meus Serviços', icon: MdBusinessCenter },
                       { label: 'Perfil', icon: MdSettings }
                     ].map((tab, i) => (
@@ -723,6 +723,26 @@ export default function ProviderDashboard() {
     }
   };
 
+  // Função para marcar serviço como concluído
+  const handleMarkAsCompleted = async (serviceId: string, serviceName?: string) => {
+    setActionLoading(`complete-${serviceId}`);
+    
+    try {
+      const result = await updateEventServiceStatusAction(serviceId, 'completed');
+      
+      if (result.success) {
+        console.log(`✅ Serviço ${serviceName || serviceId} marcado como concluído`);
+        await loadData(); // Recarregar dados para atualizar a lista
+      } else {
+        console.error('❌ Erro ao marcar serviço como concluído:', result.error);
+      }
+    } catch (error) {
+      console.error('💥 Erro ao marcar serviço como concluído:', error);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const statsCards = [
     {
       title: 'Total de Solicitações',
@@ -757,7 +777,7 @@ export default function ProviderDashboard() {
     {
       title: 'Pagos',
       value: paidRequests,
-      icon: MdCheckCircle,
+      icon: MdAttachMoney,
       color: 'bg-green-500',
       bgColor: 'bg-green-50',
       textColor: 'text-green-600',
@@ -942,7 +962,7 @@ export default function ProviderDashboard() {
                     {hasPendingServices && (
                       <button
                         onClick={() => setActiveTab('requests')}
-                        className="px-2 sm:px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white text-xs rounded-lg font-medium transition-colors flex items-center gap-1 whitespace-nowrap self-start"
+                        className="px-2 sm:px-3 py-1 bg-yellow-500 hover:bg-yellow-600 active:bg-yellow-700 text-white text-xs rounded-lg font-medium transition-all duration-200 flex items-center gap-1 whitespace-nowrap self-start cursor-pointer hover:shadow-md active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 focus-visible:ring-offset-2"
                       >
                         <MdPendingActions className="text-sm" />
                         <span className="hidden sm:inline">Ação Necessária</span>
@@ -1028,14 +1048,14 @@ export default function ProviderDashboard() {
                   <button
                     onClick={handleBulkApprove}
                     disabled={actionLoading === 'bulk-action'}
-                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors disabled:opacity-50"
+                    className="bg-green-600 hover:bg-green-700 active:bg-green-800 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer hover:shadow-md active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:ring-offset-2"
                   >
                     {actionLoading === 'bulk-action' ? 'Processando...' : `Aprovar ${selectedServices.size}`}
                   </button>
                   <button
                     onClick={handleBulkReject}
                     disabled={actionLoading === 'bulk-action'}
-                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors disabled:opacity-50"
+                    className="bg-red-600 hover:bg-red-700 active:bg-red-800 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer hover:shadow-md active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2"
                   >
                     Rejeitar {selectedServices.size}
                   </button>
@@ -1135,7 +1155,7 @@ export default function ProviderDashboard() {
                             <button
                               onClick={() => handleApproveService(service.id, service.service?.name)}
                               disabled={isApproving || actionLoading === 'bulk-action'}
-                              className="px-6 py-3 bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white text-sm rounded-lg font-medium transition-colors flex items-center gap-2"
+                              className="px-6 py-3 bg-green-500 hover:bg-green-600 active:bg-green-700 disabled:bg-green-300 disabled:cursor-not-allowed text-white text-sm rounded-lg font-medium transition-all duration-200 flex items-center gap-2 cursor-pointer hover:shadow-md active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:ring-offset-2"
                             >
                               {isApproving ? (
                                 <>
@@ -1152,7 +1172,7 @@ export default function ProviderDashboard() {
                             <button
                               onClick={() => handleRejectService(service.id, service.service?.name)}
                               disabled={isApproving || isRejecting || actionLoading === 'bulk-action'}
-                              className="px-6 py-3 bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white text-sm rounded-lg font-medium transition-colors flex items-center gap-2"
+                              className="px-6 py-3 bg-red-500 hover:bg-red-600 active:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed text-white text-sm rounded-lg font-medium transition-all duration-200 flex items-center gap-2 cursor-pointer hover:shadow-md active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2"
                             >
                               {isRejecting ? (
                                 <>
@@ -1425,21 +1445,152 @@ export default function ProviderDashboard() {
                             href={`https://wa.me/5511999999999?text=Olá! Sou o prestador do serviço ${service.service?.name} para o evento ${event.title} em ${formatEventDate(event.event_date)}. Preciso de suporte administrativo.`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm font-medium"
+                            className="flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 active:bg-purple-700 transition-all duration-200 text-sm font-medium cursor-pointer hover:shadow-md active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2"
                           >
                             <MdWhatsapp className="text-lg" />
                             Contatar Admin
                           </a>
                           <button
-                            onClick={() => {
-                              // Aqui você pode implementar a lógica para marcar como concluído
-                              console.log('Marcar serviço como concluído:', service.id);
-                            }}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
+                            onClick={() => handleMarkAsCompleted(service.id, service.service?.name)}
+                            disabled={actionLoading === `complete-${service.id}`}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white rounded-lg transition-all duration-200 text-sm font-medium cursor-pointer hover:shadow-md active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
                           >
-                            <MdCheckCircle className="text-lg" />
-                            Marcar como Concluído
+                            {actionLoading === `complete-${service.id}` ? (
+                              <>
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                Processando...
+                              </>
+                            ) : (
+                              <>
+                                <MdCheckCircle className="text-lg" />
+                                Marcar como Concluído
+                              </>
+                            )}
                           </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderCompleted = () => {
+    // Filtrar apenas serviços concluídos que pertencem ao prestador logado
+    const completedServices = events.flatMap(event => 
+      event.event_services?.filter(service => 
+        // Verificar se o serviço pertence ao prestador logado
+        service.provider_id === userData?.id &&
+        // Verificar se está concluído
+        service.booking_status === 'completed'
+      ) || []
+    );
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Eventos Concluídos</h2>
+            <p className="text-gray-600 mt-1">Total de {completedServices.length} serviço(s) concluído(s)</p>
+          </div>
+        </div>
+
+        {completedServices.length === 0 ? (
+          <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-gray-100">
+            <MdCheckCircle className="text-gray-400 text-6xl mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Nenhum evento concluído</h3>
+            <p className="text-gray-600">
+              Eventos marcados como concluídos aparecerão aqui.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {events.map((event) => {
+              // Filtrar apenas os serviços concluídos deste evento que pertencem ao prestador
+              const eventCompletedServices = event.event_services?.filter(service => 
+                service.provider_id === userData?.id &&
+                service.booking_status === 'completed'
+              ) || [];
+
+              // Só mostrar o evento se tiver serviços concluídos do prestador
+              if (eventCompletedServices.length === 0) return null;
+
+              return (
+                <div key={event.id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">{event.title}</h3>
+                      {event.client && (
+                        <p className="text-sm text-gray-600 mb-2">
+                          <strong>Contratante:</strong> {event.client.organization_name || event.client.full_name || 'Não informado'}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-6 text-gray-600">
+                        <span className="flex items-center gap-1">
+                          <MdCalendarToday className="text-sm" />
+                          {formatEventDate(event.event_date)}
+                          {event.start_time && ` às ${formatTime(event.start_time)}`}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MdLocationOn className="text-sm" />
+                          {event.location}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MdPeople className="text-sm" />
+                          {event.full_guests !== undefined && event.half_guests !== undefined && event.free_guests !== undefined
+                            ? formatGuestsInfo(event.full_guests, event.half_guests, event.free_guests)
+                            : `${event.guest_count} convidados`
+                          }
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {eventCompletedServices.map((service, serviceIndex) => {
+                    const estimatedPrice = calculateEstimatedPriceForEvent(service, event);
+                    
+                    return (
+                      <div key={serviceIndex} className="bg-green-50 rounded-xl p-4 mb-4 border border-green-200">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h4 className="font-medium text-gray-900">{service.service?.name || 'Serviço Solicitado'}</h4>
+                              <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-500 text-white flex items-center gap-1">
+                                <MdCheckCircle className="text-sm" />
+                                Concluído
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-1">
+                              <strong>Valor recebido:</strong> {formatCurrency(estimatedPrice)}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              Categoria: {service.service?.category || 'Não especificada'}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="mb-3">
+                          <p className="text-sm font-medium text-gray-700">Status do Serviço:</p>
+                          <p className="text-sm text-green-700 bg-green-100 p-2 rounded">
+                            <MdCheckCircle className="inline w-4 h-4 mr-1" />
+                            Serviço realizado com sucesso!
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <MdEvent className="text-lg" />
+                            <span>Evento realizado em: {formatEventDate(event.event_date)}{event.start_time && ` às ${formatTime(event.start_time)}`}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <MdLocationOn className="text-lg" />
+                            <span>{event.location}</span>
+                          </div>
                         </div>
                       </div>
                     );
@@ -1463,6 +1614,8 @@ export default function ProviderDashboard() {
         return renderWaitingPayment();
       case 'paid':
         return renderPaid();
+      case 'completed':
+        return renderCompleted();
       case 'services':
         return <ServiceManagement />;
       case 'profile':
@@ -1504,7 +1657,8 @@ export default function ProviderDashboard() {
                     { id: 'overview', label: 'Visão Geral', icon: MdDashboard, shortLabel: 'Visão' },
                     { id: 'requests', label: 'Solicitações', icon: MdPendingActions, shortLabel: 'Solicitações' },
                     { id: 'waiting_payment', label: 'Aguardando Pagamento', icon: MdPayment, shortLabel: 'Aguardando' },
-                    { id: 'paid', label: 'Pagos', icon: MdCheckCircle, shortLabel: 'Pagos' },
+                    { id: 'paid', label: 'Pagos', icon: MdAttachMoney, shortLabel: 'Pagos' },
+                    { id: 'completed', label: 'Concluídos', icon: MdCheckCircle, shortLabel: 'Concluídos' },
                     { id: 'services', label: 'Meus Serviços', icon: MdBusinessCenter, shortLabel: 'Serviços' },
                     { id: 'profile', label: 'Perfil', icon: MdSettings, shortLabel: 'Perfil' }
                   ].map((tab) => {
@@ -1517,9 +1671,11 @@ export default function ProviderDashboard() {
                         aria-selected={isActive}
                         aria-label={tab.label}
                         className={`
-                          flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-medium transition-all duration-200 text-xs sm:text-sm whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2
+                          flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-medium transition-all duration-200 text-xs sm:text-sm whitespace-nowrap
+                          outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-1
+                          active:scale-95
                           ${isActive 
-                            ? 'bg-purple-100 text-purple-700' 
+                            ? 'bg-purple-100 text-purple-700 shadow-sm' 
                             : 'text-gray-600 hover:text-purple-600 hover:bg-gray-50'
                           }
                         `}
