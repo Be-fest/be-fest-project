@@ -815,6 +815,18 @@ export default function ProviderDashboard() {
     }
   ];
 
+  // Card adicional para mobile (Eventos Realizados aparece junto com os stats principais)
+  const mobileOnlyCard = {
+    title: 'Eventos Realizados',
+    value: completedEvents.toString(),
+    icon: MdTrendingUp,
+    color: 'bg-blue-500',
+    bgColor: 'bg-blue-50',
+    textColor: 'text-blue-600',
+    change: '',
+    changeType: 'neutral'
+  };
+
   const revenueStats = [
     {
       title: 'Receita Recebida',
@@ -851,7 +863,8 @@ export default function ProviderDashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+      {/* Mobile: 6 cards em grid 2 colunas | Desktop: 5 cards em uma linha */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6">
         {statsCards.map((stat, index) => (
           <motion.div
             key={stat.title}
@@ -864,28 +877,55 @@ export default function ProviderDashboard() {
               <div className={`w-10 h-10 sm:w-12 sm:h-12 ${stat.bgColor} rounded-xl flex items-center justify-center`}>
                 <stat.icon className={`text-lg sm:text-xl ${stat.textColor}`} />
               </div>
-              <div className="flex items-center gap-1 text-xs sm:text-sm">
-                {stat.changeType === 'increase' && <MdArrowUpward className="text-green-500" />}
-                {stat.changeType === 'decrease' && <MdArrowDownward className="text-red-500" />}
-                <span className={`font-medium ${
-                  stat.changeType === 'increase' ? 'text-green-600' : 
-                  stat.changeType === 'decrease' ? 'text-red-600' : 
-                  'text-gray-600'
-                }`}>
-                  {stat.change}
-                </span>
-              </div>
             </div>
             <div>
-              <p className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{stat.value}</p>
-              <p className="text-gray-600 text-xs sm:text-sm font-medium">{stat.title}</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">{stat.value}</p>
+              <p className="text-gray-600 text-xs sm:text-sm font-medium mt-1">{stat.title}</p>
             </div>
           </motion.div>
         ))}
+        
+        {/* Card adicional APENAS no mobile (Eventos Realizados) */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: statsCards.length * 0.1 }}
+          className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 sm:hidden"
+        >
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <div className={`w-10 h-10 sm:w-12 sm:h-12 ${mobileOnlyCard.bgColor} rounded-xl flex items-center justify-center`}>
+              <MdTrendingUp className={`text-lg sm:text-xl ${mobileOnlyCard.textColor}`} />
+            </div>
+          </div>
+          <div>
+            <p className="text-xl sm:text-2xl font-bold text-gray-900">{mobileOnlyCard.value}</p>
+            <p className="text-gray-600 text-xs sm:text-sm font-medium mt-1">{mobileOnlyCard.title}</p>
+          </div>
+        </motion.div>
       </div>
 
-      {/* Revenue Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Card de Receita Recebida APENAS no mobile (full width) */}
+      <div className="sm:hidden">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: (statsCards.length + 1) * 0.1 }}
+          className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className={`w-10 h-10 ${revenueStats[0].bgColor} rounded-xl flex items-center justify-center`}>
+              <MdAttachMoney className={`text-lg ${revenueStats[0].textColor}`} />
+            </div>
+          </div>
+          <div>
+            <p className="text-xl font-bold text-gray-900">{revenueStats[0].value}</p>
+            <p className="text-gray-600 text-xs font-medium mt-1">{revenueStats[0].title}</p>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Revenue Stats - APENAS no desktop (Receita Recebida + Eventos Realizados lado a lado) */}
+      <div className="hidden sm:grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         {revenueStats.map((stat, index) => (
           <motion.div
             key={stat.title}
@@ -898,111 +938,128 @@ export default function ProviderDashboard() {
               <div className={`w-10 h-10 sm:w-12 sm:h-12 ${stat.bgColor} rounded-xl flex items-center justify-center`}>
                 <stat.icon className={`text-lg sm:text-xl ${stat.textColor}`} />
               </div>
-              <div className="flex items-center gap-1 text-xs sm:text-sm">
-                {stat.changeType === 'increase' && <MdArrowUpward className="text-green-500" />}
-                {stat.changeType === 'decrease' && <MdArrowDownward className="text-red-500" />}
-                <span className={`font-medium ${
-                  stat.changeType === 'increase' ? 'text-green-600' : 
-                  stat.changeType === 'decrease' ? 'text-red-600' : 
-                  'text-gray-600'
-                }`}>
-                  {stat.change}
-                </span>
-              </div>
             </div>
             <div>
-              <p className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{stat.value}</p>
-              <p className="text-gray-600 text-xs sm:text-sm font-medium">{stat.title}</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">{stat.value}</p>
+              <p className="text-gray-600 text-xs sm:text-sm font-medium mt-1">{stat.title}</p>
             </div>
           </motion.div>
         ))}
       </div>
 
-      {/* Recent Requests */}
-      <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
-          <h3 className="text-lg sm:text-xl font-bold text-gray-900">Solicitações Recentes</h3>
+      {/* Recent Requests - Redesigned */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-gradient-to-r from-purple-600 to-purple-500 px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between">
+          <h3 className="text-lg sm:text-xl font-bold text-white">Solicitações Recentes</h3>
           <button
             onClick={() => setActiveTab('requests')}
-            className="text-purple-600 hover:text-purple-700 font-medium text-sm self-start"
+            className="px-3 sm:px-4 py-2 bg-white/20 hover:bg-white/30 active:bg-white/40 backdrop-blur-sm text-white text-xs sm:text-sm rounded-lg font-medium transition-all duration-200 hover:shadow-lg active:scale-95"
           >
             Ver todas
           </button>
         </div>
         
         {events.length === 0 ? (
-          <div className="text-center py-8">
-            <MdNotifications className="text-gray-400 text-4xl mx-auto mb-4" />
-            <p className="text-gray-500">Nenhuma solicitação encontrada</p>
+          <div className="text-center py-12 px-4">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <MdNotifications className="text-gray-400 text-3xl sm:text-4xl" />
+            </div>
+            <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">Nenhuma solicitação</h4>
+            <p className="text-sm text-gray-500">Quando clientes solicitarem seus serviços, elas aparecerão aqui</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="divide-y divide-gray-100">
             {events.slice(0, 5).map((event, index) => {
               const hasPendingServices = event.event_services?.some(s => s.booking_status === 'pending_provider_approval');
+              const clientName = event.client?.organization_name || event.client?.full_name || 'Cliente não identificado';
               
               return (
-                <div key={event.id} className="bg-gray-50 rounded-xl p-4">
+                <div key={event.id} className="p-4 sm:p-5 hover:bg-gray-50 transition-colors duration-200">
+                  {/* Header */}
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <MdEvent className="text-purple-600 text-sm sm:text-base" />
+                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-100 to-purple-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <MdEvent className="text-purple-600 text-lg sm:text-xl" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h4 className="font-medium text-gray-900 text-sm sm:text-base truncate">{event.title}</h4>
-                        {event.client && (
-                          <p className="text-xs text-gray-500 mb-1">
-                            Contratante: <span className="font-medium text-gray-700">
-                              {event.client.organization_name || event.client.full_name || 'Não informado'}
-                            </span>
-                          </p>
-                        )}
-                        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
-                          <span className="flex items-center gap-1">
-                            <MdCalendarToday className="text-xs" />
-                            <span className="truncate">{formatEventDate(event.event_date)}</span>
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <MdLocationOn className="text-xs" />
-                            <span className="truncate max-w-[120px] sm:max-w-none">{event.location}</span>
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <MdPeople className="text-xs" />
-                            <span className="truncate">
-                              {event.full_guests !== undefined && event.half_guests !== undefined && event.free_guests !== undefined
-                                ? formatGuestsInfo(event.full_guests, event.half_guests, event.free_guests)
-                                : `${event.guest_count} convidados`
-                              }
-                            </span>
-                          </span>
-                        </div>
+                        <h4 className="font-bold text-gray-900 text-sm sm:text-base mb-1">{event.title}</h4>
+                        <p className="text-xs sm:text-sm text-gray-600">
+                          Contratante: <span className="font-semibold text-purple-600">{clientName}</span>
+                        </p>
                       </div>
                     </div>
                     
                     {hasPendingServices && (
                       <button
                         onClick={() => setActiveTab('requests')}
-                        className="px-2 sm:px-3 py-1 bg-yellow-500 hover:bg-yellow-600 active:bg-yellow-700 text-white text-xs rounded-lg font-medium transition-all duration-200 flex items-center gap-1 whitespace-nowrap self-start cursor-pointer hover:shadow-md active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 focus-visible:ring-offset-2"
+                        className="px-3 py-1.5 bg-yellow-100 hover:bg-yellow-200 active:bg-yellow-300 text-yellow-700 text-xs sm:text-sm rounded-lg font-semibold transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 hover:shadow-sm active:scale-95"
                       >
-                        <MdPendingActions className="text-sm" />
-                        <span className="hidden sm:inline">Ação Necessária</span>
-                        <span className="sm:hidden">Ação</span>
+                        <MdPendingActions className="text-sm sm:text-base" />
+                        Ação Necessária
                       </button>
                     )}
                   </div>
                   
-                  <div className="flex items-center gap-2 flex-wrap">
+                  {/* Event Info Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mb-3">
+                    <div className="flex items-center gap-2 text-xs sm:text-sm">
+                      <MdCalendarToday className="text-purple-500 text-base flex-shrink-0" />
+                      <span className="text-gray-700 font-medium">{formatEventDate(event.event_date)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs sm:text-sm min-w-0">
+                      <MdLocationOn className="text-purple-500 text-base flex-shrink-0" />
+                      <span className="text-gray-700 truncate">{event.location}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs sm:text-sm">
+                      <MdPeople className="text-purple-500 text-base flex-shrink-0" />
+                      <span className="text-gray-700 font-medium">
+                        {event.full_guests !== undefined && event.half_guests !== undefined && event.free_guests !== undefined
+                          ? formatGuestsInfo(event.full_guests, event.half_guests, event.free_guests)
+                          : `${event.guest_count} convidados`
+                        }
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Services with Status and Value */}
+                  <div className="space-y-2">
                     {event.event_services?.map((service, serviceIndex) => {
                       const estimatedPrice = calculateEstimatedPriceForEvent(service, event);
+                      const statusText = {
+                        'pending_provider_approval': 'Aguardando Aprovação',
+                        'waiting_payment': 'Aguardando Pagamento',
+                        'approved': 'Aprovado',
+                        'completed': 'Concluído',
+                        'rejected': 'Rejeitado'
+                      };
+                      
+                      const statusColors = {
+                        'pending_provider_approval': 'bg-yellow-50 text-yellow-700 border-yellow-200',
+                        'waiting_payment': 'bg-blue-50 text-blue-700 border-blue-200',
+                        'approved': 'bg-green-50 text-green-700 border-green-200',
+                        'completed': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                        'rejected': 'bg-red-50 text-red-700 border-red-200'
+                      };
                       
                       return (
-                        <div key={serviceIndex} className="flex items-center gap-2 text-xs">
-                          <span className={`px-2 py-1 rounded-full font-medium ${getStatusColor(service.booking_status)}`}>
-                            {service.service?.name || 'Serviço'} - {getStatusText(service.booking_status)}
-                          </span>
-                          {estimatedPrice > 0 && (
-                            <span className="text-gray-600">
-                              {formatCurrency(estimatedPrice)}
+                        <div 
+                          key={serviceIndex} 
+                          className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border ${statusColors[service.booking_status as keyof typeof statusColors] || 'bg-gray-50 text-gray-700 border-gray-200'}`}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 min-w-0 flex-1">
+                            <span className="font-bold text-xs sm:text-sm truncate">
+                              {service.service?.name || 'Serviço'}
                             </span>
+                            <span className="hidden sm:inline text-current opacity-30">•</span>
+                            <span className="text-xs sm:text-sm font-medium opacity-90">
+                              {statusText[service.booking_status as keyof typeof statusText] || service.booking_status}
+                            </span>
+                          </div>
+                          {estimatedPrice > 0 && (
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                              <span className="text-xs text-current opacity-60">Valor:</span>
+                              <span className="font-bold text-sm sm:text-base">{formatCurrency(estimatedPrice)}</span>
+                            </div>
                           )}
                         </div>
                       );
@@ -1039,43 +1096,47 @@ export default function ProviderDashboard() {
 
         {/* Controles de seleção em lote */}
         {pendingServices.length > 0 && (
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
+          <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100">
+            <div className="flex flex-col gap-4">
+              {/* Contador e ações de seleção */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <span className="text-sm font-medium text-gray-700">
                   {selectedServices.size} de {pendingServices.length} serviços selecionados
                 </span>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2 items-center">
                   <button
                     onClick={selectAllPendingServices}
-                    className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+                    className="text-sm text-purple-600 hover:text-purple-700 font-medium whitespace-nowrap"
                   >
                     Selecionar todos pendentes
                   </button>
-                  <span className="text-gray-300">|</span>
+                  <span className="text-gray-300 hidden sm:inline">|</span>
                   <button
                     onClick={clearSelection}
-                    className="text-sm text-gray-600 hover:text-gray-700 font-medium"
+                    className="text-sm text-gray-600 hover:text-gray-700 font-medium whitespace-nowrap"
                   >
                     Limpar seleção
                   </button>
                 </div>
               </div>
               
+              {/* Botões de ação em lote */}
               {selectedServices.size > 0 && (
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2 pt-3 border-t border-gray-200">
                   <button
                     onClick={handleBulkApprove}
                     disabled={actionLoading === 'bulk-action'}
-                    className="bg-green-600 hover:bg-green-700 active:bg-green-800 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer hover:shadow-md active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:ring-offset-2"
+                    className="flex-1 min-h-[48px] bg-green-600 hover:bg-green-700 active:bg-green-800 text-white px-4 sm:px-6 py-3 rounded-lg font-semibold text-sm sm:text-base transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer hover:shadow-lg active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:ring-offset-2 flex items-center justify-center gap-2"
                   >
+                    <MdCheckCircle className="text-lg sm:text-xl" />
                     {actionLoading === 'bulk-action' ? 'Processando...' : `Aprovar ${selectedServices.size}`}
                   </button>
                   <button
                     onClick={handleBulkReject}
                     disabled={actionLoading === 'bulk-action'}
-                    className="bg-red-600 hover:bg-red-700 active:bg-red-800 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer hover:shadow-md active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2"
+                    className="flex-1 min-h-[48px] bg-red-600 hover:bg-red-700 active:bg-red-800 text-white px-4 sm:px-6 py-3 rounded-lg font-semibold text-sm sm:text-base transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer hover:shadow-lg active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 flex items-center justify-center gap-2"
                   >
+                    <MdClose className="text-lg sm:text-xl" />
                     Rejeitar {selectedServices.size}
                   </button>
                 </div>
@@ -1105,125 +1166,154 @@ export default function ProviderDashboard() {
               if (eventPendingServices.length === 0) return null;
 
               return (
-                <div key={event.id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">{event.title}</h3>
-                      {event.client && (
-                        <p className="text-sm text-gray-600 mb-2">
-                          <strong>Contratante:</strong> {event.client.organization_name || event.client.full_name || 'Não informado'}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-6 text-gray-600">
-                        <span className="flex items-center gap-1">
-                          <MdCalendarToday className="text-sm" />
-                          {formatEventDate(event.event_date)}
-                          {event.start_time && ` às ${formatTime(event.start_time)}`}
+                <div key={event.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                  {/* Header do Card - Roxo */}
+                  <div className="bg-gradient-to-r from-purple-600 to-purple-500 p-4 sm:p-5">
+                    <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{event.title}</h3>
+                    {event.client && (
+                      <p className="text-sm text-purple-100">
+                        Contratante: <span className="font-semibold text-white">
+                          {event.client.organization_name || event.client.full_name || 'Não informado'}
                         </span>
-                        <span className="flex items-center gap-1">
-                          <MdLocationOn className="text-sm" />
-                          {event.location}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MdPeople className="text-sm" />
-                          {event.full_guests !== undefined && event.half_guests !== undefined && event.free_guests !== undefined
-                            ? formatGuestsInfo(event.full_guests, event.half_guests, event.free_guests)
-                            : `${event.guest_count} convidados`
-                          }
-                        </span>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Informações do Evento */}
+                  <div className="p-4 sm:p-5 bg-gray-50 border-b border-gray-200">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="flex items-start gap-2">
+                        <MdCalendarToday className="text-purple-500 text-lg flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium">Data e Hora</p>
+                          <p className="text-sm text-gray-900 font-semibold">
+                            {formatEventDate(event.event_date)}
+                            {event.start_time && (
+                              <span className="block text-purple-600">{formatTime(event.start_time)}</span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2">
+                        <MdLocationOn className="text-purple-500 text-lg flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium">Local</p>
+                          <p className="text-sm text-gray-900 font-semibold">{event.location}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2">
+                        <MdPeople className="text-purple-500 text-lg flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium">Convidados</p>
+                          <p className="text-sm text-gray-900 font-semibold">
+                            {event.full_guests !== undefined && event.half_guests !== undefined && event.free_guests !== undefined
+                              ? formatGuestsInfo(event.full_guests, event.half_guests, event.free_guests)
+                              : `${event.guest_count} convidados`
+                            }
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {eventPendingServices.map((service, serviceIndex) => {
+                  {/* Serviços */}
+                  <div className="p-4 sm:p-5 space-y-4">
+                    {eventPendingServices.map((service, serviceIndex) => {
                     const estimatedPrice = calculateEstimatedPriceForEvent(service, event);
                     const isSelected = selectedServices.has(service.id);
                     const isApproving = actionLoading === `approve-${service.id}`;
                     const isRejecting = actionLoading === `reject-${service.id}`;
                     
                     return (
-                      <div key={serviceIndex} className="bg-gray-50 rounded-xl p-4 mb-4">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-start gap-3">
-                            {/* Checkbox para seleção */}
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => toggleServiceSelection(service.id)}
-                              className="mt-1 w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                            />
-                            
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <h4 className="font-medium text-gray-900">{service.service?.name || 'Serviço Solicitado'}</h4>
-                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(service.booking_status)}`}>
-                                  {getStatusText(service.booking_status)}
-                                </span>
+                      <div key={serviceIndex} className="bg-yellow-50 rounded-xl border-2 border-yellow-200 p-4 space-y-4">
+                        {/* Header do Serviço */}
+                        <div className="flex items-start gap-3">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleServiceSelection(service.id)}
+                            className="mt-1 w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500 cursor-pointer"
+                          />
+                          
+                          <div className="flex-1 space-y-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                              <div>
+                                <h4 className="text-base sm:text-lg font-bold text-gray-900">{service.service?.name || 'Serviço Solicitado'}</h4>
+                                <p className="text-sm text-gray-600">Categoria: {service.service?.category || 'Não especificada'}</p>
                               </div>
-                                                          <p className="text-sm text-gray-600 mb-1">
-                              <strong>Valor a receber:</strong> {formatCurrency(estimatedPrice)}
-                            </p>
-                              <p className="text-sm text-gray-500">
-                                Categoria: {service.service?.category || 'Não especificada'}
-                              </p>
+                              <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${getStatusColor(service.booking_status)} whitespace-nowrap self-start sm:self-auto`}>
+                                {getStatusText(service.booking_status)}
+                              </span>
+                            </div>
+
+                            {/* Valor */}
+                            <div className="bg-white rounded-lg p-3 border border-yellow-300">
+                              <p className="text-xs text-gray-500 font-medium mb-1">Valor a Receber</p>
+                              <p className="text-xl sm:text-2xl font-bold text-green-600">{formatCurrency(estimatedPrice)}</p>
+                            </div>
+
+                            {/* Observações */}
+                            <div className="space-y-2">
+                              <div>
+                                <p className="text-xs font-semibold text-gray-700 mb-1">Observações do Cliente:</p>
+                                <p className="text-sm text-gray-600 bg-white p-2 rounded border border-gray-200">
+                                  Nenhuma observação fornecida
+                                </p>
+                              </div>
+                              
+                              <div>
+                                <p className="text-xs font-semibold text-gray-700 mb-1">Suas Observações:</p>
+                                <p className="text-sm text-gray-600 bg-white p-2 rounded border border-gray-200">
+                                  Nenhuma observação adicionada
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Botões de Ação */}
+                            <div className="flex flex-col sm:flex-row gap-2 pt-3 border-t border-yellow-300">
+                              <button
+                                onClick={() => handleApproveService(service.id, service.service?.name)}
+                                disabled={isApproving || actionLoading === 'bulk-action'}
+                                className="flex-1 min-h-[48px] px-6 py-3 bg-green-500 hover:bg-green-600 active:bg-green-700 disabled:bg-green-300 disabled:cursor-not-allowed text-white text-sm sm:text-base rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer hover:shadow-lg active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:ring-offset-2"
+                              >
+                                {isApproving ? (
+                                  <>
+                                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                    Aprovando...
+                                  </>
+                                ) : (
+                                  <>
+                                    <MdCheckCircle className="text-xl" />
+                                    Aprovar Orçamento
+                                  </>
+                                )}
+                              </button>
+                              <button
+                                onClick={() => handleRejectService(service.id, service.service?.name)}
+                                disabled={isApproving || isRejecting || actionLoading === 'bulk-action'}
+                                className="flex-1 min-h-[48px] px-6 py-3 bg-red-500 hover:bg-red-600 active:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed text-white text-sm sm:text-base rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer hover:shadow-lg active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2"
+                              >
+                                {isRejecting ? (
+                                  <>
+                                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                    Rejeitando...
+                                  </>
+                                ) : (
+                                  <>
+                                    <MdClose className="text-xl" />
+                                    Rejeitar
+                                  </>
+                                )}
+                              </button>
                             </div>
                           </div>
-                          
-                          {/* Botões de ação individual */}
-                          <div className="flex items-center gap-2 ml-4">
-                            <button
-                              onClick={() => handleApproveService(service.id, service.service?.name)}
-                              disabled={isApproving || actionLoading === 'bulk-action'}
-                              className="px-6 py-3 bg-green-500 hover:bg-green-600 active:bg-green-700 disabled:bg-green-300 disabled:cursor-not-allowed text-white text-sm rounded-lg font-medium transition-all duration-200 flex items-center gap-2 cursor-pointer hover:shadow-md active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:ring-offset-2"
-                            >
-                              {isApproving ? (
-                                <>
-                                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                  Aprovando...
-                                </>
-                              ) : (
-                                <>
-                                  <MdCheckCircle className="text-lg" />
-                                  Aprovar
-                                </>
-                              )}
-                            </button>
-                            <button
-                              onClick={() => handleRejectService(service.id, service.service?.name)}
-                              disabled={isApproving || isRejecting || actionLoading === 'bulk-action'}
-                              className="px-6 py-3 bg-red-500 hover:bg-red-600 active:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed text-white text-sm rounded-lg font-medium transition-all duration-200 flex items-center gap-2 cursor-pointer hover:shadow-md active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2"
-                            >
-                              {isRejecting ? (
-                                <>
-                                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                  Rejeitando...
-                                </>
-                              ) : (
-                                <>
-                                  <MdClose className="text-lg" />
-                                  Rejeitar
-                                </>
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                        
-                        <div className="mb-3">
-                          <p className="text-sm font-medium text-gray-700">Observações do Cliente:</p>
-                          <p className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
-                            Nenhuma observação fornecida
-                          </p>
-                        </div>
-                        
-                        <div className="mb-3">
-                          <p className="text-sm font-medium text-gray-700">Suas Observações:</p>
-                          <p className="text-sm text-gray-600 bg-gray-100 p-2 rounded">
-                            Nenhuma observação adicionada
-                          </p>
                         </div>
                       </div>
                     );
                   })}
+                  </div>
                 </div>
               );
             })}
@@ -1274,70 +1364,93 @@ export default function ProviderDashboard() {
               if (eventWaitingPaymentServices.length === 0) return null;
 
               return (
-                <div key={event.id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">{event.title}</h3>
-                      {event.client && (
-                        <p className="text-sm text-gray-600 mb-2">
-                          <strong>Contratante:</strong> {event.client.organization_name || event.client.full_name || 'Não informado'}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-6 text-gray-600">
-                        <span className="flex items-center gap-1">
-                          <MdCalendarToday className="text-sm" />
-                          {formatEventDate(event.event_date)}
-                          {event.start_time && ` às ${formatTime(event.start_time)}`}
+                <div key={event.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                  {/* Header do Card - Roxo */}
+                  <div className="bg-gradient-to-r from-purple-600 to-purple-500 p-4 sm:p-5">
+                    <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{event.title}</h3>
+                    {event.client && (
+                      <p className="text-sm text-purple-100">
+                        Contratante: <span className="font-semibold text-white">
+                          {event.client.organization_name || event.client.full_name || 'Não informado'}
                         </span>
-                        <span className="flex items-center gap-1">
-                          <MdLocationOn className="text-sm" />
-                          {event.location}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MdPeople className="text-sm" />
-                          {event.full_guests !== undefined && event.half_guests !== undefined && event.free_guests !== undefined
-                            ? formatGuestsInfo(event.full_guests, event.half_guests, event.free_guests)
-                            : `${event.guest_count} convidados`
-                          }
-                        </span>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Informações do Evento */}
+                  <div className="p-4 sm:p-5 bg-gray-50 border-b border-gray-200">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="flex items-start gap-2">
+                        <MdCalendarToday className="text-purple-500 text-lg flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium">Data e Hora</p>
+                          <p className="text-sm text-gray-900 font-semibold">
+                            {formatEventDate(event.event_date)}
+                            {event.start_time && (
+                              <span className="block text-purple-600">{formatTime(event.start_time)}</span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2">
+                        <MdLocationOn className="text-purple-500 text-lg flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium">Local</p>
+                          <p className="text-sm text-gray-900 font-semibold">{event.location}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2">
+                        <MdPeople className="text-purple-500 text-lg flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium">Convidados</p>
+                          <p className="text-sm text-gray-900 font-semibold">
+                            {event.full_guests !== undefined && event.half_guests !== undefined && event.free_guests !== undefined
+                              ? formatGuestsInfo(event.full_guests, event.half_guests, event.free_guests)
+                              : `${event.guest_count} convidados`
+                            }
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {eventWaitingPaymentServices.map((service, serviceIndex) => {
+                  {/* Serviços */}
+                  <div className="p-4 sm:p-5 space-y-4">
+                    {eventWaitingPaymentServices.map((service, serviceIndex) => {
                     const estimatedPrice = calculateEstimatedPriceForEvent(service, event);
                     
                     return (
-                      <div key={serviceIndex} className="bg-blue-50 rounded-xl p-4 mb-4 border border-blue-200">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <h4 className="font-medium text-gray-900">{service.service?.name || 'Serviço Solicitado'}</h4>
-                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(service.booking_status)}`}>
-                                {getStatusText(service.booking_status)}
-                              </span>
-                            </div>
-                            <p className="text-sm text-gray-600 mb-1">
-                              <strong>Preço estimado:</strong> {formatCurrency(estimatedPrice)}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Valor total: {formatCurrency(estimatedPrice)}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Categoria: {service.service?.category || 'Não especificada'}
-                            </p>
+                      <div key={serviceIndex} className="bg-blue-50 rounded-xl border-2 border-blue-200 p-4 space-y-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                          <div>
+                            <h4 className="text-base sm:text-lg font-bold text-gray-900">{service.service?.name || 'Serviço Solicitado'}</h4>
+                            <p className="text-sm text-gray-600">Categoria: {service.service?.category || 'Não especificada'}</p>
                           </div>
+                          <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${getStatusColor(service.booking_status)} whitespace-nowrap self-start sm:self-auto`}>
+                            {getStatusText(service.booking_status)}
+                          </span>
                         </div>
-                        
-                        <div className="mb-3">
-                          <p className="text-sm font-medium text-gray-700">Status do Pagamento:</p>
-                          <p className="text-sm text-blue-700 bg-blue-100 p-2 rounded">
+
+                        {/* Valor */}
+                        <div className="bg-white rounded-lg p-3 border border-blue-300">
+                          <p className="text-xs text-gray-500 font-medium mb-1">Valor Estimado</p>
+                          <p className="text-xl sm:text-2xl font-bold text-blue-600">{formatCurrency(estimatedPrice)}</p>
+                        </div>
+
+                        {/* Status */}
+                        <div className="bg-white rounded-lg p-3 border border-blue-300">
+                          <p className="text-xs font-semibold text-gray-700 mb-1">Status do Pagamento:</p>
+                          <p className="text-sm text-blue-700 font-semibold flex items-center gap-2">
+                            <MdPayment className="text-lg" />
                             Aguardando pagamento do cliente
                           </p>
                         </div>
                       </div>
                     );
                   })}
+                  </div>
                 </div>
               );
             })}
@@ -1390,100 +1503,115 @@ export default function ProviderDashboard() {
               if (eventPaidServices.length === 0) return null;
 
               return (
-                <div key={event.id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">{event.title}</h3>
-                      {event.client && (
-                        <p className="text-sm text-gray-600 mb-2">
-                          <strong>Contratante:</strong> {event.client.organization_name || event.client.full_name || 'Não informado'}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-6 text-gray-600">
-                        <span className="flex items-center gap-1">
-                          <MdCalendarToday className="text-sm" />
-                          {formatEventDate(event.event_date)}
+                <div key={event.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                  {/* Header do Card - Roxo */}
+                  <div className="bg-gradient-to-r from-purple-600 to-purple-500 p-4 sm:p-5">
+                    <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{event.title}</h3>
+                    {event.client && (
+                      <p className="text-sm text-purple-100">
+                        Contratante: <span className="font-semibold text-white">
+                          {event.client.organization_name || event.client.full_name || 'Não informado'}
                         </span>
-                        <span className="flex items-center gap-1">
-                          <MdLocationOn className="text-sm" />
-                          {event.location}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MdPeople className="text-sm" />
-                          {event.full_guests !== undefined && event.half_guests !== undefined && event.free_guests !== undefined
-                            ? formatGuestsInfo(event.full_guests, event.half_guests, event.free_guests)
-                            : `${event.guest_count} convidados`
-                          }
-                        </span>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Informações do Evento */}
+                  <div className="p-4 sm:p-5 bg-gray-50 border-b border-gray-200">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="flex items-start gap-2">
+                        <MdCalendarToday className="text-purple-500 text-lg flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium">Data e Hora</p>
+                          <p className="text-sm text-gray-900 font-semibold">
+                            {formatEventDate(event.event_date)}
+                            {event.start_time && (
+                              <span className="block text-purple-600">{formatTime(event.start_time)}</span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2">
+                        <MdLocationOn className="text-purple-500 text-lg flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium">Local</p>
+                          <p className="text-sm text-gray-900 font-semibold">{event.location}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2">
+                        <MdPeople className="text-purple-500 text-lg flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium">Convidados</p>
+                          <p className="text-sm text-gray-900 font-semibold">
+                            {event.full_guests !== undefined && event.half_guests !== undefined && event.free_guests !== undefined
+                              ? formatGuestsInfo(event.full_guests, event.half_guests, event.free_guests)
+                              : `${event.guest_count} convidados`
+                            }
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
 
+                  {/* Serviços */}
+                  <div className="p-4 sm:p-5 space-y-4">
                   {eventPaidServices.map((service, serviceIndex) => {
                     const estimatedPrice = calculateEstimatedPriceForEvent(service, event);
                     
                     return (
-                      <div key={serviceIndex} className="bg-green-50 rounded-xl p-4 mb-4 border border-green-200">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <h4 className="font-medium text-gray-900">{service.service?.name || 'Serviço Solicitado'}</h4>
-                              <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                                <MdCheckCircle className="inline w-3 h-3 mr-1" />
-                                Pago e Confirmado
-                              </span>
-                            </div>
-                            <p className="text-sm text-gray-600 mb-1">
-                              <strong>Valor recebido:</strong> {formatCurrency(estimatedPrice)}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Categoria: {service.service?.category || 'Não especificada'}
-                            </p>
+                      <div key={serviceIndex} className="bg-green-50 rounded-xl border-2 border-green-200 p-4 space-y-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                          <div>
+                            <h4 className="text-base sm:text-lg font-bold text-gray-900">{service.service?.name || 'Serviço Solicitado'}</h4>
+                            <p className="text-sm text-gray-600">Categoria: {service.service?.category || 'Não especificada'}</p>
                           </div>
+                          <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 whitespace-nowrap self-start sm:self-auto flex items-center gap-1">
+                            <MdCheckCircle className="text-sm" />
+                            Pago e Confirmado
+                          </span>
                         </div>
-                        
-                        <div className="mb-3">
-                          <p className="text-sm font-medium text-gray-700">Status do Serviço:</p>
-                          <p className="text-sm text-green-700 bg-green-100 p-2 rounded">
-                            <MdPayment className="inline w-4 h-4 mr-1" />
+
+                        {/* Valor */}
+                        <div className="bg-white rounded-lg p-3 border border-green-300">
+                          <p className="text-xs text-gray-500 font-medium mb-1">Valor Recebido</p>
+                          <p className="text-xl sm:text-2xl font-bold text-green-600">{formatCurrency(estimatedPrice)}</p>
+                        </div>
+
+                        {/* Status */}
+                        <div className="bg-white rounded-lg p-3 border border-green-300">
+                          <p className="text-xs font-semibold text-gray-700 mb-1">Status do Serviço:</p>
+                          <p className="text-sm text-green-700 font-semibold flex items-center gap-2">
+                            <MdPayment className="text-lg" />
                             Pagamento confirmado - Preste o serviço no dia do evento
                           </p>
                         </div>
 
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <MdEvent className="text-lg" />
-                            <span>Evento em: {formatEventDate(event.event_date)}{event.start_time && ` às ${formatTime(event.start_time)}`}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <MdLocationOn className="text-lg" />
-                            <span>{event.location}</span>
-                          </div>
-                        </div>
-
-                        <div className="mt-4 flex items-center gap-3">
+                        {/* Botões de Ação */}
+                        <div className="flex flex-col sm:flex-row gap-2 pt-3 border-t border-green-300">
                           <a
                             href={`https://wa.me/5511999999999?text=Olá! Sou o prestador do serviço ${service.service?.name} para o evento ${event.title} em ${formatEventDate(event.event_date)}. Preciso de suporte administrativo.`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 active:bg-purple-700 transition-all duration-200 text-sm font-medium cursor-pointer hover:shadow-md active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2"
+                            className="flex-1 min-h-[48px] px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 active:bg-purple-700 transition-all duration-200 text-sm sm:text-base font-semibold flex items-center justify-center gap-2 cursor-pointer hover:shadow-lg active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2"
                           >
-                            <MdWhatsapp className="text-lg" />
+                            <MdWhatsapp className="text-xl" />
                             Contatar Admin
                           </a>
                           <button
                             onClick={() => handleMarkAsCompleted(service.id, service.service?.name)}
                             disabled={actionLoading === `complete-${service.id}`}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white rounded-lg transition-all duration-200 text-sm font-medium cursor-pointer hover:shadow-md active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
+                            className="flex-1 min-h-[48px] px-6 py-3 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white rounded-lg transition-all duration-200 text-sm sm:text-base font-semibold flex items-center justify-center gap-2 cursor-pointer hover:shadow-lg active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
                           >
                             {actionLoading === `complete-${service.id}` ? (
                               <>
-                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                 Processando...
                               </>
                             ) : (
                               <>
-                                <MdCheckCircle className="text-lg" />
+                                <MdCheckCircle className="text-xl" />
                                 Marcar como Concluído
                               </>
                             )}
@@ -1492,6 +1620,7 @@ export default function ProviderDashboard() {
                       </div>
                     );
                   })}
+                  </div>
                 </div>
               );
             })}
@@ -1542,80 +1671,97 @@ export default function ProviderDashboard() {
               if (eventCompletedServices.length === 0) return null;
 
               return (
-                <div key={event.id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">{event.title}</h3>
-                      {event.client && (
-                        <p className="text-sm text-gray-600 mb-2">
-                          <strong>Contratante:</strong> {event.client.organization_name || event.client.full_name || 'Não informado'}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-6 text-gray-600">
-                        <span className="flex items-center gap-1">
-                          <MdCalendarToday className="text-sm" />
-                          {formatEventDate(event.event_date)}
-                          {event.start_time && ` às ${formatTime(event.start_time)}`}
+                <div key={event.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                  {/* Header do Card - Roxo */}
+                  <div className="bg-gradient-to-r from-purple-600 to-purple-500 p-4 sm:p-5">
+                    <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{event.title}</h3>
+                    {event.client && (
+                      <p className="text-sm text-purple-100">
+                        Contratante: <span className="font-semibold text-white">
+                          {event.client.organization_name || event.client.full_name || 'Não informado'}
                         </span>
-                        <span className="flex items-center gap-1">
-                          <MdLocationOn className="text-sm" />
-                          {event.location}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MdPeople className="text-sm" />
-                          {event.full_guests !== undefined && event.half_guests !== undefined && event.free_guests !== undefined
-                            ? formatGuestsInfo(event.full_guests, event.half_guests, event.free_guests)
-                            : `${event.guest_count} convidados`
-                          }
-                        </span>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Informações do Evento */}
+                  <div className="p-4 sm:p-5 bg-gray-50 border-b border-gray-200">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="flex items-start gap-2">
+                        <MdCalendarToday className="text-purple-500 text-lg flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium">Data e Hora</p>
+                          <p className="text-sm text-gray-900 font-semibold">
+                            {formatEventDate(event.event_date)}
+                            {event.start_time && (
+                              <span className="block text-purple-600">{formatTime(event.start_time)}</span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2">
+                        <MdLocationOn className="text-purple-500 text-lg flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium">Local</p>
+                          <p className="text-sm text-gray-900 font-semibold">{event.location}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2">
+                        <MdPeople className="text-purple-500 text-lg flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-xs text-gray-500 font-medium">Convidados</p>
+                          <p className="text-sm text-gray-900 font-semibold">
+                            {event.full_guests !== undefined && event.half_guests !== undefined && event.free_guests !== undefined
+                              ? formatGuestsInfo(event.full_guests, event.half_guests, event.free_guests)
+                              : `${event.guest_count} convidados`
+                            }
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
 
+                  {/* Serviços */}
+                  <div className="p-4 sm:p-5 space-y-4">
                   {eventCompletedServices.map((service, serviceIndex) => {
                     const estimatedPrice = calculateEstimatedPriceForEvent(service, event);
                     
                     return (
-                      <div key={serviceIndex} className="bg-green-50 rounded-xl p-4 mb-4 border border-green-200">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <h4 className="font-medium text-gray-900">{service.service?.name || 'Serviço Solicitado'}</h4>
-                              <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-500 text-white flex items-center gap-1">
-                                <MdCheckCircle className="text-sm" />
-                                Concluído
-                              </span>
-                            </div>
-                            <p className="text-sm text-gray-600 mb-1">
-                              <strong>Valor recebido:</strong> {formatCurrency(estimatedPrice)}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Categoria: {service.service?.category || 'Não especificada'}
-                            </p>
+                      <div key={serviceIndex} className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border-2 border-green-300 p-4 space-y-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                          <div>
+                            <h4 className="text-base sm:text-lg font-bold text-gray-900">{service.service?.name || 'Serviço Solicitado'}</h4>
+                            <p className="text-sm text-gray-600">Categoria: {service.service?.category || 'Não especificada'}</p>
                           </div>
-                        </div>
-                        
-                        <div className="mb-3">
-                          <p className="text-sm font-medium text-gray-700">Status do Serviço:</p>
-                          <p className="text-sm text-green-700 bg-green-100 p-2 rounded">
-                            <MdCheckCircle className="inline w-4 h-4 mr-1" />
-                            Serviço realizado com sucesso!
-                          </p>
+                          <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-green-500 text-white whitespace-nowrap self-start sm:self-auto flex items-center gap-1">
+                            <MdCheckCircle className="text-sm" />
+                            Concluído
+                          </span>
                         </div>
 
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <MdEvent className="text-lg" />
-                            <span>Evento realizado em: {formatEventDate(event.event_date)}{event.start_time && ` às ${formatTime(event.start_time)}`}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <MdLocationOn className="text-lg" />
-                            <span>{event.location}</span>
-                          </div>
+                        {/* Valor */}
+                        <div className="bg-white rounded-lg p-3 border border-green-400">
+                          <p className="text-xs text-gray-500 font-medium mb-1">Valor Recebido</p>
+                          <p className="text-xl sm:text-2xl font-bold text-green-600">{formatCurrency(estimatedPrice)}</p>
+                        </div>
+
+                        {/* Status - Destaque de Conclusão */}
+                        <div className="bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg p-4 text-white">
+                          <p className="text-sm font-bold flex items-center gap-2 mb-1">
+                            <MdCheckCircle className="text-2xl" />
+                            Serviço Concluído com Sucesso!
+                          </p>
+                          <p className="text-xs opacity-90">
+                            Evento realizado em {formatEventDate(event.event_date)}
+                            {event.start_time && ` às ${formatTime(event.start_time)}`}
+                          </p>
                         </div>
                       </div>
                     );
                   })}
+                  </div>
                 </div>
               );
             })}
@@ -1668,50 +1814,54 @@ export default function ProviderDashboard() {
   return (
     <AuthGuard requiredRole="provider">
       <ProviderLayout>
-        <div className="min-h-screen bg-gray-50 p-3 sm:p-6">
-          <div className="max-w-7xl mx-auto">
-            {/* Navigation Tabs */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 mb-6 sm:mb-8">
-              <div className="overflow-x-auto scrollbar-hide">
-                <nav className="flex space-x-2 min-w-max" role="tablist">
-                  {[
-                    { id: 'overview', label: 'Visão Geral', icon: MdDashboard, shortLabel: 'Visão' },
-                    { id: 'requests', label: 'Solicitações', icon: MdPendingActions, shortLabel: 'Solicitações' },
-                    { id: 'waiting_payment', label: 'Aguardando Pagamento', icon: MdPayment, shortLabel: 'Aguardando' },
-                    { id: 'paid', label: 'Pagos', icon: MdAttachMoney, shortLabel: 'Pagos' },
-                    { id: 'completed', label: 'Concluídos', icon: MdCheckCircle, shortLabel: 'Concluídos' },
-                    { id: 'services', label: 'Meus Serviços', icon: MdBusinessCenter, shortLabel: 'Serviços' },
-                    { id: 'profile', label: 'Perfil', icon: MdSettings, shortLabel: 'Perfil' }
-                  ].map((tab) => {
-                    const isActive = activeTab === tab.id;
-                    return (
-                      <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id as any)}
-                        role="tab"
-                        aria-selected={isActive}
-                        aria-label={tab.label}
-                        className={`
-                          flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-medium transition-all duration-200 text-xs sm:text-sm whitespace-nowrap
-                          outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-1
-                          active:scale-95
-                          ${isActive 
-                            ? 'bg-purple-100 text-purple-700 shadow-sm' 
-                            : 'text-gray-600 hover:text-purple-600 hover:bg-gray-50'
-                          }
-                        `}
-                      >
-                        <tab.icon className="text-sm sm:text-base md:text-lg flex-shrink-0" />
-                        <span className="hidden md:inline">{tab.label}</span>
-                        <span className="md:hidden">{tab.shortLabel}</span>
-                      </button>
-                    );
-                  })}
-                </nav>
+        <div className="min-h-screen bg-gray-50">
+          {/* Navigation Tabs - Fixed at top (no sticky) */}
+          <div className="bg-gray-50 border-b border-gray-200">
+            <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
+              <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-2">
+                <div className="overflow-x-auto scrollbar-hide">
+                  <nav className="flex gap-2 min-w-max" role="tablist">
+                    {[
+                      { id: 'overview', label: 'Visão Geral', icon: MdDashboard, shortLabel: 'Visão' },
+                      { id: 'requests', label: 'Solicitações', icon: MdPendingActions, shortLabel: 'Solicitações' },
+                      { id: 'waiting_payment', label: 'Aguardando Pagamento', icon: MdPayment, shortLabel: 'Aguardando' },
+                      { id: 'paid', label: 'Pagos', icon: MdAttachMoney, shortLabel: 'Pagos' },
+                      { id: 'completed', label: 'Concluídos', icon: MdCheckCircle, shortLabel: 'Concluídos' },
+                      { id: 'services', label: 'Meus Serviços', icon: MdBusinessCenter, shortLabel: 'Serviços' },
+                      { id: 'profile', label: 'Perfil', icon: MdSettings, shortLabel: 'Perfil' }
+                    ].map((tab) => {
+                      const isActive = activeTab === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          onClick={() => setActiveTab(tab.id as any)}
+                          role="tab"
+                          aria-selected={isActive}
+                          aria-label={tab.label}
+                          className={`
+                            flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-medium transition-all duration-200 text-xs sm:text-sm whitespace-nowrap min-h-[44px]
+                            outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-1
+                            active:scale-95 hover:scale-[1.02]
+                            ${isActive 
+                              ? 'bg-purple-600 text-white shadow-md' 
+                              : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50'
+                            }
+                          `}
+                        >
+                          <tab.icon className="text-base sm:text-lg flex-shrink-0" />
+                          <span className="hidden md:inline">{tab.label}</span>
+                          <span className="md:hidden">{tab.shortLabel}</span>
+                        </button>
+                      );
+                    })}
+                  </nav>
+                </div>
               </div>
             </div>
+          </div>
 
-            {/* Content */}
+          {/* Content */}
+          <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6">
             {renderContent()}
           </div>
         </div>
