@@ -469,35 +469,35 @@ export function ProviderProfile() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-[#520029]">Meu Perfil</h2>
-          <p className="text-gray-600">Gerencie as informações do seu negócio</p>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
+        <div className="min-w-0">
+          <h2 className="text-xl sm:text-2xl font-bold text-[#520029]">Meu Perfil</h2>
+          <p className="text-sm sm:text-base text-gray-600">Gerencie as informações do seu negócio</p>
         </div>
         {!isEditing ? (
           <button
             onClick={() => setIsEditing(true)}
-            className="bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+            className="bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 text-sm sm:text-base min-h-[44px] whitespace-nowrap flex-shrink-0 hover:shadow-lg active:scale-95"
           >
-            <MdEdit />
+            <MdEdit className="text-lg" />
             Editar Perfil
           </button>
         ) : (
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <button
               onClick={handleCancel}
               disabled={saving}
-              className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center gap-2 disabled:opacity-50"
+              className="border border-gray-300 text-gray-700 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 text-sm sm:text-base min-h-[44px] hover:shadow-sm active:scale-95"
             >
-              <MdCancel />
+              <MdCancel className="text-lg" />
               Cancelar
             </button>
             <button
               onClick={handleSave}
               disabled={saving}
-              className="bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
+              className="bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 text-sm sm:text-base min-h-[44px] hover:shadow-lg active:scale-95"
             >
-              <MdSave />
+              <MdSave className="text-lg" />
               {saving ? 'Salvando...' : 'Salvar'}
             </button>
           </div>
@@ -780,39 +780,86 @@ export function ProviderProfile() {
         </div>
       </motion.div>
 
-      {/* Estatísticas do Perfil */}
+      {/* Estatísticas do Perfil - Redesigned */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-white rounded-lg shadow-sm p-6"
+        className="space-y-4"
       >
-        <h3 className="text-lg font-semibold text-[#520029] mb-4">Estatísticas do Perfil</h3>
+        <h3 className="text-xl sm:text-2xl font-bold text-[#520029]">Estatísticas do Perfil</h3>
         {statsLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#A502CA]"></div>
-            <span className="ml-3 text-gray-600">Carregando estatísticas...</span>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 sm:p-12">
+            <div className="flex flex-col items-center justify-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-200 border-t-[#A502CA] mb-4"></div>
+              <span className="text-sm sm:text-base text-gray-600 font-medium">Carregando estatísticas...</span>
+            </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-[#A502CA]">
-                {stats.totalRequests}
-              </p>
-              <p className="text-sm text-gray-600">Total de Pedidos</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-[#A502CA]">{stats.pendingRequests}</p>
-              <p className="text-sm text-gray-600">Pedidos Pendentes</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-[#A502CA]">{stats.completedEvents}</p>
-              <p className="text-sm text-gray-600">Eventos Realizados</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-[#A502CA]">{stats.activeServices}</p>
-              <p className="text-sm text-gray-600">Serviços Ativos</p>
-            </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {/* Total de Pedidos */}
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200"
+            >
+              <div className="flex flex-col items-center text-center">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-100 to-blue-50 rounded-xl flex items-center justify-center mb-3">
+                  <span className="text-2xl sm:text-3xl">📋</span>
+                </div>
+                <p className="text-2xl sm:text-3xl font-bold text-[#A502CA] mb-1">
+                  {stats.totalRequests}
+                </p>
+                <p className="text-xs sm:text-sm text-gray-600 font-medium">Total de Pedidos</p>
+              </div>
+            </motion.div>
+
+            {/* Pedidos Pendentes */}
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200"
+            >
+              <div className="flex flex-col items-center text-center">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-yellow-100 to-yellow-50 rounded-xl flex items-center justify-center mb-3">
+                  <span className="text-2xl sm:text-3xl">⏳</span>
+                </div>
+                <p className="text-2xl sm:text-3xl font-bold text-[#A502CA] mb-1">
+                  {stats.pendingRequests}
+                </p>
+                <p className="text-xs sm:text-sm text-gray-600 font-medium">Pedidos Pendentes</p>
+              </div>
+            </motion.div>
+
+            {/* Eventos Realizados */}
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200"
+            >
+              <div className="flex flex-col items-center text-center">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-green-100 to-green-50 rounded-xl flex items-center justify-center mb-3">
+                  <span className="text-2xl sm:text-3xl">✅</span>
+                </div>
+                <p className="text-2xl sm:text-3xl font-bold text-[#A502CA] mb-1">
+                  {stats.completedEvents}
+                </p>
+                <p className="text-xs sm:text-sm text-gray-600 font-medium">Eventos Realizados</p>
+              </div>
+            </motion.div>
+
+            {/* Serviços Ativos */}
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200"
+            >
+              <div className="flex flex-col items-center text-center">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-purple-100 to-purple-50 rounded-xl flex items-center justify-center mb-3">
+                  <span className="text-2xl sm:text-3xl">🎯</span>
+                </div>
+                <p className="text-2xl sm:text-3xl font-bold text-[#A502CA] mb-1">
+                  {stats.activeServices}
+                </p>
+                <p className="text-xs sm:text-sm text-gray-600 font-medium">Serviços Ativos</p>
+              </div>
+            </motion.div>
           </div>
         )}
       </motion.div>

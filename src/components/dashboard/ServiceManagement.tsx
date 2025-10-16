@@ -174,17 +174,19 @@ export function ServiceManagement() {
     <div className="space-y-6">
       {/* Header com botão de adicionar */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-2xl font-bold text-[#520029]">Meus Serviços</h2>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4 mb-2">
+          <div className="min-w-0">
+            <h2 className="text-xl sm:text-2xl font-bold text-[#520029]">Meus Serviços</h2>
+            <p className="text-sm sm:text-base text-gray-600">Gerencie seus serviços e preços</p>
+          </div>
           <button
             onClick={handleAddService}
-            className="bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-6 py-2 rounded-lg font-medium transition-colors shadow-sm hover:shadow-md flex items-center gap-2"
+            className="bg-[#A502CA] hover:bg-[#8B0A9E] text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 text-sm sm:text-base min-h-[44px] whitespace-nowrap flex-shrink-0 hover:shadow-lg active:scale-95"
           >
             <span className="text-lg">+</span>
             Adicionar Serviço
           </button>
         </div>
-        <p className="text-gray-600">Gerencie seus serviços e preços</p>
       </div>
 
       {/* Empty State */}
