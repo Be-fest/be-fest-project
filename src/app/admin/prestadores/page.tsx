@@ -11,11 +11,10 @@ import {
   MdError,
   MdTrendingUp,
   MdVerifiedUser,
-  MdAttachMoney,
-  MdDelete
+  MdAttachMoney
 } from 'react-icons/md';
 import { SearchInput } from '@/components/admin/SearchInput';
-import { getAllUsersAction, getAllServicesAction, deleteProviderAction } from '@/lib/actions/admin';
+import { getAllUsersAction, getAllServicesAction } from '@/lib/actions/admin';
 
 interface ProviderData {
   id: string;
@@ -35,12 +34,6 @@ export default function PrestadoresPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; providerId: string; providerName: string }>({
-    open: false,
-    providerId: '',
-    providerName: ''
-  });
-  const [deleting, setDeleting] = useState(false);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
@@ -121,40 +114,6 @@ export default function PrestadoresPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleDeleteClick = (providerId: string, providerName: string) => {
-    setDeleteConfirm({
-      open: true,
-      providerId,
-      providerName
-    });
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!deleteConfirm.providerId) return;
-
-    try {
-      setDeleting(true);
-      const result = await deleteProviderAction(deleteConfirm.providerId);
-
-      if (result.success) {
-        setProviders(providers.filter(p => p.id !== deleteConfirm.providerId));
-        setFilteredProviders(filteredProviders.filter(p => p.id !== deleteConfirm.providerId));
-        setDeleteConfirm({ open: false, providerId: '', providerName: '' });
-      } else {
-        setError(result.error || 'Erro ao deletar prestador');
-      }
-    } catch (err) {
-      console.error('Error deleting provider:', err);
-      setError('Erro ao deletar prestador');
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  const handleCancelDelete = () => {
-    setDeleteConfirm({ open: false, providerId: '', providerName: '' });
   };
 
   useEffect(() => {
@@ -359,7 +318,6 @@ export default function PrestadoresPage() {
                   <th className="text-left p-4 font-medium text-gray-600 text-sm hidden lg:table-cell">WhatsApp</th>
                   <th className="text-left p-4 font-medium text-gray-600 text-sm hidden lg:table-cell">Serviços</th>
                   <th className="text-left p-4 font-medium text-gray-600 text-sm hidden lg:table-cell">Data Cadastro</th>
-                  <th className="text-center p-4 font-medium text-gray-600 text-sm">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -410,15 +368,6 @@ export default function PrestadoresPage() {
                         {formatDate(provider.created_at)}
                       </span>
                     </td>
-                    <td className="p-4 text-center">
-                      <button
-                        onClick={() => handleDeleteClick(provider.id, provider.organization_name || provider.full_name)}
-                        className="inline-flex items-center justify-center gap-2 px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors text-sm"
-                      >
-                        <MdDelete className="text-lg" />
-                        <span className="hidden sm:inline">Deletar</span>
-                      </button>
-                    </td>
                   </motion.tr>
                 ))}
               </tbody>
@@ -426,45 +375,6 @@ export default function PrestadoresPage() {
           </div>
         )}
       </motion.div>
-
-      {/* Delete Confirmation Dialog */}
-      {deleteConfirm.open && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-        >
-          <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            className="bg-white rounded-xl shadow-lg max-w-sm w-full p-6"
-          >
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Confirmar Exclusão</h2>
-            <p className="text-gray-600 mb-6">
-              Você tem certeza que deseja deletar o prestador <strong>{deleteConfirm.providerName}</strong>? Esta ação não pode ser desfeita.
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={handleCancelDelete}
-                disabled={deleting}
-                className="px-4 py-2 bg-gray-200 text-gray-900 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleConfirmDelete}
-                disabled={deleting}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-              >
-                {deleting && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
-                {deleting ? 'Deletando...' : 'Deletar'}
-              </button>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
     </div>
   );
 } 
