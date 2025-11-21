@@ -642,3 +642,27 @@ export async function getEventServicesCountsAction(): Promise<ActionResult<{
     };
   }
 }
+
+export async function deleteProviderAction(providerId: string): Promise<ActionResult<void>> {
+  try {
+    const supabase = createClient();
+
+    const { error } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', providerId);
+
+    if (error) {
+      console.error('Error deleting provider:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Delete provider failed:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Erro ao deletar prestador'
+    };
+  }
+}
