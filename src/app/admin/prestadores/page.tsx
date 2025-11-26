@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   MdBusiness,
   MdEmail,
@@ -11,10 +11,12 @@ import {
   MdError,
   MdTrendingUp,
   MdVerifiedUser,
-  MdAttachMoney
+  MdAttachMoney,
+  MdDelete,
+  MdWarning
 } from 'react-icons/md';
 import { SearchInput } from '@/components/admin/SearchInput';
-import { getAllUsersAction, getAllServicesAction } from '@/lib/actions/admin';
+import { getAllUsersAction, getAllServicesAction, deleteProviderAction } from '@/lib/actions/admin';
 
 interface ProviderData {
   id: string;
@@ -34,6 +36,8 @@ export default function PrestadoresPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState<ProviderData | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
@@ -48,6 +52,28 @@ export default function PrestadoresPage() {
       style: 'currency',
       currency: 'BRL'
     }).format(value);
+  };
+
+  const handleDeleteProvider = async () => {
+    if (!deleteConfirm) return;
+
+    try {
+      setDeleting(true);
+      const result = await deleteProviderAction(deleteConfirm.id);
+
+      if (result.success) {
+        // Remove do estado
+        setProviders(providers.filter(p => p.id !== deleteConfirm.id));
+        setDeleteConfirm(null);
+      } else {
+        setError(result.error || 'Erro ao deletar prestador');
+      }
+    } catch (err) {
+      console.error('Erro ao deletar prestador:', err);
+      setError('Erro ao deletar prestador');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const loadProviders = async () => {
@@ -318,6 +344,7 @@ export default function PrestadoresPage() {
                   <th className="text-left p-4 font-medium text-gray-600 text-sm hidden lg:table-cell">WhatsApp</th>
                   <th className="text-left p-4 font-medium text-gray-600 text-sm hidden lg:table-cell">Serviços</th>
                   <th className="text-left p-4 font-medium text-gray-600 text-sm hidden lg:table-cell">Data Cadastro</th>
+                  <th className="text-center p-4 font-medium text-gray-600 text-sm w-16">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -368,6 +395,15 @@ export default function PrestadoresPage() {
                         {formatDate(provider.created_at)}
                       </span>
                     </td>
+                    <td className="p-4 text-center sticky right-0 bg-white hover:bg-gray-50">
+                      <button
+                        onClick={() => setDeleteConfirm(provider)}
+                        className="inline-flex items-center justify-center p-2 text-red-500 hover:bg-red-100 rounded-lg transition-colors font-bold"
+                        title="Deletar prestador"
+                      >
+                        <MdDelete className="text-xl" />
+                      </button>
+                    </td>
                   </motion.tr>
                 ))}
               </tbody>
@@ -375,6 +411,83 @@ export default function PrestadoresPage() {
           </div>
         )}
       </motion.div>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setDeleteConfirm(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-xl shadow-lg max-w-md w-full overflow-hidden"
+            >
+              {/* Header with warning */}
+              <div className="bg-gradient-to-r from-red-500 to-red-600 p-6 text-white">
+                <div className="flex items-center gap-3 mb-2">
+                  <MdWarning className="text-3xl" />
+                  <h2 className="text-xl font-bold">Deletar Prestador</h2>
+                </div>
+                <p className="text-red-100 text-sm">Esta ação é irreversível</p>
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                <p className="text-gray-700 mb-4">
+                  Tem certeza que deseja deletar o prestador{' '}
+                  <span className="font-bold text-gray-900">
+                    {deleteConfirm.organization_name || deleteConfirm.full_name || 'desconhecido'}
+                  </span>
+                  ?
+                </p>
+                <p className="text-sm text-gray-500 mb-6">
+                  Email: <span className="text-gray-700">{deleteConfirm.email}</span>
+                </p>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                  <p className="text-sm text-red-800">
+                    ⚠️ Todos os serviços e dados associados a este prestador também serão deletados.
+                  </p>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="bg-gray-50 p-6 flex gap-3 justify-end">
+                <button
+                  onClick={() => setDeleteConfirm(null)}
+                  disabled={deleting}
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleDeleteProvider}
+                  disabled={deleting}
+                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 font-medium flex items-center gap-2"
+                >
+                  {deleting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Deletando...
+                    </>
+                  ) : (
+                    <>
+                      <MdDelete />
+                      Deletar
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 } 

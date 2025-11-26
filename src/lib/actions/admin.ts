@@ -678,3 +678,39 @@ export async function deleteClientAction(clientId: string): Promise<ActionResult
     };
   }
 }
+
+export async function deleteProviderAction(providerId: string): Promise<ActionResult<void>> {
+  try {
+    const supabase = createClient();
+
+    // Primeiro, deletar todos os serviços do prestador
+    const { error: deleteServicesError } = await supabase
+      .from('services')
+      .delete()
+      .eq('provider_id', providerId);
+
+    if (deleteServicesError) {
+      console.error('Error deleting provider services:', deleteServicesError);
+      return { success: false, error: 'Erro ao deletar serviços do prestador' };
+    }
+
+    // Depois, deletar o usuário (prestador)
+    const { error: deleteUserError } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', providerId);
+
+    if (deleteUserError) {
+      console.error('Error deleting provider:', deleteUserError);
+      return { success: false, error: 'Erro ao deletar prestador' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Delete provider failed:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Erro ao deletar prestador'
+    };
+  }
+}
