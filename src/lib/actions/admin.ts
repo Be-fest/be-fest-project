@@ -455,7 +455,6 @@ export async function getAllServicesAction(): Promise<ActionResult<Array<{
         name,
         description,
         category,
-        price_per_guest,
         is_active,
         status,
         created_at,
@@ -477,7 +476,7 @@ export async function getAllServicesAction(): Promise<ActionResult<Array<{
       description: service.description || '',
       provider_name: (service.provider as any)?.organization_name || (service.provider as any)?.full_name || 'N/A',
       category: service.category || 'N/A',
-      price_per_guest: service.price_per_guest || 0,
+      price_per_guest: 0,
       is_active: service.is_active || false,
       status: service.status || 'draft',
       created_at: service.created_at,
@@ -647,7 +646,32 @@ export async function deleteClientAction(clientId: string): Promise<ActionResult
   try {
     const supabase = createClient();
 
-    // Primeiro, deletar todos os eventos do cliente
+    // Primeiro, buscar todos os eventos do cliente para deletar seus event_services
+    const { data: events, error: fetchEventsError } = await supabase
+      .from('events')
+      .select('id')
+      .eq('client_id', clientId);
+
+    if (fetchEventsError) {
+      console.error('Error fetching client events:', fetchEventsError);
+      return { success: false, error: 'Erro ao buscar eventos do cliente' };
+    }
+
+    // Deletar todos os event_services dos eventos
+    if (events && events.length > 0) {
+      const eventIds = events.map(e => e.id);
+      const { error: deleteEventServicesError } = await supabase
+        .from('event_services')
+        .delete()
+        .in('event_id', eventIds);
+
+      if (deleteEventServicesError) {
+        console.error('Error deleting event services:', deleteEventServicesError);
+        return { success: false, error: 'Erro ao deletar serviços de eventos' };
+      }
+    }
+
+    // Depois, deletar todos os eventos do cliente
     const { error: deleteEventsError } = await supabase
       .from('events')
       .delete()
@@ -658,7 +682,7 @@ export async function deleteClientAction(clientId: string): Promise<ActionResult
       return { success: false, error: 'Erro ao deletar eventos do cliente' };
     }
 
-    // Depois, deletar o usuário (cliente)
+    // Por fim, deletar o usuário (cliente)
     const { error: deleteUserError } = await supabase
       .from('users')
       .delete()
@@ -683,7 +707,45 @@ export async function deleteProviderAction(providerId: string): Promise<ActionRe
   try {
     const supabase = createClient();
 
-    // Primeiro, deletar todos os serviços do prestador
+    // Primeiro, buscar todos os serviços do prestador
+    const { data: services, error: fetchServicesError } = await supabase
+      .from('services')
+      .select('id')
+      .eq('provider_id', providerId);
+
+    if (fetchServicesError) {
+      console.error('Error fetching provider services:', fetchServicesError);
+      return { success: false, error: 'Erro ao buscar serviços do prestador' };
+    }
+
+    // Deletar todos os event_services e service_guest_tiers associados aos serviços do prestador
+    if (services && services.length > 0) {
+      const serviceIds = services.map(s => s.id);
+
+      // Deletar service_guest_tiers
+      const { error: deleteGuestTiersError } = await supabase
+        .from('service_guest_tiers')
+        .delete()
+        .in('service_id', serviceIds);
+
+      if (deleteGuestTiersError) {
+        console.error('Error deleting service guest tiers:', deleteGuestTiersError);
+        return { success: false, error: 'Erro ao deletar níveis de convidados dos serviços' };
+      }
+
+      // Deletar event_services
+      const { error: deleteEventServicesError } = await supabase
+        .from('event_services')
+        .delete()
+        .in('service_id', serviceIds);
+
+      if (deleteEventServicesError) {
+        console.error('Error deleting event services:', deleteEventServicesError);
+        return { success: false, error: 'Erro ao deletar serviços de eventos' };
+      }
+    }
+
+    // Depois, deletar todos os serviços do prestador
     const { error: deleteServicesError } = await supabase
       .from('services')
       .delete()
@@ -694,7 +756,7 @@ export async function deleteProviderAction(providerId: string): Promise<ActionRe
       return { success: false, error: 'Erro ao deletar serviços do prestador' };
     }
 
-    // Depois, deletar o usuário (prestador)
+    // Por fim, deletar o usuário (prestador)
     const { error: deleteUserError } = await supabase
       .from('users')
       .delete()
