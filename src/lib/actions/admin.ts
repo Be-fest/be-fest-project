@@ -642,3 +642,39 @@ export async function getEventServicesCountsAction(): Promise<ActionResult<{
     };
   }
 }
+
+export async function deleteClientAction(clientId: string): Promise<ActionResult<void>> {
+  try {
+    const supabase = createClient();
+
+    // Primeiro, deletar todos os eventos do cliente
+    const { error: deleteEventsError } = await supabase
+      .from('events')
+      .delete()
+      .eq('client_id', clientId);
+
+    if (deleteEventsError) {
+      console.error('Error deleting client events:', deleteEventsError);
+      return { success: false, error: 'Erro ao deletar eventos do cliente' };
+    }
+
+    // Depois, deletar o usuário (cliente)
+    const { error: deleteUserError } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', clientId);
+
+    if (deleteUserError) {
+      console.error('Error deleting client:', deleteUserError);
+      return { success: false, error: 'Erro ao deletar cliente' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Delete client failed:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Erro ao deletar cliente'
+    };
+  }
+}

@@ -1,20 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { 
-  MdPeople, 
-  MdEmail, 
-  MdPhone, 
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  MdPeople,
+  MdEmail,
+  MdPhone,
   MdSearch,
   MdRefresh,
   MdError,
   MdTrendingUp,
   MdEvent,
-  MdAttachMoney
+  MdAttachMoney,
+  MdDelete,
+  MdWarning
 } from 'react-icons/md';
 import { SearchInput } from '@/components/admin/SearchInput';
-import { getAllUsersAction } from '@/lib/actions/admin';
+import { getAllUsersAction, deleteClientAction } from '@/lib/actions/admin';
 
 interface ClientData {
   id: string;
@@ -33,6 +35,8 @@ export default function ClientesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState<ClientData | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
@@ -47,6 +51,28 @@ export default function ClientesPage() {
       style: 'currency',
       currency: 'BRL'
     }).format(value);
+  };
+
+  const handleDeleteClient = async () => {
+    if (!deleteConfirm) return;
+
+    try {
+      setDeleting(true);
+      const result = await deleteClientAction(deleteConfirm.id);
+
+      if (result.success) {
+        // Remove do estado
+        setClients(clients.filter(c => c.id !== deleteConfirm.id));
+        setDeleteConfirm(null);
+      } else {
+        setError(result.error || 'Erro ao deletar cliente');
+      }
+    } catch (err) {
+      console.error('Erro ao deletar cliente:', err);
+      setError('Erro ao deletar cliente');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const loadClients = async () => {
@@ -272,6 +298,7 @@ export default function ClientesPage() {
                   <th className="text-left p-4 font-medium text-gray-600 text-sm hidden sm:table-cell">Email</th>
                   <th className="text-left p-4 font-medium text-gray-600 text-sm hidden lg:table-cell">WhatsApp</th>
                   <th className="text-left p-4 font-medium text-gray-600 text-sm hidden lg:table-cell">Data Cadastro</th>
+                  <th className="text-center p-4 font-medium text-gray-600 text-sm">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -313,6 +340,15 @@ export default function ClientesPage() {
                         {formatDate(client.created_at)}
                       </span>
                     </td>
+                    <td className="p-4 text-center">
+                      <button
+                        onClick={() => setDeleteConfirm(client)}
+                        className="inline-flex items-center justify-center p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Deletar cliente"
+                      >
+                        <MdDelete className="text-lg" />
+                      </button>
+                    </td>
                   </motion.tr>
                 ))}
               </tbody>
@@ -320,6 +356,83 @@ export default function ClientesPage() {
           </div>
         )}
       </motion.div>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setDeleteConfirm(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-xl shadow-lg max-w-md w-full overflow-hidden"
+            >
+              {/* Header with warning */}
+              <div className="bg-gradient-to-r from-red-500 to-red-600 p-6 text-white">
+                <div className="flex items-center gap-3 mb-2">
+                  <MdWarning className="text-3xl" />
+                  <h2 className="text-xl font-bold">Deletar Cliente</h2>
+                </div>
+                <p className="text-red-100 text-sm">Esta ação é irreversível</p>
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                <p className="text-gray-700 mb-4">
+                  Tem certeza que deseja deletar o cliente{' '}
+                  <span className="font-bold text-gray-900">
+                    {deleteConfirm.full_name || 'desconhecido'}
+                  </span>
+                  ?
+                </p>
+                <p className="text-sm text-gray-500 mb-6">
+                  Email: <span className="text-gray-700">{deleteConfirm.email}</span>
+                </p>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                  <p className="text-sm text-red-800">
+                    ⚠️ Todos os eventos e dados associados a este cliente também serão deletados.
+                  </p>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="bg-gray-50 p-6 flex gap-3 justify-end">
+                <button
+                  onClick={() => setDeleteConfirm(null)}
+                  disabled={deleting}
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleDeleteClient}
+                  disabled={deleting}
+                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 font-medium flex items-center gap-2"
+                >
+                  {deleting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Deletando...
+                    </>
+                  ) : (
+                    <>
+                      <MdDelete />
+                      Deletar
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 } 
