@@ -707,45 +707,39 @@ export async function deleteProviderAction(providerId: string): Promise<ActionRe
   try {
     const supabase = createClient();
 
-    // Primeiro, buscar todos os serviços do prestador
-    const { data: services, error: fetchServicesError } = await supabase
-      .from('services')
-      .select('id')
-      .eq('provider_id', providerId);
+    // Primeiro, deletar service_guest_tiers dos serviços do prestador
+    const { error: deleteGuestTiersError } = await supabase
+      .from('service_guest_tiers')
+      .delete()
+      .in('service_id', (
+        await supabase
+          .from('services')
+          .select('id')
+          .eq('provider_id', providerId)
+      ).data?.map(s => s.id) || []);
 
-    if (fetchServicesError) {
-      console.error('Error fetching provider services:', fetchServicesError);
-      return { success: false, error: 'Erro ao buscar serviços do prestador' };
+    if (deleteGuestTiersError && deleteGuestTiersError.code !== '23503') {
+      console.error('Error deleting service guest tiers:', deleteGuestTiersError);
+      // Continuar mesmo com erro
     }
 
-    // Deletar todos os event_services e service_guest_tiers associados aos serviços do prestador
-    if (services && services.length > 0) {
-      const serviceIds = services.map(s => s.id);
+    // Deletar event_services dos serviços do prestador
+    const { error: deleteEventServicesError } = await supabase
+      .from('event_services')
+      .delete()
+      .in('service_id', (
+        await supabase
+          .from('services')
+          .select('id')
+          .eq('provider_id', providerId)
+      ).data?.map(s => s.id) || []);
 
-      // Deletar service_guest_tiers
-      const { error: deleteGuestTiersError } = await supabase
-        .from('service_guest_tiers')
-        .delete()
-        .in('service_id', serviceIds);
-
-      if (deleteGuestTiersError) {
-        console.error('Error deleting service guest tiers:', deleteGuestTiersError);
-        return { success: false, error: 'Erro ao deletar níveis de convidados dos serviços' };
-      }
-
-      // Deletar event_services
-      const { error: deleteEventServicesError } = await supabase
-        .from('event_services')
-        .delete()
-        .in('service_id', serviceIds);
-
-      if (deleteEventServicesError) {
-        console.error('Error deleting event services:', deleteEventServicesError);
-        return { success: false, error: 'Erro ao deletar serviços de eventos' };
-      }
+    if (deleteEventServicesError && deleteEventServicesError.code !== '23503') {
+      console.error('Error deleting event services:', deleteEventServicesError);
+      // Continuar mesmo com erro
     }
 
-    // Depois, deletar todos os serviços do prestador
+    // Deletar todos os serviços do prestador
     const { error: deleteServicesError } = await supabase
       .from('services')
       .delete()

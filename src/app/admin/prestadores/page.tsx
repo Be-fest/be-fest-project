@@ -16,7 +16,7 @@ import {
   MdWarning
 } from 'react-icons/md';
 import { SearchInput } from '@/components/admin/SearchInput';
-import { getAllUsersAction, getAllServicesAction, deleteProviderAction } from '@/lib/actions/admin';
+import { getAllUsersAction, deleteProviderAction } from '@/lib/actions/admin';
 
 interface ProviderData {
   id: string;
@@ -92,42 +92,12 @@ export default function PrestadoresPage() {
         const providerUsers = usersResult.data.filter(user => user.role === 'provider');
         console.log(`Encontrados ${providerUsers.length} prestadores`);
         
-        // Tentar carregar serviços
-        let servicesResult;
-        try {
-          servicesResult = await getAllServicesAction();
-          console.log('Resultado da busca de serviços:', servicesResult);
-        } catch (servicesError) {
-          console.error('Erro ao buscar serviços:', servicesError);
-          servicesResult = { success: false, error: 'Erro ao buscar serviços' };
-        }
-        
-        // Enriquecer com dados de serviços se disponível
-        let enrichedProviders = providerUsers;
-        if (servicesResult.success && servicesResult.data) {
-          enrichedProviders = providerUsers.map(provider => {
-            const providerServices = servicesResult.data!.filter(
-              service => {
-                // Comparar por nome da organização ou nome completo
-                const providerDisplayName = provider.organization_name || provider.full_name;
-                return service.provider_name === providerDisplayName;
-              }
-            );
-            
-            return {
-              ...provider,
-              servicesCount: providerServices.length,
-              totalRevenue: 0 // Implementar quando tiver dados de receita
-            };
-          });
-        } else {
-          // Se não conseguir buscar serviços, definir contagem como 0
-          enrichedProviders = providerUsers.map(provider => ({
-            ...provider,
-            servicesCount: 0,
-            totalRevenue: 0
-          }));
-        }
+        // Enriquecer com dados padrão (servicesCount será 0)
+        const enrichedProviders = providerUsers.map(provider => ({
+          ...provider,
+          servicesCount: 0,
+          totalRevenue: 0
+        }));
         
         setProviders(enrichedProviders);
         setFilteredProviders(enrichedProviders);
