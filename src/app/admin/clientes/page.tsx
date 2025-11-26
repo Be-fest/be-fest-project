@@ -81,8 +81,8 @@ export default function ClientesPage() {
       setFilteredClients(clients);
     } else {
       const filtered = clients.filter(client =>
-        client.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        client.email.toLowerCase().includes(searchTerm.toLowerCase())
+        (client.full_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (client.email || '').toLowerCase().includes(searchTerm.toLowerCase())
       );
       setFilteredClients(filtered);
     }
@@ -286,10 +286,10 @@ export default function ClientesPage() {
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gradient-to-r from-primary to-primary-dark rounded-full flex items-center justify-center text-white font-medium">
-                          {client.full_name.charAt(0).toUpperCase()}
+                          {(client.full_name || 'U').charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">{client.full_name}</p>
+                          <p className="font-medium text-gray-900">{client.full_name || 'Nome não informado'}</p>
                           <p className="text-sm text-gray-500 sm:hidden">{client.email}</p>
                         </div>
                       </div>
