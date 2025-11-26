@@ -298,7 +298,7 @@ export default function ClientesPage() {
                   <th className="text-left p-4 font-medium text-gray-600 text-sm hidden sm:table-cell">Email</th>
                   <th className="text-left p-4 font-medium text-gray-600 text-sm hidden lg:table-cell">WhatsApp</th>
                   <th className="text-left p-4 font-medium text-gray-600 text-sm hidden lg:table-cell">Data Cadastro</th>
-                  <th className="text-center p-4 font-medium text-gray-600 text-sm">Ações</th>
+                  <th className="text-center p-4 font-medium text-gray-600 text-sm w-16">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -340,13 +340,13 @@ export default function ClientesPage() {
                         {formatDate(client.created_at)}
                       </span>
                     </td>
-                    <td className="p-4 text-center">
+                    <td className="p-4 text-center sticky right-0 bg-white hover:bg-gray-50">
                       <button
                         onClick={() => setDeleteConfirm(client)}
-                        className="inline-flex items-center justify-center p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        className="inline-flex items-center justify-center p-2 text-red-500 hover:bg-red-100 rounded-lg transition-colors font-bold"
                         title="Deletar cliente"
                       >
-                        <MdDelete className="text-lg" />
+                        <MdDelete className="text-xl" />
                       </button>
                     </td>
                   </motion.tr>
