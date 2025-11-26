@@ -67,9 +67,9 @@ function UserDropdown({ user, userType }: UserDropdownProps) {
     }
   };
 
-  const userInitial = user?.user_metadata?.full_name ? 
-    user.user_metadata.full_name.charAt(0).toUpperCase() : 
-    user?.email?.charAt(0).toUpperCase() || 'U';
+  const userInitial = user?.user_metadata?.full_name ?
+    (user.user_metadata.full_name || '').charAt(0).toUpperCase() :
+    (user?.email || '').charAt(0).toUpperCase() || 'U';
 
   const getUserTypeLabel = () => {
     switch (userType) {

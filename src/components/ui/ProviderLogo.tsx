@@ -58,7 +58,7 @@ export function ProviderLogo({
     <div className={`flex items-center justify-center bg-[#A502CA] text-white font-bold rounded-lg ${className}`} 
          style={{ width, height }}>
       <span className="text-sm">
-        {providerName.split(' ').map(word => word.charAt(0)).join('').slice(0, 2).toUpperCase()}
+        {(providerName || 'P').split(' ').map(word => word.charAt(0)).join('').slice(0, 2).toUpperCase()}
       </span>
     </div>
   );

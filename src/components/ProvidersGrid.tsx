@@ -170,7 +170,7 @@ export function ProvidersGrid({ selectedCategory, searchQuery }: ProvidersGridPr
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-[#FF0080] to-[#E6006F] flex items-center justify-center text-white font-bold text-lg shadow-sm">
-                      {provider.name.charAt(0)}
+                      {(provider.name || 'P').charAt(0)}
                     </div>
                     <div>
                       <h3 className="font-bold text-lg text-[#520029] group-hover:text-[#FF0080] transition-colors duration-300 leading-tight">

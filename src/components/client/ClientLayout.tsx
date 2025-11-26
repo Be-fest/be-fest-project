@@ -58,7 +58,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
     );
   }
 
-  const userInitial = userData?.full_name ? userData.full_name.charAt(0).toUpperCase() : 'U';
+  const userInitial = userData?.full_name ? (userData.full_name || '').charAt(0).toUpperCase() : 'U';
   
   // Função para formatar o nome completo (primeiro e último nome apenas)
   const formatDisplayName = (fullName: string | null) => {
@@ -143,7 +143,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
                 <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-[#520029] to-[#F71875] bg-clip-text text-transparent">
                   Área do Cliente
                 </h1>
-                <p className="text-xs sm:text-sm text-gray-500">Bem-vindo de volta, {userData?.full_name ? userData.full_name.split(' ')[0] : 'Usuário'}!</p>
+                <p className="text-xs sm:text-sm text-gray-500">Bem-vindo de volta, {userData?.full_name ? (userData.full_name || '').split(' ')[0] : 'Usuário'}!</p>
               </div>
             </div>
             {/* Right side - User info */}
