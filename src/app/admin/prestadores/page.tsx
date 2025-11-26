@@ -395,7 +395,7 @@ export default function PrestadoresPage() {
                         {formatDate(provider.created_at)}
                       </span>
                     </td>
-                    <td className="p-4 text-center sticky right-0 bg-white hover:bg-gray-50">
+                    <td className="p-4 text-center">
                       <button
                         onClick={() => setDeleteConfirm(provider)}
                         className="inline-flex items-center justify-center p-2 text-red-500 hover:bg-red-100 rounded-lg transition-colors font-bold"
