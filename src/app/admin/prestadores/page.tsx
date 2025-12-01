@@ -80,25 +80,43 @@ export default function PrestadoresPage() {
     try {
       setLoading(true);
       setError(null);
-      
+
       console.log('Iniciando carregamento de prestadores...');
-      
+
       // Primeiro, tentar carregar apenas usuários
       const usersResult = await getAllUsersAction();
       console.log('Resultado da busca de usuários:', usersResult);
-      
+
       if (usersResult.success && usersResult.data) {
         // Filtrar apenas prestadores
         const providerUsers = usersResult.data.filter(user => user.role === 'provider');
         console.log(`Encontrados ${providerUsers.length} prestadores`);
-        
-        // Enriquecer com dados padrão (servicesCount será 0)
-        const enrichedProviders = providerUsers.map(provider => ({
-          ...provider,
-          servicesCount: 0,
-          totalRevenue: 0
-        }));
-        
+
+        // Enriquecer com dados padrão (servicesCount será calculado depois)
+        const enrichedProviders = await Promise.all(
+          providerUsers.map(async (provider) => {
+            try {
+              // Buscar contagem de serviços para este prestador
+              const servicesResult = await fetch(
+                `/api/provider-services?providerId=${provider.id}`
+              ).then(res => res.json());
+
+              return {
+                ...provider,
+                servicesCount: servicesResult.count || 0,
+                totalRevenue: 0
+              };
+            } catch (err) {
+              console.error(`Erro ao carregar serviços do prestador ${provider.id}:`, err);
+              return {
+                ...provider,
+                servicesCount: 0,
+                totalRevenue: 0
+              };
+            }
+          })
+        );
+
         setProviders(enrichedProviders);
         setFilteredProviders(enrichedProviders);
       } else {
@@ -421,9 +439,17 @@ export default function PrestadoresPage() {
                   Email: <span className="text-gray-700">{deleteConfirm.email}</span>
                 </p>
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                  <p className="text-sm text-red-800">
-                    ⚠️ Todos os serviços e dados associados a este prestador também serão deletados.
+                  <p className="text-sm text-red-800 mb-2">
+                    ⚠️ Esta ação deletará:
                   </p>
+                  <ul className="text-sm text-red-800 list-disc list-inside space-y-1">
+                    <li>
+                      <span className="font-semibold">{deleteConfirm.servicesCount || 0} serviço(s)</span> cadastrado(s)
+                    </li>
+                    <li>Todos os eventos vinculados aos serviços</li>
+                    <li>Todos os dados de preço e configuração</li>
+                    <li>O perfil do prestador permanentemente</li>
+                  </ul>
                 </div>
               </div>
 
