@@ -723,6 +723,17 @@ export async function deleteProviderAction(providerId: string): Promise<ActionRe
 
     // Se há serviços, deletar suas dependências
     if (serviceIds.length > 0) {
+      // Deletar bookings relacionadas aos serviços
+      const { error: deleteBookingsError } = await supabase
+        .from('bookings')
+        .delete()
+        .in('service_id', serviceIds);
+
+      if (deleteBookingsError) {
+        console.error('Error deleting bookings:', deleteBookingsError);
+        return { success: false, error: 'Erro ao deletar reservas dos serviços' };
+      }
+
       // Deletar service_guest_tiers
       const { error: deleteGuestTiersError } = await supabase
         .from('service_guest_tiers')
@@ -732,6 +743,28 @@ export async function deleteProviderAction(providerId: string): Promise<ActionRe
       if (deleteGuestTiersError) {
         console.error('Error deleting service guest tiers:', deleteGuestTiersError);
         return { success: false, error: 'Erro ao deletar níveis de preço dos serviços' };
+      }
+
+      // Deletar service_age_pricing_rules
+      const { error: deleteAgePricingError } = await supabase
+        .from('service_age_pricing_rules')
+        .delete()
+        .in('service_id', serviceIds);
+
+      if (deleteAgePricingError) {
+        console.error('Error deleting age pricing rules:', deleteAgePricingError);
+        return { success: false, error: 'Erro ao deletar regras de preço por idade' };
+      }
+
+      // Deletar service_date_surcharges
+      const { error: deleteSurchargesError } = await supabase
+        .from('service_date_surcharges')
+        .delete()
+        .in('service_id', serviceIds);
+
+      if (deleteSurchargesError) {
+        console.error('Error deleting date surcharges:', deleteSurchargesError);
+        return { success: false, error: 'Erro ao deletar sobretaxas por data' };
       }
 
       // Deletar event_services

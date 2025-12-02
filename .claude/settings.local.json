@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(ls -la \"C:\\wamp64\\www\\befest github\\be-fest-project\\src\\components\"\" | grep -i \"nav|menu|header|bar \")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
