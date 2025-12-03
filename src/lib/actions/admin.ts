@@ -707,7 +707,7 @@ export async function deleteProviderAction(providerId: string): Promise<ActionRe
   try {
     const supabase = createClient();
 
-    // Buscar todos os serviços do prestador uma única vez
+    // Buscar TODOS os dados relacionados ao prestador antes de deletar
     const { data: services, error: fetchServicesError } = await supabase
       .from('services')
       .select('id')
@@ -721,85 +721,96 @@ export async function deleteProviderAction(providerId: string): Promise<ActionRe
     const serviceIds = services?.map(s => s.id) || [];
     console.log(`Found ${serviceIds.length} services for provider ${providerId}`);
 
-    // Se há serviços, deletar suas dependências
+    // Se há serviços, deletar em cascata de forma segura
     if (serviceIds.length > 0) {
-      // Deletar bookings relacionadas aos serviços
-      const { error: deleteBookingsError, count: deletedBookings } = await supabase
+      console.log('Starting cascading deletion...');
+
+      // Passo 1: Deletar todas as referências às guest tiers PRIMEIRO
+      for (const serviceId of serviceIds) {
+        // Buscar IDs das guest tiers
+        const { data: guestTiers } = await supabase
+          .from('service_guest_tiers')
+          .select('id')
+          .eq('service_id', serviceId);
+
+        if (guestTiers && guestTiers.length > 0) {
+          const tierIds = guestTiers.map(t => t.id);
+          console.log(`Found ${tierIds.length} guest tiers for service ${serviceId}`);
+
+          // Deletar as guest tiers
+          const { error: deleteError } = await supabase
+            .from('service_guest_tiers')
+            .delete()
+            .in('id', tierIds);
+
+          if (deleteError) {
+            console.error(`Error deleting guest tiers for service ${serviceId}:`, deleteError);
+          } else {
+            console.log(`Deleted guest tiers for service ${serviceId}`);
+          }
+        }
+      }
+
+      // Passo 2: Deletar bookings
+      const { error: deleteBookingsError } = await supabase
         .from('bookings')
         .delete()
         .in('service_id', serviceIds);
 
       if (deleteBookingsError) {
         console.error('Error deleting bookings:', deleteBookingsError);
-        return { success: false, error: 'Erro ao deletar reservas dos serviços' };
+      } else {
+        console.log('Deleted bookings');
       }
-      console.log(`Deleted ${deletedBookings || 0} bookings`);
 
-      // Deletar service_guest_tiers (uma por uma para garantir sucesso)
-      for (const serviceId of serviceIds) {
-        const { error: deleteGuestTiersError } = await supabase
-          .from('service_guest_tiers')
-          .delete()
-          .eq('service_id', serviceId);
+      // Passo 3: Deletar service_age_pricing_rules
+      const { error: deleteAgePricingError } = await supabase
+        .from('service_age_pricing_rules')
+        .delete()
+        .in('service_id', serviceIds);
 
-        if (deleteGuestTiersError) {
-          console.error(`Error deleting guest tiers for service ${serviceId}:`, deleteGuestTiersError);
-          // Continuar mesmo com erro para tentar deletar outros serviços
-        }
+      if (deleteAgePricingError) {
+        console.error('Error deleting age pricing rules:', deleteAgePricingError);
+      } else {
+        console.log('Deleted age pricing rules');
       }
-      console.log(`Processed guest tiers deletion for ${serviceIds.length} services`);
 
-      // Deletar service_age_pricing_rules (uma por uma)
-      for (const serviceId of serviceIds) {
-        const { error: deleteAgePricingError } = await supabase
-          .from('service_age_pricing_rules')
-          .delete()
-          .eq('service_id', serviceId);
+      // Passo 4: Deletar service_date_surcharges
+      const { error: deleteSurchargesError } = await supabase
+        .from('service_date_surcharges')
+        .delete()
+        .in('service_id', serviceIds);
 
-        if (deleteAgePricingError) {
-          console.error(`Error deleting age pricing rules for service ${serviceId}:`, deleteAgePricingError);
-        }
+      if (deleteSurchargesError) {
+        console.error('Error deleting date surcharges:', deleteSurchargesError);
+      } else {
+        console.log('Deleted date surcharges');
       }
-      console.log(`Processed age pricing rules deletion for ${serviceIds.length} services`);
 
-      // Deletar service_date_surcharges (uma por uma)
-      for (const serviceId of serviceIds) {
-        const { error: deleteSurchargesError } = await supabase
-          .from('service_date_surcharges')
-          .delete()
-          .eq('service_id', serviceId);
+      // Passo 5: Deletar event_services
+      const { error: deleteEventServicesError } = await supabase
+        .from('event_services')
+        .delete()
+        .in('service_id', serviceIds);
 
-        if (deleteSurchargesError) {
-          console.error(`Error deleting date surcharges for service ${serviceId}:`, deleteSurchargesError);
-        }
+      if (deleteEventServicesError) {
+        console.error('Error deleting event services:', deleteEventServicesError);
+      } else {
+        console.log('Deleted event services');
       }
-      console.log(`Processed date surcharges deletion for ${serviceIds.length} services`);
 
-      // Deletar event_services (uma por uma)
-      for (const serviceId of serviceIds) {
-        const { error: deleteEventServicesError } = await supabase
-          .from('event_services')
-          .delete()
-          .eq('service_id', serviceId);
+      // Passo 6: Agora deletar os serviços
+      const { error: deleteServicesError } = await supabase
+        .from('services')
+        .delete()
+        .in('id', serviceIds);
 
-        if (deleteEventServicesError) {
-          console.error(`Error deleting event services for service ${serviceId}:`, deleteEventServicesError);
-        }
+      if (deleteServicesError) {
+        console.error('Error deleting provider services:', deleteServicesError);
+        return { success: false, error: 'Erro ao deletar serviços do prestador: ' + deleteServicesError.message };
       }
-      console.log(`Processed event services deletion for ${serviceIds.length} services`);
+      console.log(`Deleted ${serviceIds.length} services`);
     }
-
-    // Deletar todos os serviços do prestador
-    const { error: deleteServicesError, count: deletedServices } = await supabase
-      .from('services')
-      .delete()
-      .eq('provider_id', providerId);
-
-    if (deleteServicesError) {
-      console.error('Error deleting provider services:', deleteServicesError);
-      return { success: false, error: 'Erro ao deletar serviços do prestador' };
-    }
-    console.log(`Deleted ${deletedServices || 0} services`);
 
     // Por fim, deletar o usuário (prestador)
     const { error: deleteUserError } = await supabase
