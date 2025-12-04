@@ -745,44 +745,27 @@ export async function deleteProviderAction(providerId: string): Promise<ActionRe
 
     // Deletar todas as dependências na ORDEM CORRETA
     if (serviceIds.length > 0) {
+      // IMPORTANTE: Usar admin client para contornar RLS
+      const { createAdminClient } = await import('@/lib/supabase/server');
+      const adminSupabase = createAdminClient();
+
       // 1. CRITICAL: Deletar service_guest_tiers PRIMEIRO
       console.log('Deleting service_guest_tiers...');
-      const { error: guestTiersError } = await supabase
+      const { data: deletedTiers, error: guestTiersError } = await adminSupabase
         .from('service_guest_tiers')
         .delete()
-        .in('service_id', serviceIds);
+        .in('service_id', serviceIds)
+        .select();
 
       if (guestTiersError) {
         console.error('Error deleting guest tiers:', guestTiersError);
         return { success: false, error: 'Erro ao deletar guest tiers: ' + guestTiersError.message };
       }
-      console.log('Guest tiers deleted successfully');
+      console.log(`Guest tiers deleted successfully: ${deletedTiers?.length || 0} rows`);
 
-      // 2. Deletar service_age_pricing_rules
-      console.log('Deleting age pricing rules...');
-      const { error: agePricingError } = await supabase
-        .from('service_age_pricing_rules')
-        .delete()
-        .in('service_id', serviceIds);
-
-      if (agePricingError) {
-        console.error('Error deleting age pricing rules:', agePricingError);
-      }
-
-      // 3. Deletar service_date_surcharges
-      console.log('Deleting surcharges...');
-      const { error: surchargesError } = await supabase
-        .from('service_date_surcharges')
-        .delete()
-        .in('service_id', serviceIds);
-
-      if (surchargesError) {
-        console.error('Error deleting surcharges:', surchargesError);
-      }
-
-      // 4. Deletar event_services
+      // 2. Deletar event_services
       console.log('Deleting event services...');
-      const { error: eventServicesError } = await supabase
+      const { error: eventServicesError } = await adminSupabase
         .from('event_services')
         .delete()
         .in('service_id', serviceIds);
@@ -791,20 +774,9 @@ export async function deleteProviderAction(providerId: string): Promise<ActionRe
         console.error('Error deleting event services:', eventServicesError);
       }
 
-      // 5. Deletar bookings
-      console.log('Deleting bookings...');
-      const { error: bookingsError } = await supabase
-        .from('bookings')
-        .delete()
-        .in('service_id', serviceIds);
-
-      if (bookingsError) {
-        console.error('Error deleting bookings:', bookingsError);
-      }
-
-      // 6. Agora sim, deletar os services
+      // 3. Agora sim, deletar os services
       console.log('Deleting services...');
-      const { error: deleteServicesError } = await supabase
+      const { error: deleteServicesError } = await adminSupabase
         .from('services')
         .delete()
         .in('id', serviceIds);
@@ -817,9 +789,12 @@ export async function deleteProviderAction(providerId: string): Promise<ActionRe
       console.log(`Successfully deleted ${serviceIds.length} services and all dependencies`);
     }
 
-    // Por fim, deletar o usuário (prestador)
+    // Por fim, deletar o usuário (prestador) - também usando admin client
     console.log('Deleting provider user...');
-    const { error: deleteUserError } = await supabase
+    const { createAdminClient } = await import('@/lib/supabase/server');
+    const adminSupabase = createAdminClient();
+
+    const { error: deleteUserError } = await adminSupabase
       .from('users')
       .delete()
       .eq('id', providerId);
