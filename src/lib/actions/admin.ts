@@ -709,25 +709,24 @@ export async function deleteProviderAction(providerId: string): Promise<ActionRe
 
     console.log(`Iniciando deleção do prestador ${providerId}`);
 
-    // Tentar usar a função RPC (se existir)
+    // Tentar usar a função RPC (recomendado)
     try {
       const { data, error } = await supabase.rpc('delete_provider_cascade', {
-        provider_id: providerId
+        p_provider_id: providerId
       });
 
-      if (!error && data) {
+      if (!error) {
         console.log('RPC delete_provider_cascade success:', data);
         return { success: true };
       }
 
-      if (error) {
-        console.log('RPC delete_provider_cascade not available, trying alternative method...');
-      }
+      console.log('RPC delete_provider_cascade error:', error);
+      console.log('Trying alternative manual deletion method...');
     } catch (rpcError) {
       console.log('RPC call failed, trying alternative method...', rpcError);
     }
 
-    // Método alternativo: deletar manualmente
+    // Método alternativo: deletar manualmente na ordem CORRETA
     console.log('Using alternative deletion method...');
 
     // Buscar todos os serviços do prestador
@@ -744,95 +743,82 @@ export async function deleteProviderAction(providerId: string): Promise<ActionRe
     const serviceIds = services?.map(s => s.id) || [];
     console.log(`Found ${serviceIds.length} services for provider ${providerId}`);
 
-    // Deletar todas as dependências
+    // Deletar todas as dependências na ORDEM CORRETA
     if (serviceIds.length > 0) {
-      // Deletar guest tiers usando truncate (mais agressivo)
-      const { error: e1 } = await supabase
+      // 1. CRITICAL: Deletar service_guest_tiers PRIMEIRO
+      console.log('Deleting service_guest_tiers...');
+      const { error: guestTiersError } = await supabase
         .from('service_guest_tiers')
         .delete()
         .in('service_id', serviceIds);
-      console.log('Guest tiers deletion:', e1 ? 'FAILED' : 'OK');
 
-      // Deletar bookings
-      const { error: e2 } = await supabase
-        .from('bookings')
-        .delete()
-        .in('service_id', serviceIds);
-      console.log('Bookings deletion:', e2 ? 'FAILED' : 'OK');
+      if (guestTiersError) {
+        console.error('Error deleting guest tiers:', guestTiersError);
+        return { success: false, error: 'Erro ao deletar guest tiers: ' + guestTiersError.message };
+      }
+      console.log('Guest tiers deleted successfully');
 
-      // Deletar event services
-      const { error: e3 } = await supabase
-        .from('event_services')
-        .delete()
-        .in('service_id', serviceIds);
-      console.log('Event services deletion:', e3 ? 'FAILED' : 'OK');
-
-      // Deletar age pricing rules
-      const { error: e4 } = await supabase
+      // 2. Deletar service_age_pricing_rules
+      console.log('Deleting age pricing rules...');
+      const { error: agePricingError } = await supabase
         .from('service_age_pricing_rules')
         .delete()
         .in('service_id', serviceIds);
-      console.log('Age pricing rules deletion:', e4 ? 'FAILED' : 'OK');
 
-      // Deletar surcharges
-      const { error: e5 } = await supabase
+      if (agePricingError) {
+        console.error('Error deleting age pricing rules:', agePricingError);
+      }
+
+      // 3. Deletar service_date_surcharges
+      console.log('Deleting surcharges...');
+      const { error: surchargesError } = await supabase
         .from('service_date_surcharges')
         .delete()
         .in('service_id', serviceIds);
-      console.log('Surcharges deletion:', e5 ? 'FAILED' : 'OK');
 
-      // Agora deletar os serviços
+      if (surchargesError) {
+        console.error('Error deleting surcharges:', surchargesError);
+      }
+
+      // 4. Deletar event_services
+      console.log('Deleting event services...');
+      const { error: eventServicesError } = await supabase
+        .from('event_services')
+        .delete()
+        .in('service_id', serviceIds);
+
+      if (eventServicesError) {
+        console.error('Error deleting event services:', eventServicesError);
+      }
+
+      // 5. Deletar bookings
+      console.log('Deleting bookings...');
+      const { error: bookingsError } = await supabase
+        .from('bookings')
+        .delete()
+        .in('service_id', serviceIds);
+
+      if (bookingsError) {
+        console.error('Error deleting bookings:', bookingsError);
+      }
+
+      // 6. Agora sim, deletar os services
+      console.log('Deleting services...');
       const { error: deleteServicesError } = await supabase
         .from('services')
         .delete()
         .in('id', serviceIds);
 
       if (deleteServicesError) {
-        console.error('CRITICAL: Error deleting services:', deleteServicesError);
-
-        // Tentar uma última coisa: deletar service_guest_tiers NOVAMENTE antes dos serviços
-        console.log('Attempting final guest tiers cleanup...');
-
-        // Buscar as guest tiers que ainda existem
-        const { data: remainingTiers } = await supabase
-          .from('service_guest_tiers')
-          .select('id, service_id')
-          .in('service_id', serviceIds);
-
-        if (remainingTiers && remainingTiers.length > 0) {
-          console.log(`Found ${remainingTiers.length} remaining guest tiers:`, remainingTiers);
-
-          // Tentar deletar cada uma individualmente
-          for (const tier of remainingTiers) {
-            const { error: tierError } = await supabase
-              .from('service_guest_tiers')
-              .delete()
-              .eq('id', tier.id);
-
-            if (tierError) {
-              console.error(`Failed to delete tier ${tier.id}:`, tierError);
-            }
-          }
-
-          // Tentar novamente deletar os serviços
-          const { error: retryError } = await supabase
-            .from('services')
-            .delete()
-            .in('id', serviceIds);
-
-          if (retryError) {
-            console.error('Retry failed:', retryError);
-            return { success: false, error: 'Não foi possível deletar os serviços. Verifique se há dados não deletados.' };
-          }
-        } else {
-          return { success: false, error: 'Erro ao deletar serviços do prestador' };
-        }
+        console.error('Error deleting services:', deleteServicesError);
+        return { success: false, error: 'Erro ao deletar serviços: ' + deleteServicesError.message };
       }
 
-      console.log(`Successfully deleted ${serviceIds.length} services`);
+      console.log(`Successfully deleted ${serviceIds.length} services and all dependencies`);
     }
 
     // Por fim, deletar o usuário (prestador)
+    console.log('Deleting provider user...');
     const { error: deleteUserError } = await supabase
       .from('users')
       .delete()
@@ -840,7 +826,7 @@ export async function deleteProviderAction(providerId: string): Promise<ActionRe
 
     if (deleteUserError) {
       console.error('Error deleting provider user:', deleteUserError);
-      return { success: false, error: 'Erro ao deletar prestador' };
+      return { success: false, error: 'Erro ao deletar prestador: ' + deleteUserError.message };
     }
 
     console.log('Provider successfully deleted');
