@@ -5,11 +5,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSuperAdmin } from '@/hooks/useSuperAdmin';
-import { 
-  MdDashboard, 
-  MdReceipt, 
-  MdPeople, 
+import {
+  MdDashboard,
+  MdReceipt,
+  MdPeople,
   MdBusinessCenter,
+  MdEvent,
   MdLogout,
   MdClose,
   MdMenu,
@@ -76,6 +77,12 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
       label: 'Prestadores',
       icon: MdBusinessCenter,
       path: '/admin/prestadores',
+      badge: undefined
+    },
+    {
+      label: 'FestAgenda',
+      icon: MdEvent,
+      path: '/admin/festagenda',
       badge: undefined
     }
   ];
