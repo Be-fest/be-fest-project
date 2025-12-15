@@ -27,8 +27,6 @@ import {
 import { ProviderLayout } from '@/components/dashboard/ProviderLayout';
 import { ServiceManagement } from '@/components/dashboard/ServiceManagement';
 import { ProviderProfile } from '@/components/dashboard/ProviderProfile';
-import FestAgenda from '@/components/dashboard/FestAgenda';
-import AgendaCard from '@/components/dashboard/AgendaCard';
 import { AuthGuard } from '@/components/AuthGuard';
 import { getProviderEventsAction, updateEventStatusAction } from '@/lib/actions/events';
 import { getProviderServicesAction, getProviderStatsAction } from '@/lib/actions/services';
@@ -58,7 +56,7 @@ export default function ProviderDashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'requests' | 'waiting_payment' | 'paid' | 'completed' | 'agenda' | 'services' | 'profile'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'requests' | 'waiting_payment' | 'paid' | 'completed' | 'services' | 'profile'>('overview');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [selectedServices, setSelectedServices] = useState<Set<string>>(new Set());
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -949,9 +947,6 @@ export default function ProviderDashboard() {
         ))}
       </div>
 
-      {/* FestAgenda Card */}
-      <AgendaCard events={events} onViewAll={() => setActiveTab('agenda')} />
-
       {/* Recent Requests - Redesigned */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="bg-gradient-to-r from-purple-600 to-purple-500 px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between">
@@ -1788,8 +1783,6 @@ export default function ProviderDashboard() {
         return renderPaid();
       case 'completed':
         return renderCompleted();
-      case 'agenda':
-        return <FestAgenda events={events} onRefresh={loadData} />;
       case 'services':
         return <ServiceManagement />;
       case 'profile':
@@ -1834,7 +1827,6 @@ export default function ProviderDashboard() {
                       { id: 'waiting_payment', label: 'Aguardando Pagamento', icon: MdPayment, shortLabel: 'Aguardando' },
                       { id: 'paid', label: 'Pagos', icon: MdAttachMoney, shortLabel: 'Pagos' },
                       { id: 'completed', label: 'Concluídos', icon: MdCheckCircle, shortLabel: 'Concluídos' },
-                      { id: 'agenda', label: 'FestAgenda', icon: MdEvent, shortLabel: 'Agenda' },
                       { id: 'services', label: 'Meus Serviços', icon: MdBusinessCenter, shortLabel: 'Serviços' },
                       { id: 'profile', label: 'Perfil', icon: MdSettings, shortLabel: 'Perfil' }
                     ].map((tab) => {

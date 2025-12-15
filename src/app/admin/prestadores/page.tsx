@@ -13,7 +13,8 @@ import {
   MdVerifiedUser,
   MdAttachMoney,
   MdDelete,
-  MdWarning
+  MdWarning,
+  MdEvent
 } from 'react-icons/md';
 import { SearchInput } from '@/components/admin/SearchInput';
 import { getAllUsersAction, deleteProviderAction } from '@/lib/actions/admin';
@@ -214,7 +215,7 @@ export default function PrestadoresPage() {
       </motion.div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -280,6 +281,29 @@ export default function PrestadoresPage() {
             <div className="bg-yellow-50 p-3 rounded-lg">
               <MdAttachMoney className="text-2xl text-yellow-600" />
             </div>
+          </div>
+        </motion.div>
+
+        {/* Agenda Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.4 }}
+          className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 shadow-sm border-2 border-purple-200 cursor-pointer hover:shadow-lg transition-all"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-purple-700 text-sm font-semibold mb-1">🗓️ FestAgenda</p>
+              <p className="text-xs text-gray-600">Gerencie eventos</p>
+            </div>
+            <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-3 rounded-lg shadow-md">
+              <MdEvent className="text-2xl text-white" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <button className="w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-medium rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all shadow-sm">
+              Ver Agenda
+            </button>
           </div>
         </motion.div>
       </div>
