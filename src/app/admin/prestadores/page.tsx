@@ -201,7 +201,7 @@ export default function PrestadoresPage() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-title">Prestadoresx</h1>
           <p className="text-gray-600 mt-1 text-sm sm:text-base">
-            Gerencie todos os prestadores de serviços da plataforma
+            Gerencie todos os prestadores de serviços da plataformax
           </p>
         </div>
         <button
