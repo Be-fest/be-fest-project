@@ -17,7 +17,14 @@
       "Bash(git ls-tree:*)",
       "Bash(git checkout:*)",
       "Bash(npm install)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(for:*)",
+      "Bash(do if [ -f \"$file\" ])",
+      "Bash(then if ! grep -q \"export const dynamic\" \"$file\")",
+      "Bash(then sed -i \"2a\\\\nexport const dynamic = ''force-dynamic'';\" \"$file\")",
+      "Bash(echo:*)",
+      "Bash(fi)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []
