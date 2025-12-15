@@ -137,7 +137,7 @@ const ProvidersGrid = ({ providers }: { providers: ProviderData[] }) => {
                 className="group/btn relative w-full bg-gradient-to-r from-[#FF0080] to-[#E6006F] hover:from-[#E6006F] hover:to-[#D1005A] text-white py-4 px-6 rounded-xl transition-all duration-300 font-semibold text-center block shadow-lg shadow-pink-200 hover:shadow-xl hover:shadow-pink-300 transform hover:-translate-y-1"
               >
                 <span className="relative z-10 flex items-center justify-center gap-2">
-                  Ver Serviçosx
+                  Ver Serviços
                   <svg className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
