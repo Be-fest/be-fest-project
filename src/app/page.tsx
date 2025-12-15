@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState } from 'react';
 import { Hero } from '@/components/Hero';
 import { CreatePartyCTA } from '@/components/CreatePartyCTA';

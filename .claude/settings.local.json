@@ -15,7 +15,9 @@
       "Bash(timeout /t 15 /nobreak)",
       "Bash(git check-ignore:*)",
       "Bash(git ls-tree:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(npm install)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
