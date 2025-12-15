@@ -6,7 +6,14 @@
       "Bash(git push:*)",
       "Bash(npx tsc:*)",
       "Bash(npm run build:*)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(dir:*)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout /t 15 /nobreak)",
+      "Bash(git check-ignore:*)"
     ],
     "deny": [],
     "ask": []
