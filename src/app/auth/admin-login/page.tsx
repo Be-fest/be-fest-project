@@ -22,7 +22,6 @@ export default function AdminLoginPage() {
   const [error, setError] = useState('');
   const router = useRouter();
   const toast = useToastGlobal();
-  const supabase = createClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,6 +29,8 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
+      const supabase = createClient();
+
       // Fazer login usando Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: formData.email,

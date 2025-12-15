@@ -122,8 +122,7 @@ export function useAuth() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const toast = useToastGlobal();
-  const supabase = createClient();
-  
+
   const sessionExpiredToastShownRef = useRef(false);
   const retryCountRef = useRef(0);
   const maxRetries = 3;
@@ -135,9 +134,9 @@ export function useAuth() {
     if (sessionExpiredToastShownRef.current) {
       return;
     }
-    
+
     sessionExpiredToastShownRef.current = true;
-    
+
     try {
       toast.warning(
         'Sessão Expirada',
@@ -146,7 +145,8 @@ export function useAuth() {
       );
 
       clearStoredSession();
-      
+
+      const supabase = createClient();
       await supabase.auth.signOut();
       setUser(null);
       setUserData(null);
@@ -175,6 +175,8 @@ export function useAuth() {
   // Função para verificar e criar usuário se necessário
   const ensureUserExists = async (userId: string, email: string): Promise<boolean> => {
     try {
+      const supabase = createClient();
+
       const { data: existingUser, error: fetchError } = await supabase
         .from('users')
         .select('id')
@@ -183,7 +185,7 @@ export function useAuth() {
 
       if (fetchError && fetchError.code === 'PGRST116') {
         // Usuário não existe, criar registro
-        
+
         const { error: insertError } = await supabase
           .from('users')
           .insert({
@@ -217,8 +219,10 @@ export function useAuth() {
 
   const fetchUserData = async (userId: string, retryAttempt = 0): Promise<void> => {
     try {
+      const supabase = createClient();
+
       // Removido console.log para produção
-      
+
       // Verificar se o userId é válido
       if (!userId || userId === 'undefined' || userId === 'null') {
         // Removido console.error para produção
@@ -226,7 +230,7 @@ export function useAuth() {
         setLoading(false);
         return;
       }
-      
+
       // Verificar se o usuário está autenticado
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
@@ -385,10 +389,12 @@ export function useAuth() {
       // Removido console.log para produção
       return;
     }
-    
+
     isInitializingRef.current = true;
-    
+
     try {
+      const supabase = createClient();
+
       setLoading(true);
       setError(null);
 
@@ -402,7 +408,7 @@ export function useAuth() {
         setUserData(storedUserData);
         // Finalizar loading imediatamente quando userData está disponível
         setLoading(false);
-        
+
         // Verificar se a sessão ainda é válida no Supabase em background
         try {
           const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -519,7 +525,8 @@ export function useAuth() {
   useEffect(() => {
     // Só configurar listener no cliente
     if (typeof window === 'undefined') return;
-    
+
+    const supabase = createClient();
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         // Removido console.log para produção
@@ -589,20 +596,22 @@ export function useAuth() {
 
   const signOut = async () => {
     try {
+      const supabase = createClient();
+
       // Removido console.log para produção
-      
+
       // Resetar flags de controle
       isInitializingRef.current = false;
       sessionExpiredToastShownRef.current = false;
       retryCountRef.current = 0;
-      
+
       // Limpar dados locais imediatamente
       clearStoredSession();
       setUser(null);
       setUserData(null);
       setError(null);
       setLoading(false);
-      
+
       // Fazer logout no Supabase de forma assíncrona (não esperar)
       supabase.auth.signOut().catch(error => {
         if (!shouldSilenceErrors()) {
@@ -631,16 +640,18 @@ export function useAuth() {
 
   const signIn = async (email: string, password: string) => {
     try {
+      const supabase = createClient();
+
       setLoading(true);
       setError(null);
-      
+
       // Removido console.log para produção
-      
+
       // Criar timeout para login
       const loginTimeout = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('Timeout no login')), getTimeout('AUTH_TIMEOUT'));
       });
-      
+
       const loginPromise = supabase.auth.signInWithPassword({
         email,
         password

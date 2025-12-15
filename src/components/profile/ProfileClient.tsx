@@ -76,7 +76,6 @@ export default function ProfileClient({ user, events, stats }: ProfileClientProp
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeTab = searchParams.get('tab') || 'overview';
-  const supabase = createClient();
   const toast = useToastGlobal();
 
   const [formData, setFormData] = useState({
@@ -180,7 +179,8 @@ export default function ProfileClient({ user, events, stats }: ProfileClientProp
           'Sua conta foi excluída com sucesso.',
           4000
         );
-        
+
+        const supabase = createClient();
         await supabase.auth.signOut();
         
         // Redirecionar após delay

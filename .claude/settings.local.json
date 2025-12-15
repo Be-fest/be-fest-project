@@ -24,7 +24,9 @@
       "Bash(then sed -i \"2a\\\\nexport const dynamic = ''force-dynamic'';\" \"$file\")",
       "Bash(echo:*)",
       "Bash(fi)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(Select-String -Pattern \"server\\.ts|admin\\.ts|Error|error\")",
+      "Bash(Select-Object -First 50)"
     ],
     "deny": [],
     "ask": []

@@ -41,7 +41,6 @@ export default function SuperAdminPage() {
   const [success, setSuccess] = useState(false);
   const router = useRouter();
   const toast = useToastGlobal();
-  const supabase = createClient();
 
   // Lista de emails autorizados para super admin
   const SUPER_ADMIN_EMAILS = [
@@ -53,6 +52,7 @@ export default function SuperAdminPage() {
     // Verificar se já está logado como super-admin
     const checkSuperAdminAuth = async () => {
       try {
+        const supabase = createClient();
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -73,7 +73,7 @@ export default function SuperAdminPage() {
     };
 
     checkSuperAdminAuth();
-  }, [supabase.auth]);
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,6 +81,8 @@ export default function SuperAdminPage() {
     setLoading(true);
 
     try {
+      const supabase = createClient();
+
       // Fazer login usando Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: formData.email,
@@ -123,6 +125,7 @@ export default function SuperAdminPage() {
 
   const handleLogout = async () => {
     try {
+      const supabase = createClient();
       await supabase.auth.signOut();
       setIsLoggedIn(false);
       setShowLoginForm(true);
@@ -163,6 +166,8 @@ export default function SuperAdminPage() {
     setLoading(true);
 
     try {
+      const supabase = createClient();
+
       // Criar usuário no Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: adminFormData.email,
