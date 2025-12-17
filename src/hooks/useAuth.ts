@@ -712,15 +712,17 @@ export function useAuth() {
 
   const refreshUserData = async () => {
     if (!user) return;
-    
+
     try {
       // Removido console.log para produção
-      
+
+      const supabase = createClient();
+
       // Criar timeout para refresh
       const refreshTimeout = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('Timeout no refresh')), getTimeout('USER_DATA_TIMEOUT'));
       });
-      
+
       const refreshPromise = supabase
         .from('users')
         .select(`
