@@ -745,13 +745,9 @@ export async function deleteProviderAction(providerId: string): Promise<ActionRe
 
     // Deletar todas as dependências na ORDEM CORRETA
     if (serviceIds.length > 0) {
-      // IMPORTANTE: Usar admin client para contornar RLS
-      const { createAdminClient } = await import('@/lib/supabase/server');
-      const adminSupabase = createAdminClient();
-
       // 1. CRITICAL: Deletar service_guest_tiers PRIMEIRO
       console.log('Deleting service_guest_tiers...');
-      const { data: deletedTiers, error: guestTiersError } = await adminSupabase
+      const { data: deletedTiers, error: guestTiersError } = await supabase
         .from('service_guest_tiers')
         .delete()
         .in('service_id', serviceIds)
@@ -765,7 +761,7 @@ export async function deleteProviderAction(providerId: string): Promise<ActionRe
 
       // 2. Deletar event_services
       console.log('Deleting event services...');
-      const { error: eventServicesError } = await adminSupabase
+      const { error: eventServicesError } = await supabase
         .from('event_services')
         .delete()
         .in('service_id', serviceIds);
@@ -776,7 +772,7 @@ export async function deleteProviderAction(providerId: string): Promise<ActionRe
 
       // 3. Agora sim, deletar os services
       console.log('Deleting services...');
-      const { error: deleteServicesError } = await adminSupabase
+      const { error: deleteServicesError } = await supabase
         .from('services')
         .delete()
         .in('id', serviceIds);
@@ -789,12 +785,9 @@ export async function deleteProviderAction(providerId: string): Promise<ActionRe
       console.log(`Successfully deleted ${serviceIds.length} services and all dependencies`);
     }
 
-    // Por fim, deletar o usuário (prestador) - também usando admin client
+    // Por fim, deletar o usuário (prestador)
     console.log('Deleting provider user...');
-    const { createAdminClient } = await import('@/lib/supabase/server');
-    const adminSupabase = createAdminClient();
-
-    const { error: deleteUserError } = await adminSupabase
+    const { error: deleteUserError } = await supabase
       .from('users')
       .delete()
       .eq('id', providerId);

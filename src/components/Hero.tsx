@@ -9,9 +9,10 @@ import { createClient } from "@/lib/supabase/client";
 export function Hero() {
   const [userType, setUserType] = useState<'client' | 'service_provider' | null>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
 
   useEffect(() => {
+    const supabase = createClient();
+
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -51,7 +52,7 @@ export function Hero() {
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase]);
+  }, []);
 
   return (
     <div className={`min-h-screen bg-[#FFF9F9] ${userType === 'service_provider' ? 'pt-32' : 'pt-20'} transition-all duration-300`}>

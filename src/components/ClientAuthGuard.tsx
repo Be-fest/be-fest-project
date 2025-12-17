@@ -11,18 +11,19 @@ interface ClientAuthGuardProps {
   fallback?: React.ReactNode;
 }
 
-export function ClientAuthGuard({ 
-  children, 
-  requiredRole, 
+export function ClientAuthGuard({
+  children,
+  requiredRole,
   redirectTo = '/auth/login',
-  fallback 
+  fallback
 }: ClientAuthGuardProps) {
   const [loading, setLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const router = useRouter();
-  const supabase = createClient();
 
   useEffect(() => {
+    const supabase = createClient();
+
     const checkAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();

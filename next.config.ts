@@ -25,8 +25,6 @@ const nextConfig: NextConfig = {
   },
   // Configurações de build para produção
   poweredByHeader: false,
-  // Configurações de runtime
-  output: 'standalone',
 };
 
 export default nextConfig;

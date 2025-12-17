@@ -16,7 +16,17 @@
       "Bash(git check-ignore:*)",
       "Bash(git ls-tree:*)",
       "Bash(git checkout:*)",
-      "Bash(git merge:*)"
+      "Bash(npm install)",
+      "Bash(find:*)",
+      "Bash(for:*)",
+      "Bash(do if [ -f \"$file\" ])",
+      "Bash(then if ! grep -q \"export const dynamic\" \"$file\")",
+      "Bash(then sed -i \"2a\\\\nexport const dynamic = ''force-dynamic'';\" \"$file\")",
+      "Bash(echo:*)",
+      "Bash(fi)",
+      "Bash(done)",
+      "Bash(Select-String -Pattern \"server\\.ts|admin\\.ts|Error|error\")",
+      "Bash(Select-Object -First 50)"
     ],
     "deny": [],
     "ask": []

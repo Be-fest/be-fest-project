@@ -6,9 +6,16 @@ let supabaseClient: ReturnType<typeof createBrowserClient<Database>> | null = nu
 export const createClient = () => {
     if (supabaseClient) return supabaseClient;
 
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error('Missing Supabase environment variables');
+    }
+
     supabaseClient = createBrowserClient<Database>(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        supabaseUrl,
+        supabaseAnonKey,
         {
             auth: {
                 storage: {
@@ -63,7 +70,13 @@ export const createClient = () => {
     return supabaseClient;
 };
 
-export const supabase = createClient();
+// Only create client if we're in the browser and have environment variables
+let supabase: ReturnType<typeof createBrowserClient<Database>> | null = null;
+if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    supabase = createClient();
+}
+
+export { supabase };
 
 export const checkEmailExists = async (email: string) => {
   try {

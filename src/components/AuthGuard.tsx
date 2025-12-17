@@ -21,13 +21,13 @@ export function AuthGuard({ children, requiredRole, redirectTo = '/auth/login' }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const supabase = createClient();
 
   const checkAuth = async () => {
     try {
       setLoading(true);
       setError(null);
 
+      const supabase = createClient();
       const { data: { session }, error } = await supabase.auth.getSession();
       
       if (error) {
