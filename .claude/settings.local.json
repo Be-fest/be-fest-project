@@ -26,7 +26,9 @@
       "Bash(fi)",
       "Bash(done)",
       "Bash(Select-String -Pattern \"server\\.ts|admin\\.ts|Error|error\")",
-      "Bash(Select-Object -First 50)"
+      "Bash(Select-Object -First 50)",
+      "Bash(git cherry-pick:*)",
+      "Bash(git merge:*)"
     ],
     "deny": [],
     "ask": []
