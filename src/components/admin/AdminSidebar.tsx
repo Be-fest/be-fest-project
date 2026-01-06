@@ -34,7 +34,7 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { isSuperAdmin } = useSuperAdmin();
-  
+
   const [ordersBadge, setOrdersBadge] = useState<string | undefined>(undefined);
 
   useEffect(() => {
@@ -80,7 +80,7 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
       badge: undefined
     },
     {
-      label: 'FestAgenda',
+      label: 'Agenda',
       icon: MdEvent,
       path: '/admin/festagenda',
       badge: undefined
@@ -112,14 +112,14 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
   };
 
   return (
-    <motion.aside 
+    <motion.aside
       initial={false}
-      animate={{ 
-        width: isCollapsed ? 80 : 280 
+      animate={{
+        width: isCollapsed ? 80 : 280
       }}
-      transition={{ 
-        duration: 0.3, 
-        ease: 'easeInOut' 
+      transition={{
+        duration: 0.3,
+        ease: 'easeInOut'
       }}
       className="bg-white shadow-xl h-full flex flex-col relative overflow-hidden"
       style={{
@@ -164,7 +164,7 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
             )}
           </AnimatePresence>
         </div>
-        
+
         {/* Toggle Button */}
         <button
           onClick={toggleCollapse}
@@ -206,11 +206,11 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
             )}
           </AnimatePresence>
         </div>
-        
+
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.path;
-          
+
           return (
             <Link
               key={item.path}
@@ -218,8 +218,8 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
               onClick={handleLinkClick}
               className={`
                 group relative flex items-center p-3 rounded-xl transition-all duration-200
-                ${isActive 
-                  ? 'bg-gradient-to-r from-[#FF4DA6] to-[#A502CA] text-white shadow-lg' 
+                ${isActive
+                  ? 'bg-gradient-to-r from-[#FF4DA6] to-[#A502CA] text-white shadow-lg'
                   : 'text-gray-600 hover:bg-gray-50 hover:text-[#A502CA]'
                 }
                 ${isCollapsed ? 'justify-center' : 'justify-between'}
@@ -228,8 +228,8 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
               <div className={`flex items-center ${isCollapsed ? '' : 'gap-4'}`}>
                 <div className={`
                   flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200 flex-shrink-0
-                  ${isActive 
-                    ? 'bg-white/20' 
+                  ${isActive
+                    ? 'bg-white/20'
                     : 'bg-gray-100 group-hover:bg-[#A502CA]/10'
                   }
                 `}>
@@ -252,7 +252,7 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
                   )}
                 </AnimatePresence>
               </div>
-              
+
               {item.badge && (
                 <AnimatePresence mode="wait">
                   {!isCollapsed && (
@@ -298,7 +298,7 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
           title={isCollapsed ? 'Sair' : ''}
         >
           <MdLogout className="text-xl flex-shrink-0" />
-          
+
           <AnimatePresence>
             {!isCollapsed && (
               <motion.span

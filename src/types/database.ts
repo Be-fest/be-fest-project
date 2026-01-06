@@ -507,7 +507,7 @@ export type EventServiceWithDetails = EventService & {
 export type BookingWithDetails = Booking & {
   event: Pick<Event, 'id' | 'title' | 'event_date' | 'location' | 'client_id'>
   service: ServiceWithProvider
-} 
+}
 
 // Adiciona o tipo GuestTier conforme a tabela service_guest_tiers
 export interface GuestTier {
@@ -517,7 +517,7 @@ export interface GuestTier {
   max_total_guests: number;
   base_price_per_adult: number;
   tier_description: string;
-} 
+}
 export interface UserData {
   id: string;
   full_name?: string;
@@ -535,4 +535,17 @@ export interface UserData {
     longitude: number;
     raio_atuacao: number;
   };
+}
+
+// Chat message types
+export interface ChatMessage {
+  id: string;
+  event_service_id: string;
+  sender_id: string;
+  message: string;
+  created_at: string;
+}
+
+export type ChatMessageWithSender = ChatMessage & {
+  sender: Pick<User, 'id' | 'full_name' | 'profile_image'>;
 }
