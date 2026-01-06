@@ -17,11 +17,11 @@ type ActionResult<T = any> = {
 async function getCurrentUser() {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
-  
+
   if (!user) {
     throw new Error('Usuário não autenticado')
   }
-  
+
   return user
 }
 
@@ -53,10 +53,13 @@ export interface AgendaEvent {
 export async function getAgendaEventsByWeekAction(weekStartDate: string): Promise<ActionResult<AgendaEvent[]>> {
   try {
     const supabase = await createServerClient()
-    
+
     const weekStart = new Date(weekStartDate)
     const weekEnd = addDays(weekStart, 6)
-    
+    const weekStartStr = format(weekStart, 'yyyy-MM-dd')
+    const weekEndStr = format(weekEnd, 'yyyy-MM-dd')
+
+    // Fetch event_services with related data
     const { data: eventServices, error } = await supabase
       .from('event_services')
       .select(`
@@ -66,20 +69,15 @@ export async function getAgendaEventsByWeekAction(weekStartDate: string): Promis
         provider_id,
         booking_status,
         total_estimated_price,
-        event:events!inner (
+        event:events (
           id,
           title,
           event_date,
           location,
           guest_count,
-          client_id,
-          client:users!events_client_id_fkey (
-            id,
-            full_name,
-            email
-          )
+          client_id
         ),
-        service:services!inner (
+        service:services (
           id,
           name
         ),
@@ -89,54 +87,75 @@ export async function getAgendaEventsByWeekAction(weekStartDate: string): Promis
           organization_name
         )
       `)
-      .gte('event.event_date', format(weekStart, 'yyyy-MM-dd'))
-      .lte('event.event_date', format(weekEnd, 'yyyy-MM-dd'))
-      .order('event.event_date', { ascending: true })
+      .order('created_at', { ascending: false })
 
     if (error) {
       console.error('Error fetching agenda events:', error)
       return { success: false, error: 'Erro ao buscar eventos da agenda' }
     }
 
+    // Filter by date range and transform data
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    // Transform data to AgendaEvent format
-    const agendaEvents: AgendaEvent[] = (eventServices || []).map((es: any) => {
-      const eventDate = new Date(es.event.event_date)
+    const agendaEvents: AgendaEvent[] = []
+
+    for (const es of eventServices || []) {
+      // Skip if no event data
+      if (!es.event || !es.service) continue
+
+      const event = es.event as any
+      const service = es.service as any
+      const provider = es.provider as any
+
+      // Filter by date range
+      const eventDateStr = event.event_date
+      if (eventDateStr < weekStartStr || eventDateStr > weekEndStr) continue
+
+      // Get client info
+      const { data: client } = await supabase
+        .from('users')
+        .select('id, full_name, email')
+        .eq('id', event.client_id)
+        .single()
+
+      const eventDate = new Date(event.event_date)
       eventDate.setHours(0, 0, 0, 0)
-      
+
       const isPaidStatus = ['approved', 'waiting_payment', 'in_progress'].includes(es.booking_status)
       const isBeforeEventDate = eventDate >= today
       const canChat = isPaidStatus && isBeforeEventDate
-      
-      return {
+
+      agendaEvents.push({
         id: es.id,
         event_service_id: es.id,
-        event_id: es.event.id,
-        event_title: es.event.title,
-        event_date: es.event.event_date,
-        event_location: es.event.location,
-        guest_count: es.event.guest_count,
-        service_name: es.service.name,
-        service_id: es.service.id,
+        event_id: event.id,
+        event_title: event.title,
+        event_date: event.event_date,
+        event_location: event.location,
+        guest_count: event.guest_count || 0,
+        service_name: service.name,
+        service_id: service.id,
         provider_id: es.provider_id,
-        provider_name: es.provider?.organization_name || es.provider?.full_name || null,
-        client_id: es.event.client.id,
-        client_name: es.event.client.full_name,
-        client_email: es.event.client.email,
+        provider_name: provider?.organization_name || provider?.full_name || null,
+        client_id: event.client_id,
+        client_name: client?.full_name || null,
+        client_email: client?.email || null,
         booking_status: es.booking_status,
         total_estimated_price: es.total_estimated_price,
         can_chat: canChat
-      }
-    })
+      })
+    }
+
+    // Sort by event date
+    agendaEvents.sort((a, b) => a.event_date.localeCompare(b.event_date))
 
     return { success: true, data: agendaEvents }
   } catch (error) {
     console.error('Agenda events fetch failed:', error)
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Erro ao buscar eventos da agenda' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Erro ao buscar eventos da agenda'
     }
   }
 }
@@ -149,10 +168,10 @@ export async function getAgendaEventsByWeekAction(weekStartDate: string): Promis
 export async function getAgendaEventsByMonthAction(year: number, month: number): Promise<ActionResult<AgendaEvent[]>> {
   try {
     const supabase = await createServerClient()
-    
+
     const monthStart = startOfMonth(new Date(year, month - 1))
     const monthEnd = endOfMonth(new Date(year, month - 1))
-    
+
     const { data: eventServices, error } = await supabase
       .from('event_services')
       .select(`
@@ -201,11 +220,11 @@ export async function getAgendaEventsByMonthAction(year: number, month: number):
     const agendaEvents: AgendaEvent[] = (eventServices || []).map((es: any) => {
       const eventDate = new Date(es.event.event_date)
       eventDate.setHours(0, 0, 0, 0)
-      
+
       const isPaidStatus = ['approved', 'waiting_payment', 'in_progress'].includes(es.booking_status)
       const isBeforeEventDate = eventDate >= today
       const canChat = isPaidStatus && isBeforeEventDate
-      
+
       return {
         id: es.id,
         event_service_id: es.id,
@@ -230,9 +249,9 @@ export async function getAgendaEventsByMonthAction(year: number, month: number):
     return { success: true, data: agendaEvents }
   } catch (error) {
     console.error('Agenda events by month fetch failed:', error)
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Erro ao buscar eventos do mês' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Erro ao buscar eventos do mês'
     }
   }
 }
@@ -243,7 +262,7 @@ export async function getAgendaEventsByMonthAction(year: number, month: number):
 export async function getAgendaEventDetailAction(eventServiceId: string): Promise<ActionResult<AgendaEvent>> {
   try {
     const supabase = await createServerClient()
-    
+
     const { data: es, error } = await supabase
       .from('event_services')
       .select(`
@@ -288,7 +307,7 @@ export async function getAgendaEventDetailAction(eventServiceId: string): Promis
     today.setHours(0, 0, 0, 0)
     const eventDate = new Date((es.event as any).event_date)
     eventDate.setHours(0, 0, 0, 0)
-    
+
     const isPaidStatus = ['approved', 'waiting_payment', 'in_progress'].includes(es.booking_status)
     const isBeforeEventDate = eventDate >= today
     const canChat = isPaidStatus && isBeforeEventDate
@@ -316,9 +335,9 @@ export async function getAgendaEventDetailAction(eventServiceId: string): Promis
     return { success: true, data: agendaEvent }
   } catch (error) {
     console.error('Event detail fetch failed:', error)
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Erro ao buscar detalhes do evento' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Erro ao buscar detalhes do evento'
     }
   }
 }
