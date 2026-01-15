@@ -5,29 +5,32 @@ import { motion } from 'framer-motion';
 import {
   MdEvent,
   MdCalendarToday,
-  MdRefresh,
-  MdError,
   MdPeople,
   MdCheckCircle,
   MdPending,
-  MdPayment
+  MdError
 } from 'react-icons/md';
-import { startOfWeek, format, addDays } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { getAgendaEventsByWeekAction, AgendaEvent } from '@/lib/actions/agenda';
-import { WeekNavigator } from '@/components/admin/WeekNavigator';
-import { EventCard } from '@/components/admin/EventCard';
+import { startOfWeek, startOfMonth, addDays, addMonths, format } from 'date-fns';
+import { getAgendaEventsByWeekAction, getAgendaEventsByMonthAction, AgendaEvent } from '@/lib/actions/agenda';
+import { CalendarHeader } from '@/components/admin/CalendarHeader';
+import { CalendarGrid } from '@/components/admin/CalendarGrid';
+import { EventDetailModal } from '@/components/admin/EventDetailModal';
 import { ChatModal } from '@/components/admin/ChatModal';
 import { createClient } from '@/lib/supabase/client';
+
+type ViewType = 'week' | 'month';
 
 export default function FestAgendaPage() {
   const [events, setEvents] = useState<AgendaEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
-    return startOfWeek(new Date(), { weekStartsOn: 0 });
-  });
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [viewType, setViewType] = useState<ViewType>('week');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Event detail modal state
+  const [selectedEvent, setSelectedEvent] = useState<AgendaEvent | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   // Chat modal state
   const [selectedEventServiceId, setSelectedEventServiceId] = useState<string | null>(null);
@@ -50,8 +53,16 @@ export default function FestAgendaPage() {
       setLoading(true);
       setError(null);
 
-      const weekStartStr = format(currentWeekStart, 'yyyy-MM-dd');
-      const result = await getAgendaEventsByWeekAction(weekStartStr);
+      let result;
+      if (viewType === 'week') {
+        const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
+        const weekStartStr = format(weekStart, 'yyyy-MM-dd');
+        result = await getAgendaEventsByWeekAction(weekStartStr);
+      } else {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth() + 1;
+        result = await getAgendaEventsByMonthAction(year, month);
+      }
 
       if (result.success && result.data) {
         setEvents(result.data);
@@ -68,49 +79,52 @@ export default function FestAgendaPage() {
 
   useEffect(() => {
     loadEvents();
-  }, [currentWeekStart]);
+  }, [currentDate, viewType]);
 
-  const handleWeekChange = (weekStart: Date) => {
-    setCurrentWeekStart(weekStart);
+  const handlePrevious = () => {
+    if (viewType === 'week') {
+      setCurrentDate(prev => addDays(prev, -7));
+    } else {
+      setCurrentDate(prev => addMonths(prev, -1));
+    }
+  };
+
+  const handleNext = () => {
+    if (viewType === 'week') {
+      setCurrentDate(prev => addDays(prev, 7));
+    } else {
+      setCurrentDate(prev => addMonths(prev, 1));
+    }
+  };
+
+  const handleToday = () => {
+    setCurrentDate(new Date());
+  };
+
+  const handleViewTypeChange = (view: ViewType) => {
+    setViewType(view);
   };
 
   const handleEventClick = (event: AgendaEvent) => {
-    // Could open a detail modal or navigate to event details
-    console.log('Event clicked:', event);
+    setSelectedEvent(event);
+    setIsDetailModalOpen(true);
   };
 
   const handleChatClick = (eventServiceId: string) => {
+    setIsDetailModalOpen(false);
     setSelectedEventServiceId(eventServiceId);
     setIsChatOpen(true);
+  };
+
+  const closeDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setSelectedEvent(null);
   };
 
   const closeChatModal = () => {
     setIsChatOpen(false);
     setSelectedEventServiceId(null);
   };
-
-  // Group events by day of the week
-  const eventsByDay = events.reduce((groups, event) => {
-    const eventDate = new Date(event.event_date);
-    const dayKey = format(eventDate, 'yyyy-MM-dd');
-    if (!groups[dayKey]) {
-      groups[dayKey] = [];
-    }
-    groups[dayKey].push(event);
-    return groups;
-  }, {} as Record<string, AgendaEvent[]>);
-
-  // Generate all days of the week
-  const weekDays = Array.from({ length: 7 }, (_, i) => {
-    const date = addDays(currentWeekStart, i);
-    return {
-      date,
-      key: format(date, 'yyyy-MM-dd'),
-      dayName: format(date, 'EEEE', { locale: ptBR }),
-      dayNumber: format(date, 'd'),
-      isToday: format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
-    };
-  });
 
   // Stats
   const stats = {
@@ -119,17 +133,6 @@ export default function FestAgendaPage() {
     approvedEvents: events.filter(e => ['approved', 'waiting_payment', 'in_progress'].includes(e.booking_status)).length,
     totalGuests: events.reduce((sum, e) => sum + e.guest_count, 0)
   };
-
-  if (loading && events.length === 0) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando eventos...</p>
-        </div>
-      </div>
-    );
-  }
 
   if (error && events.length === 0) {
     return (
@@ -150,7 +153,7 @@ export default function FestAgendaPage() {
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="space-y-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -164,158 +167,107 @@ export default function FestAgendaPage() {
             Agenda
           </h1>
           <p className="text-gray-600 mt-1 text-sm sm:text-base">
-            Visualize e gerencie eventos por semana
+            Visualize e gerencie todos os eventos
           </p>
         </div>
-        <button
-          onClick={loadEvents}
-          disabled={loading}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base disabled:opacity-50"
-        >
-          <MdRefresh className={`text-base sm:text-lg ${loading ? 'animate-spin' : ''}`} />
-          <span>Atualizar</span>
-        </button>
       </motion.div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stats Cards - Compact */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="bg-white rounded-xl p-4 shadow-sm border border-gray-100"
+          className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 flex items-center gap-3"
         >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-sm font-medium">Eventos na Semana</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{stats.totalEvents}</p>
-            </div>
-            <div className="bg-purple-50 p-3 rounded-lg">
-              <MdCalendarToday className="text-2xl text-purple-600" />
-            </div>
+          <div className="bg-purple-50 p-2 rounded-lg">
+            <MdCalendarToday className="text-xl text-purple-600" />
+          </div>
+          <div>
+            <p className="text-xs text-gray-500">Eventos</p>
+            <p className="text-lg font-bold text-gray-900">{stats.totalEvents}</p>
           </div>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
-          className="bg-white rounded-xl p-4 shadow-sm border border-gray-100"
+          transition={{ delay: 0.1 }}
+          className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 flex items-center gap-3"
         >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-sm font-medium">Pendentes</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{stats.pendingEvents}</p>
-            </div>
-            <div className="bg-yellow-50 p-3 rounded-lg">
-              <MdPending className="text-2xl text-yellow-600" />
-            </div>
+          <div className="bg-yellow-50 p-2 rounded-lg">
+            <MdPending className="text-xl text-yellow-600" />
+          </div>
+          <div>
+            <p className="text-xs text-gray-500">Pendentes</p>
+            <p className="text-lg font-bold text-gray-900">{stats.pendingEvents}</p>
           </div>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.2 }}
-          className="bg-white rounded-xl p-4 shadow-sm border border-gray-100"
+          transition={{ delay: 0.2 }}
+          className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 flex items-center gap-3"
         >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-sm font-medium">Aprovados</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{stats.approvedEvents}</p>
-            </div>
-            <div className="bg-green-50 p-3 rounded-lg">
-              <MdCheckCircle className="text-2xl text-green-600" />
-            </div>
+          <div className="bg-green-50 p-2 rounded-lg">
+            <MdCheckCircle className="text-xl text-green-600" />
+          </div>
+          <div>
+            <p className="text-xs text-gray-500">Aprovados</p>
+            <p className="text-lg font-bold text-gray-900">{stats.approvedEvents}</p>
           </div>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.3 }}
-          className="bg-white rounded-xl p-4 shadow-sm border border-gray-100"
+          transition={{ delay: 0.3 }}
+          className="bg-white rounded-lg p-3 shadow-sm border border-gray-100 flex items-center gap-3"
         >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-sm font-medium">Total Convidados</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{stats.totalGuests}</p>
-            </div>
-            <div className="bg-blue-50 p-3 rounded-lg">
-              <MdPeople className="text-2xl text-blue-600" />
-            </div>
+          <div className="bg-blue-50 p-2 rounded-lg">
+            <MdPeople className="text-xl text-blue-600" />
+          </div>
+          <div>
+            <p className="text-xs text-gray-500">Convidados</p>
+            <p className="text-lg font-bold text-gray-900">{stats.totalGuests}</p>
           </div>
         </motion.div>
       </div>
 
-      {/* Week Navigator */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.4 }}
-      >
-        <WeekNavigator
-          currentWeekStart={currentWeekStart}
-          onWeekChange={handleWeekChange}
-        />
-      </motion.div>
+      {/* Calendar Header */}
+      <CalendarHeader
+        currentDate={currentDate}
+        viewType={viewType}
+        onViewTypeChange={handleViewTypeChange}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
+        onToday={handleToday}
+        onRefresh={loadEvents}
+        loading={loading}
+      />
 
-      {/* Weekly Calendar View */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.5 }}
-        className="space-y-4"
-      >
-        {weekDays.map((day, index) => {
-          const dayEvents = eventsByDay[day.key] || [];
+      {/* Loading overlay */}
+      {loading && events.length > 0 && (
+        <div className="fixed inset-0 bg-white/50 z-40 flex items-center justify-center">
+          <div className="w-12 h-12 border-4 border-purple-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
 
-          return (
-            <div key={day.key} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              {/* Day header */}
-              <div className={`px-4 py-3 border-b ${day.isToday ? 'bg-purple-50' : 'bg-gray-50'}`}>
-                <div className="flex items-center gap-3">
-                  <div className={`
-                    w-10 h-10 rounded-full flex items-center justify-center font-bold
-                    ${day.isToday
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-gray-200 text-gray-700'
-                    }
-                  `}>
-                    {day.dayNumber}
-                  </div>
-                  <div>
-                    <h3 className={`font-semibold capitalize ${day.isToday ? 'text-purple-600' : 'text-gray-900'}`}>
-                      {day.dayName}
-                      {day.isToday && <span className="ml-2 text-sm font-normal">(Hoje)</span>}
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                      {dayEvents.length === 0
-                        ? 'Nenhum evento'
-                        : `${dayEvents.length} evento${dayEvents.length > 1 ? 's' : ''}`
-                      }
-                    </p>
-                  </div>
-                </div>
-              </div>
+      {/* Calendar Grid */}
+      <CalendarGrid
+        currentDate={currentDate}
+        viewType={viewType}
+        events={events}
+        onEventClick={handleEventClick}
+      />
 
-              {/* Day events */}
-              {dayEvents.length > 0 && (
-                <div className="p-4 space-y-3">
-                  {dayEvents.map((event) => (
-                    <EventCard
-                      key={event.id}
-                      event={event}
-                      onClick={() => handleEventClick(event)}
-                      onChatClick={() => handleChatClick(event.event_service_id)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </motion.div>
+      {/* Event Detail Modal */}
+      <EventDetailModal
+        event={selectedEvent}
+        isOpen={isDetailModalOpen}
+        onClose={closeDetailModal}
+        onChatClick={handleChatClick}
+      />
 
       {/* Chat Modal */}
       {currentUserId && selectedEventServiceId && (

@@ -49,8 +49,9 @@ export interface AgendaEvent {
 /**
  * Get events for the agenda by week
  * @param weekStartDate - ISO date string for the start of the week
+ * @param providerId - Optional provider ID to filter events (for provider role)
  */
-export async function getAgendaEventsByWeekAction(weekStartDate: string): Promise<ActionResult<AgendaEvent[]>> {
+export async function getAgendaEventsByWeekAction(weekStartDate: string, providerId?: string): Promise<ActionResult<AgendaEvent[]>> {
   try {
     const supabase = await createServerClient()
 
@@ -59,8 +60,8 @@ export async function getAgendaEventsByWeekAction(weekStartDate: string): Promis
     const weekStartStr = format(weekStart, 'yyyy-MM-dd')
     const weekEndStr = format(weekEnd, 'yyyy-MM-dd')
 
-    // Fetch event_services with related data
-    const { data: eventServices, error } = await supabase
+    // Build query with optional provider filter
+    let query = supabase
       .from('event_services')
       .select(`
         id,
@@ -87,7 +88,13 @@ export async function getAgendaEventsByWeekAction(weekStartDate: string): Promis
           organization_name
         )
       `)
-      .order('created_at', { ascending: false })
+
+    // Filter by provider if providerId is specified
+    if (providerId) {
+      query = query.eq('provider_id', providerId)
+    }
+
+    const { data: eventServices, error } = await query.order('created_at', { ascending: false })
 
     if (error) {
       console.error('Error fetching agenda events:', error)
@@ -164,15 +171,16 @@ export async function getAgendaEventsByWeekAction(weekStartDate: string): Promis
  * Get events for the agenda by month
  * @param year - Year number
  * @param month - Month number (1-12)
+ * @param providerId - Optional provider ID to filter events (for provider role)
  */
-export async function getAgendaEventsByMonthAction(year: number, month: number): Promise<ActionResult<AgendaEvent[]>> {
+export async function getAgendaEventsByMonthAction(year: number, month: number, providerId?: string): Promise<ActionResult<AgendaEvent[]>> {
   try {
     const supabase = await createServerClient()
 
     const monthStart = startOfMonth(new Date(year, month - 1))
     const monthEnd = endOfMonth(new Date(year, month - 1))
 
-    const { data: eventServices, error } = await supabase
+    let query = supabase
       .from('event_services')
       .select(`
         id,
@@ -206,7 +214,13 @@ export async function getAgendaEventsByMonthAction(year: number, month: number):
       `)
       .gte('event.event_date', format(monthStart, 'yyyy-MM-dd'))
       .lte('event.event_date', format(monthEnd, 'yyyy-MM-dd'))
-      .order('event.event_date', { ascending: true })
+
+    // Filter by provider if providerId is specified
+    if (providerId) {
+      query = query.eq('provider_id', providerId)
+    }
+
+    const { data: eventServices, error } = await query.order('created_at', { ascending: false })
 
     if (error) {
       console.error('Error fetching agenda events by month:', error)
