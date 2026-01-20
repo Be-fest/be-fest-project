@@ -24,6 +24,7 @@ import {
   MdWhatsapp,
   MdAccessTime
 } from 'react-icons/md';
+import Link from 'next/link';
 import { ProviderLayout } from '@/components/dashboard/ProviderLayout';
 import { ServiceManagement } from '@/components/dashboard/ServiceManagement';
 import { ProviderProfile } from '@/components/dashboard/ProviderProfile';
@@ -69,7 +70,7 @@ export default function ProviderDashboard() {
 
   const loadData = async () => {
     if (!userData) return;
-    
+
     setLoading(true);
     setError(null);
     try {
@@ -291,70 +292,70 @@ export default function ProviderDashboard() {
                 <p className="text-purple-100 text-sm sm:text-base">Gerencie seus serviços e acompanhe suas solicitações</p>
               </div>
 
-                {/* Stats Cards - Static Structure with Dynamic Values */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-6 mb-8">
-                  {[
-                    { title: 'Total de Solicitações', icon: MdBusinessCenter },
-                    { title: 'Solicitações Pendentes', icon: MdPendingActions },
-                    { title: 'Serviços Ativos', icon: MdCheckCircle },
-                    { title: 'Receita Total', icon: MdAttachMoney },
-                    { title: 'Eventos Concluídos', icon: MdCheckCircle }
-                  ].map((stat, i) => (
-                    <div key={i} className="bg-white rounded-2xl p-3 sm:p-4 lg:p-6 shadow-sm">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 sm:mb-3 lg:mb-4">
-                        <stat.icon className="text-purple-600 text-base sm:text-lg lg:text-xl mb-1 sm:mb-0" size={24} />
-                        <span className="text-xs text-gray-500 hidden sm:inline">+0%</span>
-                      </div>
-                      <div className="space-y-1 sm:space-y-2">
-                        <div className="h-4 sm:h-5 lg:h-6 w-10 sm:w-12 lg:w-16 bg-gray-300 rounded animate-pulse"></div>
-                        <p className="text-xs sm:text-sm text-gray-600 leading-tight">{stat.title}</p>
-                      </div>
+              {/* Stats Cards - Static Structure with Dynamic Values */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-6 mb-8">
+                {[
+                  { title: 'Total de Solicitações', icon: MdBusinessCenter },
+                  { title: 'Solicitações Pendentes', icon: MdPendingActions },
+                  { title: 'Serviços Ativos', icon: MdCheckCircle },
+                  { title: 'Receita Total', icon: MdAttachMoney },
+                  { title: 'Eventos Concluídos', icon: MdCheckCircle }
+                ].map((stat, i) => (
+                  <div key={i} className="bg-white rounded-2xl p-3 sm:p-4 lg:p-6 shadow-sm">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 sm:mb-3 lg:mb-4">
+                      <stat.icon className="text-purple-600 text-base sm:text-lg lg:text-xl mb-1 sm:mb-0" size={24} />
+                      <span className="text-xs text-gray-500 hidden sm:inline">+0%</span>
                     </div>
-                  ))}
-                </div>
-
-                {/* Revenue Stats - Static Structure with Dynamic Values */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6 mb-8">
-                  {[
-                    { title: 'Receita Este Mês', icon: MdTrendingUp },
-                    { title: 'Receita Total', icon: MdAttachMoney }
-                  ].map((stat, i) => (
-                    <div key={i} className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
-                      <div className="flex items-center justify-between mb-3 sm:mb-4">
-                        <stat.icon className="text-green-600 text-lg sm:text-xl" />
-                        <span className="text-xs text-gray-500">+0%</span>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="h-5 sm:h-6 w-16 sm:w-20 bg-gray-300 rounded animate-pulse"></div>
-                        <p className="text-xs sm:text-sm text-gray-600">{stat.title}</p>
-                      </div>
+                    <div className="space-y-1 sm:space-y-2">
+                      <div className="h-4 sm:h-5 lg:h-6 w-10 sm:w-12 lg:w-16 bg-gray-300 rounded animate-pulse"></div>
+                      <p className="text-xs sm:text-sm text-gray-600 leading-tight">{stat.title}</p>
                     </div>
-                  ))}
-                </div>
-
-                {/* Recent Requests - Static Structure with Dynamic Content */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
-                    <h3 className="text-lg font-semibold text-gray-900">Solicitações Recentes</h3>
-                    <button className="text-sm text-purple-600 hover:text-purple-700 font-medium self-start">
-                      Ver todas
-                    </button>
                   </div>
-                  <div className="space-y-3 sm:space-y-4">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-xl">
-                        <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
-                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-300 rounded-lg animate-pulse flex-shrink-0"></div>
-                          <div className="space-y-1 sm:space-y-2 min-w-0 flex-1">
-                            <div className="h-3 sm:h-4 w-24 sm:w-32 bg-gray-300 rounded animate-pulse"></div>
-                            <div className="h-2 sm:h-3 w-32 sm:w-48 bg-gray-200 rounded animate-pulse"></div>
-                          </div>
+                ))}
+              </div>
+
+              {/* Revenue Stats - Static Structure with Dynamic Values */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6 mb-8">
+                {[
+                  { title: 'Receita Este Mês', icon: MdTrendingUp },
+                  { title: 'Receita Total', icon: MdAttachMoney }
+                ].map((stat, i) => (
+                  <div key={i} className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
+                    <div className="flex items-center justify-between mb-3 sm:mb-4">
+                      <stat.icon className="text-green-600 text-lg sm:text-xl" />
+                      <span className="text-xs text-gray-500">+0%</span>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-5 sm:h-6 w-16 sm:w-20 bg-gray-300 rounded animate-pulse"></div>
+                      <p className="text-xs sm:text-sm text-gray-600">{stat.title}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Recent Requests - Static Structure with Dynamic Content */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900">Solicitações Recentes</h3>
+                  <button className="text-sm text-purple-600 hover:text-purple-700 font-medium self-start">
+                    Ver todas
+                  </button>
+                </div>
+                <div className="space-y-3 sm:space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-xl">
+                      <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-300 rounded-lg animate-pulse flex-shrink-0"></div>
+                        <div className="space-y-1 sm:space-y-2 min-w-0 flex-1">
+                          <div className="h-3 sm:h-4 w-24 sm:w-32 bg-gray-300 rounded animate-pulse"></div>
+                          <div className="h-2 sm:h-3 w-32 sm:w-48 bg-gray-200 rounded animate-pulse"></div>
                         </div>
-                        <div className="h-5 sm:h-6 w-16 sm:w-20 bg-gray-300 rounded-full animate-pulse self-start sm:self-center"></div>
                       </div>
-                    ))}
-                  </div>
+                      <div className="h-5 sm:h-6 w-16 sm:w-20 bg-gray-300 rounded-full animate-pulse self-start sm:self-center"></div>
+                    </div>
+                  ))}
                 </div>
+              </div>
             </div>
           </div>
         </ProviderLayout>
@@ -365,25 +366,25 @@ export default function ProviderDashboard() {
   // Estatísticas baseadas nos dados reais
   const totalRequests = providerStats.totalRequests;
   const pendingRequests = providerStats.pendingRequests;
-  const waitingPaymentRequests = events.flatMap(event => 
-    event.event_services?.filter(service => 
+  const waitingPaymentRequests = events.flatMap(event =>
+    event.event_services?.filter(service =>
       service.provider_id === userData?.id &&
       service.booking_status === 'waiting_payment'
     ) || []
   ).length;
   // Contar serviços pagos (incluindo os já concluídos, pois foram pagos antes)
-  const paidRequests = events.flatMap(event => 
-    event.event_services?.filter(service => 
+  const paidRequests = events.flatMap(event =>
+    event.event_services?.filter(service =>
       service.provider_id === userData?.id &&
       (service.booking_status === 'approved' || service.booking_status === 'completed')
     ) || []
   ).length;
   const activeServices = providerStats.activeServices;
   const totalRevenue = providerStats.totalRevenue;
-  
+
   // Contar eventos concluídos localmente (serviços com status 'completed')
-  const completedEvents = events.flatMap(event => 
-    event.event_services?.filter(service => 
+  const completedEvents = events.flatMap(event =>
+    event.event_services?.filter(service =>
       service.provider_id === userData?.id &&
       service.booking_status === 'completed'
     ) || []
@@ -401,9 +402,9 @@ export default function ProviderDashboard() {
       // Apenas calcular dinamicamente se não houver preço salvo
       const fullGuests = event.full_guests || 0;
       const halfGuests = event.half_guests || 0;
-      
+
       let calculatedPrice = 0;
-      
+
       // Prioridade 2: Usar preço por convidado no booking (já calculado pelo sistema) - SEMPRE CALCULAR CORRETAMENTE
       if (service.price_per_guest_at_booking && service.price_per_guest_at_booking > 0) {
         calculatedPrice = calculateServiceTotalValue(fullGuests, halfGuests, service.price_per_guest_at_booking, service, true);
@@ -433,10 +434,10 @@ export default function ProviderDashboard() {
           'espaço': 100,
           'outros': 30
         };
-        
+
         const category = service.service?.category?.toLowerCase() || service.category?.toLowerCase();
         const categoryPrice = categoryPrices[category] || 30;
-        
+
         if (categoryPrice > 0) {
           calculatedPrice = calculateServiceTotalValue(fullGuests, halfGuests, categoryPrice, service);
         } else {
@@ -445,7 +446,7 @@ export default function ProviderDashboard() {
           calculatedPrice = totalGuests > 0 ? Math.max(500, totalGuests * 30) : 500;
         }
       }
-      
+
       // Retornar o preço calculado sem taxa (valor original)
       return calculatedPrice;
     } catch (error) {
@@ -466,9 +467,9 @@ export default function ProviderDashboard() {
       // Apenas calcular dinamicamente se não houver preço salvo
       const fullGuests = event.full_guests || 0;
       const halfGuests = event.half_guests || 0;
-      
+
       let calculatedPrice = 0;
-      
+
       // Prioridade 2: Usar preço por convidado no booking (já calculado pelo sistema) - SEMPRE CALCULAR CORRETAMENTE
       if (service.price_per_guest_at_booking && service.price_per_guest_at_booking > 0) {
         calculatedPrice = calculateServiceTotalValue(fullGuests, halfGuests, service.price_per_guest_at_booking, service, true);
@@ -498,10 +499,10 @@ export default function ProviderDashboard() {
           'espaço': 100,
           'outros': 30
         };
-        
+
         const category = service.service?.category?.toLowerCase() || service.category?.toLowerCase();
         const categoryPrice = categoryPrices[category] || 30;
-        
+
         if (categoryPrice > 0) {
           calculatedPrice = calculateServiceTotalValue(fullGuests, halfGuests, categoryPrice, service);
         } else {
@@ -510,7 +511,7 @@ export default function ProviderDashboard() {
           calculatedPrice = totalGuests > 0 ? Math.max(500, totalGuests * 30) : 500;
         }
       }
-      
+
       // Retornar o preço calculado sem taxa (valor original)
       return calculatedPrice;
     } catch (error) {
@@ -520,8 +521,8 @@ export default function ProviderDashboard() {
   };
 
   // Calcular receita recebida localmente (incluindo serviços pagos e concluídos)
-  const paidRevenue = events.flatMap(event => 
-    event.event_services?.filter(service => 
+  const paidRevenue = events.flatMap(event =>
+    event.event_services?.filter(service =>
       service.provider_id === userData?.id &&
       (service.booking_status === 'approved' || service.booking_status === 'completed')
     ).map(service => {
@@ -612,7 +613,7 @@ export default function ProviderDashboard() {
 
   const handleBulkApprove = async () => {
     if (selectedServices.size === 0) return;
-    
+
     setConfirmAction({
       type: 'approve',
       serviceIds: Array.from(selectedServices)
@@ -622,7 +623,7 @@ export default function ProviderDashboard() {
 
   const handleBulkReject = async () => {
     if (selectedServices.size === 0) return;
-    
+
     setConfirmAction({
       type: 'reject',
       serviceIds: Array.from(selectedServices)
@@ -641,8 +642,8 @@ export default function ProviderDashboard() {
   };
 
   const selectAllPendingServices = () => {
-    const pendingServiceIds = events.flatMap(event => 
-      event.event_services?.filter(service => 
+    const pendingServiceIds = events.flatMap(event =>
+      event.event_services?.filter(service =>
         service.provider_id === userData?.id &&
         service.booking_status === 'pending_provider_approval'
       ).map(service => service.id) || []
@@ -659,11 +660,11 @@ export default function ProviderDashboard() {
 
     const { type, serviceId, serviceIds } = confirmAction;
     const idsToProcess = serviceIds || (serviceId ? [serviceId] : []);
-    
+
     if (idsToProcess.length === 0) return;
 
     setActionLoading('bulk-action');
-    
+
     try {
       const results = await Promise.all(
         idsToProcess.map(async (id) => {
@@ -683,7 +684,7 @@ export default function ProviderDashboard() {
       if (successCount > 0) {
         await loadData(); // Recarregar dados
         clearSelection(); // Limpar seleção
-        
+
         // Se aprovamos serviços, verificar se todos os serviços de eventos específicos estão aguardando pagamento
         // para automaticamente mudar o status do evento para waiting_payment
         if (type === 'approve') {
@@ -694,7 +695,7 @@ export default function ProviderDashboard() {
       // Mostrar resultado
       if (failCount === 0) {
         // Todos bem sucedidos
-        const message = type === 'approve' 
+        const message = type === 'approve'
           ? `${successCount} serviço(s) aprovado(s) com sucesso!`
           : `${successCount} serviço(s) rejeitado(s) com sucesso!`;
         // Você pode implementar um toast aqui
@@ -723,20 +724,20 @@ export default function ProviderDashboard() {
       const updatedEvents = eventsResult.data;
 
       // Verificar cada evento para ver se todos os serviços estão aguardando pagamento
-        for (const event of updatedEvents) {
-          if (event.event_services && event.event_services.length > 0) {
-            // Verificar se TODOS os serviços do evento estão aguardando pagamento
-            const allEventServicesWaitingPayment = event.event_services.every(service => 
-              service.booking_status === 'waiting_payment'
-            );
+      for (const event of updatedEvents) {
+        if (event.event_services && event.event_services.length > 0) {
+          // Verificar se TODOS os serviços do evento estão aguardando pagamento
+          const allEventServicesWaitingPayment = event.event_services.every(service =>
+            service.booking_status === 'waiting_payment'
+          );
 
-            if (allEventServicesWaitingPayment) {
-              // Todos os serviços do evento estão aguardando pagamento
-              console.log(`Todos serviços do evento ${event.id} estão aguardando pagamento, mudando status do evento para waiting_payment`);
-              await updateEventStatusAction(event.id, 'waiting_payment');
-            }
+          if (allEventServicesWaitingPayment) {
+            // Todos os serviços do evento estão aguardando pagamento
+            console.log(`Todos serviços do evento ${event.id} estão aguardando pagamento, mudando status do evento para waiting_payment`);
+            await updateEventStatusAction(event.id, 'waiting_payment');
           }
         }
+      }
     } catch (error) {
       console.error('Erro ao verificar status dos eventos:', error);
     }
@@ -745,10 +746,10 @@ export default function ProviderDashboard() {
   // Função para marcar serviço como concluído
   const handleMarkAsCompleted = async (serviceId: string, serviceName?: string) => {
     setActionLoading(`complete-${serviceId}`);
-    
+
     try {
       const result = await updateEventServiceStatusAction(serviceId, 'completed');
-      
+
       if (result.success) {
         console.log(`✅ Serviço ${serviceName || serviceId} marcado como concluído`);
         await loadData(); // Recarregar dados para atualizar a lista
@@ -884,7 +885,7 @@ export default function ProviderDashboard() {
             </div>
           </motion.div>
         ))}
-        
+
         {/* Card adicional APENAS no mobile (Eventos Realizados) */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -958,7 +959,7 @@ export default function ProviderDashboard() {
             Ver todas
           </button>
         </div>
-        
+
         {events.length === 0 ? (
           <div className="text-center py-12 px-4">
             <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -972,7 +973,7 @@ export default function ProviderDashboard() {
             {events.slice(0, 5).map((event, index) => {
               const hasPendingServices = event.event_services?.some(s => s.booking_status === 'pending_provider_approval');
               const clientName = event.client?.organization_name || event.client?.full_name || 'Cliente não identificado';
-              
+
               return (
                 <div key={event.id} className="p-4 sm:p-5 hover:bg-gray-50 transition-colors duration-200">
                   {/* Header */}
@@ -988,7 +989,7 @@ export default function ProviderDashboard() {
                         </p>
                       </div>
                     </div>
-                    
+
                     {hasPendingServices && (
                       <button
                         onClick={() => setActiveTab('requests')}
@@ -999,7 +1000,7 @@ export default function ProviderDashboard() {
                       </button>
                     )}
                   </div>
-                  
+
                   {/* Event Info Grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mb-3">
                     <div className="flex items-center gap-2 text-xs sm:text-sm">
@@ -1020,7 +1021,7 @@ export default function ProviderDashboard() {
                       </span>
                     </div>
                   </div>
-                  
+
                   {/* Services with Status and Value */}
                   <div className="space-y-2">
                     {event.event_services?.map((service, serviceIndex) => {
@@ -1032,7 +1033,7 @@ export default function ProviderDashboard() {
                         'completed': 'Concluído',
                         'rejected': 'Rejeitado'
                       };
-                      
+
                       const statusColors = {
                         'pending_provider_approval': 'bg-yellow-50 text-yellow-700 border-yellow-200',
                         'waiting_payment': 'bg-blue-50 text-blue-700 border-blue-200',
@@ -1040,10 +1041,10 @@ export default function ProviderDashboard() {
                         'completed': 'bg-emerald-50 text-emerald-700 border-emerald-200',
                         'rejected': 'bg-red-50 text-red-700 border-red-200'
                       };
-                      
+
                       return (
-                        <div 
-                          key={serviceIndex} 
+                        <div
+                          key={serviceIndex}
                           className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border ${statusColors[service.booking_status as keyof typeof statusColors] || 'bg-gray-50 text-gray-700 border-gray-200'}`}
                         >
                           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 min-w-0 flex-1">
@@ -1076,8 +1077,8 @@ export default function ProviderDashboard() {
 
   const renderRequests = () => {
     // Filtrar apenas serviços pendentes que pertencem ao prestador logado
-    const pendingServices = events.flatMap(event => 
-      event.event_services?.filter(service => 
+    const pendingServices = events.flatMap(event =>
+      event.event_services?.filter(service =>
         // Verificar se o serviço pertence ao prestador logado
         service.provider_id === userData?.id &&
         // Verificar se está pendente
@@ -1119,7 +1120,7 @@ export default function ProviderDashboard() {
                   </button>
                 </div>
               </div>
-              
+
               {/* Botões de ação em lote */}
               {selectedServices.size > 0 && (
                 <div className="flex flex-col sm:flex-row gap-2 pt-3 border-t border-gray-200">
@@ -1157,7 +1158,7 @@ export default function ProviderDashboard() {
           <div className="space-y-4">
             {events.map((event) => {
               // Filtrar apenas os serviços pendentes deste evento que pertencem ao prestador
-              const eventPendingServices = event.event_services?.filter(service => 
+              const eventPendingServices = event.event_services?.filter(service =>
                 service.provider_id === userData?.id &&
                 service.booking_status === 'pending_provider_approval'
               ) || [];
@@ -1221,98 +1222,98 @@ export default function ProviderDashboard() {
                   {/* Serviços */}
                   <div className="p-4 sm:p-5 space-y-4">
                     {eventPendingServices.map((service, serviceIndex) => {
-                    const estimatedPrice = calculateEstimatedPriceForEvent(service, event);
-                    const isSelected = selectedServices.has(service.id);
-                    const isApproving = actionLoading === `approve-${service.id}`;
-                    const isRejecting = actionLoading === `reject-${service.id}`;
-                    
-                    return (
-                      <div key={serviceIndex} className="bg-yellow-50 rounded-xl border-2 border-yellow-200 p-4 space-y-4">
-                        {/* Header do Serviço */}
-                        <div className="flex items-start gap-3">
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => toggleServiceSelection(service.id)}
-                            className="mt-1 w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500 cursor-pointer"
-                          />
-                          
-                          <div className="flex-1 space-y-3">
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                              <div>
-                                <h4 className="text-base sm:text-lg font-bold text-gray-900">{service.service?.name || 'Serviço Solicitado'}</h4>
-                                <p className="text-sm text-gray-600">Categoria: {service.service?.category || 'Não especificada'}</p>
-                              </div>
-                              <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${getStatusColor(service.booking_status)} whitespace-nowrap self-start sm:self-auto`}>
-                                {getStatusText(service.booking_status)}
-                              </span>
-                            </div>
+                      const estimatedPrice = calculateEstimatedPriceForEvent(service, event);
+                      const isSelected = selectedServices.has(service.id);
+                      const isApproving = actionLoading === `approve-${service.id}`;
+                      const isRejecting = actionLoading === `reject-${service.id}`;
 
-                            {/* Valor */}
-                            <div className="bg-white rounded-lg p-3 border border-yellow-300">
-                              <p className="text-xs text-gray-500 font-medium mb-1">Valor a Receber</p>
-                              <p className="text-xl sm:text-2xl font-bold text-green-600">{formatCurrency(estimatedPrice)}</p>
-                            </div>
+                      return (
+                        <div key={serviceIndex} className="bg-yellow-50 rounded-xl border-2 border-yellow-200 p-4 space-y-4">
+                          {/* Header do Serviço */}
+                          <div className="flex items-start gap-3">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleServiceSelection(service.id)}
+                              className="mt-1 w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500 cursor-pointer"
+                            />
 
-                            {/* Observações */}
-                            <div className="space-y-2">
-                              <div>
-                                <p className="text-xs font-semibold text-gray-700 mb-1">Observações do Cliente:</p>
-                                <p className="text-sm text-gray-600 bg-white p-2 rounded border border-gray-200">
-                                  Nenhuma observação fornecida
-                                </p>
+                            <div className="flex-1 space-y-3">
+                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                <div>
+                                  <h4 className="text-base sm:text-lg font-bold text-gray-900">{service.service?.name || 'Serviço Solicitado'}</h4>
+                                  <p className="text-sm text-gray-600">Categoria: {service.service?.category || 'Não especificada'}</p>
+                                </div>
+                                <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${getStatusColor(service.booking_status)} whitespace-nowrap self-start sm:self-auto`}>
+                                  {getStatusText(service.booking_status)}
+                                </span>
                               </div>
-                              
-                              <div>
-                                <p className="text-xs font-semibold text-gray-700 mb-1">Suas Observações:</p>
-                                <p className="text-sm text-gray-600 bg-white p-2 rounded border border-gray-200">
-                                  Nenhuma observação adicionada
-                                </p>
-                              </div>
-                            </div>
 
-                            {/* Botões de Ação */}
-                            <div className="flex flex-col sm:flex-row gap-2 pt-3 border-t border-yellow-300">
-                              <button
-                                onClick={() => handleApproveService(service.id, service.service?.name)}
-                                disabled={isApproving || actionLoading === 'bulk-action'}
-                                className="flex-1 min-h-[48px] px-6 py-3 bg-green-500 hover:bg-green-600 active:bg-green-700 disabled:bg-green-300 disabled:cursor-not-allowed text-white text-sm sm:text-base rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer hover:shadow-lg active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:ring-offset-2"
-                              >
-                                {isApproving ? (
-                                  <>
-                                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                    Aprovando...
-                                  </>
-                                ) : (
-                                  <>
-                                    <MdCheckCircle className="text-xl" />
-                                    Aprovar Orçamento
-                                  </>
-                                )}
-                              </button>
-                              <button
-                                onClick={() => handleRejectService(service.id, service.service?.name)}
-                                disabled={isApproving || isRejecting || actionLoading === 'bulk-action'}
-                                className="flex-1 min-h-[48px] px-6 py-3 bg-red-500 hover:bg-red-600 active:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed text-white text-sm sm:text-base rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer hover:shadow-lg active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2"
-                              >
-                                {isRejecting ? (
-                                  <>
-                                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                    Rejeitando...
-                                  </>
-                                ) : (
-                                  <>
-                                    <MdClose className="text-xl" />
-                                    Rejeitar
-                                  </>
-                                )}
-                              </button>
+                              {/* Valor */}
+                              <div className="bg-white rounded-lg p-3 border border-yellow-300">
+                                <p className="text-xs text-gray-500 font-medium mb-1">Valor a Receber</p>
+                                <p className="text-xl sm:text-2xl font-bold text-green-600">{formatCurrency(estimatedPrice)}</p>
+                              </div>
+
+                              {/* Observações */}
+                              <div className="space-y-2">
+                                <div>
+                                  <p className="text-xs font-semibold text-gray-700 mb-1">Observações do Cliente:</p>
+                                  <p className="text-sm text-gray-600 bg-white p-2 rounded border border-gray-200">
+                                    Nenhuma observação fornecida
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <p className="text-xs font-semibold text-gray-700 mb-1">Suas Observações:</p>
+                                  <p className="text-sm text-gray-600 bg-white p-2 rounded border border-gray-200">
+                                    Nenhuma observação adicionada
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Botões de Ação */}
+                              <div className="flex flex-col sm:flex-row gap-2 pt-3 border-t border-yellow-300">
+                                <button
+                                  onClick={() => handleApproveService(service.id, service.service?.name)}
+                                  disabled={isApproving || actionLoading === 'bulk-action'}
+                                  className="flex-1 min-h-[48px] px-6 py-3 bg-green-500 hover:bg-green-600 active:bg-green-700 disabled:bg-green-300 disabled:cursor-not-allowed text-white text-sm sm:text-base rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer hover:shadow-lg active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:ring-offset-2"
+                                >
+                                  {isApproving ? (
+                                    <>
+                                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                      Aprovando...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <MdCheckCircle className="text-xl" />
+                                      Aprovar Orçamento
+                                    </>
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => handleRejectService(service.id, service.service?.name)}
+                                  disabled={isApproving || isRejecting || actionLoading === 'bulk-action'}
+                                  className="flex-1 min-h-[48px] px-6 py-3 bg-red-500 hover:bg-red-600 active:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed text-white text-sm sm:text-base rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer hover:shadow-lg active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2"
+                                >
+                                  {isRejecting ? (
+                                    <>
+                                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                      Rejeitando...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <MdClose className="text-xl" />
+                                      Rejeitar
+                                    </>
+                                  )}
+                                </button>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                   </div>
                 </div>
               );
@@ -1325,8 +1326,8 @@ export default function ProviderDashboard() {
 
   const renderWaitingPayment = () => {
     // Filtrar apenas serviços aguardando pagamento que pertencem ao prestador logado
-    const waitingPaymentServices = events.flatMap(event => 
-      event.event_services?.filter(service => 
+    const waitingPaymentServices = events.flatMap(event =>
+      event.event_services?.filter(service =>
         // Verificar se o serviço pertence ao prestador logado
         service.provider_id === userData?.id &&
         // Verificar se está aguardando pagamento
@@ -1355,7 +1356,7 @@ export default function ProviderDashboard() {
           <div className="space-y-4">
             {events.map((event) => {
               // Filtrar apenas os serviços aguardando pagamento deste evento que pertencem ao prestador
-              const eventWaitingPaymentServices = event.event_services?.filter(service => 
+              const eventWaitingPaymentServices = event.event_services?.filter(service =>
                 service.provider_id === userData?.id &&
                 service.booking_status === 'waiting_payment'
               ) || [];
@@ -1419,37 +1420,37 @@ export default function ProviderDashboard() {
                   {/* Serviços */}
                   <div className="p-4 sm:p-5 space-y-4">
                     {eventWaitingPaymentServices.map((service, serviceIndex) => {
-                    const estimatedPrice = calculateEstimatedPriceForEvent(service, event);
-                    
-                    return (
-                      <div key={serviceIndex} className="bg-blue-50 rounded-xl border-2 border-blue-200 p-4 space-y-3">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                          <div>
-                            <h4 className="text-base sm:text-lg font-bold text-gray-900">{service.service?.name || 'Serviço Solicitado'}</h4>
-                            <p className="text-sm text-gray-600">Categoria: {service.service?.category || 'Não especificada'}</p>
+                      const estimatedPrice = calculateEstimatedPriceForEvent(service, event);
+
+                      return (
+                        <div key={serviceIndex} className="bg-blue-50 rounded-xl border-2 border-blue-200 p-4 space-y-3">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                            <div>
+                              <h4 className="text-base sm:text-lg font-bold text-gray-900">{service.service?.name || 'Serviço Solicitado'}</h4>
+                              <p className="text-sm text-gray-600">Categoria: {service.service?.category || 'Não especificada'}</p>
+                            </div>
+                            <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${getStatusColor(service.booking_status)} whitespace-nowrap self-start sm:self-auto`}>
+                              {getStatusText(service.booking_status)}
+                            </span>
                           </div>
-                          <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${getStatusColor(service.booking_status)} whitespace-nowrap self-start sm:self-auto`}>
-                            {getStatusText(service.booking_status)}
-                          </span>
-                        </div>
 
-                        {/* Valor */}
-                        <div className="bg-white rounded-lg p-3 border border-blue-300">
-                          <p className="text-xs text-gray-500 font-medium mb-1">Valor Estimado</p>
-                          <p className="text-xl sm:text-2xl font-bold text-blue-600">{formatCurrency(estimatedPrice)}</p>
-                        </div>
+                          {/* Valor */}
+                          <div className="bg-white rounded-lg p-3 border border-blue-300">
+                            <p className="text-xs text-gray-500 font-medium mb-1">Valor Estimado</p>
+                            <p className="text-xl sm:text-2xl font-bold text-blue-600">{formatCurrency(estimatedPrice)}</p>
+                          </div>
 
-                        {/* Status */}
-                        <div className="bg-white rounded-lg p-3 border border-blue-300">
-                          <p className="text-xs font-semibold text-gray-700 mb-1">Status do Pagamento:</p>
-                          <p className="text-sm text-blue-700 font-semibold flex items-center gap-2">
-                            <MdPayment className="text-lg" />
-                            Aguardando pagamento do cliente
-                          </p>
+                          {/* Status */}
+                          <div className="bg-white rounded-lg p-3 border border-blue-300">
+                            <p className="text-xs font-semibold text-gray-700 mb-1">Status do Pagamento:</p>
+                            <p className="text-sm text-blue-700 font-semibold flex items-center gap-2">
+                              <MdPayment className="text-lg" />
+                              Aguardando pagamento do cliente
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                   </div>
                 </div>
               );
@@ -1462,8 +1463,8 @@ export default function ProviderDashboard() {
 
   const renderPaid = () => {
     // Filtrar apenas serviços pagos que pertencem ao prestador logado
-    const paidServices = events.flatMap(event => 
-      event.event_services?.filter(service => 
+    const paidServices = events.flatMap(event =>
+      event.event_services?.filter(service =>
         // Verificar se o serviço pertence ao prestador logado
         service.provider_id === userData?.id &&
         // Verificar se está aprovado (pago)
@@ -1494,7 +1495,7 @@ export default function ProviderDashboard() {
           <div className="space-y-4">
             {events.map((event) => {
               // Filtrar apenas os serviços pagos deste evento que pertencem ao prestador
-              const eventPaidServices = event.event_services?.filter(service => 
+              const eventPaidServices = event.event_services?.filter(service =>
                 service.provider_id === userData?.id &&
                 service.booking_status === 'approved'
               ) || [];
@@ -1557,69 +1558,69 @@ export default function ProviderDashboard() {
 
                   {/* Serviços */}
                   <div className="p-4 sm:p-5 space-y-4">
-                  {eventPaidServices.map((service, serviceIndex) => {
-                    const estimatedPrice = calculateEstimatedPriceForEvent(service, event);
-                    
-                    return (
-                      <div key={serviceIndex} className="bg-green-50 rounded-xl border-2 border-green-200 p-4 space-y-3">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                          <div>
-                            <h4 className="text-base sm:text-lg font-bold text-gray-900">{service.service?.name || 'Serviço Solicitado'}</h4>
-                            <p className="text-sm text-gray-600">Categoria: {service.service?.category || 'Não especificada'}</p>
+                    {eventPaidServices.map((service, serviceIndex) => {
+                      const estimatedPrice = calculateEstimatedPriceForEvent(service, event);
+
+                      return (
+                        <div key={serviceIndex} className="bg-green-50 rounded-xl border-2 border-green-200 p-4 space-y-3">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                            <div>
+                              <h4 className="text-base sm:text-lg font-bold text-gray-900">{service.service?.name || 'Serviço Solicitado'}</h4>
+                              <p className="text-sm text-gray-600">Categoria: {service.service?.category || 'Não especificada'}</p>
+                            </div>
+                            <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 whitespace-nowrap self-start sm:self-auto flex items-center gap-1">
+                              <MdCheckCircle className="text-sm" />
+                              Pago e Confirmado
+                            </span>
                           </div>
-                          <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 whitespace-nowrap self-start sm:self-auto flex items-center gap-1">
-                            <MdCheckCircle className="text-sm" />
-                            Pago e Confirmado
-                          </span>
-                        </div>
 
-                        {/* Valor */}
-                        <div className="bg-white rounded-lg p-3 border border-green-300">
-                          <p className="text-xs text-gray-500 font-medium mb-1">Valor Recebido</p>
-                          <p className="text-xl sm:text-2xl font-bold text-green-600">{formatCurrency(estimatedPrice)}</p>
-                        </div>
+                          {/* Valor */}
+                          <div className="bg-white rounded-lg p-3 border border-green-300">
+                            <p className="text-xs text-gray-500 font-medium mb-1">Valor Recebido</p>
+                            <p className="text-xl sm:text-2xl font-bold text-green-600">{formatCurrency(estimatedPrice)}</p>
+                          </div>
 
-                        {/* Status */}
-                        <div className="bg-white rounded-lg p-3 border border-green-300">
-                          <p className="text-xs font-semibold text-gray-700 mb-1">Status do Serviço:</p>
-                          <p className="text-sm text-green-700 font-semibold flex items-center gap-2">
-                            <MdPayment className="text-lg" />
-                            Pagamento confirmado - Preste o serviço no dia do evento
-                          </p>
-                        </div>
+                          {/* Status */}
+                          <div className="bg-white rounded-lg p-3 border border-green-300">
+                            <p className="text-xs font-semibold text-gray-700 mb-1">Status do Serviço:</p>
+                            <p className="text-sm text-green-700 font-semibold flex items-center gap-2">
+                              <MdPayment className="text-lg" />
+                              Pagamento confirmado - Preste o serviço no dia do evento
+                            </p>
+                          </div>
 
-                        {/* Botões de Ação */}
-                        <div className="flex flex-col sm:flex-row gap-2 pt-3 border-t border-green-300">
-                          <a
-                            href={`https://wa.me/5511999999999?text=Olá! Sou o prestador do serviço ${service.service?.name} para o evento ${event.title} em ${formatEventDate(event.event_date)}. Preciso de suporte administrativo.`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex-1 min-h-[48px] px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 active:bg-purple-700 transition-all duration-200 text-sm sm:text-base font-semibold flex items-center justify-center gap-2 cursor-pointer hover:shadow-lg active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2"
-                          >
-                            <MdWhatsapp className="text-xl" />
-                            Contatar Admin
-                          </a>
-                          <button
-                            onClick={() => handleMarkAsCompleted(service.id, service.service?.name)}
-                            disabled={actionLoading === `complete-${service.id}`}
-                            className="flex-1 min-h-[48px] px-6 py-3 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white rounded-lg transition-all duration-200 text-sm sm:text-base font-semibold flex items-center justify-center gap-2 cursor-pointer hover:shadow-lg active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
-                          >
-                            {actionLoading === `complete-${service.id}` ? (
-                              <>
-                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                Processando...
-                              </>
-                            ) : (
-                              <>
-                                <MdCheckCircle className="text-xl" />
-                                Marcar como Concluído
-                              </>
-                            )}
-                          </button>
+                          {/* Botões de Ação */}
+                          <div className="flex flex-col sm:flex-row gap-2 pt-3 border-t border-green-300">
+                            <a
+                              href={`https://wa.me/5511999999999?text=Olá! Sou o prestador do serviço ${service.service?.name} para o evento ${event.title} em ${formatEventDate(event.event_date)}. Preciso de suporte administrativo.`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex-1 min-h-[48px] px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 active:bg-purple-700 transition-all duration-200 text-sm sm:text-base font-semibold flex items-center justify-center gap-2 cursor-pointer hover:shadow-lg active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2"
+                            >
+                              <MdWhatsapp className="text-xl" />
+                              Contatar Admin
+                            </a>
+                            <button
+                              onClick={() => handleMarkAsCompleted(service.id, service.service?.name)}
+                              disabled={actionLoading === `complete-${service.id}`}
+                              className="flex-1 min-h-[48px] px-6 py-3 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white rounded-lg transition-all duration-200 text-sm sm:text-base font-semibold flex items-center justify-center gap-2 cursor-pointer hover:shadow-lg active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
+                            >
+                              {actionLoading === `complete-${service.id}` ? (
+                                <>
+                                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                  Processando...
+                                </>
+                              ) : (
+                                <>
+                                  <MdCheckCircle className="text-xl" />
+                                  Marcar como Concluído
+                                </>
+                              )}
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                   </div>
                 </div>
               );
@@ -1632,8 +1633,8 @@ export default function ProviderDashboard() {
 
   const renderCompleted = () => {
     // Filtrar apenas serviços concluídos que pertencem ao prestador logado
-    const completedServices = events.flatMap(event => 
-      event.event_services?.filter(service => 
+    const completedServices = events.flatMap(event =>
+      event.event_services?.filter(service =>
         // Verificar se o serviço pertence ao prestador logado
         service.provider_id === userData?.id &&
         // Verificar se está concluído
@@ -1662,7 +1663,7 @@ export default function ProviderDashboard() {
           <div className="space-y-4">
             {events.map((event) => {
               // Filtrar apenas os serviços concluídos deste evento que pertencem ao prestador
-              const eventCompletedServices = event.event_services?.filter(service => 
+              const eventCompletedServices = event.event_services?.filter(service =>
                 service.provider_id === userData?.id &&
                 service.booking_status === 'completed'
               ) || [];
@@ -1725,42 +1726,42 @@ export default function ProviderDashboard() {
 
                   {/* Serviços */}
                   <div className="p-4 sm:p-5 space-y-4">
-                  {eventCompletedServices.map((service, serviceIndex) => {
-                    const estimatedPrice = calculateEstimatedPriceForEvent(service, event);
-                    
-                    return (
-                      <div key={serviceIndex} className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border-2 border-green-300 p-4 space-y-3">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                          <div>
-                            <h4 className="text-base sm:text-lg font-bold text-gray-900">{service.service?.name || 'Serviço Solicitado'}</h4>
-                            <p className="text-sm text-gray-600">Categoria: {service.service?.category || 'Não especificada'}</p>
+                    {eventCompletedServices.map((service, serviceIndex) => {
+                      const estimatedPrice = calculateEstimatedPriceForEvent(service, event);
+
+                      return (
+                        <div key={serviceIndex} className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border-2 border-green-300 p-4 space-y-3">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                            <div>
+                              <h4 className="text-base sm:text-lg font-bold text-gray-900">{service.service?.name || 'Serviço Solicitado'}</h4>
+                              <p className="text-sm text-gray-600">Categoria: {service.service?.category || 'Não especificada'}</p>
+                            </div>
+                            <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-green-500 text-white whitespace-nowrap self-start sm:self-auto flex items-center gap-1">
+                              <MdCheckCircle className="text-sm" />
+                              Concluído
+                            </span>
                           </div>
-                          <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-green-500 text-white whitespace-nowrap self-start sm:self-auto flex items-center gap-1">
-                            <MdCheckCircle className="text-sm" />
-                            Concluído
-                          </span>
-                        </div>
 
-                        {/* Valor */}
-                        <div className="bg-white rounded-lg p-3 border border-green-400">
-                          <p className="text-xs text-gray-500 font-medium mb-1">Valor Recebido</p>
-                          <p className="text-xl sm:text-2xl font-bold text-green-600">{formatCurrency(estimatedPrice)}</p>
-                        </div>
+                          {/* Valor */}
+                          <div className="bg-white rounded-lg p-3 border border-green-400">
+                            <p className="text-xs text-gray-500 font-medium mb-1">Valor Recebido</p>
+                            <p className="text-xl sm:text-2xl font-bold text-green-600">{formatCurrency(estimatedPrice)}</p>
+                          </div>
 
-                        {/* Status - Destaque de Conclusão */}
-                        <div className="bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg p-4 text-white">
-                          <p className="text-sm font-bold flex items-center gap-2 mb-1">
-                            <MdCheckCircle className="text-2xl" />
-                            Serviço Concluído com Sucesso!
-                          </p>
-                          <p className="text-xs opacity-90">
-                            Evento realizado em {formatEventDate(event.event_date)}
-                            {event.start_time && ` às ${formatTime(event.start_time)}`}
-                          </p>
+                          {/* Status - Destaque de Conclusão */}
+                          <div className="bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg p-4 text-white">
+                            <p className="text-sm font-bold flex items-center gap-2 mb-1">
+                              <MdCheckCircle className="text-2xl" />
+                              Serviço Concluído com Sucesso!
+                            </p>
+                            <p className="text-xs opacity-90">
+                              Evento realizado em {formatEventDate(event.event_date)}
+                              {event.start_time && ` às ${formatTime(event.start_time)}`}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                   </div>
                 </div>
               );
@@ -1823,6 +1824,7 @@ export default function ProviderDashboard() {
                   <nav className="flex gap-2 min-w-max" role="tablist">
                     {[
                       { id: 'overview', label: 'Visão Geral', icon: MdDashboard, shortLabel: 'Visão' },
+                      { id: 'agenda', label: 'Agenda', icon: MdEvent, shortLabel: 'Agenda', isLink: true, href: '/dashboard/prestador/agenda' },
                       { id: 'requests', label: 'Solicitações', icon: MdPendingActions, shortLabel: 'Solicitações' },
                       { id: 'waiting_payment', label: 'Aguardando Pagamento', icon: MdPayment, shortLabel: 'Aguardando' },
                       { id: 'paid', label: 'Pagos', icon: MdAttachMoney, shortLabel: 'Pagos' },
@@ -1830,6 +1832,28 @@ export default function ProviderDashboard() {
                       { id: 'services', label: 'Meus Serviços', icon: MdBusinessCenter, shortLabel: 'Serviços' },
                       { id: 'profile', label: 'Perfil', icon: MdSettings, shortLabel: 'Perfil' }
                     ].map((tab) => {
+                      const tabClassName = `
+                        flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-medium transition-all duration-200 text-xs sm:text-sm whitespace-nowrap min-h-[44px]
+                        outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-1
+                        active:scale-95 hover:scale-[1.02]
+                        text-gray-600 hover:text-purple-600 hover:bg-purple-50
+                      `;
+
+                      // Se é um link, renderizar como Link
+                      if ('isLink' in tab && tab.isLink && 'href' in tab) {
+                        return (
+                          <Link
+                            key={tab.id}
+                            href={(tab as any).href}
+                            className={tabClassName}
+                          >
+                            <tab.icon className="text-base sm:text-lg flex-shrink-0" />
+                            <span className="hidden md:inline">{tab.label}</span>
+                            <span className="md:hidden">{tab.shortLabel}</span>
+                          </Link>
+                        );
+                      }
+
                       const isActive = activeTab === tab.id;
                       return (
                         <button
@@ -1842,8 +1866,8 @@ export default function ProviderDashboard() {
                             flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-medium transition-all duration-200 text-xs sm:text-sm whitespace-nowrap min-h-[44px]
                             outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-1
                             active:scale-95 hover:scale-[1.02]
-                            ${isActive 
-                              ? 'bg-purple-600 text-white shadow-md' 
+                            ${isActive
+                              ? 'bg-purple-600 text-white shadow-md'
                               : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50'
                             }
                           `}
@@ -1871,20 +1895,19 @@ export default function ProviderDashboard() {
           <div className="fixed inset-0 backdrop-blur-md bg-white/20 z-50 flex items-center justify-center">
             <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
               <div className="text-center mb-6">
-                <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
-                  confirmAction?.type === 'approve' ? 'bg-green-100' : 'bg-red-100'
-                }`}>
+                <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${confirmAction?.type === 'approve' ? 'bg-green-100' : 'bg-red-100'
+                  }`}>
                   {confirmAction?.type === 'approve' ? (
                     <MdCheckCircle className={`text-3xl text-green-600`} />
                   ) : (
                     <MdClose className={`text-3xl text-red-600`} />
                   )}
                 </div>
-                
+
                 <h3 className="text-xl font-bold text-gray-900 mb-2">
                   {confirmAction?.type === 'approve' ? 'Confirmar Aprovação' : 'Confirmar Rejeição'}
                 </h3>
-                
+
                 <p className="text-gray-600">
                   {confirmAction?.serviceIds ? (
                     `Tem certeza que deseja ${confirmAction.type === 'approve' ? 'aprovar' : 'rejeitar'} ${confirmAction.serviceIds.length} serviços?`
@@ -1892,14 +1915,14 @@ export default function ProviderDashboard() {
                     `Tem certeza que deseja ${confirmAction.type === 'approve' ? 'aprovar' : 'rejeitar'} ${confirmAction.serviceName || 'este serviço'}?`
                   )}
                 </p>
-                
+
                 {confirmAction?.type === 'approve' && (
                   <p className="text-sm text-gray-500 mt-2">
                     O(s) serviço(s) será(ão) aprovado(s) com o preço já definido.
                   </p>
                 )}
               </div>
-              
+
               <div className="flex gap-3">
                 <button
                   onClick={() => {
@@ -1914,11 +1937,10 @@ export default function ProviderDashboard() {
                 <button
                   onClick={executeAction}
                   disabled={actionLoading === 'bulk-action'}
-                  className={`flex-1 px-4 py-3 text-white rounded-lg font-medium transition-colors disabled:opacity-50 ${
-                    confirmAction?.type === 'approve' 
-                      ? 'bg-green-600 hover:bg-green-700' 
-                      : 'bg-red-600 hover:bg-red-700'
-                  }`}
+                  className={`flex-1 px-4 py-3 text-white rounded-lg font-medium transition-colors disabled:opacity-50 ${confirmAction?.type === 'approve'
+                    ? 'bg-green-600 hover:bg-green-700'
+                    : 'bg-red-600 hover:bg-red-700'
+                    }`}
                 >
                   {actionLoading === 'bulk-action' ? (
                     <div className="flex items-center justify-center gap-2">
