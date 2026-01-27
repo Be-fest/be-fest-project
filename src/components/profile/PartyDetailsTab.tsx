@@ -26,6 +26,7 @@ import {
   MdCheckBox,
   MdCheckBoxOutlineBlank,
   MdMoreVert,
+  MdChat,
 } from 'react-icons/md';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PartyConfigForm } from '@/components/PartyConfigForm';
@@ -42,7 +43,7 @@ interface PartyDetailsTabProps {
 
 export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
   const router = useRouter();
-  
+
   const [event, setEvent] = useState<EventWithServices | null>(null);
   const [eventServices, setEventServices] = useState<EventServiceWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,22 +61,22 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
   // Função para buscar dados do evento
   const fetchEventData = useCallback(async () => {
     if (!eventId) return;
-    
+
     try {
       setLoading(true);
       setError(null);
-      
+
       const [eventResult, servicesResult] = await Promise.all([
         getEventByIdAction(eventId),
         getEventServicesAction({ event_id: eventId }),
       ]);
-      
+
       if (eventResult.success && eventResult.data) {
         setEvent(eventResult.data);
       } else {
         setError(eventResult.error || 'Erro ao carregar dados do evento');
       }
-      
+
       if (servicesResult.success && servicesResult.data) {
         setEventServices(servicesResult.data);
       } else {
@@ -148,7 +149,7 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
 
   const selectAllWaitingPayment = () => {
     const waitingPaymentServices = eventServices
-              .filter(service => service.booking_status === 'waiting_payment')
+      .filter(service => service.booking_status === 'waiting_payment')
       .map(service => service.id);
     setSelectedServices(new Set(waitingPaymentServices));
   };
@@ -290,7 +291,7 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
                 </span>
               </div>
             </div>
-            
+
             {/* Menu de 3 pontinhos */}
             <div className="relative">
               <button
@@ -299,7 +300,7 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
               >
                 <MdMoreVert className="text-xl" />
               </button>
-              
+
               {/* Dropdown Menu */}
               <AnimatePresence>
                 {showOptionsMenu && (
@@ -332,7 +333,7 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
                         <span className="text-sm font-medium">Excluir Festa</span>
                       </button>
                     </motion.div>
-                    
+
                     {/* Backdrop */}
                     <div
                       className="fixed inset-0 z-40"
@@ -348,7 +349,7 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
         {/* Detalhes da Festa */}
         <div className="p-4 space-y-4">
           <h2 className="text-lg font-semibold text-gray-900">Detalhes da Festa</h2>
-          
+
           {/* Grid de informações */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
@@ -427,11 +428,10 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
                 {eventServices.map((service) => (
                   <div
                     key={service.id}
-                    className={`p-3 border rounded-lg hover:shadow-sm transition-all ${
-                      selectedServices.has(service.id) 
-                        ? 'border-green-500 bg-green-50' 
-                        : 'border-gray-200 bg-white'
-                    }`}
+                    className={`p-3 border rounded-lg hover:shadow-sm transition-all ${selectedServices.has(service.id)
+                      ? 'border-green-500 bg-green-50'
+                      : 'border-gray-200 bg-white'
+                      }`}
                   >
                     <div className="flex items-start gap-3">
                       {/* Checkbox para seleção - apenas para serviços aguardando pagamento */}
@@ -447,7 +447,7 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
                           )}
                         </button>
                       )}
-                      
+
                       <div className="flex-1 min-w-0">
                         {/* Header do Serviço */}
                         <div className="flex items-start justify-between gap-3 mb-2">
@@ -461,7 +461,7 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
                           </div>
                           <div className="text-right flex-shrink-0">
                             <span className="font-bold text-sm text-gray-900">
-                              {service && service.service ? 
+                              {service && service.service ?
                                 formatPrice(calculateAdvancedPrice(service, event.full_guests, event.half_guests, event.free_guests))
                                 : 'Indisponível'
                               }
@@ -491,10 +491,22 @@ export function PartyDetailsTab({ eventId, onBack }: PartyDetailsTabProps) {
                           )}
 
                           {service.booking_status === 'approved' && (
-                            <div className="text-xs text-green-600 font-medium flex items-center gap-1">
-                              <MdCheckCircle className="text-base" />
-                              Pagamento confirmado
-                            </div>
+                            <>
+                              <div className="text-xs text-green-600 font-medium flex items-center gap-1">
+                                <MdCheckCircle className="text-base" />
+                                Pagamento confirmado
+                              </div>
+                              {/* Botão de Chat - disponível até a data do evento */}
+                              {event && new Date(event.event_date) >= new Date(new Date().toDateString()) && (
+                                <Link
+                                  href={`/dashboard/chat/${service.id}`}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-xs font-medium"
+                                >
+                                  <MdChat className="text-base" />
+                                  Chat
+                                </Link>
+                              )}
+                            </>
                           )}
 
                           {service.booking_status === 'completed' && (
