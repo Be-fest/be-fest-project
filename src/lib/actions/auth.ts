@@ -1,4 +1,4 @@
-  'use server'
+'use server'
 
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
@@ -97,7 +97,7 @@ export async function registerClientAction(formData: FormData): Promise<ActionRe
     const supabase = await createServerClient()
 
     console.log('Creating client with server client...')
-    
+
     // Criar usuário usando signUp normal (com anon key)
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: validatedData.email,
@@ -114,11 +114,11 @@ export async function registerClientAction(formData: FormData): Promise<ActionRe
 
     if (authError) {
       console.error('Auth creation error:', authError)
-      
+
       if (authError.message.includes('User already registered')) {
         return { success: false, error: 'Este email já está em uso' }
       }
-      
+
       return { success: false, error: `Erro ao criar usuário: ${authError.message}` }
     }
 
@@ -159,7 +159,7 @@ export async function registerClientAction(formData: FormData): Promise<ActionRe
 
     if (insertError) {
       console.error('User profile creation error:', insertError)
-      
+
       // Se falhar ao criar o perfil, tentar deletar o usuário criado
       try {
         const supabaseAdmin = createAdminClient()
@@ -167,12 +167,22 @@ export async function registerClientAction(formData: FormData): Promise<ActionRe
       } catch (deleteError) {
         console.error('Error deleting user after profile creation failure:', deleteError)
       }
-      
+
       return { success: false, error: 'Erro ao criar perfil do usuário' }
     }
 
     console.log('Client registration completed successfully')
-    
+
+    // Enviar email de boas-vindas (não bloqueia o registro se falhar)
+    try {
+      const { sendWelcomeClientEmail } = await import('@/lib/email/send-email')
+      await sendWelcomeClientEmail(validatedData.email, validatedData.fullName)
+      console.log('Welcome email sent to client:', validatedData.email)
+    } catch (emailError) {
+      console.error('Failed to send welcome email:', emailError)
+      // Não retorna erro - o cadastro foi bem-sucedido
+    }
+
     // Fazer login automático após cadastro bem-sucedido
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email: validatedData.email,
@@ -182,35 +192,35 @@ export async function registerClientAction(formData: FormData): Promise<ActionRe
     if (signInError || !signInData.user) {
       console.error('Auto-login error after registration:', signInError)
       // Mesmo com erro no login automático, o cadastro foi bem-sucedido
-      return { 
-        success: true, 
-        data: { 
+      return {
+        success: true,
+        data: {
           message: 'Conta criada com sucesso! Faça login para continuar.',
           requiresLogin: true
-        } 
+        }
       }
     }
 
     console.log('Auto-login successful for client:', signInData.user.id)
-    
+
     // Revalidar cache após login
     revalidatePath('/', 'layout')
     revalidatePath('/auth/login', 'page')
-    
+
   } catch (error) {
     console.error('Client registration failed:', error)
-    
+
     if (error instanceof z.ZodError) {
       const firstError = error.errors[0]
       return { success: false, error: firstError.message }
     }
-    
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Ocorreu um erro ao criar sua conta' 
+
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Ocorreu um erro ao criar sua conta'
     }
   }
-  
+
   // Usar redirect para forçar navegação e estabelecer sessão
   console.log('Redirecting to home page...')
   redirect('/')
@@ -245,7 +255,7 @@ export async function registerProviderAction(formData: FormData): Promise<Action
     const supabase = await createServerClient()
 
     console.log('Creating provider with server client...')
-    
+
     // Criar usuário usando signUp normal (com anon key)
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: validatedData.email,
@@ -263,11 +273,11 @@ export async function registerProviderAction(formData: FormData): Promise<Action
 
     if (authError) {
       console.error('Provider auth creation error:', authError)
-      
+
       if (authError.message.includes('User already registered')) {
         return { success: false, error: 'Este email já está em uso' }
       }
-      
+
       return { success: false, error: `Erro ao criar usuário: ${authError.message}` }
     }
 
@@ -309,7 +319,7 @@ export async function registerProviderAction(formData: FormData): Promise<Action
 
     if (insertError) {
       console.error('Provider profile creation error:', insertError)
-      
+
       // Se falhar ao criar o perfil, tentar deletar o usuário criado
       try {
         const supabaseAdmin = createAdminClient()
@@ -317,12 +327,22 @@ export async function registerProviderAction(formData: FormData): Promise<Action
       } catch (deleteError) {
         console.error('Error deleting user after profile creation failure:', deleteError)
       }
-      
+
       return { success: false, error: 'Erro ao criar perfil do prestador' }
     }
 
     console.log('Provider registration completed successfully')
-    
+
+    // Enviar email de boas-vindas (não bloqueia o registro se falhar)
+    try {
+      const { sendWelcomeProviderEmail } = await import('@/lib/email/send-email')
+      await sendWelcomeProviderEmail(validatedData.email, validatedData.companyName)
+      console.log('Welcome email sent to provider:', validatedData.email)
+    } catch (emailError) {
+      console.error('Failed to send welcome email to provider:', emailError)
+      // Não retorna erro - o cadastro foi bem-sucedido
+    }
+
     // Fazer login automático após cadastro bem-sucedido
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email: validatedData.email,
@@ -332,35 +352,35 @@ export async function registerProviderAction(formData: FormData): Promise<Action
     if (signInError || !signInData.user) {
       console.error('Auto-login error after provider registration:', signInError)
       // Mesmo com erro no login automático, o cadastro foi bem-sucedido
-      return { 
-        success: true, 
-        data: { 
+      return {
+        success: true,
+        data: {
           message: 'Conta criada com sucesso! Faça login para continuar.',
           requiresLogin: true
-        } 
+        }
       }
     }
 
     console.log('Auto-login successful for provider:', signInData.user.id)
-    
+
     // Revalidar cache após login
     revalidatePath('/', 'layout')
     revalidatePath('/auth/login', 'page')
-    
+
   } catch (error) {
     console.error('Provider registration failed:', error)
-    
+
     if (error instanceof z.ZodError) {
       const firstError = error.errors[0]
       return { success: false, error: firstError.message }
     }
-    
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Ocorreu um erro ao criar sua conta' 
+
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Ocorreu um erro ao criar sua conta'
     }
   }
-  
+
   // Usar redirect para forçar navegação e estabelecer sessão
   console.log('Redirecting to provider dashboard...')
   redirect('/dashboard/prestador')
@@ -410,10 +430,10 @@ export async function loginAction(formData: FormData): Promise<ActionResult> {
 
     // Check for returnUrl parameter
     const returnUrl = formData.get('returnUrl') as string
-    
+
     // Determine redirect URL based on user role or returnUrl
     let redirectTo = '/' // Página principal por padrão
-    
+
     if (returnUrl && returnUrl.trim() !== '') {
       // Validate returnUrl to prevent open redirect attacks
       const url = new URL(returnUrl, process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000')
@@ -422,7 +442,7 @@ export async function loginAction(formData: FormData): Promise<ActionResult> {
         'https://be-fest-api.onrender.com',
         process.env.NEXT_PUBLIC_SITE_URL?.replace(/^https?:\/\//, '') || ''
       ]
-      
+
       if (allowedHosts.includes(url.host)) {
         redirectTo = returnUrl
       } else {
@@ -447,25 +467,25 @@ export async function loginAction(formData: FormData): Promise<ActionResult> {
     }
 
     // Return success with redirect data instead of using redirect()
-    return { 
-      success: true, 
-      data: { 
+    return {
+      success: true,
+      data: {
         redirectTo,
-        message: 'Login realizado com sucesso!' 
-      } 
+        message: 'Login realizado com sucesso!'
+      }
     }
 
   } catch (error) {
     console.error('Login failed:', error)
-    
+
     if (error instanceof z.ZodError) {
       const firstError = error.errors[0]
       return { success: false, error: firstError.message }
     }
-    
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Ocorreu um erro ao fazer login' 
+
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Ocorreu um erro ao fazer login'
     }
   }
 }
@@ -473,9 +493,9 @@ export async function loginAction(formData: FormData): Promise<ActionResult> {
 export async function logoutAction(): Promise<ActionResult> {
   try {
     const supabase = await createServerClient()
-    
+
     const { error } = await supabase.auth.signOut()
-    
+
     if (error) {
       console.error('Logout error:', error)
       return { success: false, error: 'Erro ao fazer logout' }
@@ -485,19 +505,19 @@ export async function logoutAction(): Promise<ActionResult> {
     revalidatePath('/', 'layout')
 
     // Return success with redirect data instead of using redirect()
-    return { 
-      success: true, 
-      data: { 
+    return {
+      success: true,
+      data: {
         redirectTo: '/',
-        message: 'Logout realizado com sucesso!' 
-      } 
+        message: 'Logout realizado com sucesso!'
+      }
     }
 
   } catch (error) {
     console.error('Logout failed:', error)
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Ocorreu um erro ao fazer logout' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Ocorreu um erro ao fazer logout'
     }
   }
 }
@@ -505,7 +525,7 @@ export async function logoutAction(): Promise<ActionResult> {
 export async function updateUserProfileAction(formData: FormData): Promise<ActionResult> {
   try {
     const user = await getCurrentUser()
-    
+
     if (!user) {
       return { success: false, error: 'Usuário não autenticado' }
     }
@@ -545,22 +565,22 @@ export async function updateUserProfileAction(formData: FormData): Promise<Actio
     // Revalidate profile data
     revalidatePath('/perfil')
 
-    return { 
-      success: true, 
-      data: { message: 'Perfil atualizado com sucesso!' } 
+    return {
+      success: true,
+      data: { message: 'Perfil atualizado com sucesso!' }
     }
 
   } catch (error) {
     console.error('Profile update failed:', error)
-    
+
     if (error instanceof z.ZodError) {
       const firstError = error.errors[0]
       return { success: false, error: firstError.message }
     }
-    
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Ocorreu um erro ao atualizar o perfil' 
+
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Ocorreu um erro ao atualizar o perfil'
     }
   }
 }
@@ -583,24 +603,24 @@ export async function forgotPasswordAction(formData: FormData): Promise<ActionRe
       return { success: false, error: 'Erro ao enviar email de recuperação' }
     }
 
-    return { 
-      success: true, 
-      data: { 
-        message: 'Email de recuperação enviado! Verifique sua caixa de entrada.' 
-      } 
+    return {
+      success: true,
+      data: {
+        message: 'Email de recuperação enviado! Verifique sua caixa de entrada.'
+      }
     }
 
   } catch (error) {
     console.error('Password reset failed:', error)
-    
+
     if (error instanceof z.ZodError) {
       const firstError = error.errors[0]
       return { success: false, error: firstError.message }
     }
-    
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Ocorreu um erro ao solicitar recuperação de senha' 
+
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Ocorreu um erro ao solicitar recuperação de senha'
     }
   }
 }
@@ -608,7 +628,7 @@ export async function forgotPasswordAction(formData: FormData): Promise<ActionRe
 export async function updateCompleteProfileAction(formData: FormData): Promise<ActionResult> {
   try {
     const user = await getCurrentUser()
-    
+
     if (!user) {
       return { success: false, error: 'Usuário não autenticado' }
     }
@@ -652,17 +672,17 @@ export async function updateCompleteProfileAction(formData: FormData): Promise<A
     // Revalidate profile data
     revalidatePath('/perfil')
 
-    return { 
-      success: true, 
-      data: { message: 'Perfil atualizado com sucesso!' } 
+    return {
+      success: true,
+      data: { message: 'Perfil atualizado com sucesso!' }
     }
 
   } catch (error) {
     console.error('Complete profile update failed:', error)
-    
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Ocorreu um erro ao atualizar o perfil completo' 
+
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Ocorreu um erro ao atualizar o perfil completo'
     }
   }
 }
@@ -670,7 +690,7 @@ export async function updateCompleteProfileAction(formData: FormData): Promise<A
 export async function deleteAccountAction(): Promise<ActionResult> {
   try {
     const user = await getCurrentUser()
-    
+
     if (!user) {
       return { success: false, error: 'Usuário não autenticado' }
     }
@@ -703,9 +723,9 @@ export async function deleteAccountAction(): Promise<ActionResult> {
 
   } catch (error) {
     console.error('Account deletion failed:', error)
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Ocorreu um erro ao deletar a conta' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Ocorreu um erro ao deletar a conta'
     }
   }
 }
@@ -714,13 +734,13 @@ export async function deleteAccountAction(): Promise<ActionResult> {
 export async function uploadProfileImageAction(formData: FormData): Promise<ActionResult<string>> {
   try {
     const user = await getCurrentUser()
-    
+
     if (!user) {
       return { success: false, error: 'Usuário não autenticado' }
     }
-    
+
     const file = formData.get('image') as File
-    
+
     if (!file) {
       return { success: false, error: 'Nenhum arquivo selecionado' }
     }
@@ -761,15 +781,15 @@ export async function uploadProfileImageAction(formData: FormData): Promise<Acti
       .from('be-fest-images')
       .getPublicUrl(fileName)
 
-    return { 
-      success: true, 
-      data: publicUrl 
+    return {
+      success: true,
+      data: publicUrl
     }
   } catch (error) {
     console.error('Profile image upload failed:', error)
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Erro inesperado no upload da imagem' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Erro inesperado no upload da imagem'
     }
   }
 }
@@ -778,11 +798,11 @@ export async function uploadProfileImageAction(formData: FormData): Promise<Acti
 export async function deleteProfileImageAction(imageUrl: string): Promise<ActionResult<void>> {
   try {
     const user = await getCurrentUser()
-    
+
     if (!user) {
       return { success: false, error: 'Usuário não autenticado' }
     }
-    
+
     const supabase = await createServerClient()
 
     // Extrair o caminho do arquivo da URL
@@ -803,9 +823,9 @@ export async function deleteProfileImageAction(imageUrl: string): Promise<Action
     return { success: true }
   } catch (error) {
     console.error('Profile image deletion failed:', error)
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Erro inesperado ao deletar imagem' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Erro inesperado ao deletar imagem'
     }
   }
 }
@@ -904,18 +924,18 @@ const updateProviderProfileSchema = z.object({
 export async function updateProviderProfileAction(formData: FormData): Promise<ActionResult> {
   try {
     const user = await getCurrentUser()
-    
+
     if (!user) {
       return { success: false, error: 'Usuário não autenticado' }
     }
-    
+
     // Extrair dados do FormData e filtrar campos vazios
     const rawData: Record<string, string | undefined> = {}
-    
+
     const fields = [
       'organization_name',
       'organization_description',
-      'full_name', 
+      'full_name',
       'whatsapp_number',
       'area_of_operation',
       'address',
@@ -923,7 +943,7 @@ export async function updateProviderProfileAction(formData: FormData): Promise<A
       'profile_image',
       'profile_banner_url'
     ]
-    
+
     fields.forEach(field => {
       const value = formData.get(field) as string
       if (value && value.trim() !== '') {
@@ -1015,22 +1035,22 @@ export async function updateProviderProfileAction(formData: FormData): Promise<A
     // Revalidate profile data
     revalidatePath('/dashboard/prestador')
 
-    return { 
-      success: true, 
-      data: { message: 'Perfil atualizado com sucesso!' } 
+    return {
+      success: true,
+      data: { message: 'Perfil atualizado com sucesso!' }
     }
 
   } catch (error) {
     console.error('Provider profile update failed:', error)
-    
+
     if (error instanceof z.ZodError) {
       const firstError = error.errors[0]
       return { success: false, error: firstError.message }
     }
-    
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Ocorreu um erro ao atualizar o perfil do prestador' 
+
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Ocorreu um erro ao atualizar o perfil do prestador'
     }
   }
 }
@@ -1082,22 +1102,22 @@ export async function changePasswordAction(formData: FormData): Promise<ActionRe
       return { success: false, error: 'Erro ao alterar senha' }
     }
 
-    return { 
-      success: true, 
-      data: { message: 'Senha alterada com sucesso!' } 
+    return {
+      success: true,
+      data: { message: 'Senha alterada com sucesso!' }
     }
 
   } catch (error) {
     console.error('Change password failed:', error)
-    
+
     if (error instanceof z.ZodError) {
       const firstError = error.errors[0]
       return { success: false, error: firstError.message }
     }
-    
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Ocorreu um erro ao alterar a senha' 
+
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Ocorreu um erro ao alterar a senha'
     }
   }
 }

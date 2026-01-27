@@ -15,7 +15,8 @@ import {
   MdClose,
   MdMenu,
   MdChevronLeft,
-  MdChevronRight
+  MdChevronRight,
+  MdEmail
 } from 'react-icons/md';
 import { getEventServicesCountsAction } from '@/lib/actions/admin';
 
@@ -83,6 +84,12 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
       label: 'Agenda',
       icon: MdEvent,
       path: '/admin/festagenda',
+      badge: undefined
+    },
+    {
+      label: 'Emails',
+      icon: MdEmail,
+      path: '/admin/emails',
       badge: undefined
     }
   ];
