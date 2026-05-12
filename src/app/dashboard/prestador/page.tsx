@@ -22,12 +22,14 @@ import {
   MdApproval,
   MdPayment,
   MdWhatsapp,
-  MdAccessTime
+  MdAccessTime,
+  MdCalculate
 } from 'react-icons/md';
 import Link from 'next/link';
 import { ProviderLayout } from '@/components/dashboard/ProviderLayout';
 import { ServiceManagement } from '@/components/dashboard/ServiceManagement';
 import { ProviderProfile } from '@/components/dashboard/ProviderProfile';
+import { BudgetCreator } from '@/components/dashboard/BudgetCreator';
 import { AuthGuard } from '@/components/AuthGuard';
 import { getProviderEventsAction, updateEventStatusAction } from '@/lib/actions/events';
 import { getProviderServicesAction, getProviderStatsAction } from '@/lib/actions/services';
@@ -57,7 +59,7 @@ export default function ProviderDashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'requests' | 'waiting_payment' | 'paid' | 'completed' | 'services' | 'profile'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'requests' | 'waiting_payment' | 'paid' | 'completed' | 'services' | 'profile' | 'orcamento'>('overview');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [selectedServices, setSelectedServices] = useState<Set<string>>(new Set());
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -1786,6 +1788,8 @@ export default function ProviderDashboard() {
         return renderCompleted();
       case 'services':
         return <ServiceManagement />;
+      case 'orcamento':
+        return <BudgetCreator />;
       case 'profile':
         try {
           return <ProviderProfile />;
@@ -1825,6 +1829,7 @@ export default function ProviderDashboard() {
                     {[
                       { id: 'overview', label: 'Visão Geral', icon: MdDashboard, shortLabel: 'Visão' },
                       { id: 'agenda', label: 'Agenda', icon: MdEvent, shortLabel: 'Agenda', isLink: true, href: '/dashboard/prestador/agenda' },
+                      { id: 'orcamento', label: 'Orçamento', icon: MdCalculate, shortLabel: 'Orçamento' },
                       { id: 'requests', label: 'Solicitações', icon: MdPendingActions, shortLabel: 'Solicitações' },
                       { id: 'waiting_payment', label: 'Aguardando Pagamento', icon: MdPayment, shortLabel: 'Aguardando' },
                       { id: 'paid', label: 'Pagos', icon: MdAttachMoney, shortLabel: 'Pagos' },
