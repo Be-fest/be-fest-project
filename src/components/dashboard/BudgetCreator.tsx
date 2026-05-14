@@ -16,11 +16,23 @@ import {
   MdDownload,
   MdContentCopy,
   MdCheck,
-  MdWarning
+  MdWarning,
+  MdPictureAsPdf,
+  MdHistory,
+  MdDelete,
+  MdPayment,
+  MdSave,
+  MdAttachMoney
 } from 'react-icons/md';
 import { FaWhatsapp } from 'react-icons/fa';
 import { getProviderServicesAction } from '@/lib/actions/services';
-import { ServiceWithDetails } from '@/types/database';
+import { 
+  saveBudgetAction, 
+  getProviderBudgetsAction, 
+  deleteBudgetAction,
+  updateBudgetStatusAction 
+} from '@/lib/actions/budgets';
+import { ServiceWithDetails, Budget } from '@/types/database';
 import { useAuth } from '@/hooks/useAuth';
 import { calculateMinPrice, formatPrice } from '@/utils/pricingUtils';
 
@@ -36,6 +48,7 @@ interface BudgetFormData {
     serviceName: string;
     pricePerGuest: number;
   }[];
+  paymentLink: string;
 }
 
 export function BudgetCreator() {
@@ -46,6 +59,11 @@ export function BudgetCreator() {
   const [shareMenuOpen, setShareMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [viewMode, setViewMode] = useState<'create' | 'list'>('create');
+  const [savedBudgets, setSavedBudgets] = useState<Budget[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [currentBudgetId, setCurrentBudgetId] = useState<string | null>(null);
   const budgetRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState<BudgetFormData>({
@@ -55,25 +73,93 @@ export function BudgetCreator() {
     startTime: '',
     fullGuests: 0,
     halfGuests: 0,
-    selectedServices: []
+    selectedServices: [],
+    paymentLink: ''
   });
 
-  useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        setLoading(true);
-        const result = await getProviderServicesAction();
-        if (result.success && result.data) {
-          setServices(result.data.filter(s => s.is_active));
-        }
-      } catch (err) {
-        console.error('Error fetching services:', err);
-      } finally {
-        setLoading(false);
+  const fetchServices = async () => {
+    try {
+      setLoading(true);
+      const result = await getProviderServicesAction();
+      if (result.success && result.data) {
+        setServices(result.data.filter(s => s.is_active));
       }
-    };
+    } catch (err) {
+      console.error('Error fetching services:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchServices();
+    loadSavedBudgets();
   }, []);
+
+  const loadSavedBudgets = async () => {
+    const result = await getProviderBudgetsAction();
+    if (result.success && result.data) {
+      setSavedBudgets(result.data);
+    }
+  };
+
+  const handleSaveBudget = async (status: 'draft' | 'sent' | 'paid' = 'draft') => {
+    if (!userData) return;
+    setIsSaving(true);
+    try {
+      const budgetData = {
+        id: currentBudgetId || undefined,
+        provider_id: userData.id,
+        client_name: formData.clientName,
+        event_date: formData.eventDate,
+        location: formData.location,
+        start_time: formData.startTime,
+        end_time: endTime,
+        full_guests: formData.fullGuests,
+        half_guests: formData.halfGuests,
+        selected_services: formData.selectedServices as any,
+        price_per_guest_full: pricePerGuestIntegral,
+        price_per_guest_half: pricePerGuestMeia,
+        total_price: totalPrice,
+        payment_link: formData.paymentLink,
+        status: status
+      };
+
+      const result = await saveBudgetAction(budgetData);
+      if (result.success && result.data) {
+        setCurrentBudgetId(result.data.id);
+        loadSavedBudgets();
+      }
+    } catch (err) {
+      console.error('Error saving budget:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteBudget = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este orçamento?')) return;
+    const result = await deleteBudgetAction(id);
+    if (result.success) {
+      loadSavedBudgets();
+    }
+  };
+
+  const loadBudget = (budget: Budget) => {
+    setFormData({
+      clientName: budget.client_name,
+      eventDate: budget.event_date,
+      location: budget.location,
+      startTime: budget.start_time,
+      fullGuests: budget.full_guests,
+      half_guests: budget.half_guests,
+      selectedServices: budget.selected_services as any,
+      paymentLink: budget.payment_link || ''
+    });
+    setCurrentBudgetId(budget.id);
+    setCurrentStep(3);
+    setViewMode('create');
+  };
 
   // Calculate end time (start + 5h)
   const calculateEndTime = (start: string) => {
@@ -144,6 +230,10 @@ export function BudgetCreator() {
   };
 
   // Download image
+    URL.revokeObjectURL(url);
+  };
+
+  // Download image
   const handleDownload = async () => {
     const blob = await generateImage();
     if (!blob) return;
@@ -155,14 +245,43 @@ export function BudgetCreator() {
     URL.revokeObjectURL(url);
   };
 
+  // Generate and Download PDF
+  const handleDownloadPdf = async () => {
+    if (!budgetRef.current) return;
+    setGeneratingPdf(true);
+    try {
+      const { jsPDF } = await import('jspdf');
+      const { toPng } = await import('html-to-image');
+      
+      const dataUrl = await toPng(budgetRef.current, {
+        quality: 1.0,
+        pixelRatio: 2,
+        backgroundColor: '#ffffff',
+      });
+
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgProps = pdf.getImageProperties(dataUrl);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      
+      pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`orcamento-${formData.clientName.replace(/\s+/g, '-').toLowerCase()}.pdf`);
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
+
   // Share via WhatsApp
   const handleShareWhatsApp = async () => {
     const blob = await generateImage();
+    handleSaveBudget('sent');
     if (blob && navigator.share) {
       const file = new File([blob], 'orcamento.png', { type: 'image/png' });
       try {
         await navigator.share({
-          text: `Orçamento ${providerName}\nLink de Pagamento: (a definir)`,
+          text: `Orçamento ${providerName}\nLink de Pagamento: ${formData.paymentLink}`,
           files: [file]
         });
         return;
@@ -171,20 +290,20 @@ export function BudgetCreator() {
       }
     }
     // Fallback: open WhatsApp with text
-    const text = encodeURIComponent(`Orçamento ${providerName}\nLink de Pagamento: (a definir)`);
+    const text = encodeURIComponent(`Orçamento ${providerName}\nLink de Pagamento: ${formData.paymentLink}`);
     window.open(`https://wa.me/?text=${text}`, '_blank');
   };
 
   // Copy budget text
   const handleCopyText = () => {
-    const text = `Orçamento ${providerName}\n\nCliente: ${formData.clientName}\nData: ${new Date(formData.eventDate + 'T12:00').toLocaleDateString('pt-BR')}\nLocal: ${formData.location}\nHorário: ${formData.startTime} - ${endTime}\nConvidados: ${formData.fullGuests} integrais, ${formData.halfGuests} meia\nServiços: ${formData.selectedServices.map(s => s.serviceName).join(', ')}\nPreço por Convidado (Integral): ${formatPrice(pricePerGuestIntegral)}\nPreço por Convidado (Meia): ${formatPrice(pricePerGuestMeia)}\nTotal: ${formatPrice(totalPrice)}\n\nLink de Pagamento: (a definir)`;
+    const text = `Orçamento ${providerName}\n\nCliente: ${formData.clientName}\nData: ${new Date(formData.eventDate + 'T12:00').toLocaleDateString('pt-BR')}\nLocal: ${formData.location}\nHorário: ${formData.startTime} - ${endTime}\nConvidados: ${formData.fullGuests} integrais, ${formData.halfGuests} meia\nServiços: ${formData.selectedServices.map(s => s.serviceName).join(', ')}\nPreço por Convidado (Integral): ${formatPrice(pricePerGuestIntegral)}\nPreço por Convidado (Meia): ${formatPrice(pricePerGuestMeia)}\nTotal: ${formatPrice(totalPrice)}\n\nLink de Pagamento: ${formData.paymentLink}`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   // Validation
-  const step1Valid = formData.clientName.trim() !== '' && formData.eventDate !== '' && formData.location.trim() !== '' && formData.startTime !== '' && formData.fullGuests > 0;
+  const step1Valid = formData.clientName.trim() !== '' && formData.eventDate !== '' && formData.location.trim() !== '' && formData.startTime !== '' && formData.fullGuests > 0 && formData.paymentLink.trim() !== '';
   const step2Valid = formData.selectedServices.length > 0;
 
   if (loading) {
@@ -211,8 +330,18 @@ export function BudgetCreator() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
           <MdCalculate className="text-purple-600" />
-          Criar Orçamento
+          {viewMode === 'create' ? 'Criar Orçamento' : 'Histórico de Orçamentos'}
         </h1>
+        <button
+          onClick={() => setViewMode(viewMode === 'create' ? 'list' : 'create')}
+          className="flex items-center gap-2 px-4 py-2 bg-purple-50 text-purple-600 rounded-xl font-medium hover:bg-purple-100 transition-colors"
+        >
+          {viewMode === 'create' ? (
+            <><MdHistory className="text-xl" /> Histórico</>
+          ) : (
+            <><MdCalculate className="text-xl" /> Criar Novo</>
+          )}
+        </button>
       </div>
 
       {/* Step indicator */}
@@ -302,6 +431,20 @@ export function BudgetCreator() {
                 onChange={e => setFormData(p => ({ ...p, halfGuests: parseInt(e.target.value) || 0 }))}
                 className="w-full p-3 border border-gray-300 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none transition-all" />
             </div>
+
+            {/* Link de Pagamento */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Link de Pagamento (WhatsApp, Mercado Pago, etc.)</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <MdPayment className="text-gray-400" />
+                </div>
+                <input type="url" placeholder="https://link.pagamento.com/..."
+                  value={formData.paymentLink}
+                  onChange={e => setFormData(p => ({ ...p, paymentLink: e.target.value }))}
+                  className="w-full pl-10 p-3 border border-gray-300 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none transition-all" />
+              </div>
+            </div>
           </div>
 
           <div className="flex justify-end mt-8">
@@ -362,9 +505,19 @@ export function BudgetCreator() {
               className="flex items-center gap-2 border-2 border-purple-600 text-purple-600 px-6 py-3 rounded-xl font-semibold hover:bg-purple-600 hover:text-white transition-all">
               <MdArrowBack /> Voltar
             </button>
-            <button onClick={() => setCurrentStep(3)} disabled={!step2Valid}
-              className="flex items-center gap-2 bg-purple-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors">
-              Gerar Orçamento <MdArrowForward />
+            <button 
+              onClick={() => {
+                handleSaveBudget();
+                setCurrentStep(3);
+              }} 
+              disabled={!step2Valid || isSaving}
+              className="flex items-center gap-2 bg-purple-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+            >
+              {isSaving ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <><MdSave /> Salvar e Gerar <MdArrowForward /></>
+              )}
             </button>
           </div>
         </motion.div>
@@ -475,6 +628,15 @@ export function BudgetCreator() {
                   <span className="text-3xl font-bold">{formatPrice(totalPrice)}</span>
                 </div>
               </div>
+              
+              {/* Payment Link - NEW */}
+              <div className="border-t border-gray-100 pt-4 text-center">
+                <p className="text-xs text-gray-400 uppercase tracking-widest font-bold mb-2">Link para Pagamento</p>
+                <a href={formData.paymentLink} target="_blank" rel="noopener noreferrer" 
+                   className="inline-flex items-center gap-2 text-purple-600 font-bold hover:underline">
+                  <MdPayment /> {formData.paymentLink}
+                </a>
+              </div>
             </div>
           </div>
 
@@ -486,8 +648,13 @@ export function BudgetCreator() {
             </button>
 
             <button onClick={handleDownload} disabled={generatingImage}
-              className="flex items-center justify-center gap-2 bg-gray-800 text-white px-6 py-3 rounded-xl font-semibold hover:bg-gray-900 disabled:opacity-50 transition-colors flex-1">
-              <MdDownload /> {generatingImage ? 'Gerando...' : 'Baixar Imagem'}
+              className="flex items-center justify-center gap-2 bg-gray-800 text-white px-6 py-3 rounded-xl font-semibold hover:bg-gray-900 disabled:opacity-50 transition-colors flex-1 text-sm sm:text-base">
+              <MdDownload /> {generatingImage ? 'Gerando...' : 'Baixar PNG'}
+            </button>
+
+            <button onClick={handleDownloadPdf} disabled={generatingPdf}
+              className="flex items-center justify-center gap-2 bg-red-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-red-700 disabled:opacity-50 transition-colors flex-1 text-sm sm:text-base">
+              <MdPictureAsPdf /> {generatingPdf ? 'Gerando...' : 'Baixar PDF'}
             </button>
 
             <div className="relative flex-1">
@@ -515,6 +682,11 @@ export function BudgetCreator() {
                       <MdDownload className="text-gray-600 text-xl" />
                       <span className="text-sm text-gray-700 font-medium">Baixar como PNG</span>
                     </button>
+                    <button onClick={handleDownloadPdf}
+                      className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left">
+                      <MdPictureAsPdf className="text-red-500 text-xl" />
+                      <span className="text-sm text-gray-700 font-medium">Baixar como PDF</span>
+                    </button>
                   </motion.div>
                   <div className="fixed inset-0 z-40" onClick={() => setShareMenuOpen(false)} />
                 </>
@@ -528,6 +700,49 @@ export function BudgetCreator() {
               <strong>Dica:</strong> Baixe a imagem e envie junto com a mensagem de orçamento para seu cliente via WhatsApp ou outra plataforma.
             </p>
           </div>
+        </motion.div>
+      )}
+
+      {/* Budgets List View */}
+      {viewMode === 'list' && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+          {savedBudgets.length === 0 ? (
+            <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-gray-100">
+              <MdHistory className="text-gray-300 text-5xl mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Nenhum orçamento salvo</h3>
+              <p className="text-gray-600">Os orçamentos que você criar aparecerão aqui.</p>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {savedBudgets.map(budget => (
+                <div key={budget.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-gray-900 truncate">{budget.client_name}</h3>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-gray-500">
+                      <span className="flex items-center gap-1"><MdCalendarToday className="text-purple-500" /> {new Date(budget.event_date + 'T12:00').toLocaleDateString('pt-BR')}</span>
+                      <span className="flex items-center gap-1"><MdAttachMoney className="text-green-500" /> {formatPrice(budget.total_price)}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                        budget.status === 'paid' ? 'bg-green-100 text-green-700' :
+                        budget.status === 'sent' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        {budget.status === 'paid' ? 'Pago' : budget.status === 'sent' ? 'Enviado' : 'Rascunho'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => loadBudget(budget)}
+                      className="p-2.5 bg-purple-50 text-purple-600 rounded-xl hover:bg-purple-100 transition-colors" title="Visualizar">
+                      <MdArrowForward />
+                    </button>
+                    <button onClick={() => handleDeleteBudget(budget.id)}
+                      className="p-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors" title="Excluir">
+                      <MdDelete />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </motion.div>
       )}
     </div>

@@ -399,6 +399,65 @@ export interface Database {
           updated_at?: string
         }
       }
+      budgets: {
+        Row: {
+          id: string
+          provider_id: string
+          client_name: string
+          event_date: string
+          location: string
+          start_time: string
+          end_time: string
+          full_guests: number
+          half_guests: number
+          selected_services: Json
+          price_per_guest_full: number
+          price_per_guest_half: number
+          total_price: number
+          payment_link: string | null
+          status: 'draft' | 'sent' | 'paid'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          provider_id: string
+          client_name: string
+          event_date: string
+          location: string
+          start_time: string
+          end_time: string
+          full_guests?: number
+          half_guests?: number
+          selected_services?: Json
+          price_per_guest_full: number
+          price_per_guest_half: number
+          total_price: number
+          payment_link?: string | null
+          status?: 'draft' | 'sent' | 'paid'
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          provider_id?: string
+          client_name?: string
+          event_date?: string
+          location?: string
+          start_time?: string
+          end_time?: string
+          full_guests?: number
+          half_guests?: number
+          selected_services?: Json
+          price_per_guest_full?: number
+          price_per_guest_half?: number
+          total_price?: number
+          payment_link?: string | null
+          status?: 'draft' | 'sent' | 'paid'
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -549,3 +608,7 @@ export interface ChatMessage {
 export type ChatMessageWithSender = ChatMessage & {
   sender: Pick<User, 'id' | 'full_name' | 'profile_image'>;
 }
+
+export type Budget = Database['public']['Tables']['budgets']['Row']
+export type BudgetInsert = Database['public']['Tables']['budgets']['Insert']
+export type BudgetUpdate = Database['public']['Tables']['budgets']['Update']
