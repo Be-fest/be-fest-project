@@ -124,16 +124,17 @@ export function BudgetCreator() {
     if (!budgetRef.current) return null;
     setGeneratingImage(true);
     try {
-      const html2canvas = (await import('html2canvas')).default;
-      const canvas = await html2canvas(budgetRef.current, {
-        scale: 2,
+      const { toPng } = await import('html-to-image');
+      const dataUrl = await toPng(budgetRef.current, {
+        quality: 1.0,
+        pixelRatio: 2,
         backgroundColor: '#ffffff',
-        useCORS: true,
-        logging: false
+        cacheBust: true,
       });
-      return new Promise(resolve => {
-        canvas.toBlob(blob => resolve(blob), 'image/png', 1.0);
-      });
+      // Convert data URL to Blob
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      return blob;
     } catch (err) {
       console.error('Error generating image:', err);
       return null;

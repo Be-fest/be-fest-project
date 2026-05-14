@@ -1789,7 +1789,7 @@ export default function ProviderDashboard() {
       case 'services':
         return <ServiceManagement />;
       case 'orcamento':
-        return <BudgetCreator />;
+        return null;
       case 'profile':
         try {
           return <ProviderProfile />;
@@ -1891,7 +1891,11 @@ export default function ProviderDashboard() {
 
           {/* Content */}
           <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6">
-            {renderContent()}
+            {/* BudgetCreator stays always mounted to preserve state across tab switches */}
+            <div style={{ display: activeTab === 'orcamento' ? 'block' : 'none' }}>
+              <BudgetCreator />
+            </div>
+            {activeTab !== 'orcamento' && renderContent()}
           </div>
         </div>
 
