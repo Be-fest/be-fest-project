@@ -105,6 +105,10 @@ export function BudgetCreator() {
 
   const handleSaveBudget = async (status: 'draft' | 'sent' | 'paid' = 'draft') => {
     if (!userData) return;
+    
+    // Evitar salvar se não houver dados básicos (como nome do cliente)
+    if (!formData.clientName || !formData.eventDate) return;
+
     setIsSaving(true);
     try {
       const budgetData = {
@@ -137,6 +141,13 @@ export function BudgetCreator() {
     }
   };
 
+  // Auto-save on reaching Step 3
+  useEffect(() => {
+    if (currentStep === 3) {
+      handleSaveBudget();
+    }
+  }, [currentStep]);
+
   const handleDeleteBudget = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir este orçamento?')) return;
     const result = await deleteBudgetAction(id);
@@ -157,8 +168,9 @@ export function BudgetCreator() {
       paymentLink: budget.payment_link || ''
     });
     setCurrentBudgetId(budget.id);
-    setCurrentStep(3);
+    setCurrentStep(3); // Start at preview, can go back to edit
     setViewMode('create');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Calculate end time (start + 5h)
@@ -703,9 +715,48 @@ export function BudgetCreator() {
         </motion.div>
       )}
 
-      {/* Budgets List View */}
+      {/* Recent Budgets (Visible at bottom of Create mode) */}
+      {viewMode === 'create' && savedBudgets.length > 0 && currentStep === 1 && (
+        <div className="pt-8 border-t border-gray-100">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+              <MdHistory className="text-purple-600" />
+              Orçamentos Recentes
+            </h3>
+            <button 
+              onClick={() => setViewMode('list')}
+              className="text-sm font-medium text-purple-600 hover:underline"
+            >
+              Ver todos
+            </button>
+          </div>
+          <div className="grid gap-3">
+            {savedBudgets.slice(0, 3).map(budget => (
+              <div key={budget.id} 
+                onClick={() => loadBudget(budget)}
+                className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex items-center justify-between hover:border-purple-300 transition-all cursor-pointer group"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-gray-900 truncate">{budget.client_name}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {new Date(budget.event_date + 'T12:00').toLocaleDateString('pt-BR')} • {formatPrice(budget.total_price)}
+                  </p>
+                </div>
+                <MdArrowForward className="text-gray-300 group-hover:text-purple-600 transition-colors" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Budgets List View (Full History) */}
       {viewMode === 'list' && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-gray-900">Histórico de Orçamentos</h2>
+            <div className="text-sm text-gray-500">{savedBudgets.length} orçamentos</div>
+          </div>
+          
           {savedBudgets.length === 0 ? (
             <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-gray-100">
               <MdHistory className="text-gray-300 text-5xl mx-auto mb-4" />
@@ -715,24 +766,27 @@ export function BudgetCreator() {
           ) : (
             <div className="grid gap-4">
               {savedBudgets.map(budget => (
-                <div key={budget.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-gray-900 truncate">{budget.client_name}</h3>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-gray-500">
-                      <span className="flex items-center gap-1"><MdCalendarToday className="text-purple-500" /> {new Date(budget.event_date + 'T12:00').toLocaleDateString('pt-BR')}</span>
-                      <span className="flex items-center gap-1"><MdAttachMoney className="text-green-500" /> {formatPrice(budget.total_price)}</span>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                <div key={budget.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4 hover:shadow-md transition-shadow">
+                  <div className="flex-1 min-w-0 w-full">
+                    <div className="flex items-center justify-between sm:justify-start gap-3">
+                      <h3 className="font-bold text-gray-900 truncate text-lg">{budget.client_name}</h3>
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                         budget.status === 'paid' ? 'bg-green-100 text-green-700' :
                         budget.status === 'sent' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
                       }`}>
                         {budget.status === 'paid' ? 'Pago' : budget.status === 'sent' ? 'Enviado' : 'Rascunho'}
                       </span>
                     </div>
+                    <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-x-6 gap-y-2 mt-3 text-sm text-gray-600">
+                      <span className="flex items-center gap-1.5"><MdCalendarToday className="text-purple-500" /> {new Date(budget.event_date + 'T12:00').toLocaleDateString('pt-BR')}</span>
+                      <span className="flex items-center gap-1.5"><MdAttachMoney className="text-green-500" /> {formatPrice(budget.total_price)}</span>
+                      <span className="flex items-center gap-1.5 col-span-2"><MdLocationOn className="text-red-400 text-sm" /> {budget.location}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 w-full sm:w-auto border-t sm:border-t-0 pt-3 sm:pt-0">
                     <button onClick={() => loadBudget(budget)}
-                      className="p-2.5 bg-purple-50 text-purple-600 rounded-xl hover:bg-purple-100 transition-colors" title="Visualizar">
-                      <MdArrowForward />
+                      className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-50 text-purple-600 rounded-xl hover:bg-purple-100 transition-colors font-semibold text-sm" title="Visualizar/Editar">
+                      <MdCalculate /> Editar
                     </button>
                     <button onClick={() => handleDeleteBudget(budget.id)}
                       className="p-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors" title="Excluir">
@@ -743,6 +797,13 @@ export function BudgetCreator() {
               ))}
             </div>
           )}
+          
+          <button 
+            onClick={() => setViewMode('create')}
+            className="w-full py-4 border-2 border-dashed border-gray-200 rounded-2xl text-gray-500 font-medium hover:border-purple-300 hover:text-purple-600 transition-all flex items-center justify-center gap-2"
+          >
+            <MdCalculate /> Criar Novo Orçamento
+          </button>
         </motion.div>
       )}
     </div>
