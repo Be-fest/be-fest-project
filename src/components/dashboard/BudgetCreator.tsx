@@ -58,7 +58,6 @@ export function BudgetCreator() {
   const [currentStep, setCurrentStep] = useState(1);
   const [shareMenuOpen, setShareMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [generatingImage, setGeneratingImage] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [viewMode, setViewMode] = useState<'create' | 'list'>('create');
   const [savedBudgets, setSavedBudgets] = useState<Budget[]>([]);
@@ -217,50 +216,9 @@ export function BudgetCreator() {
   const endTime = calculateEndTime(formData.startTime);
   const providerName = userData?.organization_name || userData?.full_name || 'Prestador';
 
-  // Generate image from budget card
-  const generateImage = async (): Promise<Blob | null> => {
+  // Generate PDF from budget card
+  const generatePdfBlob = async (): Promise<Blob | null> => {
     if (!budgetRef.current) return null;
-    setGeneratingImage(true);
-    try {
-      const { toPng } = await import('html-to-image');
-      const dataUrl = await toPng(budgetRef.current, {
-        quality: 1.0,
-        pixelRatio: 2,
-        backgroundColor: '#ffffff',
-        cacheBust: true,
-      });
-      // Convert data URL to Blob
-      const res = await fetch(dataUrl);
-      const blob = await res.blob();
-      return blob;
-    } catch (err) {
-      console.error('Error generating image:', err);
-      return null;
-    } finally {
-      setGeneratingImage(false);
-    }
-  };
-
-  // Download image
-    URL.revokeObjectURL(url);
-  };
-
-  // Download image
-  const handleDownload = async () => {
-    const blob = await generateImage();
-    if (!blob) return;
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `orcamento-${formData.clientName.replace(/\s+/g, '-').toLowerCase()}.png`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  // Generate and Download PDF
-  const handleDownloadPdf = async () => {
-    if (!budgetRef.current) return;
-    setGeneratingPdf(true);
     try {
       const { jsPDF } = await import('jspdf');
       const { toPng } = await import('html-to-image');
@@ -269,6 +227,7 @@ export function BudgetCreator() {
         quality: 1.0,
         pixelRatio: 2,
         backgroundColor: '#ffffff',
+        cacheBust: true,
       });
 
       const pdf = new jsPDF('p', 'mm', 'a4');
@@ -277,23 +236,59 @@ export function BudgetCreator() {
       const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
       
       pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`orcamento-${formData.clientName.replace(/\s+/g, '-').toLowerCase()}.pdf`);
+
+      // Make the payment link clickable in the PDF
+      const linkElement = document.getElementById('payment-link-element');
+      if (linkElement && formData.paymentLink) {
+        const containerRect = budgetRef.current.getBoundingClientRect();
+        const linkRect = linkElement.getBoundingClientRect();
+        
+        const scaleX = pdfWidth / containerRect.width;
+        const scaleY = pdfHeight / containerRect.height;
+        
+        const pdfLinkX = (linkRect.left - containerRect.left) * scaleX;
+        const pdfLinkY = (linkRect.top - containerRect.top) * scaleY;
+        const pdfLinkW = linkRect.width * scaleX;
+        const pdfLinkH = linkRect.height * scaleY;
+        
+        pdf.link(pdfLinkX, pdfLinkY, pdfLinkW, pdfLinkH, { url: formData.paymentLink });
+      }
+
+      return pdf.output('blob');
     } catch (err) {
       console.error('Error generating PDF:', err);
-    } finally {
-      setGeneratingPdf(false);
+      return null;
     }
+  };
+
+  // Generate and Download PDF
+  const handleDownloadPdf = async () => {
+    setGeneratingPdf(true);
+    const blob = await generatePdfBlob();
+    if (blob) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `orcamento-${formData.clientName.replace(/\s+/g, '-').toLowerCase()}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+    setGeneratingPdf(false);
   };
 
   // Share via WhatsApp
   const handleShareWhatsApp = async () => {
-    const blob = await generateImage();
+    setGeneratingPdf(true);
+    const blob = await generatePdfBlob();
+    setGeneratingPdf(false);
+    
     handleSaveBudget('sent');
     if (blob && navigator.share) {
-      const file = new File([blob], 'orcamento.png', { type: 'image/png' });
+      const file = new File([blob], `orcamento-${formData.clientName.replace(/\s+/g, '-').toLowerCase()}.pdf`, { type: 'application/pdf' });
       try {
         await navigator.share({
-          text: `Orçamento ${providerName}\nLink de Pagamento: ${formData.paymentLink}`,
+          title: `Orçamento ${providerName}`,
+          text: `Olá! Segue em anexo o orçamento de serviços. Você pode abrir o PDF para visualizar e clicar no link de pagamento diretamente nele.`,
           files: [file]
         });
         return;
@@ -302,7 +297,7 @@ export function BudgetCreator() {
       }
     }
     // Fallback: open WhatsApp with text
-    const text = encodeURIComponent(`Orçamento ${providerName}\nLink de Pagamento: ${formData.paymentLink}`);
+    const text = encodeURIComponent(`Olá! Segue o orçamento de serviços e o link de pagamento: ${formData.paymentLink}`);
     window.open(`https://wa.me/?text=${text}`, '_blank');
   };
 
@@ -645,6 +640,7 @@ export function BudgetCreator() {
               <div className="border-t border-gray-100 pt-4 text-center">
                 <p className="text-xs text-gray-400 uppercase tracking-widest font-bold mb-2">Link para Pagamento</p>
                 <a href={formData.paymentLink} target="_blank" rel="noopener noreferrer" 
+                   id="payment-link-element"
                    className="inline-flex items-center gap-2 text-purple-600 font-bold hover:underline">
                   <MdPayment /> {formData.paymentLink}
                 </a>
@@ -659,14 +655,9 @@ export function BudgetCreator() {
               <MdArrowBack /> Voltar
             </button>
 
-            <button onClick={handleDownload} disabled={generatingImage}
-              className="flex items-center justify-center gap-2 bg-gray-800 text-white px-6 py-3 rounded-xl font-semibold hover:bg-gray-900 disabled:opacity-50 transition-colors flex-1 text-sm sm:text-base">
-              <MdDownload /> {generatingImage ? 'Gerando...' : 'Baixar PNG'}
-            </button>
-
             <button onClick={handleDownloadPdf} disabled={generatingPdf}
               className="flex items-center justify-center gap-2 bg-red-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-red-700 disabled:opacity-50 transition-colors flex-1 text-sm sm:text-base">
-              <MdPictureAsPdf /> {generatingPdf ? 'Gerando...' : 'Baixar PDF'}
+              <MdPictureAsPdf /> {generatingPdf ? 'Gerando PDF...' : 'Baixar PDF'}
             </button>
 
             <div className="relative flex-1">
@@ -689,11 +680,6 @@ export function BudgetCreator() {
                       {copied ? <MdCheck className="text-green-500 text-xl" /> : <MdContentCopy className="text-gray-600 text-xl" />}
                       <span className="text-sm text-gray-700 font-medium">{copied ? 'Copiado!' : 'Copiar texto'}</span>
                     </button>
-                    <button onClick={handleDownload}
-                      className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left">
-                      <MdDownload className="text-gray-600 text-xl" />
-                      <span className="text-sm text-gray-700 font-medium">Baixar como PNG</span>
-                    </button>
                     <button onClick={handleDownloadPdf}
                       className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left">
                       <MdPictureAsPdf className="text-red-500 text-xl" />
@@ -709,7 +695,7 @@ export function BudgetCreator() {
           {/* Info note */}
           <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
             <p className="text-sm text-yellow-800">
-              <strong>Dica:</strong> Baixe a imagem e envie junto com a mensagem de orçamento para seu cliente via WhatsApp ou outra plataforma.
+              <strong>Dica:</strong> Baixe o PDF e envie junto com a mensagem de orçamento para seu cliente via WhatsApp ou outra plataforma. O link de pagamento no PDF é clicável!
             </p>
           </div>
         </motion.div>
