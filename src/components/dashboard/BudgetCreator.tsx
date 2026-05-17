@@ -162,7 +162,7 @@ export function BudgetCreator() {
       location: budget.location,
       startTime: budget.start_time,
       fullGuests: budget.full_guests,
-      half_guests: budget.half_guests,
+      halfGuests: budget.half_guests,
       selectedServices: budget.selected_services as any,
       paymentLink: budget.payment_link || ''
     });
