@@ -738,10 +738,17 @@ export function BudgetCreator() {
       {/* Budgets List View (Full History) */}
       {viewMode === 'list' && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-2">
             <h2 className="text-xl font-bold text-gray-900">Histórico de Orçamentos</h2>
             <div className="text-sm text-gray-500">{savedBudgets.length} orçamentos</div>
           </div>
+          
+          <button 
+            onClick={() => setViewMode('create')}
+            className="w-full py-4 mb-4 border-2 border-dashed border-purple-200 bg-purple-50 rounded-2xl text-purple-600 font-bold hover:border-purple-400 hover:bg-purple-100 transition-all flex items-center justify-center gap-2"
+          >
+            <MdCalculate className="text-xl" /> Criar Novo Orçamento
+          </button>
           
           {savedBudgets.length === 0 ? (
             <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-gray-100">
@@ -783,13 +790,6 @@ export function BudgetCreator() {
               ))}
             </div>
           )}
-          
-          <button 
-            onClick={() => setViewMode('create')}
-            className="w-full py-4 border-2 border-dashed border-gray-200 rounded-2xl text-gray-500 font-medium hover:border-purple-300 hover:text-purple-600 transition-all flex items-center justify-center gap-2"
-          >
-            <MdCalculate /> Criar Novo Orçamento
-          </button>
         </motion.div>
       )}
     </div>
