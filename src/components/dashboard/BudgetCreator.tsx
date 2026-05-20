@@ -64,6 +64,8 @@ export function BudgetCreator() {
   const [isSaving, setIsSaving] = useState(false);
   const [currentBudgetId, setCurrentBudgetId] = useState<string | null>(null);
   const budgetRef = useRef<HTMLDivElement>(null);
+  const [generatingLink, setGeneratingLink] = useState(false);
+  const justSavedRef = useRef(false);
 
   const [formData, setFormData] = useState<BudgetFormData>({
     clientName: '',
@@ -102,7 +104,7 @@ export function BudgetCreator() {
     }
   };
 
-  const handleSaveBudget = async (status: 'draft' | 'sent' | 'paid' = 'draft') => {
+  const handleSaveBudget = async (status: 'draft' | 'sent' | 'paid' = 'draft', overridePaymentLink?: string) => {
     if (!userData) return;
     
     // Evitar salvar se não houver dados básicos (como nome do cliente)
@@ -124,7 +126,7 @@ export function BudgetCreator() {
         price_per_guest_full: pricePerGuestIntegral,
         price_per_guest_half: pricePerGuestMeia,
         total_price: totalPrice,
-        payment_link: formData.paymentLink,
+        payment_link: overridePaymentLink !== undefined ? overridePaymentLink : formData.paymentLink,
         status: status
       };
 
@@ -143,9 +145,54 @@ export function BudgetCreator() {
   // Auto-save on reaching Step 3
   useEffect(() => {
     if (currentStep === 3) {
+      if (justSavedRef.current) {
+        justSavedRef.current = false;
+        return;
+      }
       handleSaveBudget();
     }
   }, [currentStep]);
+
+  const handleGenerateAndSave = async () => {
+    let link = formData.paymentLink;
+    
+    // Se o link estiver vazio, chama a rota de API para gerar o link do Mercado Pago
+    if (!link || link.trim() === '') {
+      setGeneratingLink(true);
+      try {
+        const response = await fetch('/api/generate-budget-payment-link', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            clientName: formData.clientName,
+            totalPrice: totalPrice,
+            budgetId: currentBudgetId || undefined
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.init_point) {
+            link = data.init_point;
+            setFormData(prev => ({ ...prev, paymentLink: data.init_point }));
+          }
+        } else {
+          console.error('Erro ao gerar link de pagamento do Mercado Pago');
+        }
+      } catch (err) {
+        console.error('Erro ao conectar com a API de geração de link:', err);
+      } finally {
+        setGeneratingLink(false);
+      }
+    }
+
+    // Salvar orçamento com o link (manual ou gerado)
+    justSavedRef.current = true;
+    await handleSaveBudget('draft', link);
+    setCurrentStep(3);
+  };
 
   const handleDeleteBudget = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir este orçamento?')) return;
@@ -204,14 +251,16 @@ export function BudgetCreator() {
     }
   };
 
-  // Price calculations
-  const pricePerGuestIntegral = formData.selectedServices.reduce(
+  // Price calculations (com comissão de 10% e arredondamento para o inteiro mais próximo)
+  const rawPricePerGuestIntegral = formData.selectedServices.reduce(
     (sum, s) => sum + s.pricePerGuest, 0
   );
+  const pricePerGuestIntegral = Math.round(rawPricePerGuestIntegral * 1.10);
   const pricePerGuestMeia = pricePerGuestIntegral / 2;
-  const totalPrice =
+  const totalPrice = Math.round(
     (pricePerGuestIntegral * formData.fullGuests) +
-    (pricePerGuestMeia * formData.halfGuests);
+    (pricePerGuestMeia * formData.halfGuests)
+  );
 
   const endTime = calculateEndTime(formData.startTime);
   const providerName = userData?.organization_name || userData?.full_name || 'Prestador';
@@ -309,8 +358,8 @@ export function BudgetCreator() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Validation
-  const step1Valid = formData.clientName.trim() !== '' && formData.eventDate !== '' && formData.location.trim() !== '' && formData.startTime !== '' && formData.fullGuests > 0 && formData.paymentLink.trim() !== '';
+  // Validation (Link de pagamento é opcional e gerado automaticamente se vazio)
+  const step1Valid = formData.clientName.trim() !== '' && formData.eventDate !== '' && formData.location.trim() !== '' && formData.startTime !== '' && formData.fullGuests > 0;
   const step2Valid = formData.selectedServices.length > 0;
 
   if (loading) {
@@ -441,12 +490,15 @@ export function BudgetCreator() {
 
             {/* Link de Pagamento */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Link de Pagamento (WhatsApp, Mercado Pago, etc.)</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center justify-between">
+                <span>Link de Pagamento (Mercado Pago)</span>
+                <span className="text-xs text-purple-600 font-normal">Gerado automaticamente se deixado em branco</span>
+              </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <MdPayment className="text-gray-400" />
                 </div>
-                <input type="url" placeholder="https://link.pagamento.com/..."
+                <input type="url" placeholder="Deixe em branco para gerar link do Mercado Pago automaticamente"
                   value={formData.paymentLink}
                   onChange={e => setFormData(p => ({ ...p, paymentLink: e.target.value }))}
                   className="w-full pl-10 p-3 border border-gray-300 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none transition-all" />
@@ -476,6 +528,7 @@ export function BudgetCreator() {
             {services.map(service => {
               const isSelected = formData.selectedServices.some(s => s.serviceId === service.id);
               const minPrice = calculateMinPrice(service);
+              const clientPrice = Math.round(minPrice.price * 1.10);
               return (
                 <div key={service.id}
                   onClick={() => handleServiceToggle(service)}
@@ -486,7 +539,10 @@ export function BudgetCreator() {
                     <div className="flex-1">
                       <h4 className="font-semibold text-gray-900">{service.name}</h4>
                       <p className="text-sm text-gray-500 mt-0.5">{service.category}</p>
-                      <p className="font-bold text-purple-600 mt-1">{formatPrice(minPrice.price)} /pessoa</p>
+                      <p className="font-bold text-purple-600 mt-1">
+                        {formatPrice(minPrice.price)} /pessoa
+                        <span className="text-xs font-normal text-gray-400 ml-2">({formatPrice(clientPrice)} comissão de 10% inclusa p/ cliente)</span>
+                      </p>
                     </div>
                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
                       isSelected ? 'bg-purple-600 border-purple-600' : 'border-gray-300'
@@ -502,7 +558,7 @@ export function BudgetCreator() {
           {formData.selectedServices.length > 0 && (
             <div className="mt-4 p-3 bg-purple-50 rounded-xl border border-purple-200">
               <p className="text-sm font-medium text-purple-700">
-                {formData.selectedServices.length} serviço(s) selecionado(s) — Preço por convidado (Integral): <strong>{formatPrice(pricePerGuestIntegral)}</strong>
+                {formData.selectedServices.length} serviço(s) selecionado(s) — Preço final por convidado (com 10%): <strong>{formatPrice(pricePerGuestIntegral)}</strong>
               </p>
             </div>
           )}
@@ -513,15 +569,15 @@ export function BudgetCreator() {
               <MdArrowBack /> Voltar
             </button>
             <button 
-              onClick={() => {
-                handleSaveBudget();
-                setCurrentStep(3);
-              }} 
-              disabled={!step2Valid || isSaving}
+              onClick={handleGenerateAndSave} 
+              disabled={!step2Valid || isSaving || generatingLink}
               className="flex items-center gap-2 bg-purple-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
             >
-              {isSaving ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              {isSaving || generatingLink ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>{generatingLink ? 'Gerando link...' : 'Salvando...'}</span>
+                </div>
               ) : (
                 <><MdSave /> Salvar e Gerar <MdArrowForward /></>
               )}
