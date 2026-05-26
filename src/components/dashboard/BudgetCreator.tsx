@@ -488,22 +488,7 @@ export function BudgetCreator() {
                 className="w-full p-3 border border-gray-300 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none transition-all" />
             </div>
 
-            {/* Link de Pagamento */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center justify-between">
-                <span>Link de Pagamento (Mercado Pago)</span>
-                <span className="text-xs text-purple-600 font-normal">Gerado automaticamente se deixado em branco</span>
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <MdPayment className="text-gray-400" />
-                </div>
-                <input type="url" placeholder="Deixe em branco para gerar link do Mercado Pago automaticamente"
-                  value={formData.paymentLink}
-                  onChange={e => setFormData(p => ({ ...p, paymentLink: e.target.value }))}
-                  className="w-full pl-10 p-3 border border-gray-300 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none transition-all" />
-              </div>
-            </div>
+            {/* Link de Pagamento - Gerado automaticamente pelo Mercado Pago */}
           </div>
 
           <div className="flex justify-end mt-8">
