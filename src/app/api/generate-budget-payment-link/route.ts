@@ -29,29 +29,35 @@ export async function POST(request: NextRequest) {
     const baseUrl = `${protocol}://${host}`;
 
     // Chamada oficial à API do Mercado Pago
-    const response = await fetch('https://api.mercadopago.com/v1/preferences', {
+    const preferenceBody: any = {
+      items: [
+        {
+          title: `Orçamento Be Fest - ${clientName}`,
+          quantity: 1,
+          unit_price: Number(totalPrice),
+          currency_id: 'BRL',
+        }
+      ],
+      back_urls: {
+        success: `${baseUrl}/pagamento/sucesso`,
+        failure: `${baseUrl}/pagamento/erro`,
+        pending: `${baseUrl}/pagamento/pendente`
+      },
+      external_reference: budgetId || `budget_${Date.now()}`
+    };
+
+    // Mercado Pago não aceita auto_return com localhost, então só ativamos em produção
+    if (!host.includes('localhost')) {
+      preferenceBody.auto_return = 'approved';
+    }
+
+    const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        items: [
-          {
-            title: `Orçamento Be Fest - ${clientName}`,
-            quantity: 1,
-            unit_price: Number(totalPrice),
-            currency_id: 'BRL',
-          }
-        ],
-        back_urls: {
-          success: `${baseUrl}/pagamento/sucesso`,
-          failure: `${baseUrl}/pagamento/erro`,
-          pending: `${baseUrl}/pagamento/pendente`
-        },
-        auto_return: 'approved',
-        external_reference: budgetId || `budget_${Date.now()}`
-      }),
+      body: JSON.stringify(preferenceBody),
     });
 
     if (!response.ok) {
