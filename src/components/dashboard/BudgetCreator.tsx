@@ -282,9 +282,22 @@ export function BudgetCreator() {
       const pdf = new jsPDF('p', 'mm', 'a4');
       const imgProps = pdf.getImageProperties(dataUrl);
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      const pageHeight = pdf.internal.pageSize.getHeight();
       
-      pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      let finalWidth = pdfWidth;
+      let finalHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      
+      // Se a altura da imagem for maior que a página, reduzimos para caber na página
+      if (finalHeight > pageHeight) {
+        finalHeight = pageHeight - 10; // 5mm de margem superior e inferior
+        finalWidth = (imgProps.width * finalHeight) / imgProps.height;
+      }
+      
+      // Centraliza horizontalmente se foi reduzido
+      const xOffset = (pdfWidth - finalWidth) / 2;
+      const yOffset = (pageHeight - finalHeight) / 2;
+      
+      pdf.addImage(dataUrl, 'PNG', xOffset, yOffset, finalWidth, finalHeight);
 
       // Make the payment link clickable in the PDF
       const linkElement = document.getElementById('payment-link-element');
@@ -292,11 +305,11 @@ export function BudgetCreator() {
         const containerRect = budgetRef.current.getBoundingClientRect();
         const linkRect = linkElement.getBoundingClientRect();
         
-        const scaleX = pdfWidth / containerRect.width;
-        const scaleY = pdfHeight / containerRect.height;
+        const scaleX = finalWidth / containerRect.width;
+        const scaleY = finalHeight / containerRect.height;
         
-        const pdfLinkX = (linkRect.left - containerRect.left) * scaleX;
-        const pdfLinkY = (linkRect.top - containerRect.top) * scaleY;
+        const pdfLinkX = xOffset + (linkRect.left - containerRect.left) * scaleX;
+        const pdfLinkY = yOffset + (linkRect.top - containerRect.top) * scaleY;
         const pdfLinkW = linkRect.width * scaleX;
         const pdfLinkH = linkRect.height * scaleY;
         
