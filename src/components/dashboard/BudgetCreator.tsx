@@ -284,20 +284,23 @@ export function BudgetCreator() {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       
-      let finalWidth = pdfWidth;
-      let finalHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      const marginX = 10;
+      const marginY = 10;
+      const finalWidth = pdfWidth - (marginX * 2);
+      const finalHeight = (imgProps.height * finalWidth) / imgProps.width;
       
-      // Se a altura da imagem for maior que a página, reduzimos para caber na página
-      if (finalHeight > pageHeight) {
-        finalHeight = pageHeight - 10; // 5mm de margem superior e inferior
-        finalWidth = (imgProps.width * finalHeight) / imgProps.height;
+      let heightLeft = finalHeight;
+      let position = marginY;
+      
+      pdf.addImage(dataUrl, 'PNG', marginX, position, finalWidth, finalHeight);
+      heightLeft -= (pageHeight - (marginY * 2));
+
+      while (heightLeft > 0) {
+        pdf.addPage();
+        position = heightLeft - finalHeight + marginY;
+        pdf.addImage(dataUrl, 'PNG', marginX, position, finalWidth, finalHeight);
+        heightLeft -= (pageHeight - (marginY * 2));
       }
-      
-      // Centraliza horizontalmente se foi reduzido
-      const xOffset = (pdfWidth - finalWidth) / 2;
-      const yOffset = (pageHeight - finalHeight) / 2;
-      
-      pdf.addImage(dataUrl, 'PNG', xOffset, yOffset, finalWidth, finalHeight);
 
       // Make the payment link clickable in the PDF
       const linkElement = document.getElementById('payment-link-element');
@@ -305,15 +308,22 @@ export function BudgetCreator() {
         const containerRect = budgetRef.current.getBoundingClientRect();
         const linkRect = linkElement.getBoundingClientRect();
         
-        const scaleX = finalWidth / containerRect.width;
-        const scaleY = finalHeight / containerRect.height;
+        const scale = finalWidth / containerRect.width;
         
-        const pdfLinkX = xOffset + (linkRect.left - containerRect.left) * scaleX;
-        const pdfLinkY = yOffset + (linkRect.top - containerRect.top) * scaleY;
-        const pdfLinkW = linkRect.width * scaleX;
-        const pdfLinkH = linkRect.height * scaleY;
+        const linkX = marginX + (linkRect.left - containerRect.left) * scale;
+        const absoluteLinkY = marginY + (linkRect.top - containerRect.top) * scale;
+        const linkW = linkRect.width * scale;
+        const linkH = linkRect.height * scale;
         
-        pdf.link(pdfLinkX, pdfLinkY, pdfLinkW, pdfLinkH, { url: formData.paymentLink });
+        const pageOfLink = Math.floor((absoluteLinkY - marginY) / (pageHeight - (marginY * 2))) + 1;
+        const linkYOnPage = ((absoluteLinkY - marginY) % (pageHeight - (marginY * 2))) + marginY;
+        
+        // Se a página do link for maior que 1, precisamos garantir que o jsPDF esteja na página correta
+        if (pageOfLink > 1) {
+          pdf.setPage(pageOfLink);
+        }
+        
+        pdf.link(linkX, linkYOnPage, linkW, linkH, { url: formData.paymentLink });
       }
 
       return pdf.output('blob');
@@ -589,117 +599,91 @@ export function BudgetCreator() {
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
 
           {/* Budget Card (this gets captured as image) */}
-          <div ref={budgetRef} className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-            {/* Header with provider info */}
-            <div className="bg-gradient-to-r from-purple-700 to-purple-900 p-6 text-white relative">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  {(userData as any)?.profile_image ? (
-                    <img src={(userData as any).profile_image} alt="Logo"
-                      className="w-14 h-14 rounded-xl object-cover border-2 border-white/30" />
-                  ) : (
-                    <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center text-xl font-bold">
-                      {providerName.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <div>
-                    <h2 className="text-xl font-bold">{providerName}</h2>
-                    <p className="text-purple-200 text-sm">Orçamento de Serviços</p>
+          <div ref={budgetRef} className="bg-white rounded-2xl border border-gray-200 p-8 sm:p-10 shadow-sm mx-auto max-w-3xl">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-200 pb-8 mb-8">
+              <div className="flex items-center gap-4 mb-4 sm:mb-0">
+                {(userData as any)?.profile_image ? (
+                  <img src={(userData as any).profile_image} alt="Logo"
+                    className="w-20 h-20 rounded-xl object-cover border border-gray-200 shadow-sm" />
+                ) : (
+                  <div className="w-20 h-20 bg-gradient-to-br from-purple-600 to-purple-800 rounded-xl flex items-center justify-center text-3xl font-bold text-white shadow-sm">
+                    {providerName.charAt(0).toUpperCase()}
                   </div>
+                )}
+                <div>
+                  <h2 className="text-2xl font-black text-gray-900">{providerName}</h2>
+                  <p className="text-gray-500 font-medium">Proposta de Serviços</p>
                 </div>
-                {/* Selo */}
-                <div className="bg-white/15 backdrop-blur-sm border border-white/30 rounded-xl px-3 py-2 text-center">
-                  <p className="text-[10px] uppercase tracking-wider text-purple-200">Orçada Pelo</p>
-                  <p className="text-sm font-bold">Prestador</p>
+              </div>
+              <div className="text-left sm:text-right">
+                <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Data de Emissão</p>
+                <p className="text-lg font-semibold text-gray-900">{new Date().toLocaleDateString('pt-BR')}</p>
+              </div>
+            </div>
+
+            {/* Client & Event Info */}
+            <div className="grid sm:grid-cols-2 gap-8 mb-8">
+              <div>
+                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Detalhes do Cliente</h3>
+                <div className="space-y-2">
+                  <p className="text-gray-900"><span className="font-semibold text-gray-600">Nome:</span> {formData.clientName}</p>
+                </div>
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Detalhes do Evento</h3>
+                <div className="space-y-2">
+                  <p className="text-gray-900"><span className="font-semibold text-gray-600">Data:</span> {new Date(formData.eventDate + 'T12:00').toLocaleDateString('pt-BR')}</p>
+                  <p className="text-gray-900"><span className="font-semibold text-gray-600">Horário:</span> {formData.startTime} às {endTime}</p>
+                  <p className="text-gray-900"><span className="font-semibold text-gray-600">Local:</span> {formData.location}</p>
+                  <p className="text-gray-900"><span className="font-semibold text-gray-600">Convidados:</span> {formData.fullGuests} (Integrais) / {formData.halfGuests} (Meia)</p>
                 </div>
               </div>
             </div>
 
-            {/* Budget body */}
-            <div className="p-6 space-y-5">
-              {/* Client & Event info */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gray-50 rounded-xl p-3.5">
-                  <p className="text-[11px] text-gray-500 uppercase tracking-wider font-medium">Nome do Cliente</p>
-                  <p className="font-semibold text-gray-900 mt-0.5">{formData.clientName}</p>
-                </div>
-                <div className="bg-gray-50 rounded-xl p-3.5">
-                  <p className="text-[11px] text-gray-500 uppercase tracking-wider font-medium">Data do Evento</p>
-                  <p className="font-semibold text-gray-900 mt-0.5">
-                    {new Date(formData.eventDate + 'T12:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                  </p>
-                </div>
-                <div className="bg-gray-50 rounded-xl p-3.5">
-                  <p className="text-[11px] text-gray-500 uppercase tracking-wider font-medium">Horário</p>
-                  <p className="font-semibold text-gray-900 mt-0.5">{formData.startTime} — {endTime} (5h)</p>
-                </div>
-                <div className="bg-gray-50 rounded-xl p-3.5">
-                  <p className="text-[11px] text-gray-500 uppercase tracking-wider font-medium">Local</p>
-                  <p className="font-semibold text-gray-900 mt-0.5 text-sm">{formData.location}</p>
-                </div>
-              </div>
-
-              {/* Guests */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-purple-50 border border-purple-100 rounded-xl p-3.5">
-                  <p className="text-[11px] text-purple-600 uppercase tracking-wider font-medium">Convidados (Integrais)</p>
-                  <p className="text-2xl font-bold text-purple-700 mt-0.5">{formData.fullGuests}</p>
-                </div>
-                <div className="bg-purple-50 border border-purple-100 rounded-xl p-3.5">
-                  <p className="text-[11px] text-purple-600 uppercase tracking-wider font-medium">Convidados (Meia)</p>
-                  <p className="text-2xl font-bold text-purple-700 mt-0.5">{formData.halfGuests}</p>
-                </div>
-              </div>
-
-              {/* Services */}
-              <div>
-                <p className="text-[11px] text-gray-500 uppercase tracking-wider font-medium mb-2">Serviços Escolhidos</p>
-                <div className="flex flex-wrap gap-2">
+            {/* Services */}
+            <div className="mb-8">
+              <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Serviços Contratados</h3>
+              <div className="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden">
+                <div className="px-6 py-4 flex flex-wrap gap-2">
                   {formData.selectedServices.map(s => (
-                    <span key={s.serviceId}
-                      className="bg-purple-100 text-purple-700 px-3 py-1.5 rounded-lg text-sm font-medium">
+                    <span key={s.serviceId} className="bg-white border border-gray-200 text-purple-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm">
                       {s.serviceName}
                     </span>
                   ))}
                 </div>
               </div>
+            </div>
 
-              {/* Divider */}
-              <div className="border-t border-gray-200" />
-
-              {/* Pricing breakdown */}
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600 text-sm">Preço por Convidado (Integral)</span>
-                  <span className="font-bold text-gray-900">{formatPrice(pricePerGuestIntegral)}</span>
+            {/* Pricing breakdown */}
+            <div className="flex flex-col items-end mb-10">
+              <div className="w-full sm:w-2/3 lg:w-1/2 space-y-3 bg-gray-50 p-6 rounded-xl border border-gray-200">
+                <div className="flex justify-between items-center text-gray-600">
+                  <span>Preço por Convidado (Integral)</span>
+                  <span className="font-semibold text-gray-900">{formatPrice(pricePerGuestIntegral)}</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600 text-sm">Preço por Convidado (Meia)</span>
-                  <span className="font-bold text-gray-900">{formatPrice(pricePerGuestMeia)}</span>
+                <div className="flex justify-between items-center text-gray-600">
+                  <span>Preço por Convidado (Meia)</span>
+                  <span className="font-semibold text-gray-900">{formatPrice(pricePerGuestMeia)}</span>
                 </div>
-                <div className="flex justify-between items-center text-xs text-gray-400">
-                  <span>({formData.fullGuests} integrais × {formatPrice(pricePerGuestIntegral)}) + ({formData.halfGuests} meias × {formatPrice(pricePerGuestMeia)})</span>
+                <div className="border-t border-gray-200 pt-3 flex justify-between items-center mt-2">
+                  <span className="text-lg font-bold text-gray-900">Total do Orçamento</span>
+                  <span className="text-3xl font-black text-purple-700">{formatPrice(totalPrice)}</span>
                 </div>
-              </div>
-
-              {/* Total */}
-              <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-xl p-5 text-white">
-                <div className="flex justify-between items-center">
-                  <span className="text-lg font-semibold">Preço Total</span>
-                  <span className="text-3xl font-bold">{formatPrice(totalPrice)}</span>
-                </div>
-              </div>
-              
-              {/* Payment Link - NEW */}
-              <div className="border-t border-gray-100 pt-4 text-center">
-                <p className="text-xs text-gray-400 uppercase tracking-widest font-bold mb-2">Link para Pagamento</p>
-                <a href={formData.paymentLink} target="_blank" rel="noopener noreferrer" 
-                   id="payment-link-element"
-                   className="inline-flex items-center gap-2 text-purple-600 font-bold hover:underline">
-                  <MdPayment /> {formData.paymentLink}
-                </a>
               </div>
             </div>
+            
+            {/* Payment Link Button */}
+            {formData.paymentLink && (
+              <div className="border-t border-gray-200 pt-8 mt-4 text-center">
+                <p className="text-sm text-gray-500 font-medium mb-4">Para confirmar sua reserva, realize o pagamento no botão abaixo:</p>
+                <a href={formData.paymentLink} target="_blank" rel="noopener noreferrer" 
+                   id="payment-link-element"
+                   className="inline-flex items-center justify-center gap-2 bg-purple-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-purple-700 transition-colors shadow-md">
+                  <MdPayment className="text-2xl" /> Clique aqui para pagar
+                </a>
+              </div>
+            )}
           </div>
 
           {/* Action Buttons (outside the captured area) */}
