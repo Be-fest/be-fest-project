@@ -265,65 +265,242 @@ export function BudgetCreator() {
   const endTime = calculateEndTime(formData.startTime);
   const providerName = userData?.organization_name || userData?.full_name || 'Prestador';
 
-  // Generate PDF from budget card
+  // Generate PDF natively using jsPDF drawing API (no screenshot approach)
   const generatePdfBlob = async (): Promise<Blob | null> => {
-    if (!budgetRef.current) return null;
     try {
       const { jsPDF } = await import('jspdf');
-      const { toPng } = await import('html-to-image');
-      
-      const dataUrl = await toPng(budgetRef.current, {
-        quality: 1.0,
-        pixelRatio: 2,
-        backgroundColor: '#ffffff',
-        cacheBust: true,
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 15;
+      const contentWidth = pageWidth - margin * 2;
+      let y = margin;
+
+      // Helper: check if we need a new page
+      const checkPage = (needed: number) => {
+        if (y + needed > pageHeight - margin) {
+          pdf.addPage();
+          y = margin;
+        }
+      };
+
+      // Helper: draw a rounded rectangle
+      const drawRoundedRect = (x: number, ry: number, w: number, h: number, r: number, fillColor: string, borderColor?: string) => {
+        pdf.setFillColor(fillColor);
+        pdf.roundedRect(x, ry, w, h, r, r, 'F');
+        if (borderColor) {
+          pdf.setDrawColor(borderColor);
+          pdf.setLineWidth(0.3);
+          pdf.roundedRect(x, ry, w, h, r, r, 'S');
+        }
+      };
+
+      // Helper: wrap text and return lines
+      const wrapText = (text: string, maxWidth: number, fontSize: number): string[] => {
+        pdf.setFontSize(fontSize);
+        return pdf.splitTextToSize(text, maxWidth);
+      };
+
+      // ===== HEADER PURPLE BAR =====
+      const headerHeight = 28;
+      checkPage(headerHeight);
+      drawRoundedRect(margin, y, contentWidth, headerHeight, 4, '#7c3aed');
+
+      // Provider name
+      pdf.setTextColor('#ffffff');
+      pdf.setFontSize(18);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(providerName, margin + 10, y + 11);
+
+      // Subtitle
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Proposta de Serviços', margin + 10, y + 18);
+
+      // Date on right
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('DATA DE EMISSÃO', margin + contentWidth - 10, y + 9, { align: 'right' });
+      pdf.setFontSize(11);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(new Date().toLocaleDateString('pt-BR'), margin + contentWidth - 10, y + 16, { align: 'right' });
+
+      y += headerHeight + 10;
+
+      // ===== CLIENT & EVENT INFO =====
+      checkPage(60);
+      const colWidth = (contentWidth - 6) / 2;
+
+      // Left column - Client details
+      pdf.setTextColor('#9ca3af');
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('DETALHES DO CLIENTE', margin, y);
+      y += 6;
+      pdf.setTextColor('#374151');
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Nome: ', margin, y);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(formData.clientName, margin + pdf.getTextWidth('Nome: '), y);
+
+      // Right column - Event details (same Y as client)
+      const rightX = margin + colWidth + 6;
+      let eventY = y - 6;
+      pdf.setTextColor('#9ca3af');
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('DETALHES DO EVENTO', rightX, eventY);
+      eventY += 6;
+      pdf.setTextColor('#374151');
+      pdf.setFontSize(10);
+
+      const eventDate = new Date(formData.eventDate + 'T12:00').toLocaleDateString('pt-BR');
+      const eventDetails = [
+        { label: 'Data: ', value: eventDate },
+        { label: 'Horário: ', value: `${formData.startTime} às ${endTime}` },
+        { label: 'Local: ', value: formData.location },
+        { label: 'Convidados: ', value: `${formData.fullGuests} (Integrais) / ${formData.halfGuests} (Meia)` },
+      ];
+
+      let maxEventY = eventY;
+      eventDetails.forEach((item) => {
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(item.label, rightX, eventY);
+        pdf.setFont('helvetica', 'normal');
+        const valueLines = wrapText(item.value, colWidth - pdf.getTextWidth(item.label) - 2, 10);
+        valueLines.forEach((line, i) => {
+          if (i === 0) {
+            pdf.text(line, rightX + pdf.getTextWidth(item.label), eventY);
+          } else {
+            eventY += 5;
+            pdf.text(line, rightX + pdf.getTextWidth(item.label), eventY);
+          }
+        });
+        eventY += 6;
+        maxEventY = eventY;
       });
 
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgProps = pdf.getImageProperties(dataUrl);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      
-      const marginX = 10;
-      const marginY = 10;
-      const finalWidth = pdfWidth - (marginX * 2);
-      const finalHeight = (imgProps.height * finalWidth) / imgProps.width;
-      
-      let heightLeft = finalHeight;
-      let position = marginY;
-      
-      pdf.addImage(dataUrl, 'PNG', marginX, position, finalWidth, finalHeight);
-      heightLeft -= (pageHeight - (marginY * 2));
+      y = Math.max(y + 8, maxEventY) + 4;
 
-      while (heightLeft > 0) {
-        pdf.addPage();
-        position = heightLeft - finalHeight + marginY;
-        pdf.addImage(dataUrl, 'PNG', marginX, position, finalWidth, finalHeight);
-        heightLeft -= (pageHeight - (marginY * 2));
-      }
+      // ===== DIVIDER =====
+      checkPage(4);
+      pdf.setDrawColor('#e5e7eb');
+      pdf.setLineWidth(0.3);
+      pdf.line(margin, y, margin + contentWidth, y);
+      y += 8;
 
-      // Make the payment link clickable in the PDF
-      const linkElement = document.getElementById('payment-link-element');
-      if (linkElement && formData.paymentLink) {
-        const containerRect = budgetRef.current.getBoundingClientRect();
-        const linkRect = linkElement.getBoundingClientRect();
-        
-        const scale = finalWidth / containerRect.width;
-        
-        const linkX = marginX + (linkRect.left - containerRect.left) * scale;
-        const absoluteLinkY = marginY + (linkRect.top - containerRect.top) * scale;
-        const linkW = linkRect.width * scale;
-        const linkH = linkRect.height * scale;
-        
-        const pageOfLink = Math.floor((absoluteLinkY - marginY) / (pageHeight - (marginY * 2))) + 1;
-        const linkYOnPage = ((absoluteLinkY - marginY) % (pageHeight - (marginY * 2))) + marginY;
-        
-        // Se a página do link for maior que 1, precisamos garantir que o jsPDF esteja na página correta
-        if (pageOfLink > 1) {
-          pdf.setPage(pageOfLink);
+      // ===== SERVICES =====
+      checkPage(20);
+      pdf.setTextColor('#9ca3af');
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('SERVIÇOS CONTRATADOS', margin, y);
+      y += 6;
+
+      // Service tags
+      let tagX = margin;
+      const tagH = 8;
+      const tagPadding = 4;
+      const tagGap = 3;
+
+      formData.selectedServices.forEach((s) => {
+        pdf.setFontSize(9);
+        const textW = pdf.getTextWidth(s.serviceName);
+        const tagW = textW + tagPadding * 2;
+
+        // Check if tag fits on current line
+        if (tagX + tagW > margin + contentWidth) {
+          tagX = margin;
+          y += tagH + 3;
+          checkPage(tagH + 3);
         }
-        
-        pdf.link(linkX, linkYOnPage, linkW, linkH, { url: formData.paymentLink });
+
+        drawRoundedRect(tagX, y - 1, tagW, tagH, 2, '#f3f4f6', '#e5e7eb');
+        pdf.setTextColor('#7c3aed');
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(s.serviceName, tagX + tagPadding, y + 4.5);
+
+        tagX += tagW + tagGap;
+      });
+
+      y += tagH + 10;
+
+      // ===== PRICING BREAKDOWN =====
+      checkPage(50);
+      const priceBoxW = contentWidth * 0.55;
+      const priceBoxX = margin + contentWidth - priceBoxW;
+
+      drawRoundedRect(priceBoxX, y, priceBoxW, 42, 3, '#f9fafb', '#e5e7eb');
+
+      const priceLineY = y + 8;
+      pdf.setTextColor('#6b7280');
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Preço por Convidado (Integral)', priceBoxX + 6, priceLineY);
+      pdf.setTextColor('#111827');
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(formatPrice(pricePerGuestIntegral), priceBoxX + priceBoxW - 6, priceLineY, { align: 'right' });
+
+      pdf.setTextColor('#6b7280');
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Preço por Convidado (Meia)', priceBoxX + 6, priceLineY + 8);
+      pdf.setTextColor('#111827');
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(formatPrice(pricePerGuestMeia), priceBoxX + priceBoxW - 6, priceLineY + 8, { align: 'right' });
+
+      // Divider in price box
+      pdf.setDrawColor('#e5e7eb');
+      pdf.line(priceBoxX + 6, priceLineY + 14, priceBoxX + priceBoxW - 6, priceLineY + 14);
+
+      // Total
+      pdf.setTextColor('#111827');
+      pdf.setFontSize(11);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Total do Orçamento', priceBoxX + 6, priceLineY + 24);
+      pdf.setTextColor('#7c3aed');
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(formatPrice(totalPrice), priceBoxX + priceBoxW - 6, priceLineY + 24, { align: 'right' });
+
+      y += 52;
+
+      // ===== PAYMENT BUTTON =====
+      if (formData.paymentLink) {
+        checkPage(30);
+
+        // Divider
+        pdf.setDrawColor('#e5e7eb');
+        pdf.setLineWidth(0.3);
+        pdf.line(margin, y, margin + contentWidth, y);
+        y += 10;
+
+        // Instruction text
+        pdf.setTextColor('#6b7280');
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'normal');
+        const instructionText = 'Para confirmar sua reserva, realize o pagamento no botão abaixo:';
+        const instructionW = pdf.getTextWidth(instructionText);
+        pdf.text(instructionText, margin + (contentWidth - instructionW) / 2, y);
+        y += 8;
+
+        // Button
+        const btnW = 70;
+        const btnH = 12;
+        const btnX = margin + (contentWidth - btnW) / 2;
+
+        drawRoundedRect(btnX, y, btnW, btnH, 3, '#7c3aed');
+        pdf.setTextColor('#ffffff');
+        pdf.setFontSize(11);
+        pdf.setFont('helvetica', 'bold');
+        const btnText = 'Clique aqui para pagar';
+        const btnTextW = pdf.getTextWidth(btnText);
+        pdf.text(btnText, btnX + (btnW - btnTextW) / 2, y + 8);
+
+        // Make it a clickable link
+        pdf.link(btnX, y, btnW, btnH, { url: formData.paymentLink });
+
+        y += btnH + 6;
       }
 
       return pdf.output('blob');
