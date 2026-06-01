@@ -1,12 +1,7 @@
-import React, { forwardRef, useRef, useImperativeHandle } from 'react';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
-import { ptBR } from 'date-fns/locale';
+import React, { forwardRef, useRef, useState, useEffect, useImperativeHandle } from 'react';
+import Calendar from 'react-calendar';
+import 'react-calendar/dist/Calendar.css';
 import { MdCalendarToday } from 'react-icons/md';
-
-// Registrar a localização portuguesa brasileira
-import { registerLocale } from 'react-datepicker';
-registerLocale('pt-BR', ptBR);
 
 interface DatePickerProps {
   label?: string;
@@ -22,26 +17,42 @@ interface DatePickerProps {
 
 const CustomDatePicker = forwardRef<HTMLInputElement, DatePickerProps>(
   ({ label, error, value, onChange, minDate, disabled, className, placeholder, required }, ref) => {
-    const datePickerRef = useRef<DatePicker>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [isOpen, setIsOpen] = useState(false);
 
-    // Expor métodos do input para o ref externo se necessário
     useImperativeHandle(ref, () => ({
       focus: () => {
-        if (datePickerRef.current) {
-          // @ts-ignore - DatePicker tem um método setFocus
-          datePickerRef.current.setFocus?.();
-        }
+        inputRef.current?.focus();
+        setIsOpen(true);
       },
       blur: () => {
-        if (datePickerRef.current) {
-          // @ts-ignore
-          datePickerRef.current.setBlur?.();
-        }
+        inputRef.current?.blur();
+        setIsOpen(false);
       }
     } as any));
 
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+          setIsOpen(false);
+        }
+      };
+
+      if (isOpen) {
+        document.addEventListener('mousedown', handleClickOutside);
+      } else {
+        document.removeEventListener('mousedown', handleClickOutside);
+      }
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }, [isOpen]);
+
+    const displayValue = value ? value.toLocaleDateString('pt-BR') : '';
+
     return (
-      <div className={className}>
+      <div className={className} ref={containerRef}>
         {label && (
           <label className="block text-sm font-semibold text-[#520029] mb-2">
             <MdCalendarToday className="inline mr-1" />
@@ -49,36 +60,33 @@ const CustomDatePicker = forwardRef<HTMLInputElement, DatePickerProps>(
           </label>
         )}
         <div className="relative">
-          <DatePicker
-            selected={value}
-            onChange={onChange}
-            dateFormat="dd/MM/yyyy"
-            locale="pt-BR"
-            minDate={minDate}
+          <input
+            type="text"
+            readOnly
+            ref={inputRef}
+            value={displayValue}
+            onClick={() => !disabled && setIsOpen(!isOpen)}
             disabled={disabled}
-            placeholderText={placeholder || "dd/mm/aaaa"}
-            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none ${
+            placeholder={placeholder || "dd/mm/aaaa"}
+            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none bg-white cursor-pointer ${
               error ? 'border-red-500' : 'border-gray-200'
             } ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-            wrapperClassName="w-full"
-            showPopperArrow={false}
-            popperClassName="z-50"
-            calendarClassName="shadow-lg border border-gray-200 rounded-lg"
-            dayClassName={(date) => {
-              const today = new Date();
-              const isToday = date.toDateString() === today.toDateString();
-              const isSelected = value && date.toDateString() === value.toDateString();
-              
-              if (isSelected) {
-                return 'bg-[#A502CA] text-white hover:bg-[#8A0222] rounded';
-              }
-              if (isToday) {
-                return 'bg-blue-100 text-blue-800 rounded';
-              }
-              return 'hover:bg-gray-100 rounded';
-            }}
-            ref={datePickerRef}
           />
+          
+          {isOpen && (
+            <div className="absolute z-50 mt-1 bg-white shadow-lg border border-gray-200 rounded-lg p-2">
+              <Calendar
+                onChange={(date) => {
+                  onChange(date as Date);
+                  setIsOpen(false);
+                }}
+                value={value}
+                minDate={minDate}
+                locale="pt-BR"
+                className="border-0 font-sans"
+              />
+            </div>
+          )}
         </div>
         {error && (
           <p className="text-red-500 text-sm mt-1">{error}</p>
