@@ -35,6 +35,7 @@ import {
 import { ServiceWithDetails, Budget } from '@/types/database';
 import { useAuth } from '@/hooks/useAuth';
 import { calculateMinPrice, formatPrice } from '@/utils/pricingUtils';
+import PremiumDatePicker from '@/components/ui/PremiumDatePicker';
 
 interface BudgetFormData {
   clientName: string;
@@ -645,9 +646,10 @@ export function BudgetCreator() {
             {/* Data */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Data do Evento</label>
-              <input type="date" value={formData.eventDate}
-                onChange={e => setFormData(p => ({ ...p, eventDate: e.target.value }))}
-                className="w-full p-3 border border-gray-300 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none transition-all" />
+              <PremiumDatePicker
+                value={formData.eventDate}
+                onChange={(val) => setFormData(p => ({ ...p, eventDate: val }))}
+              />
             </div>
 
             {/* Horário */}
