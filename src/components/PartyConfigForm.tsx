@@ -9,6 +9,7 @@ import { createEventAction, updateEventAction } from '@/lib/actions/events';
 import { useRouter } from 'next/navigation';
 import { useToastGlobal } from '@/contexts/GlobalToastContext';
 import { calculateGuestCount } from '@/utils/formatters';
+import PremiumDatePicker from '@/components/ui/PremiumDatePicker';
 
 interface PartyConfigFormProps {
   onComplete: () => void;
@@ -258,11 +259,10 @@ export function PartyConfigForm({ onComplete, initialData, eventId }: PartyConfi
             <MdCalendarToday className="inline mr-1" />
             Data do Evento *
           </label>
-          <input
-            type="date"
-            {...register('event_date')}
-            min={new Date().toISOString().split('T')[0]}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#A502CA] focus:border-transparent outline-none"
+          <PremiumDatePicker
+            value={watch('event_date') || ''}
+            onChange={(val) => setValue('event_date', val, { shouldValidate: true, shouldDirty: true })}
+            error={errors.event_date?.message}
             disabled={loading}
           />
           {errors.event_date && (
