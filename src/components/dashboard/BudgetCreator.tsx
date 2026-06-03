@@ -835,8 +835,8 @@ export function BudgetCreator() {
             </div>
 
             {/* Pricing breakdown */}
-            <div className="flex flex-col items-end mb-10">
-              <div className="w-full sm:w-2/3 lg:w-1/2 space-y-3 bg-gray-50 p-6 rounded-xl border border-gray-200">
+            <div className="flex flex-col mb-10">
+              <div className="w-full space-y-3 bg-gray-50 p-6 rounded-xl border border-gray-200">
                 <div className="flex justify-between items-center text-gray-600">
                   <span>Preço por Convidado (Integral)</span>
                   <span className="font-semibold text-gray-900">{formatPrice(pricePerGuestIntegral)}</span>
@@ -846,8 +846,8 @@ export function BudgetCreator() {
                   <span className="font-semibold text-gray-900">{formatPrice(pricePerGuestMeia)}</span>
                 </div>
                 <div className="border-t border-gray-200 pt-3 flex justify-between items-center mt-2">
-                  <span className="text-lg font-bold text-gray-900">Total do Orçamento</span>
-                  <span className="text-3xl font-black text-purple-700">{formatPrice(totalPrice)}</span>
+                  <span className="text-lg sm:text-xl font-bold text-gray-900">Total do Orçamento</span>
+                  <span className="text-2xl sm:text-3xl font-black text-purple-700">{formatPrice(totalPrice)}</span>
                 </div>
               </div>
             </div>
