@@ -34,7 +34,7 @@ import {
 } from '@/lib/actions/budgets';
 import { ServiceWithDetails, Budget } from '@/types/database';
 import { useAuth } from '@/hooks/useAuth';
-import { calculateMinPrice, formatPrice } from '@/utils/pricingUtils';
+import { calculateMinPrice, formatPrice, calculatePriceWithMinimumGuests } from '@/utils/pricingUtils';
 import PremiumDatePicker from '@/components/ui/PremiumDatePicker';
 
 interface BudgetFormData {
@@ -123,7 +123,16 @@ export function BudgetCreator() {
         end_time: endTime,
         full_guests: formData.fullGuests,
         half_guests: formData.halfGuests,
-        selected_services: formData.selectedServices as any,
+        selected_services: formData.selectedServices.map(s => {
+          const service = services.find(srv => srv.id === s.serviceId);
+          if (service) {
+            return {
+              ...s,
+              pricePerGuest: calculatePriceWithMinimumGuests(service, formData.fullGuests || 1).pricePerGuest
+            };
+          }
+          return s;
+        }) as any,
         price_per_guest_full: pricePerGuestIntegral,
         price_per_guest_half: pricePerGuestMeia,
         total_price: totalPrice,
@@ -237,7 +246,7 @@ export function BudgetCreator() {
         selectedServices: prev.selectedServices.filter(s => s.serviceId !== service.id)
       }));
     } else {
-      const minPrice = calculateMinPrice(service);
+      const priceInfo = calculatePriceWithMinimumGuests(service, formData.fullGuests || 1);
       setFormData(prev => ({
         ...prev,
         selectedServices: [
@@ -245,7 +254,7 @@ export function BudgetCreator() {
           {
             serviceId: service.id,
             serviceName: service.name,
-            pricePerGuest: minPrice.price
+            pricePerGuest: priceInfo.pricePerGuest
           }
         ]
       }));
@@ -254,7 +263,14 @@ export function BudgetCreator() {
 
   // Price calculations (com comissão de 10% e arredondamento para o inteiro mais próximo)
   const rawPricePerGuestIntegral = formData.selectedServices.reduce(
-    (sum, s) => sum + s.pricePerGuest, 0
+    (sum, s) => {
+      const service = services.find(srv => srv.id === s.serviceId);
+      if (service) {
+        const priceInfo = calculatePriceWithMinimumGuests(service, formData.fullGuests || 1);
+        return sum + priceInfo.pricePerGuest;
+      }
+      return sum + s.pricePerGuest;
+    }, 0
   );
   const pricePerGuestIntegral = Math.round(rawPricePerGuestIntegral * 1.10);
   const pricePerGuestMeia = pricePerGuestIntegral / 2;
@@ -747,8 +763,8 @@ export function BudgetCreator() {
           <div className="space-y-3">
             {services.map(service => {
               const isSelected = formData.selectedServices.some(s => s.serviceId === service.id);
-              const minPrice = calculateMinPrice(service);
-              const clientPrice = Math.round(minPrice.price * 1.10);
+              const priceInfo = calculatePriceWithMinimumGuests(service, formData.fullGuests || 1);
+              const clientPrice = Math.round(priceInfo.pricePerGuest * 1.10);
               return (
                 <div key={service.id}
                   onClick={() => handleServiceToggle(service)}
@@ -760,7 +776,7 @@ export function BudgetCreator() {
                       <h4 className="font-semibold text-gray-900">{service.name}</h4>
                       <p className="text-sm text-gray-500 mt-0.5">{service.category}</p>
                       <p className="font-bold text-purple-600 mt-1">
-                        {formatPrice(minPrice.price)} /pessoa
+                        {formatPrice(priceInfo.pricePerGuest)} /pessoa
                         <span className="text-xs font-normal text-gray-400 ml-2">({formatPrice(clientPrice)} comissão de 10% inclusa p/ cliente)</span>
                       </p>
                     </div>

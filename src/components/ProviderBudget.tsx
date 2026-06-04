@@ -6,7 +6,7 @@ import { MdCalendarToday, MdGroup, MdCheckCircle, MdCalculate, MdInfo, MdWarning
 import { getServicesAction } from '@/lib/actions/services';
 import { ServiceWithProvider } from '@/types/database';
 import { SafeHTML } from '@/components/ui';
-import { calculateMinPrice, formatPrice, calculatePriceWithFee } from '@/utils/pricingUtils';
+import { calculateMinPrice, formatPrice, calculatePriceWithFee, calculatePriceWithMinimumGuests } from '@/utils/pricingUtils';
 
 interface ProviderBudgetProps {
   providerId: string;
@@ -83,7 +83,7 @@ export function ProviderBudget({ providerId }: ProviderBudgetProps) {
       }));
     } else {
       // Adiciona o serviço
-      const minPriceInfo = calculateMinPrice(service);
+      const priceInfo = calculatePriceWithMinimumGuests(service, formData.fullGuests || 1);
       setFormData(prev => ({
         ...prev,
         selectedServices: [
@@ -91,7 +91,7 @@ export function ProviderBudget({ providerId }: ProviderBudgetProps) {
           {
             serviceId: service.id,
             serviceName: service.name,
-            price: minPriceInfo.price
+            price: priceInfo.pricePerGuest
           }
         ]
       }));
@@ -100,8 +100,10 @@ export function ProviderBudget({ providerId }: ProviderBudgetProps) {
 
   const calculateTotal = () => {
     return formData.selectedServices.reduce((total, item) => {
+      const service = services.find(s => s.id === item.serviceId);
+      const price = service ? calculatePriceWithMinimumGuests(service, formData.fullGuests || 1).pricePerGuest : item.price;
       const guestMultiplier = formData.fullGuests + (formData.halfGuests * 0.5);
-      return total + (item.price * guestMultiplier);
+      return total + (price * guestMultiplier);
     }, 0);
   };
 
@@ -327,7 +329,7 @@ export function ProviderBudget({ providerId }: ProviderBudgetProps) {
                                 />
                               </div>
                               <p className="font-bold text-[#FF0080]">
-                                R$ {calculatePriceWithFee(service.guest_tiers?.[0]?.base_price_per_adult || 0).toFixed(2)} por pessoa
+                                R$ {calculatePriceWithFee(calculatePriceWithMinimumGuests(service, formData.fullGuests || 1).pricePerGuest).toFixed(2)} por pessoa
                               </p>
                             </div>
                             <div className="flex items-center gap-3">
@@ -477,15 +479,17 @@ export function ProviderBudget({ providerId }: ProviderBudgetProps) {
           <div className="space-y-4 mb-6">
             <h3 className="font-semibold text-[#520029]">Serviços Selecionados</h3>
             {formData.selectedServices.map((item) => {
+              const service = services.find(s => s.id === item.serviceId);
+              const price = service ? calculatePriceWithMinimumGuests(service, formData.fullGuests || 1).pricePerGuest : item.price;
               const guestMultiplier = formData.fullGuests + (formData.halfGuests * 0.5);
-              const serviceTotal = item.price * guestMultiplier;
+              const serviceTotal = price * guestMultiplier;
               
               return (
                 <div key={item.serviceId} className="flex justify-between items-center p-4 border border-gray-200 rounded-lg">
                   <div>
                     <h4 className="font-semibold">{item.serviceName}</h4>
                     <p className="text-sm text-[#6E5963]">
-                      R$ {item.price.toFixed(2)} × {guestMultiplier} convidados
+                      R$ {price.toFixed(2)} × {guestMultiplier} convidados
                     </p>
                   </div>
                   <div className="text-right">
