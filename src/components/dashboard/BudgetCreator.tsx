@@ -448,33 +448,40 @@ export function BudgetCreator() {
       pdf.text('SERVIÇOS CONTRATADOS', margin, y);
       y += 6;
 
-      // Service tags
-      let tagX = margin;
-      const tagH = 8;
-      const tagPadding = 4;
-      const tagGap = 3;
-
       formData.selectedServices.forEach((s) => {
-        pdf.setFontSize(9);
-        const textW = pdf.getTextWidth(s.serviceName);
-        const tagW = textW + tagPadding * 2;
-
-        // Check if tag fits on current line
-        if (tagX + tagW > margin + contentWidth) {
-          tagX = margin;
-          y += tagH + 3;
-          checkPage(tagH + 3);
+        const service = services.find(srv => srv.id === s.serviceId);
+        let explanation = '';
+        let priceStr = '';
+        if (service) {
+          const info = calculatePriceWithMinimumGuests(service, formData.fullGuests || 1);
+          const clientPrice = Math.round(info.pricePerGuest * 1.10);
+          priceStr = formatPrice(clientPrice);
+          explanation = info.explanation;
+        } else {
+          priceStr = formatPrice(Math.round(s.pricePerGuest * 1.10));
         }
 
-        drawRoundedRect(tagX, y - 1, tagW, tagH, 2, '#f3f4f6', '#e5e7eb');
-        pdf.setTextColor('#7c3aed');
-        pdf.setFont('helvetica', 'bold');
-        pdf.text(s.serviceName, tagX + tagPadding, y + 4.5);
+        checkPage(12);
 
-        tagX += tagW + tagGap;
+        pdf.setTextColor('#374151');
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(s.serviceName, margin, y);
+        
+        pdf.setTextColor('#7c3aed');
+        pdf.text(priceStr + ' /pessoa', margin + contentWidth, y, { align: 'right' });
+
+        if (explanation) {
+          pdf.setTextColor('#6b7280');
+          pdf.setFontSize(8);
+          pdf.setFont('helvetica', 'normal');
+          pdf.text(`Cálculo base: ${explanation} (+ 10% tx plataforma)`, margin, y + 4);
+        }
+
+        y += 10;
       });
 
-      y += tagH + 10;
+      y += 4;
 
       // ===== PRICING BREAKDOWN =====
       checkPage(50);
@@ -872,14 +879,35 @@ export function BudgetCreator() {
             {/* Services */}
             <div className="mb-8">
               <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Serviços Contratados</h3>
-              <div className="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden">
-                <div className="px-6 py-4 flex flex-wrap gap-2">
-                  {formData.selectedServices.map(s => (
-                    <span key={s.serviceId} className="bg-white border border-gray-200 text-purple-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm">
-                      {s.serviceName}
-                    </span>
-                  ))}
-                </div>
+              <div className="space-y-3">
+                {formData.selectedServices.map(s => {
+                  const service = services.find(srv => srv.id === s.serviceId);
+                  let explanation = '';
+                  let priceStr = '';
+                  if (service) {
+                    const info = calculatePriceWithMinimumGuests(service, formData.fullGuests || 1);
+                    const clientPrice = Math.round(info.pricePerGuest * 1.10);
+                    priceStr = formatPrice(clientPrice);
+                    explanation = info.explanation;
+                  } else {
+                    priceStr = formatPrice(Math.round(s.pricePerGuest * 1.10));
+                  }
+                  
+                  return (
+                    <div key={s.serviceId} className="bg-gray-50 rounded-xl border border-gray-200 p-4">
+                      <div className="flex justify-between items-center mb-1">
+                        <h4 className="font-bold text-gray-900">{s.serviceName}</h4>
+                        <span className="font-bold text-purple-700">{priceStr} /pessoa</span>
+                      </div>
+                      {explanation && (
+                        <p className="text-xs text-gray-500">
+                          Cálculo base: {explanation} <br />
+                          <span className="opacity-75">(Valores finais já incluem 10% de taxa da plataforma)</span>
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
