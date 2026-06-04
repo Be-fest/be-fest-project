@@ -302,29 +302,62 @@ export function BudgetCreator() {
         return pdf.splitTextToSize(text, maxWidth);
       };
 
+      // Load logo
+      let logoDataUrl = null;
+      const loadImage = (url: string): Promise<string | null> => {
+        return new Promise((resolve) => {
+          const img = new window.Image();
+          img.crossOrigin = 'Anonymous';
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(img, 0, 0);
+              resolve(canvas.toDataURL('image/png'));
+            } else {
+              resolve(null);
+            }
+          };
+          img.onerror = () => resolve(null);
+          img.src = url;
+        });
+      };
+
+      const profileImgUrl = (userData as any)?.profile_image || '/be-fest-provider-logo.png';
+      logoDataUrl = await loadImage(profileImgUrl);
+
       // ===== HEADER PURPLE BAR =====
-      const headerHeight = 28;
+      const headerHeight = logoDataUrl ? 35 : 28;
       checkPage(headerHeight);
       drawRoundedRect(margin, y, contentWidth, headerHeight, 4, '#7c3aed');
+
+      let headerTextX = margin + 10;
+      if (logoDataUrl) {
+        // Draw logo (e.g. 25x25)
+        pdf.addImage(logoDataUrl, 'PNG', margin + 5, y + 5, 25, 25);
+        headerTextX = margin + 35;
+      }
 
       // Provider name
       pdf.setTextColor('#ffffff');
       pdf.setFontSize(18);
       pdf.setFont('helvetica', 'bold');
-      pdf.text(providerName, margin + 10, y + 11);
+      pdf.text(providerName, headerTextX, y + (logoDataUrl ? 15 : 11));
 
       // Subtitle
       pdf.setFontSize(10);
       pdf.setFont('helvetica', 'normal');
-      pdf.text('Proposta de Serviços', margin + 10, y + 18);
+      pdf.text('Proposta de Serviços', headerTextX, y + (logoDataUrl ? 22 : 18));
 
       // Date on right
       pdf.setFontSize(8);
       pdf.setFont('helvetica', 'bold');
-      pdf.text('DATA DE EMISSÃO', margin + contentWidth - 10, y + 9, { align: 'right' });
+      pdf.text('DATA DE EMISSÃO', margin + contentWidth - 10, y + (logoDataUrl ? 13 : 9), { align: 'right' });
       pdf.setFontSize(11);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(new Date().toLocaleDateString('pt-BR'), margin + contentWidth - 10, y + 16, { align: 'right' });
+      pdf.text(new Date().toLocaleDateString('pt-BR'), margin + contentWidth - 10, y + (logoDataUrl ? 20 : 16), { align: 'right' });
 
       y += headerHeight + 10;
 
@@ -429,8 +462,8 @@ export function BudgetCreator() {
 
       // ===== PRICING BREAKDOWN =====
       checkPage(50);
-      const priceBoxW = contentWidth * 0.55;
-      const priceBoxX = margin + contentWidth - priceBoxW;
+      const priceBoxW = contentWidth; // Full width instead of 0.55
+      const priceBoxX = margin;
 
       drawRoundedRect(priceBoxX, y, priceBoxW, 42, 3, '#f9fafb', '#e5e7eb');
 
