@@ -589,21 +589,38 @@ export function BudgetCreator() {
     setGeneratingPdf(false);
     
     handleSaveBudget('sent');
+    
+    let shareSuccess = false;
     if (blob && navigator.share) {
       const file = new File([blob], `orcamento-${formData.clientName.replace(/\s+/g, '-').toLowerCase()}.pdf`, { type: 'application/pdf' });
-      try {
-        await navigator.share({
-          title: `Orçamento ${providerName}`,
-          text: `Olá! Segue em anexo o orçamento de serviços. Você pode abrir o PDF para visualizar e clicar no link de pagamento diretamente nele.`,
-          files: [file]
-        });
-        return;
-      } catch (e) {
-        console.log('Native share cancelled or failed');
+      
+      // Verifica se o navegador suporta compartilhar arquivos
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            title: `Orçamento ${providerName}`,
+            text: `Olá! Segue em anexo o orçamento de serviços. Você pode abrir o PDF para visualizar e clicar no link de pagamento diretamente nele.`,
+            files: [file]
+          });
+          shareSuccess = true;
+          return;
+        } catch (e) {
+          console.log('Native share cancelled or failed');
+        }
       }
     }
-    // Fallback: open WhatsApp with text
-    const text = encodeURIComponent(`Olá! Segue o orçamento de serviços e o link de pagamento: ${formData.paymentLink}`);
+    
+    // Fallback: Baixa o PDF automaticamente e abre o WhatsApp com o texto
+    if (!shareSuccess && blob) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `orcamento-${formData.clientName.replace(/\s+/g, '-').toLowerCase()}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+    
+    const text = encodeURIComponent(`Olá! Segue o orçamento de serviços e o link de pagamento: ${formData.paymentLink}\n*(Por favor, anexe o arquivo PDF que acabou de ser baixado)*`);
     window.open(`https://wa.me/?text=${text}`, '_blank');
   };
 
