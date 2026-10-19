@@ -399,6 +399,13 @@ export async function createEventServiceAction(formData: FormData): Promise<Acti
       // O prestador pode ajustar manualmente depois
     }
 
+    try {
+      const { triggerEventServiceNotification } = await import('@/lib/festmensages/triggers')
+      await triggerEventServiceNotification(eventService.id, 'pending_provider_approval')
+    } catch (notifyErr) {
+      console.error('FestMensages order created notification error:', notifyErr)
+    }
+
     revalidatePath('/perfil')
     revalidatePath('/dashboard/prestador')
     
@@ -566,6 +573,20 @@ export async function updateEventServiceStatusAction(
     if (updateError) {
       console.error('Error updating event service status:', updateError)
       return { success: false, error: 'Erro ao atualizar status' }
+    }
+
+    if (
+      status === 'waiting_payment' ||
+      status === 'approved' ||
+      status === 'completed' ||
+      status === 'pending_provider_approval'
+    ) {
+      try {
+        const { triggerEventServiceNotification } = await import('@/lib/festmensages/triggers')
+        await triggerEventServiceNotification(eventServiceId, status)
+      } catch (notifyErr) {
+        console.error('FestMensages status update notification error:', notifyErr)
+      }
     }
 
     return { success: true, data: updatedService }

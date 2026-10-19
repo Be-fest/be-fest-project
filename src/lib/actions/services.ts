@@ -307,6 +307,17 @@ export async function createServiceAction(formData: FormData): Promise<ActionRes
       }
     }
 
+    try {
+      const { triggerServiceCreated } = await import('@/lib/festmensages/triggers')
+      await triggerServiceCreated({
+        serviceId: service.id,
+        serviceName: service.name,
+        providerId: user.id
+      })
+    } catch (notifyErr) {
+      console.error('FestMensages service created notification error:', notifyErr)
+    }
+
     revalidatePath('/dashboard/prestador')
     revalidatePath('/prestadores')
     revalidatePath('/servicos')

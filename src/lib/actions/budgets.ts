@@ -40,6 +40,24 @@ export async function saveBudgetAction(budgetData: BudgetInsert): Promise<Action
       return { success: false, error: 'Erro ao salvar orçamento' }
     }
 
+    if (data && data.status === 'sent') {
+      try {
+        const { triggerBudgetSent } = await import('@/lib/festmensages/triggers')
+        await triggerBudgetSent({
+          budgetId: data.id,
+          providerId: user.id,
+          clientName: data.client_name,
+          eventDate: data.event_date,
+          startTime: data.start_time,
+          totalPrice: data.total_price,
+          paymentLink: data.payment_link,
+          selectedServices: data.selected_services
+        })
+      } catch (notifyErr) {
+        console.error('FestMensages budget notification error:', notifyErr)
+      }
+    }
+
     revalidatePath('/dashboard/prestador')
     return { success: true, data }
   } catch (error) {
@@ -93,6 +111,24 @@ export async function updateBudgetStatusAction(id: string, status: 'draft' | 'se
     if (error) {
       console.error('Error updating budget status:', error)
       return { success: false, error: 'Erro ao atualizar status do orçamento' }
+    }
+
+    if (data && status === 'sent') {
+      try {
+        const { triggerBudgetSent } = await import('@/lib/festmensages/triggers')
+        await triggerBudgetSent({
+          budgetId: data.id,
+          providerId: user.id,
+          clientName: data.client_name,
+          eventDate: data.event_date,
+          startTime: data.start_time,
+          totalPrice: data.total_price,
+          paymentLink: data.payment_link,
+          selectedServices: data.selected_services
+        })
+      } catch (notifyErr) {
+        console.error('FestMensages budget status notification error:', notifyErr)
+      }
     }
 
     revalidatePath('/dashboard/prestador')

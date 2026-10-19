@@ -173,11 +173,18 @@ export async function registerClientAction(formData: FormData): Promise<ActionRe
 
     console.log('Client registration completed successfully')
 
-    // Enviar email de boas-vindas (não bloqueia o registro se falhar)
+    // Enviar email de boas-vindas e acionar FestMensages (não bloqueia o registro se falhar)
     try {
       const { sendWelcomeClientEmail } = await import('@/lib/email/send-email')
       await sendWelcomeClientEmail(validatedData.email, validatedData.fullName)
-      console.log('Welcome email sent to client:', validatedData.email)
+      const { triggerClientRegistered } = await import('@/lib/festmensages/triggers')
+      await triggerClientRegistered({
+        userId: authData.user.id,
+        fullName: validatedData.fullName,
+        email: validatedData.email,
+        phone
+      })
+      console.log('Welcome email & FestMensages sent to client:', validatedData.email)
     } catch (emailError) {
       console.error('Failed to send welcome email:', emailError)
       // Não retorna erro - o cadastro foi bem-sucedido
@@ -333,11 +340,18 @@ export async function registerProviderAction(formData: FormData): Promise<Action
 
     console.log('Provider registration completed successfully')
 
-    // Enviar email de boas-vindas (não bloqueia o registro se falhar)
+    // Enviar email de boas-vindas e acionar FestMensages (não bloqueia o registro se falhar)
     try {
       const { sendWelcomeProviderEmail } = await import('@/lib/email/send-email')
       await sendWelcomeProviderEmail(validatedData.email, validatedData.companyName)
-      console.log('Welcome email sent to provider:', validatedData.email)
+      const { triggerProviderRegistered } = await import('@/lib/festmensages/triggers')
+      await triggerProviderRegistered({
+        userId: authData.user.id,
+        companyName: validatedData.companyName,
+        email: validatedData.email,
+        phone
+      })
+      console.log('Welcome email & FestMensages sent to provider:', validatedData.email)
     } catch (emailError) {
       console.error('Failed to send welcome email to provider:', emailError)
       // Não retorna erro - o cadastro foi bem-sucedido

@@ -427,6 +427,13 @@ export async function addServiceToCartAction(serviceData: {
       error: verifyError
     });
     
+    try {
+      const { triggerEventServiceNotification } = await import('@/lib/festmensages/triggers')
+      await triggerEventServiceNotification(eventService.id, 'pending_provider_approval')
+    } catch (notifyErr) {
+      console.error('FestMensages cart order notification error:', notifyErr)
+    }
+
     return { success: true, data: eventService }
   } catch (error) {
     console.error('💥 Add service to cart failed:', error)

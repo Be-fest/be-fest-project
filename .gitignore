@@ -137,3 +137,7 @@ dist
 
 # Documentação interna (contém credenciais sensíveis)
 GUIA_DO_SISTEMA.md
+
+# Backups locais
+backups/
+
