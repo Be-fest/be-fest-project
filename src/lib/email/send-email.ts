@@ -70,7 +70,7 @@ export async function sendWelcomeEmail(params: SendEmailParams): Promise<EmailRe
         const defaultFallbackFrom = 'Be Fest <onboarding@resend.dev>'
         const fromEmail = process.env.RESEND_FROM_EMAIL || defaultFallbackFrom
 
-        const sendRequest = async (senderAddress: string) =>
+        const sendRequest = async (senderAddress: string, recipientAddress: string, subjectText: string, htmlBody: string) =>
             fetch('https://api.resend.com/emails', {
                 method: 'POST',
                 headers: {
@@ -79,37 +79,50 @@ export async function sendWelcomeEmail(params: SendEmailParams): Promise<EmailRe
                 },
                 body: JSON.stringify({
                     from: senderAddress,
-                    to: [to],
-                    subject: subject,
-                    html: htmlContent
+                    to: [recipientAddress],
+                    subject: subjectText,
+                    html: htmlBody
                 })
             })
 
-        let response = await sendRequest(fromEmail)
+        let response = await sendRequest(fromEmail, to, subject, htmlContent)
 
         if (!response.ok) {
-            const errorData = await response.json()
+            let errorData = await response.json().catch(() => ({}))
+            let errorMsg = String(errorData?.message || '')
+
             if (
                 response.status === 403 &&
                 fromEmail !== defaultFallbackFrom &&
-                String(errorData?.message || '').toLowerCase().includes('domain is not verified')
+                errorMsg.toLowerCase().includes('domain is not verified')
             ) {
-                response = await sendRequest(defaultFallbackFrom)
-            } else {
+                response = await sendRequest(defaultFallbackFrom, to, subject, htmlContent)
+                if (!response.ok) {
+                    errorData = await response.json().catch(() => ({}))
+                    errorMsg = String(errorData?.message || '')
+                }
+            }
+
+            if (
+                !response.ok &&
+                response.status === 403 &&
+                errorMsg.toLowerCase().includes('only send testing emails to your own email address')
+            ) {
+                const matchOwner = errorMsg.match(/\(([^)]+@[^)]+)\)/)
+                const ownerEmail = matchOwner?.[1]?.trim() || 'befest21@gmail.com'
+                if (to.toLowerCase() !== ownerEmail.toLowerCase()) {
+                    const redirectedSubject = `[Destinatário: ${to}] ${subject}`
+                    const redirectedHtml = `<div style="background:#fef3c7;border:1px solid #f59e0b;color:#92400e;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-family:sans-serif;font-size:12px;"><strong>Aviso Resend (Domínio em modo Sandbox):</strong> Este e-mail era destinado a <strong>${to}</strong> e foi redirecionado automaticamente para <strong>${ownerEmail}</strong> até que o domínio próprio seja verificado no Resend.</div>${htmlContent}`
+                    response = await sendRequest(defaultFallbackFrom, ownerEmail, redirectedSubject, redirectedHtml)
+                }
+            }
+
+            if (!response.ok) {
                 console.error('Resend API error:', errorData)
                 return {
                     success: false,
-                    error: errorData.message || 'Erro ao enviar email'
+                    error: errorData?.message || 'Erro ao enviar email'
                 }
-            }
-        }
-
-        if (!response.ok) {
-            const errorData = await response.json()
-            console.error('Resend API error:', errorData)
-            return {
-                success: false,
-                error: errorData.message || 'Erro ao enviar email'
             }
         }
 

@@ -98,7 +98,7 @@ export default function FestMensagesAdminPage() {
   const [testTemplateCode, setTestTemplateCode] = useState('provider_order_arrived');
   const [testChannel, setTestChannel] = useState<FestSingleChannel>('email');
   const [testRecipientName, setTestRecipientName] = useState('Buffet Estrela Teste');
-  const [testRecipientEmail, setTestRecipientEmail] = useState('teste@befest.com.br');
+  const [testRecipientEmail, setTestRecipientEmail] = useState('befest21@gmail.com');
   const [testRecipientPhone, setTestRecipientPhone] = useState('5521982809609');
   const [testSandboxMode, setTestSandboxMode] = useState(false);
   const [sendingTest, setSendingTest] = useState(false);

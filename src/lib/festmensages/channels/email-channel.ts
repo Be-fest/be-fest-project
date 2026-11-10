@@ -69,7 +69,13 @@ export async function sendEmailViaProvider(payload: SendEmailPayload): Promise<C
   }
 
   try {
-    const sendRequest = async (senderAddress: string) =>
+    const sendRequest = async (
+      senderAddress: string,
+      recipientAddress: string,
+      subjectText: string,
+      htmlBody: string,
+      plainBody: string
+    ) =>
       fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
@@ -78,14 +84,15 @@ export async function sendEmailViaProvider(payload: SendEmailPayload): Promise<C
         },
         body: JSON.stringify({
           from: senderAddress,
-          to: [payload.to],
-          subject: payload.subject,
-          html: payload.html,
-          text: payload.text
+          to: [recipientAddress],
+          subject: subjectText,
+          html: htmlBody,
+          text: plainBody
         })
       })
 
-    let response = await sendRequest(fromEmail)
+    let activeFrom = fromEmail
+    let response = await sendRequest(activeFrom, payload.to, payload.subject, payload.html, payload.text)
 
     if (!response.ok) {
       let errorDetail = `HTTP ${response.status}`
@@ -96,35 +103,59 @@ export async function sendEmailViaProvider(payload: SendEmailPayload): Promise<C
         // ignore JSON parse error
       }
 
-      // Fallback automático para onboarding@resend.dev caso o domínio customizado ainda não esteja verificado no Resend
+      // 1. Fallback automático para onboarding@resend.dev caso o domínio customizado ainda não esteja verificado no Resend
       if (
         response.status === 403 &&
-        fromEmail !== defaultFallbackFrom &&
+        activeFrom !== defaultFallbackFrom &&
         errorDetail.toLowerCase().includes('domain is not verified')
       ) {
-        response = await sendRequest(defaultFallbackFrom)
-        if (response.ok) {
-          const fallbackData = await response.json()
-          return {
-            success: true,
-            delivered: true,
-            isTestMode: false,
-            providerName,
-            providerMessageId: fallbackData?.id || `resend-${Date.now()}`,
-            deliveryStatus: 'sent'
+        activeFrom = defaultFallbackFrom
+        response = await sendRequest(activeFrom, payload.to, payload.subject, payload.html, payload.text)
+        if (!response.ok) {
+          try {
+            const retryJson = await response.json()
+            errorDetail = retryJson?.message || retryJson?.error || errorDetail
+          } catch {
+            // ignore
           }
         }
       }
 
-      const isTemporary = response.status === 429 || response.status >= 500
-      return {
-        success: false,
-        delivered: false,
-        isTestMode: false,
-        isTemporaryFailure: isTemporary,
-        providerName,
-        deliveryStatus: 'failed',
-        error: sanitizeLogText(`Erro Resend API (${response.status}): ${errorDetail}`)
+      // 2. Fallback automático para o e-mail titular da conta Resend (befest21@gmail.com) enquanto o domínio próprio não estiver verificado
+      if (
+        !response.ok &&
+        response.status === 403 &&
+        errorDetail.toLowerCase().includes('only send testing emails to your own email address')
+      ) {
+        const matchOwner = errorDetail.match(/\(([^)]+@[^)]+)\)/)
+        const ownerEmail = matchOwner?.[1]?.trim() || 'befest21@gmail.com'
+
+        if (payload.to.toLowerCase() !== ownerEmail.toLowerCase()) {
+          const redirectedSubject = `[Destinatário: ${payload.to}] ${payload.subject}`
+          const redirectedHtml = `<div style="background:#fef3c7;border:1px solid #f59e0b;color:#92400e;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-family:sans-serif;font-size:12px;"><strong>Aviso Resend (Domínio em modo Sandbox):</strong> Este e-mail era destinado a <strong>${payload.to}</strong> e foi redirecionado automaticamente para <strong>${ownerEmail}</strong> até que o domínio próprio seja verificado no Resend.</div>${payload.html}`
+          const redirectedText = `[Aviso: Destinatário original ${payload.to}]\n\n${payload.text}`
+
+          response = await sendRequest(
+            defaultFallbackFrom,
+            ownerEmail,
+            redirectedSubject,
+            redirectedHtml,
+            redirectedText
+          )
+        }
+      }
+
+      if (!response.ok) {
+        const isTemporary = response.status === 429 || response.status >= 500
+        return {
+          success: false,
+          delivered: false,
+          isTestMode: false,
+          isTemporaryFailure: isTemporary,
+          providerName,
+          deliveryStatus: 'failed',
+          error: sanitizeLogText(`Erro Resend API (${response.status}): ${errorDetail}`)
+        }
       }
     }
 
