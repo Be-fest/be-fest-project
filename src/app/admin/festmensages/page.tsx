@@ -96,11 +96,11 @@ export default function FestMensagesAdminPage() {
 
   // Tester state
   const [testTemplateCode, setTestTemplateCode] = useState('provider_order_arrived');
-  const [testChannel, setTestChannel] = useState<FestSingleChannel>('whatsapp');
+  const [testChannel, setTestChannel] = useState<FestSingleChannel>('email');
   const [testRecipientName, setTestRecipientName] = useState('Buffet Estrela Teste');
   const [testRecipientEmail, setTestRecipientEmail] = useState('teste@befest.com.br');
   const [testRecipientPhone, setTestRecipientPhone] = useState('5521982809609');
-  const [testSandboxMode, setTestSandboxMode] = useState(true);
+  const [testSandboxMode, setTestSandboxMode] = useState(false);
   const [sendingTest, setSendingTest] = useState(false);
   const [lastTestOutput, setLastTestOutput] = useState<{
     renderedSubject: string;
